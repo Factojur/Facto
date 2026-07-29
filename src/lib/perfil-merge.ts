@@ -29,7 +29,12 @@ export function extrairPerfilDados(
 ): PerfilDadosExtra {
   const raw = metadata?.perfil_dados;
   if (!raw || typeof raw !== "object") return {};
-  return raw as PerfilDadosExtra;
+  // foto_base64 nunca deve ser lida do user_metadata: esse dado vai para o
+  // cookie de sessão do Supabase e uma imagem ali estoura o limite de
+  // cabeçalhos HTTP (erro 431), derrubando o site inteiro.
+  const dados = { ...(raw as PerfilDadosExtra) };
+  delete dados.foto_base64;
+  return dados;
 }
 
 export function mesclarPerfil(

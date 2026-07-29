@@ -29,6 +29,23 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // Autocorreção: remove foto que ficou presa em user_metadata antes desta
+  // correção — esse dado infla o cookie de sessão e pode travar o site (431).
+  const metaRaw = user.user_metadata?.perfil_dados;
+  if (
+    metaRaw &&
+    typeof metaRaw === "object" &&
+    "foto_base64" in (metaRaw as Record<string, unknown>)
+  ) {
+    const { foto_base64: _remover, ...resto } = metaRaw as Record<
+      string,
+      unknown
+    >;
+    await supabase.auth.updateUser({
+      data: { ...user.user_metadata, perfil_dados: resto },
+    });
+  }
+
   return NextResponse.json({
     perfil: mesclarPerfil(user.id, user.email ?? "", data, user.user_metadata),
   });
@@ -53,7 +70,7 @@ export async function PUT(request: Request) {
 
   const { base, extra } = separarAtualizacao(body);
 
-  if (extra.foto_base64 && extra.foto_base64.length > 900_000) {
+  if (extra.foto_base64 && extra.foto_base64.length > 250_000) {
     return NextResponse.json(
       { error: "A foto é grande demais. Use uma imagem menor." },
       { status: 400 }
@@ -93,12 +110,17 @@ export async function PUT(request: Request) {
     profileRow = dataBase;
 
     const metaAtual = extrairPerfilDados(user.user_metadata);
-    const perfilDados: PerfilDadosExtra = { ...metaAtual, ...extra };
+    // foto_base64 nunca vai para user_metadata: infla o cookie de sessão do
+    // Supabase e pode travar o site inteiro com erro 431.
+    const { foto_base64: _fotoIgnorada, ...extraSemFoto } = extra;
+    const perfilDados: PerfilDadosExtra = { ...metaAtual, ...extraSemFoto };
 
     const metaPayload: Record<string, unknown> = {
       ...user.user_metadata,
       perfil_dados: perfilDados,
     };
+    // Remove qualquer resquício de foto salva antes desta correção.
+    delete metaPayload.foto_base64;
 
     if (base.nome_completo) {
       metaPayload.nome_completo = base.nome_completo;
@@ -124,6 +146,7 @@ export async function PUT(request: Request) {
         userAtualizado?.user_metadata
       ),
       viaMetadados: true,
+      fotoNaoSalva: Boolean(extra.foto_base64),
     });
   } else if (erroCompleto) {
     return NextResponse.json({ error: erroCompleto.message }, { status: 500 });
