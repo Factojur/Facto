@@ -1,0 +1,173 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { FactoLogo } from "@/components/brand/facto-logo";
+import { createClient } from "@/lib/supabase/client";
+import { getAuthErrorMessage } from "@/lib/auth-errors";
+
+async function registrarSessaoAtiva() {
+  await fetch("/api/auth/sessao", { method: "POST" });
+}
+
+function LoginForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const supabase = createClient();
+
+  const [loading, setLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const sessaoEncerrada = searchParams.get("sessao") === "encerrada";
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        router.replace("/dashboard");
+      } else {
+        setCheckingSession(false);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router]);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    const form = new FormData(e.currentTarget);
+    const email = String(form.get("email"));
+    const senha = String(form.get("senha"));
+
+    const { error: loginError } = await supabase.auth.signInWithPassword({
+      email,
+      password: senha,
+    });
+
+    if (loginError) {
+      setError(getAuthErrorMessage(loginError.message));
+      setLoading(false);
+      return;
+    }
+
+    await registrarSessaoAtiva();
+
+    router.push("/dashboard");
+    router.refresh();
+  }
+
+  if (checkingSession) {
+    return (
+      <div className="flex min-h-full items-center justify-center bg-facto-dark">
+        <p className="text-stone-400">Verificando sessão...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative flex min-h-full items-center justify-center bg-facto-dark px-4 py-12">
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(144,139,106,0.14),transparent_60%)]"
+        aria-hidden
+      />
+      <div className="relative w-full max-w-md">
+        <div className="mb-8 flex flex-col items-center">
+          <FactoLogo variant="stacked" size="md" />
+          <h1 className="mt-6 text-3xl font-bold text-white">Entrar</h1>
+          <p className="mt-2 text-sm text-stone-400">
+            Acesse sua conta para gerar peças jurídicas
+          </p>
+        </div>
+
+        <form
+          onSubmit={handleSubmit}
+          className="rounded-2xl border border-stone-800 bg-stone-900/90 p-8 shadow-xl shadow-black/30"
+        >
+          {sessaoEncerrada && (
+            <div className="mb-4 rounded-lg border border-amber-800/60 bg-amber-950/40 px-4 py-3 text-sm text-amber-200">
+              Sua sessão foi encerrada porque esta conta foi acessada em outro
+              dispositivo. Suas preferências e dados salvos no FACTO foram
+              preservados.
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-4 rounded-lg border border-red-800 bg-red-950/50 px-4 py-3 text-sm text-red-300">
+              {error}
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div>
+              <label
+                htmlFor="email"
+                className="mb-1.5 block text-sm font-medium text-stone-300"
+              >
+                E-mail
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                className="w-full rounded-lg border border-stone-700 bg-stone-800 px-4 py-2.5 text-white placeholder-stone-500 outline-none focus:border-facto-gold focus:ring-1 focus:ring-facto-gold"
+                placeholder="joao@escritorio.com.br"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="senha"
+                className="mb-1.5 block text-sm font-medium text-stone-300"
+              >
+                Senha
+              </label>
+              <input
+                id="senha"
+                name="senha"
+                type="password"
+                required
+                className="w-full rounded-lg border border-stone-700 bg-stone-800 px-4 py-2.5 text-white placeholder-stone-500 outline-none focus:border-facto-gold focus:ring-1 focus:ring-facto-gold"
+                placeholder="Sua senha"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="mt-6 w-full rounded-lg bg-facto-gold py-3 font-semibold text-facto-dark transition hover:bg-[#a39a78] disabled:opacity-50"
+          >
+            {loading ? "Entrando..." : "Entrar"}
+          </button>
+
+          <p className="mt-6 text-center text-sm text-stone-400">
+            Não tem conta?{" "}
+            <Link
+              href="/cadastro"
+              className="font-medium text-facto-gold hover:text-[#a39a78]"
+            >
+              Cadastre-se
+            </Link>
+          </p>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-full items-center justify-center bg-facto-dark">
+          <p className="text-stone-400">Carregando...</p>
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
+  );
+}
