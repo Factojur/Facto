@@ -14,6 +14,13 @@ export const AREA_TEMAS: Record<string, AreaTema> = {
     pattern: "radial-gradient(circle at 20% 80%, rgba(125,211,252,0.15), transparent 50%)",
     tags: ["Consumidor", "Cobrança", "Indenização"],
   },
+  jecr: {
+    gradient: "from-stone-900 via-slate-800 to-red-950",
+    glow: "bg-orange-300/15",
+    accent: "text-orange-200",
+    pattern: "radial-gradient(circle at 70% 20%, rgba(253,186,116,0.14), transparent 50%)",
+    tags: ["TCO", "Transação penal", "Composição"],
+  },
   trabalhista: {
     gradient: "from-amber-900 via-stone-800 to-amber-950",
     glow: "bg-amber-400/20",

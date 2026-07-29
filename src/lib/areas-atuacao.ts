@@ -20,8 +20,17 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     icon: "⚖️",
   },
   {
+    id: "jecr",
+    title: "Juizado Especial Criminal",
+    description:
+      "Termos circunstanciados, composição civil, transação penal e recursos no JECRIM, com base na Lei 9.099/95.",
+    law: "Lei nº 9.099/95",
+    available: false,
+    icon: "⚖️",
+  },
+  {
     id: "trabalhista",
-    title: "Trabalhista",
+    title: "Direito Trabalhista",
     description:
       "Reclamações, recursos e acordos na Justiça do Trabalho, com fundamentação na CLT.",
     law: "CLT",
@@ -30,15 +39,16 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
   },
   {
     id: "criminal",
-    title: "Criminal",
+    title: "Direito Penal",
     description:
-      "Peças de habeas corpus, resposta à acusação, memoriais e recursos criminais.",
+      "Habeas corpus, resposta à acusação, memoriais e recursos na Justiça Penal comum.",
+    law: "CP · CPP",
     available: false,
     icon: "🛡️",
   },
   {
     id: "empresarial",
-    title: "Empresarial",
+    title: "Direito Empresarial",
     description:
       "Contratos, notificações extrajudiciais e ações societárias para pessoas jurídicas.",
     available: false,

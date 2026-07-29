@@ -60,7 +60,7 @@ export function AssistenteFactoDestaque() {
             <div className="hidden sm:block">
               <p className="text-sm font-semibold text-white">Em todas as áreas</p>
               <p className="mt-0.5 text-xs text-stone-500">
-                JEC, trabalhista, cível e mais
+                Em todas as especialidades
               </p>
             </div>
           </div>

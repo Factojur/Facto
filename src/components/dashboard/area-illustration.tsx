@@ -27,6 +27,20 @@ export function AreaIllustration({
         </svg>
       );
 
+    case "jecr":
+      return (
+        <svg viewBox="0 0 120 100" className={className} aria-hidden>
+          <path d="M60 12v58M38 28h44" {...stroke} />
+          <path d="M38 28L28 38M82 28l10 10" {...stroke} />
+          <ellipse cx="28" cy="42" rx="10" ry="4" {...stroke} />
+          <ellipse cx="92" cy="42" rx="10" ry="4" {...stroke} />
+          <path d="M42 72h36v18H42z" {...stroke} />
+          <path d="M48 78h8M48 82h14" {...stroke} strokeWidth="1.2" />
+          <path d="M54 8h12v4H54z" fill="currentColor" stroke="none" />
+          <path d="M58 14h4v8h-4z" fill="currentColor" stroke="none" />
+        </svg>
+      );
+
     case "trabalhista":
       return (
         <svg viewBox="0 0 120 100" className={className} aria-hidden>
