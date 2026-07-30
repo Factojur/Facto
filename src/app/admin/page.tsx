@@ -87,7 +87,7 @@ export default async function AdminPage({
         .from("assinaturas")
         .select("id", { count: "exact", head: true })
         .eq("status", "canceled")
-        .eq("motivo_encerramento", "cancelado_pelo_cliente"),
+        .in("motivo_encerramento", ["cancelado_pelo_cliente", "arrependimento_cdc"]),
       admin
         .from("assinaturas")
         .select("id", { count: "exact", head: true })

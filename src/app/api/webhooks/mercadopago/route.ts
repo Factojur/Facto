@@ -6,6 +6,13 @@ import { enviarEmailConvite } from "@/lib/email/convite-pago";
 const MP_API = "https://api.mercadopago.com";
 const VALOR_MENSAL = 49.9;
 const VALOR_ANUAL = 478.8;
+const DIA_EM_MS = 24 * 60 * 60 * 1000;
+// Art. 49 do CDC: direito de arrependimento em até 7 dias da contratação.
+const PRAZO_ARREPENDIMENTO_CDC_DIAS = 7;
+const DURACAO_CICLO_DIAS: Record<"mensal" | "anual", number> = {
+  mensal: 30,
+  anual: 365,
+};
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
@@ -104,9 +111,11 @@ async function processarPreapproval(admin: AdminClient, id: string) {
 
   const { data: existente } = await admin
     .from("assinaturas")
-    .select("id, status, motivo_encerramento")
+    .select("id, status, motivo_encerramento, data_inicio, acesso_valido_ate")
     .eq("mp_preapproval_id", id)
     .maybeSingle();
+
+  const dataInicio = preapproval.date_created ?? existente?.data_inicio ?? null;
 
   const dados: Record<string, unknown> = {
     mp_preapproval_id: id,
@@ -115,16 +124,36 @@ async function processarPreapproval(admin: AdminClient, id: string) {
     plano,
     valor,
     status,
-    data_inicio: preapproval.date_created ?? null,
+    data_inicio: dataInicio,
     atualizado_em: new Date().toISOString(),
   };
 
-  // "canceled" é um cancelamento explícito e irreversível no Mercado Pago —
-  // diferencia de "pagamento_recusado", que é marcado à parte quando uma
-  // cobrança recorrente falha (ver processarAuthorizedPayment).
+  // Assinatura recém-autorizada e ainda sem nenhum pagamento confirmado:
+  // libera acesso por um ciclo, como estimativa inicial. O webhook de
+  // pagamento aprovado (processarAuthorizedPayment) substitui esse valor
+  // pela data real assim que a primeira cobrança é confirmada.
+  if (status === "authorized" && !existente?.acesso_valido_ate && dataInicio && plano) {
+    dados.acesso_valido_ate = new Date(
+      new Date(dataInicio).getTime() + DURACAO_CICLO_DIAS[plano] * DIA_EM_MS
+    ).toISOString();
+  }
+
+  // "canceled" é um cancelamento explícito e irreversível no Mercado Pago.
   if (status === "canceled" && existente?.status !== "canceled") {
     dados.data_cancelamento = new Date().toISOString();
-    if (!existente?.motivo_encerramento) {
+
+    const diasDesdeContratacao = dataInicio
+      ? (Date.now() - new Date(dataInicio).getTime()) / DIA_EM_MS
+      : Infinity;
+
+    if (diasDesdeContratacao <= PRAZO_ARREPENDIMENTO_CDC_DIAS) {
+      // Direito de arrependimento (art. 49, CDC): corte imediato de acesso.
+      dados.motivo_encerramento = existente?.motivo_encerramento ?? "arrependimento_cdc";
+      dados.acesso_valido_ate = new Date().toISOString();
+    } else if (!existente?.motivo_encerramento) {
+      // Cancelamento fora do prazo do CDC: mantém acesso_valido_ate como já
+      // calculado pelo último pagamento aprovado — o acesso segue até o fim
+      // do ciclo já pago, não é cortado na hora.
       dados.motivo_encerramento = "cancelado_pelo_cliente";
     }
   }
@@ -147,15 +176,32 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
   if (preapprovalId) {
     const { data: assinatura } = await admin
       .from("assinaturas")
-      .select("id")
+      .select("id, plano")
       .eq("mp_preapproval_id", preapprovalId)
       .maybeSingle();
     assinaturaId = assinatura?.id ?? null;
 
-    // Cobrança recorrente falhou/foi recusada numa assinatura que ainda não
-    // tinha motivo de encerramento registrado: marcamos como "não renovou"
-    // (diferente de um cancelamento explícito pelo cliente).
-    if (assinaturaId && statusPagamento && statusPagamento !== "approved") {
+    if (assinaturaId && statusPagamento === "approved") {
+      // Cada pagamento aprovado estende o acesso por um ciclo do plano a
+      // partir da data da cobrança — é assim que "não renovou" se resolve
+      // sozinho: sem um novo pagamento aprovado, essa data para de avançar
+      // e o acesso expira naturalmente quando ela é ultrapassada.
+      const plano = (assinatura?.plano as "mensal" | "anual" | null) ?? "mensal";
+      const dataPagamento = invoice.debit_date ? new Date(invoice.debit_date) : new Date();
+      const acessoValidoAte = new Date(
+        dataPagamento.getTime() + DURACAO_CICLO_DIAS[plano] * DIA_EM_MS
+      ).toISOString();
+
+      await admin
+        .from("assinaturas")
+        .update({ acesso_valido_ate: acessoValidoAte })
+        .eq("id", assinaturaId);
+    } else if (assinaturaId && statusPagamento && statusPagamento !== "approved") {
+      // Cobrança recorrente falhou/foi recusada numa assinatura que ainda
+      // não tinha motivo de encerramento registrado: marcamos como "não
+      // renovou" (diferente de um cancelamento explícito pelo cliente). O
+      // acesso_valido_ate não é alterado aqui — continua valendo até o fim
+      // do último ciclo que foi de fato pago.
       await admin
         .from("assinaturas")
         .update({ motivo_encerramento: "pagamento_recusado" })

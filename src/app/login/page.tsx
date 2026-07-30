@@ -20,6 +20,7 @@ function LoginForm() {
   const [checkingSession, setCheckingSession] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const sessaoEncerrada = searchParams.get("sessao") === "encerrada";
+  const acessoExpirado = searchParams.get("acesso") === "expirado";
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -90,6 +91,16 @@ function LoginForm() {
               Sua sessão foi encerrada porque esta conta foi acessada em outro
               dispositivo. Suas preferências e dados salvos no FACTO foram
               preservados.
+            </div>
+          )}
+
+          {acessoExpirado && (
+            <div className="mb-4 rounded-lg border border-amber-800/60 bg-amber-950/40 px-4 py-3 text-sm text-amber-200">
+              Sua assinatura do FACTO expirou ou foi cancelada. Renove para
+              continuar acessando a plataforma.{" "}
+              <Link href="/#precos" className="font-semibold underline">
+                Ver planos
+              </Link>
             </div>
           )}
 

@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { limparFotoDeMetadata } from "@/lib/perfil-merge";
+import { acessoAssinaturaLiberado } from "@/lib/acesso-assinatura";
 
 const COOKIE_SESSAO = "facto_sessao";
 const EMAIL_ADMIN = "admin@facto.com";
@@ -73,6 +74,23 @@ export async function middleware(request: NextRequest) {
       const redirectResponse = NextResponse.redirect(loginUrl);
       redirectResponse.cookies.delete(COOKIE_SESSAO);
       return redirectResponse;
+    }
+
+    // Corta o acesso de quem cancelou a assinatura (fora do prazo de
+    // arrependimento do CDC, o acesso já foi liberado até o fim do ciclo
+    // pago) ou não renovou no vencimento. Contas sem nenhuma assinatura
+    // registrada (admin, testes, convites avulsos) não são afetadas.
+    if (user.email !== EMAIL_ADMIN) {
+      const liberado = await acessoAssinaturaLiberado(user.email);
+      if (!liberado) {
+        await supabase.auth.signOut();
+        const loginUrl = request.nextUrl.clone();
+        loginUrl.pathname = "/login";
+        loginUrl.searchParams.set("acesso", "expirado");
+        const redirectResponse = NextResponse.redirect(loginUrl);
+        redirectResponse.cookies.delete(COOKIE_SESSAO);
+        return redirectResponse;
+      }
     }
   }
 
