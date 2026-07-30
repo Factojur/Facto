@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { enviarEmailConvite } from "@/lib/email/convite-pago";
 
 const MP_API = "https://api.mercadopago.com";
 const VALOR_MENSAL = 49.9;
@@ -175,6 +176,40 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
   );
 }
 
+/**
+ * Pagamento avulso aprovado (ex.: link de pagamento do Checkout Pro): gera
+ * um convite de acesso com token único e dispara o e-mail de boas-vindas
+ * com o link de cadastro. Idempotente por mp_payment_id — se o Mercado Pago
+ * reenviar a mesma notificação, não duplica o convite nem reenvia o e-mail.
+ */
+async function processarPayment(admin: AdminClient, id: string) {
+  const payment = await chamarApiMercadoPago(`/v1/payments/${id}`);
+
+  if (payment.status !== "approved") return;
+
+  const email = (payment.payer?.email as string | undefined) ?? null;
+  if (!email) return;
+
+  const { data: existente } = await admin
+    .from("convites_pagos")
+    .select("id")
+    .eq("mp_payment_id", String(id))
+    .maybeSingle();
+  if (existente) return;
+
+  const token = crypto.randomBytes(32).toString("hex");
+
+  const { error: erroInsercao } = await admin.from("convites_pagos").insert({
+    email,
+    token,
+    status: "pendente",
+    mp_payment_id: String(id),
+  });
+  if (erroInsercao) throw erroInsercao;
+
+  await enviarEmailConvite(email, token);
+}
+
 export async function POST(request: Request) {
   const url = new URL(request.url);
   const dataIdQuery = url.searchParams.get("data.id") ?? url.searchParams.get("id");
@@ -221,6 +256,8 @@ export async function POST(request: Request) {
       await processarPreapproval(admin, idFinal);
     } else if (idFinal && topicoFinal === "subscription_authorized_payment") {
       await processarAuthorizedPayment(admin, idFinal);
+    } else if (idFinal && topicoFinal === "payment") {
+      await processarPayment(admin, idFinal);
     }
 
     if (eventoLog) {
