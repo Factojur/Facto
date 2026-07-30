@@ -19,8 +19,9 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "FACTO",
-  description: "Gerador de peças jurídicas para advogados",
+  title: "FACTO — Inteligência Artificial para peças jurídicas",
+  description:
+    "O FACTO redige peças jurídicas com IA: economize horas, jurisprudência atualizada e formatação impecável, prontas para protocolar.",
   icons: {
     icon: "/facto-icon.svg",
   },
