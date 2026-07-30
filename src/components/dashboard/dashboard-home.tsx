@@ -224,10 +224,12 @@ export function DashboardHome({
   nome,
   userId,
   favoritosIniciais,
+  leigo = false,
 }: {
   nome: string;
   userId: string;
   favoritosIniciais: string[];
+  leigo?: boolean;
 }) {
   const primeiroNome = nome.split(" ")[0];
   const [favoritos, setFavoritos] = useState(favoritosIniciais);
@@ -285,6 +287,8 @@ export function DashboardHome({
     return AREAS_ATUACAO;
   }, [filtro, favoritos]);
 
+  const areaJec = getAreaById("jec");
+
   return (
     <div className="relative overflow-x-clip pb-24">
       <div className="relative z-10">
@@ -310,101 +314,133 @@ export function DashboardHome({
 
       <AssistenteFactoDestaque />
 
-      <div className="mx-auto max-w-7xl px-6 pt-6 md:px-10">
-        <span className="inline-flex rounded-full border border-amber-400/20 bg-amber-400/10 px-4 py-1.5 text-sm text-amber-300">
-          {favoritos.length} favorito{favoritos.length !== 1 ? "s" : ""}
-        </span>
-      </div>
+      {!leigo && (
+        <div className="mx-auto max-w-7xl px-6 pt-6 md:px-10">
+          <span className="inline-flex rounded-full border border-amber-400/20 bg-amber-400/10 px-4 py-1.5 text-sm text-amber-300">
+            {favoritos.length} favorito{favoritos.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+      )}
 
       <div className="mx-auto max-w-7xl space-y-10 px-6 pt-8 md:px-10">
-        {/* Favoritos */}
-        <section>
-          <div className="mb-4 flex items-end justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold text-white">Acesso rápido</h2>
-              <p className="mt-1 text-sm text-stone-500">
-                {salvando
-                  ? "Salvando..."
-                  : erroSalvar
-                    ? "Salvo localmente — rode a migration no Supabase para sincronizar."
-                    : "Suas áreas favoritas ficam sempre visíveis aqui."}
+        {leigo && areaJec ? (
+          <section className="relative overflow-hidden rounded-2xl border border-facto-gold/30 bg-gradient-to-br from-stone-900 to-stone-950 p-8 shadow-xl">
+            <span className="inline-flex rounded-full bg-facto-gold/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-facto-gold">
+              Seu acesso
+            </span>
+            <h2 className="mt-4 text-2xl font-bold text-white">
+              {areaJec.title}
+            </h2>
+            {areaJec.law && (
+              <p className="mt-1 text-xs font-medium text-stone-500">
+                {areaJec.law}
               </p>
-            </div>
-          </div>
+            )}
+            <p className="mt-4 max-w-xl text-sm leading-relaxed text-stone-400">
+              Seu cadastro foi feito sem OAB, por isso seu acesso ao FACTO é
+              dedicado ao Juizado Especial Cível — causas de até 20 salários
+              mínimos, conforme o art. 9º da Lei nº 9.099/95. As demais áreas
+              do FACTO são exclusivas para advogados cadastrados com OAB.
+            </p>
+            <Link
+              href={areaJec.href!}
+              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-facto-gold px-5 py-2.5 text-sm font-semibold text-facto-dark transition hover:bg-[#a39a78]"
+            >
+              Entrar no módulo <span aria-hidden>→</span>
+            </Link>
+          </section>
+        ) : (
+          <>
+            {/* Favoritos */}
+            <section>
+              <div className="mb-4 flex items-end justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-white">Acesso rápido</h2>
+                  <p className="mt-1 text-sm text-stone-500">
+                    {salvando
+                      ? "Salvando..."
+                      : erroSalvar
+                        ? "Salvo localmente — rode a migration no Supabase para sincronizar."
+                        : "Suas áreas favoritas ficam sempre visíveis aqui."}
+                  </p>
+                </div>
+              </div>
 
-          {areasFavoritas.length > 0 ? (
-            <div className="flex gap-3 overflow-x-auto pb-1">
-              {areasFavoritas.map((area) => (
-                <FavoritoRapido
-                  key={area.id}
-                  area={area}
-                  onRemover={() => toggleFavorito(area.id)}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.03] px-5 py-5 text-sm text-stone-500">
-              Favorite uma área com a{" "}
-              <span className="text-amber-400">★</span> nos cards abaixo.
-            </div>
-          )}
-        </section>
+              {areasFavoritas.length > 0 ? (
+                <div className="flex gap-3 overflow-x-auto pb-1">
+                  {areasFavoritas.map((area) => (
+                    <FavoritoRapido
+                      key={area.id}
+                      area={area}
+                      onRemover={() => toggleFavorito(area.id)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.03] px-5 py-5 text-sm text-stone-500">
+                  Favorite uma área com a{" "}
+                  <span className="text-amber-400">★</span> nos cards abaixo.
+                </div>
+              )}
+            </section>
 
-        {/* Áreas de atuação */}
-        <section className="relative">
-          <div className="relative z-10 mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-lg font-semibold text-white">Áreas de atuação</h2>
-            <div className="flex rounded-xl border border-white/10 bg-white/5 p-1">
-              {(
-                [
-                  ["todas", "Todas"],
-                  ["favoritas", "Favoritas"],
-                  ["disponiveis", "Disponíveis"],
-                ] as const
-              ).map(([id, label]) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setFiltro(id)}
-                  className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                    filtro === id
-                      ? "bg-facto-gold text-facto-dark shadow"
-                      : "text-white/60 hover:text-white"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
+            {/* Áreas de atuação */}
+            <section className="relative">
+              <div className="relative z-10 mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="text-lg font-semibold text-white">Áreas de atuação</h2>
+                <div className="flex rounded-xl border border-white/10 bg-white/5 p-1">
+                  {(
+                    [
+                      ["todas", "Todas"],
+                      ["favoritas", "Favoritas"],
+                      ["disponiveis", "Disponíveis"],
+                    ] as const
+                  ).map(([id, label]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setFiltro(id)}
+                      className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                        filtro === id
+                          ? "bg-facto-gold text-facto-dark shadow"
+                          : "text-white/60 hover:text-white"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          <div className="relative z-10">
-          {areasVisiveis.length > 0 ? (
-            <div className="grid gap-5 sm:grid-cols-2">
-              {areasVisiveis.map((area, i) => (
-                <AreaPortalCard
-                  key={area.id}
-                  area={area}
-                  favorito={favoritos.includes(area.id)}
-                  onToggleFavorito={() => toggleFavorito(area.id)}
-                  index={i}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-xl border border-white/10 bg-white/5 px-6 py-10 text-center text-stone-400">
-              Nenhuma área neste filtro.{" "}
-              <button
-                type="button"
-                onClick={() => setFiltro("todas")}
-                className="text-facto-gold underline-offset-2 hover:underline"
-              >
-                Ver todas
-              </button>
-            </div>
-          )}
-          </div>
-        </section>
+              <div className="relative z-10">
+              {areasVisiveis.length > 0 ? (
+                <div className="grid gap-5 sm:grid-cols-2">
+                  {areasVisiveis.map((area, i) => (
+                    <AreaPortalCard
+                      key={area.id}
+                      area={area}
+                      favorito={favoritos.includes(area.id)}
+                      onToggleFavorito={() => toggleFavorito(area.id)}
+                      index={i}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-white/10 bg-white/5 px-6 py-10 text-center text-stone-400">
+                  Nenhuma área neste filtro.{" "}
+                  <button
+                    type="button"
+                    onClick={() => setFiltro("todas")}
+                    className="text-facto-gold underline-offset-2 hover:underline"
+                  >
+                    Ver todas
+                  </button>
+                </div>
+              )}
+              </div>
+            </section>
+          </>
+        )}
 
         <FluxoFactoSection />
       </div>

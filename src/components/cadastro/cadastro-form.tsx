@@ -7,6 +7,7 @@ import { FactoLogo } from "@/components/brand/facto-logo";
 import { createClient } from "@/lib/supabase/client";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { validateOabMock } from "@/lib/validate-oab";
+import { TERMO_LEIGO_VERSAO, TEXTO_TERMO_LEIGO } from "@/lib/termo-leigo";
 
 export function CadastroForm({
   emailConvite,
@@ -21,6 +22,8 @@ export function CadastroForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [souAdvogado, setSouAdvogado] = useState(true);
+  const [termoAceito, setTermoAceito] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -32,12 +35,21 @@ export function CadastroForm({
     const cpf = String(form.get("cpf")).replace(/\D/g, "");
     const email = String(form.get("email"));
     const senha = String(form.get("senha"));
-    const oabNumero = String(form.get("oabNumero"));
+    const oabNumero = souAdvogado ? String(form.get("oabNumero")) : "";
+    let role: string | undefined;
 
-    const oabValidation = validateOabMock({ email, senha, oabNumero });
-
-    if (!oabValidation.valid) {
-      setError(oabValidation.message);
+    if (souAdvogado) {
+      const oabValidation = validateOabMock({ email, senha, oabNumero });
+      if (!oabValidation.valid) {
+        setError(oabValidation.message);
+        setLoading(false);
+        return;
+      }
+      role = oabValidation.role;
+    } else if (!termoAceito) {
+      setError(
+        "Você precisa marcar que leu e concorda com os termos para continuar sem OAB."
+      );
       setLoading(false);
       return;
     }
@@ -45,11 +57,15 @@ export function CadastroForm({
     const userMetadata: Record<string, string> = {
       nome_completo: nomeCompleto,
       cpf,
-      oab_numero: oabNumero,
+      tipo_usuario: souAdvogado ? "advogado" : "leigo",
     };
 
-    if (oabValidation.role) {
-      userMetadata.role = oabValidation.role;
+    if (souAdvogado) {
+      userMetadata.oab_numero = oabNumero;
+    }
+
+    if (role) {
+      userMetadata.role = role;
     }
 
     const { error: signUpError } = await supabase.auth.signUp({
@@ -87,7 +103,10 @@ export function CadastroForm({
         nome_completo: nomeCompleto,
         cpf,
         email,
-        oab_numero: oabNumero,
+        oab_numero: souAdvogado ? oabNumero : null,
+        tipo_usuario: souAdvogado ? "advogado" : "leigo",
+        termo_leigo_aceito_em: souAdvogado ? null : new Date().toISOString(),
+        termo_leigo_versao: souAdvogado ? null : TERMO_LEIGO_VERSAO,
       },
       { onConflict: "id" }
     );
@@ -222,21 +241,59 @@ export function CadastroForm({
               />
             </div>
 
-            <div>
-              <label
-                htmlFor="oabNumero"
-                className="mb-1.5 block text-sm font-medium text-stone-300"
-              >
-                Número da OAB
-              </label>
+            <div className="flex items-start gap-3 rounded-lg border border-stone-700 bg-stone-800/60 px-4 py-3">
               <input
-                id="oabNumero"
-                name="oabNumero"
-                required
-                className="w-full rounded-lg border border-stone-700 bg-stone-800 px-4 py-2.5 text-white placeholder-stone-500 outline-none focus:border-facto-gold focus:ring-1 focus:ring-facto-gold"
-                placeholder="SP 123456"
+                id="souAdvogado"
+                type="checkbox"
+                checked={souAdvogado}
+                onChange={(e) => setSouAdvogado(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-stone-600 bg-stone-800 text-facto-gold focus:ring-facto-gold"
               />
+              <label htmlFor="souAdvogado" className="text-sm text-stone-300">
+                Sou advogado(a)
+              </label>
             </div>
+
+            {souAdvogado ? (
+              <div>
+                <label
+                  htmlFor="oabNumero"
+                  className="mb-1.5 block text-sm font-medium text-stone-300"
+                >
+                  Número da OAB
+                </label>
+                <input
+                  id="oabNumero"
+                  name="oabNumero"
+                  required={souAdvogado}
+                  className="w-full rounded-lg border border-stone-700 bg-stone-800 px-4 py-2.5 text-white placeholder-stone-500 outline-none focus:border-facto-gold focus:ring-1 focus:ring-facto-gold"
+                  placeholder="SP 123456"
+                />
+              </div>
+            ) : (
+              <div className="rounded-lg border border-amber-800/50 bg-amber-950/20 p-4">
+                <p className="text-sm font-semibold text-amber-300">
+                  Acesso restrito ao Juizado Especial Cível
+                </p>
+                <p className="mt-1.5 text-xs leading-relaxed text-amber-200/70">
+                  Sem OAB, seu acesso ao FACTO fica limitado ao módulo do
+                  Juizado Especial Cível, para causas de até 20 salários
+                  mínimos (art. 9º, Lei nº 9.099/95).
+                </p>
+                <div className="mt-3 max-h-32 overflow-y-auto rounded border border-amber-900/40 bg-stone-950/40 p-2.5 text-[11px] leading-relaxed whitespace-pre-line text-stone-400">
+                  {TEXTO_TERMO_LEIGO}
+                </div>
+                <label className="mt-3 flex items-start gap-2.5 text-xs text-stone-300">
+                  <input
+                    type="checkbox"
+                    checked={termoAceito}
+                    onChange={(e) => setTermoAceito(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-stone-600 bg-stone-800 text-facto-gold focus:ring-facto-gold"
+                  />
+                  Li e concordo com os termos acima.
+                </label>
+              </div>
+            )}
           </div>
 
           <button

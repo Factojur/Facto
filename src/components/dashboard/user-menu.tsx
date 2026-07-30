@@ -8,6 +8,18 @@ import type { PerfilResumo } from "@/lib/perfil-types";
 
 const EMAIL_ADMIN = "admin@facto.com";
 
+const LINKS_DESENVOLVIMENTO = [
+  { label: "GitHub", href: "https://github.com/Factojur/Facto", icon: "🐙" },
+  { label: "Vercel", href: "https://vercel.com/dashboard", icon: "▲" },
+  {
+    label: "Supabase",
+    href: "https://supabase.com/dashboard/project/jnlhbrwrirbjpnhymauu",
+    icon: "🗄️",
+  },
+  { label: "Node.js", href: "https://nodejs.org", icon: "🟢" },
+  { label: "Resend", href: "https://resend.com/overview", icon: "✉️" },
+] as const;
+
 function iniciais(nome: string): string {
   const partes = nome.trim().split(/\s+/).filter(Boolean);
   if (partes.length === 0) return "?";
@@ -87,6 +99,25 @@ export function UserMenu({ perfil }: { perfil: PerfilResumo }) {
                 <span aria-hidden>📊</span>
                 Financeiro
               </Link>
+            )}
+            {perfil.email === EMAIL_ADMIN && (
+              <>
+                <p className="mt-1 border-t border-stone-800 px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-stone-600">
+                  Ferramentas de desenvolvimento
+                </p>
+                {LINKS_DESENVOLVIMENTO.map((link) => (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
+                  >
+                    <span aria-hidden>{link.icon}</span>
+                    {link.label}
+                  </a>
+                ))}
+              </>
             )}
             <button
               type="button"

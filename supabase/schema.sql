@@ -4,7 +4,11 @@ create table public.profiles (
   nome_completo text not null,
   cpf text not null unique,
   email text not null,
-  oab_numero text not null,
+  oab_numero text,
+  tipo_usuario text not null default 'advogado'
+    check (tipo_usuario in ('advogado', 'leigo')),
+  termo_leigo_aceito_em timestamptz,
+  termo_leigo_versao text,
   foto_base64 text,
   telefone text,
   endereco text,
@@ -41,13 +45,14 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, nome_completo, cpf, email, oab_numero)
+  insert into public.profiles (id, nome_completo, cpf, email, oab_numero, tipo_usuario)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'nome_completo', ''),
     coalesce(new.raw_user_meta_data->>'cpf', ''),
     coalesce(new.email, ''),
-    coalesce(new.raw_user_meta_data->>'oab_numero', '')
+    nullif(new.raw_user_meta_data->>'oab_numero', ''),
+    coalesce(new.raw_user_meta_data->>'tipo_usuario', 'advogado')
   );
   return new;
 end;

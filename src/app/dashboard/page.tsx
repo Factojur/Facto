@@ -13,16 +13,21 @@ export default async function DashboardPage() {
     user?.email?.split("@")[0] ??
     "Advogado";
   let favoritos: string[] = [];
+  let tipoUsuario =
+    (user?.user_metadata?.tipo_usuario as string | undefined) ?? "advogado";
 
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("nome_completo, areas_favoritas")
+      .select("nome_completo, areas_favoritas, tipo_usuario")
       .eq("id", user.id)
       .maybeSingle();
 
     if (profile?.nome_completo) {
       nome = profile.nome_completo;
+    }
+    if (profile?.tipo_usuario) {
+      tipoUsuario = profile.tipo_usuario;
     }
     favoritos = filtrarFavoritosValidos(profile?.areas_favoritas);
 
@@ -39,6 +44,7 @@ export default async function DashboardPage() {
       nome={nome}
       userId={user!.id}
       favoritosIniciais={favoritos}
+      leigo={tipoUsuario === "leigo"}
     />
   );
 }
