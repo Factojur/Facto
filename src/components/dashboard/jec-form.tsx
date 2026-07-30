@@ -11,6 +11,16 @@ import {
 import { carregarEscritorioConfig } from "@/lib/escritorio-storage";
 import { EscritorioConfigPanel } from "@/components/dashboard/escritorio-config";
 import { PecaDocumentoView } from "@/components/dashboard/peca-documento";
+import {
+  ComarcaSection,
+  comarcaVazia,
+  type ComarcaValue,
+} from "@/components/dashboard/comarca-form";
+import {
+  ValoresCausaSection,
+  valoresCausaVazio,
+  type ValoresPorCategoria,
+} from "@/components/dashboard/valores-causa-form";
 
 const tiposAcaoJec = [
   "Petição Inicial — Ação de Cobrança (JEC)",
@@ -111,6 +121,22 @@ function PecasResultado({
         </section>
       )}
 
+      {resultado.valorCausaResumo && (
+        <section className="rounded-lg border border-stone-300 bg-stone-50 p-6 shadow-sm">
+          <h3 className="mb-2 font-semibold text-stone-800">
+            Valor da causa (calculado)
+          </h3>
+          <p className="text-sm text-stone-700">
+            <strong>Total:</strong> {resultado.valorCausaResumo.totalFormatado} (
+            {resultado.valorCausaResumo.totalPorExtenso})
+          </p>
+          <p className="mt-1 text-xs text-stone-500">
+            Esse valor foi somado exatamente pelo sistema, item a item — a IA
+            não recalcula nem altera esse número na peça.
+          </p>
+        </section>
+      )}
+
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-semibold text-slate-800">Análise das provas</h3>
@@ -162,6 +188,9 @@ export function JecForm() {
   const [tipoSelecionado, setTipoSelecionado] = useState("");
   const [escritorio, setEscritorio] =
     useState<EscritorioConfig>(escritorioConfigVazio);
+  const [comarca, setComarca] = useState<ComarcaValue>(comarcaVazia);
+  const [valoresCausa, setValoresCausa] =
+    useState<ValoresPorCategoria>(valoresCausaVazio);
 
   const isAssistente = tipoSelecionado === ASSISTENTE_FACTO;
 
@@ -198,6 +227,13 @@ export function JecForm() {
       fotos: getFileNames(form.querySelector<HTMLInputElement>("#fotos")),
       midias: getFileNames(form.querySelector<HTMLInputElement>("#midias")),
       escritorio,
+      comarca: {
+        cep: comarca.cep,
+        cidade: comarca.cidade,
+        uf: comarca.uf,
+        numeroJuizado: comarca.numeroJuizado || undefined,
+      },
+      valoresCausa,
     };
 
     try {
@@ -331,6 +367,10 @@ export function JecForm() {
           </div>
         </div>
       </section>
+
+      <ComarcaSection value={comarca} onChange={setComarca} />
+
+      <ValoresCausaSection value={valoresCausa} onChange={setValoresCausa} />
 
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="mb-4 text-lg font-semibold text-slate-800">Fatos</h2>

@@ -4,6 +4,14 @@ import {
   aplicarFormatacaoTextoJuridico,
   gerarDocumentoTimbrado,
 } from "@/lib/formatacao-juridica";
+import { formatarEnderecamentoJec, type ComarcaInfo } from "@/lib/endereco-comarca";
+import {
+  calcularResumoValorCausa,
+  formatarCentavos,
+  type CategoriaValorId,
+  type ItemValor,
+  type ResumoValorCausa,
+} from "@/lib/valores-causa";
 
 export type GerarPecaJecInput = {
   tipoAcao: string;
@@ -21,6 +29,8 @@ export type GerarPecaJecInput = {
   escritorio?: EscritorioConfig;
   autorNome?: string;
   autorOab?: string;
+  comarca?: ComarcaInfo;
+  valoresCausa?: Record<CategoriaValorId, ItemValor[]>;
 };
 
 export type GerarPecaJecOutput = {
@@ -29,6 +39,7 @@ export type GerarPecaJecOutput = {
   pecaHtml: string;
   timbrado: boolean;
   fundamentoLegal: string[];
+  valorCausaResumo?: ResumoValorCausa;
   decisaoAssistente?: {
     tipoAcao: string;
     tutelaUrgencia: boolean;
@@ -36,12 +47,37 @@ export type GerarPecaJecOutput = {
   };
 };
 
+function localFechamento(comarca?: ComarcaInfo): string {
+  const cidade = comarca?.cidade?.trim();
+  const uf = comarca?.uf?.trim();
+  return cidade && uf ? `${cidade} - ${uf.toUpperCase()}` : "[CIDADE/UF]";
+}
+
+function formatarDataPorExtenso(data: Date): string {
+  return data.toLocaleDateString("pt-BR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 function listarArquivos(arquivos: string[] | undefined): string {
   if (!arquivos?.length) return "Não anexado";
   return arquivos.join(", ");
 }
 
-function extrairPedidos(tipoAcao: string, tutelaUrgencia: boolean): string {
+function subtotalDaCategoria(
+  resumo: ResumoValorCausa | undefined,
+  id: CategoriaValorId
+): number {
+  return resumo?.categorias.find((c) => c.id === id)?.subtotalCentavos ?? 0;
+}
+
+function extrairPedidos(
+  tipoAcao: string,
+  tutelaUrgencia: boolean,
+  resumo?: ResumoValorCausa
+): string {
   const pedidos = [
     "a) A citação do(a) requerido(a) para, querendo, apresentar contestação, sob pena de revelia;",
     "b) A procedência total dos pedidos formulados na presente demanda;",
@@ -49,10 +85,23 @@ function extrairPedidos(tipoAcao: string, tutelaUrgencia: boolean): string {
   ];
 
   if (tipoAcao.toLowerCase().includes("indenização")) {
+    const materiaisCentavos = subtotalDaCategoria(resumo, "danosMateriais");
+    const moraisCentavos = subtotalDaCategoria(resumo, "danosMorais");
+
+    const partes: string[] = [];
+    if (materiaisCentavos > 0) {
+      partes.push(`danos materiais no valor de ${formatarCentavos(materiaisCentavos)}`);
+    }
+    if (moraisCentavos > 0) {
+      partes.push(`danos morais no valor de ${formatarCentavos(moraisCentavos)}`);
+    }
+
     pedidos.splice(
       1,
       0,
-      "b) A condenação do(a) requerido(a) ao pagamento de indenização por danos materiais e morais, em valor a ser arbitrado por Vossa Excelência;"
+      partes.length > 0
+        ? `b) A condenação do(a) requerido(a) ao pagamento de ${partes.join(", ")}, totalizando ${formatarCentavos(materiaisCentavos + moraisCentavos)};`
+        : "b) A condenação do(a) requerido(a) ao pagamento de indenização por danos materiais e morais, em valor a ser arbitrado por Vossa Excelência;"
     );
   } else if (tipoAcao.toLowerCase().includes("cobrança")) {
     pedidos.splice(
@@ -75,6 +124,39 @@ function extrairPedidos(tipoAcao: string, tutelaUrgencia: boolean): string {
   }
 
   return pedidos.join("\n");
+}
+
+/**
+ * Monta o texto da seção "DO VALOR DA CAUSA" a partir do total já calculado
+ * em código (soma exata em centavos). A IA nunca recalcula nem reescreve
+ * este trecho — ele é montado inteiramente aqui, de forma determinística.
+ */
+function montarSecaoValorCausa(resumo?: ResumoValorCausa): string[] {
+  if (!resumo || resumo.totalCentavos <= 0) {
+    return [
+      "Dá-se à causa o valor de R$ [VALOR DA CAUSA] ([valor por extenso]), para fins de alçada e competência.",
+    ];
+  }
+
+  const linhas: string[] = [
+    `Dá-se à causa o valor de ${resumo.totalFormatado} (${resumo.totalPorExtenso}), `
+      + "para fins de alçada e competência, assim discriminado:",
+    "",
+  ];
+
+  for (const categoria of resumo.categorias) {
+    if (categoria.itens.length === 0) continue;
+    linhas.push(`${categoria.label}:`);
+    categoria.itens.forEach((item) => {
+      linhas.push(`- ${item.descricao}: ${formatarCentavos(item.centavos)}`);
+    });
+    linhas.push(`Subtotal ${categoria.label}: ${formatarCentavos(categoria.subtotalCentavos)}`);
+    linhas.push("");
+  }
+
+  linhas.push(`TOTAL DA CAUSA: ${resumo.totalFormatado} (${resumo.totalPorExtenso}).`);
+
+  return linhas;
 }
 
 export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
@@ -146,9 +228,16 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
   const autor = input.autorNome ?? "[NOME DO(A) ADVOGADO(A)]";
   const oab = input.autorOab ?? "[Nº OAB/UF]";
 
+  const valorCausaResumo = input.valoresCausa
+    ? calcularResumoValorCausa(input.valoresCausa)
+    : undefined;
+
+  const enderecamento = formatarEnderecamentoJec(
+    input.comarca ?? { cidade: "", uf: "" }
+  );
+
   const pecaBruta = [
-    "EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DO JUIZADO ESPECIAL CÍVEL",
-    "DA COMARCA DE [CIDADE/UF]",
+    ...enderecamento.split("\n"),
     "",
     `${tipoAcao.toUpperCase()}`,
     "",
@@ -178,11 +267,13 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     "Os fatos narrados demonstram a plausibilidade do direito invocado e a necessidade de "
       + "intervenção do Poder Judiciário para restabelecer a situação jurídica violada.",
     "",
-    tutelaUrgencia
-      ? "Presentes, ainda, os requisitos do art. 300 do CPC — probabilidade do direito e perigo de dano "
-        + "ou risco ao resultado útil do processo — autorizando a concessão de tutela de urgência."
-      : "",
-    "",
+    ...(tutelaUrgencia
+      ? [
+          "Presentes, ainda, os requisitos do art. 300 do CPC — probabilidade do direito e perigo de dano "
+            + "ou risco ao resultado útil do processo — autorizando a concessão de tutela de urgência.",
+          "",
+        ]
+      : []),
     "III — DAS PROVAS",
     "",
     "Protesta provar o alegado por todos os meios de prova em direito admitidos, especialmente:",
@@ -206,24 +297,22 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     "",
     "IV — DO VALOR DA CAUSA",
     "",
-    "Dá-se à causa o valor de R$ [VALOR DA CAUSA] ([valor por extenso]), para fins de alçada e competência.",
+    ...montarSecaoValorCausa(valorCausaResumo),
     "",
     "V — DO PEDIDO",
     "",
     "Ante o exposto, requer:",
     "",
-    extrairPedidos(tipoAcao, tutelaUrgencia),
+    extrairPedidos(tipoAcao, tutelaUrgencia, valorCausaResumo),
     "",
     "Termos em que,",
     "Pede deferimento.",
     "",
-    "[CIDADE/UF], [DATA].",
+    `${localFechamento(input.comarca)}, ${formatarDataPorExtenso(new Date())}.`,
     "",
     autor,
     `OAB/${oab}`,
-  ]
-    .filter(Boolean)
-    .join("\n");
+  ].join("\n");
 
   const peca = aplicarFormatacaoTextoJuridico(pecaBruta, input.fatos);
   const { pecaHtml } = gerarDocumentoTimbrado(
@@ -237,6 +326,7 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     pecaHtml,
     timbrado: Boolean(input.escritorio?.usarTimbre),
     fundamentoLegal,
+    ...(valorCausaResumo && { valorCausaResumo }),
     ...(decisaoAssistente && { decisaoAssistente }),
   };
 }

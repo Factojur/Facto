@@ -6,7 +6,12 @@ export type EscritorioConfig = {
   telefone: string;
   emailEscritorio: string;
   site?: string;
-  logoBase64?: string;
+  /** Imagem exibida no topo da peça (logo + dados do escritório). */
+  cabecalhoBase64?: string;
+  /** Imagem exibida no rodapé de cada página. */
+  rodapeBase64?: string;
+  /** Imagem exibida em marca d'água, atrás do texto. */
+  marcaDaguaBase64?: string;
 };
 
 export const ESCRITORIO_STORAGE_KEY = "facto-escritorio-config";
@@ -19,5 +24,7 @@ export const escritorioConfigVazio: EscritorioConfig = {
   telefone: "",
   emailEscritorio: "",
   site: "",
-  logoBase64: "",
+  cabecalhoBase64: "",
+  rodapeBase64: "",
+  marcaDaguaBase64: "",
 };

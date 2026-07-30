@@ -4,6 +4,7 @@ import {
   gerarPecaJec,
   type GerarPecaJecInput,
 } from "@/lib/gerar-peca-jec";
+import { ufValida } from "@/lib/endereco-comarca";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -24,6 +25,16 @@ export async function POST(request: Request) {
     );
   }
 
+  if (body.comarca?.uf && !ufValida(body.comarca.uf)) {
+    return NextResponse.json(
+      { error: "UF da comarca inválida." },
+      { status: 400 }
+    );
+  }
+
+  // O total e o endereçamento são sempre recalculados aqui a partir dos
+  // itens/dados brutos enviados — nunca a partir de um total ou texto de
+  // cabeçalho já pronto vindo do cliente, para garantir exatidão.
   const resultado = gerarPecaJec({
     ...body,
     autorNome: user.user_metadata?.nome_completo,

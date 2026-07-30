@@ -2,10 +2,16 @@ import {
   AlignmentType,
   BorderStyle,
   Document,
+  Footer,
+  Header,
+  HorizontalPositionAlign,
+  HorizontalPositionRelativeFrom,
   ImageRun,
   Packer,
   Paragraph,
   TextRun,
+  VerticalPositionAlign,
+  VerticalPositionRelativeFrom,
 } from "docx";
 import { saveAs } from "file-saver";
 import type { EscritorioConfig } from "./escritorio-types";
@@ -28,6 +34,57 @@ function tipoImagem(dataUrl: string): "png" | "jpg" | "gif" | "bmp" {
   if (dataUrl.includes("image/gif")) return "gif";
   if (dataUrl.includes("image/bmp")) return "bmp";
   return "jpg";
+}
+
+function carregarDimensoesImagem(
+  dataUrl: string
+): Promise<{ width: number; height: number }> {
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () =>
+      resolve({
+        width: img.naturalWidth || 200,
+        height: img.naturalHeight || 80,
+      });
+    img.onerror = () => resolve({ width: 200, height: 80 });
+    img.src = dataUrl;
+  });
+}
+
+function ajustarDimensoes(
+  largura: number,
+  altura: number,
+  maxLargura: number,
+  maxAltura: number
+): { width: number; height: number } {
+  if (!largura || !altura) return { width: maxLargura, height: maxAltura };
+  const escala = Math.min(maxLargura / largura, maxAltura / altura, 1);
+  return {
+    width: Math.max(1, Math.round(largura * escala)),
+    height: Math.max(1, Math.round(altura * escala)),
+  };
+}
+
+/** Reduz a opacidade de uma imagem via canvas, para uso como marca d'água. */
+function esmaecerImagem(dataUrl: string, opacidade = 0.12): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve(dataUrl);
+        return;
+      }
+      ctx.globalAlpha = opacidade;
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
 }
 
 function paragrafoTimbre(texto: string): Paragraph {
@@ -91,19 +148,28 @@ function linhaParaParagrafo(linha: string): Paragraph {
   });
 }
 
-function blocosTimbre(escritorio: EscritorioConfig): Paragraph[] {
+async function paragrafosCabecalho(
+  escritorio: EscritorioConfig
+): Promise<Paragraph[]> {
   const blocos: Paragraph[] = [];
 
-  if (escritorio.logoBase64) {
+  if (escritorio.cabecalhoBase64) {
+    const dimensoes = await carregarDimensoesImagem(escritorio.cabecalhoBase64);
+    const transformation = ajustarDimensoes(
+      dimensoes.width,
+      dimensoes.height,
+      200,
+      70
+    );
     blocos.push(
       new Paragraph({
         alignment: AlignmentType.CENTER,
         spacing: { after: 120 },
         children: [
           new ImageRun({
-            type: tipoImagem(escritorio.logoBase64),
-            data: dataUrlParaBytes(escritorio.logoBase64),
-            transformation: { width: 160, height: 60 },
+            type: tipoImagem(escritorio.cabecalhoBase64),
+            data: dataUrlParaBytes(escritorio.cabecalhoBase64),
+            transformation,
           }),
         ],
       })
@@ -133,20 +199,88 @@ function blocosTimbre(escritorio: EscritorioConfig): Paragraph[] {
   return blocos;
 }
 
+async function paragrafoRodape(rodapeBase64: string): Promise<Paragraph> {
+  const dimensoes = await carregarDimensoesImagem(rodapeBase64);
+  const transformation = ajustarDimensoes(dimensoes.width, dimensoes.height, 300, 60);
+
+  return new Paragraph({
+    alignment: AlignmentType.CENTER,
+    border: {
+      top: { style: BorderStyle.SINGLE, color: "333333", size: 6, space: 6 },
+    },
+    children: [
+      new ImageRun({
+        type: tipoImagem(rodapeBase64),
+        data: dataUrlParaBytes(rodapeBase64),
+        transformation,
+      }),
+    ],
+  });
+}
+
+/** Marca d'água: imagem esmaecida, flutuante e atrás do texto, repetida em toda página via cabeçalho. */
+async function paragrafoMarcaDagua(marcaDaguaBase64: string): Promise<Paragraph> {
+  const esmaecida = await esmaecerImagem(marcaDaguaBase64, 0.12);
+  const dimensoes = await carregarDimensoesImagem(esmaecida);
+  const transformation = ajustarDimensoes(dimensoes.width, dimensoes.height, 320, 320);
+
+  return new Paragraph({
+    children: [
+      new ImageRun({
+        type: tipoImagem(esmaecida),
+        data: dataUrlParaBytes(esmaecida),
+        transformation,
+        floating: {
+          horizontalPosition: {
+            relative: HorizontalPositionRelativeFrom.PAGE,
+            align: HorizontalPositionAlign.CENTER,
+          },
+          verticalPosition: {
+            relative: VerticalPositionRelativeFrom.PAGE,
+            align: VerticalPositionAlign.CENTER,
+          },
+          behindDocument: true,
+          allowOverlap: true,
+        },
+      }),
+    ],
+  });
+}
+
 export async function baixarPecaDocx(
   peca: string,
   escritorio?: EscritorioConfig,
   nomeArquivo = "peca-facto.docx"
 ): Promise<void> {
-  const paragrafos: Paragraph[] = [];
+  const paragrafos: Paragraph[] = peca
+    .split("\n")
+    .map((linha) => linhaParaParagrafo(linha));
 
-  if (escritorio?.usarTimbre) {
-    paragrafos.push(...blocosTimbre(escritorio));
+  const usarTimbre = Boolean(escritorio?.usarTimbre);
+  const headerParagrafos: Paragraph[] = [];
+
+  if (usarTimbre && escritorio?.marcaDaguaBase64) {
+    headerParagrafos.push(await paragrafoMarcaDagua(escritorio.marcaDaguaBase64));
   }
 
-  peca.split("\n").forEach((linha) => {
-    paragrafos.push(linhaParaParagrafo(linha));
-  });
+  if (
+    usarTimbre &&
+    (escritorio?.cabecalhoBase64 ||
+      escritorio?.nomeEscritorio ||
+      escritorio?.endereco)
+  ) {
+    paragrafos.unshift(...(await paragrafosCabecalho(escritorio!)));
+  }
+
+  const footers =
+    usarTimbre && escritorio?.rodapeBase64
+      ? { default: new Footer({ children: [await paragrafoRodape(escritorio.rodapeBase64)] }) }
+      : undefined;
+
+  const headers =
+    headerParagrafos.length > 0
+      ? { default: new Header({ children: headerParagrafos }) }
+      : undefined;
 
   const doc = new Document({
     sections: [
@@ -161,6 +295,8 @@ export async function baixarPecaDocx(
             },
           },
         },
+        headers,
+        footers,
         children: paragrafos,
       },
     ],

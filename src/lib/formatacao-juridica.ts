@@ -64,7 +64,7 @@ function blocoParaHtml(bloco: string): string {
     .join("\n");
 }
 
-function gerarTimbreHtml(escritorio: EscritorioConfig): string {
+function gerarCabecalhoHtml(escritorio: EscritorioConfig): string {
   if (!escritorio.usarTimbre) return "";
 
   const linhas = [
@@ -75,13 +75,15 @@ function gerarTimbreHtml(escritorio: EscritorioConfig): string {
     escritorio.site,
   ].filter((l): l is string => Boolean(l));
 
-  const logo = escritorio.logoBase64
-    ? `<img src="${escritorio.logoBase64}" alt="Logo do escritório" class="timbre-logo" />`
+  const imagem = escritorio.cabecalhoBase64
+    ? `<img src="${escritorio.cabecalhoBase64}" alt="Cabeçalho do escritório" class="timbre-cabecalho-img" />`
     : "";
 
+  if (!imagem && linhas.length === 0) return "";
+
   return `
-    <header class="timbre">
-      ${logo}
+    <header class="timbre-cabecalho">
+      ${imagem}
       <div class="timbre-texto">
         ${linhas.map((l) => `<p>${escapeHtml(l)}</p>`).join("")}
       </div>
@@ -90,16 +92,35 @@ function gerarTimbreHtml(escritorio: EscritorioConfig): string {
   `;
 }
 
+function gerarRodapeHtml(escritorio: EscritorioConfig): string {
+  if (!escritorio.usarTimbre || !escritorio.rodapeBase64) return "";
+
+  return `
+    <footer class="timbre-rodape">
+      <img src="${escritorio.rodapeBase64}" alt="Rodapé do escritório" />
+    </footer>
+  `;
+}
+
+function gerarMarcaDaguaHtml(escritorio: EscritorioConfig): string {
+  if (!escritorio.usarTimbre || !escritorio.marcaDaguaBase64) return "";
+
+  return `<img src="${escritorio.marcaDaguaBase64}" alt="" class="timbre-marca-dagua" aria-hidden="true" />`;
+}
+
 export function gerarDocumentoTimbrado(
   pecaTexto: string,
   escritorio?: EscritorioConfig
 ): { pecaHtml: string; cssImpressao: string } {
   const corpoHtml = blocoParaHtml(pecaTexto);
-  const timbre = escritorio?.usarTimbre ? gerarTimbreHtml(escritorio) : "";
+  const cabecalho = escritorio?.usarTimbre ? gerarCabecalhoHtml(escritorio) : "";
+  const rodape = escritorio?.usarTimbre ? gerarRodapeHtml(escritorio) : "";
+  const marcaDagua = escritorio?.usarTimbre ? gerarMarcaDaguaHtml(escritorio) : "";
 
   const cssImpressao = `
     @page { size: A4; margin: 3cm 2cm 2cm 3cm; }
     .documento-juridico {
+      position: relative;
       font-family: "Times New Roman", Times, serif;
       font-size: 12pt;
       line-height: 1.5;
@@ -108,11 +129,27 @@ export function gerarDocumentoTimbrado(
       margin: 0 auto;
       background: #fff;
     }
-    .documento-juridico .timbre {
+    .documento-juridico .documento-conteudo {
+      position: relative;
+      z-index: 1;
+    }
+    .documento-juridico .timbre-marca-dagua {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      max-width: 55%;
+      max-height: 55%;
+      object-fit: contain;
+      opacity: 0.08;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .documento-juridico .timbre-cabecalho {
       text-align: center;
       margin-bottom: 1.5rem;
     }
-    .documento-juridico .timbre-logo {
+    .documento-juridico .timbre-cabecalho-img {
       max-height: 70px;
       max-width: 200px;
       object-fit: contain;
@@ -127,6 +164,17 @@ export function gerarDocumentoTimbrado(
       border: none;
       border-top: 1px solid #333;
       margin-top: 0.75rem;
+    }
+    .documento-juridico .timbre-rodape {
+      margin-top: 2rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid #333;
+      text-align: center;
+    }
+    .documento-juridico .timbre-rodape img {
+      max-height: 60px;
+      max-width: 100%;
+      object-fit: contain;
     }
     .documento-juridico .enderecamento {
       text-align: center;
@@ -165,8 +213,12 @@ export function gerarDocumentoTimbrado(
   const pecaHtml = `
     <style>${cssImpressao}</style>
     <article class="documento-juridico">
-      ${timbre}
-      ${corpoHtml}
+      ${marcaDagua}
+      <div class="documento-conteudo">
+        ${cabecalho}
+        ${corpoHtml}
+        ${rodape}
+      </div>
     </article>
   `;
 
