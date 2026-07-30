@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { limparFotoDeMetadata } from "@/lib/perfil-merge";
 
 const COOKIE_SESSAO = "facto_sessao";
+const EMAIL_ADMIN = "admin@facto.com";
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -72,6 +73,21 @@ export async function middleware(request: NextRequest) {
       const redirectResponse = NextResponse.redirect(loginUrl);
       redirectResponse.cookies.delete(COOKIE_SESSAO);
       return redirectResponse;
+    }
+  }
+
+  if (pathname.startsWith("/admin")) {
+    if (!user) {
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = "/login";
+      return NextResponse.redirect(loginUrl);
+    }
+    // Painel administrativo (financeiro) restrito a uma única conta por
+    // enquanto. Quem não for o e-mail autorizado nem sabe que a rota existe.
+    if (user.email !== EMAIL_ADMIN) {
+      const dashboardUrl = request.nextUrl.clone();
+      dashboardUrl.pathname = "/dashboard";
+      return NextResponse.redirect(dashboardUrl);
     }
   }
 

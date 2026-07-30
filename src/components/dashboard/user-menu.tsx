@@ -6,6 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { PerfilResumo } from "@/lib/perfil-types";
 
+const EMAIL_ADMIN = "admin@facto.com";
+
 function iniciais(nome: string): string {
   const partes = nome.trim().split(/\s+/).filter(Boolean);
   if (partes.length === 0) return "?";
@@ -76,6 +78,16 @@ export function UserMenu({ perfil }: { perfil: PerfilResumo }) {
               <span aria-hidden>✏️</span>
               Alterar dados
             </Link>
+            {perfil.email === EMAIL_ADMIN && (
+              <Link
+                href="/admin"
+                onClick={() => setAberto(false)}
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
+              >
+                <span aria-hidden>📊</span>
+                Financeiro
+              </Link>
+            )}
             <button
               type="button"
               onClick={sair}
