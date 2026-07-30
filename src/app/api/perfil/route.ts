@@ -4,6 +4,7 @@ import {
   CAMPOS_PERFIL_EXTRA,
   erroColunaAusente,
   extrairPerfilDados,
+  limparFotoDeMetadata,
   mesclarPerfil,
   separarAtualizacao,
   type PerfilDadosExtra,
@@ -29,21 +30,12 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Autocorreção: remove foto que ficou presa em user_metadata antes desta
-  // correção — esse dado infla o cookie de sessão e pode travar o site (431).
-  const metaRaw = user.user_metadata?.perfil_dados;
-  if (
-    metaRaw &&
-    typeof metaRaw === "object" &&
-    "foto_base64" in (metaRaw as Record<string, unknown>)
-  ) {
-    const { foto_base64: _remover, ...resto } = metaRaw as Record<
-      string,
-      unknown
-    >;
-    await supabase.auth.updateUser({
-      data: { ...user.user_metadata, perfil_dados: resto },
-    });
+  // Autocorreção: remove foto que ficou presa em user_metadata (raiz ou
+  // dentro de perfil_dados) antes desta correção — esse dado infla o cookie
+  // de sessão e pode travar o site (431).
+  const { limpo, removeu } = limparFotoDeMetadata(user.user_metadata);
+  if (removeu) {
+    await supabase.auth.updateUser({ data: limpo });
   }
 
   return NextResponse.json({

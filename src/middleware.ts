@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { limparFotoDeMetadata } from "@/lib/perfil-merge";
 
 const COOKIE_SESSAO = "facto_sessao";
 
@@ -30,6 +31,19 @@ export async function middleware(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // Autocorreção: uma foto de perfil pode ter ficado presa em user_metadata
+  // (na raiz ou dentro de perfil_dados) antes da correção definitiva — ela
+  // deve morar só na tabela profiles. Isso infla o cookie de sessão e
+  // derruba o site com erro 431. Como o middleware roda em toda navegação,
+  // é o lugar certo para limpar isso assim que a conta afetada acessar o
+  // site novamente.
+  if (user) {
+    const { limpo, removeu } = limparFotoDeMetadata(user.user_metadata);
+    if (removeu) {
+      await supabase.auth.updateUser({ data: limpo });
+    }
+  }
 
   const { pathname } = request.nextUrl;
 

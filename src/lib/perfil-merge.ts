@@ -97,3 +97,32 @@ export function separarAtualizacao(body: Record<string, unknown>) {
 export function erroColunaAusente(mensagem: string): boolean {
   return /column|schema cache|does not exist/i.test(mensagem);
 }
+
+/**
+ * Remove qualquer chave "foto_base64" em qualquer nível de user_metadata.
+ * Versões antigas do app guardaram a foto tanto na raiz quanto dentro de
+ * perfil_dados — esse dado nunca deve morar aqui, pois infla o cookie de
+ * sessão do Supabase e pode travar o site com erro 431.
+ */
+export function limparFotoDeMetadata(
+  metadata: Record<string, unknown> | undefined
+): { limpo: Record<string, unknown>; removeu: boolean } {
+  let removeu = false;
+
+  function limparRecursivo(valor: unknown): unknown {
+    if (Array.isArray(valor)) return valor.map(limparRecursivo);
+    if (valor && typeof valor === "object") {
+      const entradas = Object.entries(valor as Record<string, unknown>).filter(
+        ([chave]) => chave !== "foto_base64"
+      );
+      if (entradas.length !== Object.keys(valor).length) removeu = true;
+      return Object.fromEntries(
+        entradas.map(([chave, val]) => [chave, limparRecursivo(val)])
+      );
+    }
+    return valor;
+  }
+
+  const limpo = limparRecursivo(metadata ?? {}) as Record<string, unknown>;
+  return { limpo, removeu };
+}
