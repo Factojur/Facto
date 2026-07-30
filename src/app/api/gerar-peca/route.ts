@@ -5,6 +5,7 @@ import {
   type GerarPecaJecInput,
 } from "@/lib/gerar-peca-jec";
 import { ufValida } from "@/lib/endereco-comarca";
+import { buscarConhecimentoRelacionado } from "@/lib/base-conhecimento";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -32,6 +33,13 @@ export async function POST(request: Request) {
     );
   }
 
+  // Etapa de RAG: antes de montar a peça, busca na base de conhecimento
+  // (leis, súmulas e jurisprudências cadastradas em /admin/conhecimento) os
+  // textos relacionados ao tema da ação, para fundamentar a peça e já deixar
+  // pronto o prompt de sistema para quando a geração por IA generativa for
+  // integrada a esta rota.
+  const baseConhecimento = await buscarConhecimentoRelacionado(body.tipoAcao);
+
   // O total e o endereçamento são sempre recalculados aqui a partir dos
   // itens/dados brutos enviados — nunca a partir de um total ou texto de
   // cabeçalho já pronto vindo do cliente, para garantir exatidão.
@@ -39,6 +47,7 @@ export async function POST(request: Request) {
     ...body,
     autorNome: user.user_metadata?.nome_completo,
     autorOab: user.user_metadata?.oab_numero,
+    baseConhecimento,
   });
 
   return NextResponse.json(resultado);

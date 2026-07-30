@@ -101,6 +101,16 @@ export function UserMenu({ perfil }: { perfil: PerfilResumo }) {
               </Link>
             )}
             {perfil.email === EMAIL_ADMIN && (
+              <Link
+                href="/admin/conhecimento"
+                onClick={() => setAberto(false)}
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
+              >
+                <span aria-hidden>📚</span>
+                Base de Conhecimento
+              </Link>
+            )}
+            {perfil.email === EMAIL_ADMIN && (
               <>
                 <p className="mt-1 border-t border-stone-800 px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-stone-600">
                   Ferramentas de desenvolvimento

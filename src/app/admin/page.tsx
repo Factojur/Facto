@@ -57,6 +57,7 @@ export default async function AdminPage({
 
   let tabelasProntas = true;
   let faturamentoPeriodo = 0;
+  let faturamentoTotal = 0;
   let pagamentosRecentes: PagamentoRecente[] = [];
   let ativos = 0;
   let pausados = 0;
@@ -69,6 +70,7 @@ export default async function AdminPage({
 
     const [
       pagamentosResp,
+      faturamentoTotalResp,
       ativosResp,
       pausadosResp,
       canceladosResp,
@@ -81,6 +83,9 @@ export default async function AdminPage({
         .eq("status", "approved")
         .gte("pago_em", desde.toISOString())
         .order("pago_em", { ascending: false }),
+      // Faturamento de todo o histórico, sem filtro de data — independente
+      // do período escolhido nos botões acima.
+      admin.from("pagamentos").select("valor").eq("status", "approved"),
       admin.from("assinaturas").select("id", { count: "exact", head: true }).eq("status", "authorized"),
       admin.from("assinaturas").select("id", { count: "exact", head: true }).eq("status", "paused"),
       admin
@@ -96,6 +101,7 @@ export default async function AdminPage({
     ]);
 
     if (pagamentosResp.error) throw pagamentosResp.error;
+    if (faturamentoTotalResp.error) throw faturamentoTotalResp.error;
 
     const linhas = (pagamentosResp.data ?? []) as unknown as Array<{
       id: string;
@@ -106,6 +112,10 @@ export default async function AdminPage({
     }>;
 
     faturamentoPeriodo = linhas.reduce((soma, item) => soma + Number(item.valor ?? 0), 0);
+    faturamentoTotal = (faturamentoTotalResp.data ?? []).reduce(
+      (soma, item) => soma + Number((item as { valor: number | string | null }).valor ?? 0),
+      0
+    );
     pagamentosRecentes = linhas.slice(0, 20).map((item) => ({
       id: item.id,
       valor: item.valor === null ? null : Number(item.valor),
@@ -189,9 +199,13 @@ export default async function AdminPage({
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <CardKpi
+            titulo="Faturamento total (todo o período)"
+            valor={formatarMoeda(faturamentoTotal)}
+            destaque
+          />
+          <CardKpi
             titulo={`Faturamento — ${PERIODOS[periodo].label.toLowerCase()}`}
             valor={formatarMoeda(faturamentoPeriodo)}
-            destaque
           />
           <CardKpi titulo="Assinantes ativos" valor={String(ativos)} />
           <CardKpi titulo="Assinantes pausados" valor={String(pausados)} />

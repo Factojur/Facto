@@ -12,6 +12,10 @@ import {
   type ItemValor,
   type ResumoValorCausa,
 } from "@/lib/valores-causa";
+import {
+  montarPromptBaseConhecimento,
+  type ItemConhecimento,
+} from "@/lib/base-conhecimento";
 
 export type GerarPecaJecInput = {
   tipoAcao: string;
@@ -31,6 +35,7 @@ export type GerarPecaJecInput = {
   autorOab?: string;
   comarca?: ComarcaInfo;
   valoresCausa?: Record<CategoriaValorId, ItemValor[]>;
+  baseConhecimento?: ItemConhecimento[];
 };
 
 export type GerarPecaJecOutput = {
@@ -45,6 +50,13 @@ export type GerarPecaJecOutput = {
     tutelaUrgencia: boolean;
     justificativa: string;
   };
+  baseConhecimentoUtilizada?: { titulo: string; categoria: string }[];
+  /**
+   * Prompt pronto para ser usado como System Prompt quando a geração por IA
+   * generativa for integrada a esta rota. Hoje não é consumido por nenhum
+   * modelo — a peça é montada de forma determinística.
+   */
+  promptSistemaIA?: string | null;
 };
 
 function localFechamento(comarca?: ComarcaInfo): string {
@@ -193,6 +205,12 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     );
   }
 
+  const itensConhecimento = input.baseConhecimento ?? [];
+  itensConhecimento.forEach((item) => {
+    fundamentoLegal.push(`${item.categoria} — ${item.titulo} (base de conhecimento)`);
+  });
+  const promptSistemaIA = montarPromptBaseConhecimento(itensConhecimento);
+
   const analisePartes = [
     "=== ANÁLISE PRELIMINAR DAS PROVAS (FACTO) ===",
     "",
@@ -274,6 +292,18 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
           "",
         ]
       : []),
+    ...(itensConhecimento.length > 0
+      ? [
+          "Aplicam-se ao caso, em especial, os seguintes dispositivos legais e entendimentos "
+            + "jurisprudenciais cadastrados na base de conhecimento do escritório:",
+          "",
+          ...itensConhecimento.flatMap((item) => [
+            `${item.categoria.toUpperCase()} — ${item.titulo}`,
+            item.texto.trim(),
+            "",
+          ]),
+        ]
+      : []),
     "III — DAS PROVAS",
     "",
     "Protesta provar o alegado por todos os meios de prova em direito admitidos, especialmente:",
@@ -328,5 +358,12 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     fundamentoLegal,
     ...(valorCausaResumo && { valorCausaResumo }),
     ...(decisaoAssistente && { decisaoAssistente }),
+    ...(itensConhecimento.length > 0 && {
+      baseConhecimentoUtilizada: itensConhecimento.map((item) => ({
+        titulo: item.titulo,
+        categoria: item.categoria,
+      })),
+    }),
+    promptSistemaIA,
   };
 }

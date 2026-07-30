@@ -4,6 +4,7 @@ import { FactoLogoCompleto, FactoWordmark } from "./facto-wordmark";
 export const FACTO_TAGLINE = "Inteligência Jurídica";
 
 const iconSizes = {
+  xs: "h-7 w-7",
   sm: "h-9 w-9",
   md: "h-11 w-11",
   lg: "h-16 w-16",
@@ -19,6 +20,7 @@ const logoStackSizes = {
 } as const;
 
 const wordmarkSizes = {
+  xs: "h-[18px] text-[18px]",
   sm: "h-[22px] text-[22px]",
   md: "h-[28px] text-[28px]",
   lg: "h-[36px] text-[36px] sm:h-[44px] sm:text-[44px]",
