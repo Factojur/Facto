@@ -23,6 +23,12 @@ const LINKS_DESENVOLVIMENTO = [
     href: "https://aistudio.google.com/api-keys",
     icon: "✨",
   },
+  { label: "Registro.br", href: "https://registro.br/painel", icon: "🌐" },
+  {
+    label: "Mercado Pago",
+    href: "https://www.mercadopago.com.br/developers/panel",
+    icon: "💳",
+  },
 ] as const;
 
 function iniciais(nome: string): string {
@@ -36,12 +42,14 @@ export function UserMenu({ perfil }: { perfil: PerfilResumo }) {
   const router = useRouter();
   const supabase = createClient();
   const [aberto, setAberto] = useState(false);
+  const [ferramentasAbertas, setFerramentasAbertas] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function fechar(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setAberto(false);
+        setFerramentasAbertas(false);
       }
     }
     document.addEventListener("mousedown", fechar);
@@ -86,7 +94,7 @@ export function UserMenu({ perfil }: { perfil: PerfilResumo }) {
             <p className="truncate text-sm font-semibold text-white">{nome}</p>
             <p className="truncate text-xs text-stone-500">{perfil.email}</p>
           </div>
-          <nav className="py-1">
+          <nav className="max-h-[75vh] overflow-y-auto py-1">
             <Link
               href="/dashboard/perfil"
               onClick={() => setAberto(false)}
@@ -127,21 +135,34 @@ export function UserMenu({ perfil }: { perfil: PerfilResumo }) {
             )}
             {perfil.email === EMAIL_ADMIN && (
               <>
-                <p className="mt-1 border-t border-stone-800 px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-stone-600">
+                <button
+                  type="button"
+                  onClick={() => setFerramentasAbertas((v) => !v)}
+                  className="mt-1 flex w-full items-center justify-between border-t border-stone-800 px-4 pt-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-stone-600 transition hover:text-stone-400"
+                >
                   Ferramentas de desenvolvimento
-                </p>
-                {LINKS_DESENVOLVIMENTO.map((link) => (
-                  <a
-                    key={link.href}
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
+                  <span
+                    aria-hidden
+                    className={`text-xs transition-transform ${
+                      ferramentasAbertas ? "rotate-180" : ""
+                    }`}
                   >
-                    <span aria-hidden>{link.icon}</span>
-                    {link.label}
-                  </a>
-                ))}
+                    ▾
+                  </span>
+                </button>
+                {ferramentasAbertas &&
+                  LINKS_DESENVOLVIMENTO.map((link) => (
+                    <a
+                      key={link.href}
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
+                    >
+                      <span aria-hidden>{link.icon}</span>
+                      {link.label}
+                    </a>
+                  ))}
               </>
             )}
             <button
