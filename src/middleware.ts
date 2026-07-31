@@ -67,12 +67,21 @@ export async function middleware(request: NextRequest) {
       profile?.sessao_ativa_id &&
       sessaoCookie !== profile.sessao_ativa_id
     ) {
+      // signOut atualiza cookies em supabaseResponse; precisamos copiá-los
+      // para o redirect, senão o auth cookie permanece e o usuário entra em
+      // loop login → dashboard → sessao=encerrada.
       await supabase.auth.signOut();
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = "/login";
       loginUrl.searchParams.set("sessao", "encerrada");
       const redirectResponse = NextResponse.redirect(loginUrl);
-      redirectResponse.cookies.delete(COOKIE_SESSAO);
+      supabaseResponse.cookies.getAll().forEach((cookie) => {
+        redirectResponse.cookies.set(cookie.name, cookie.value);
+      });
+      redirectResponse.cookies.set(COOKIE_SESSAO, "", {
+        path: "/",
+        maxAge: 0,
+      });
       return redirectResponse;
     }
 
@@ -88,7 +97,13 @@ export async function middleware(request: NextRequest) {
         loginUrl.pathname = "/login";
         loginUrl.searchParams.set("acesso", "expirado");
         const redirectResponse = NextResponse.redirect(loginUrl);
-        redirectResponse.cookies.delete(COOKIE_SESSAO);
+        supabaseResponse.cookies.getAll().forEach((cookie) => {
+          redirectResponse.cookies.set(cookie.name, cookie.value);
+        });
+        redirectResponse.cookies.set(COOKIE_SESSAO, "", {
+          path: "/",
+          maxAge: 0,
+        });
         return redirectResponse;
       }
     }
@@ -109,10 +124,30 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Só manda usuário autenticado embora do /login|/cadastro se a sessão
+  // única deste dispositivo estiver ok. Caso contrário deixa a página
+  // limpar o auth residual (evita loop com ?sessao=encerrada).
   if (user && (pathname === "/login" || pathname === "/cadastro")) {
-    const dashboardUrl = request.nextUrl.clone();
-    dashboardUrl.pathname = "/dashboard";
-    return NextResponse.redirect(dashboardUrl);
+    const veioDeConflito =
+      request.nextUrl.searchParams.get("sessao") === "encerrada";
+    if (!veioDeConflito) {
+      const sessaoCookie = request.cookies.get(COOKIE_SESSAO)?.value;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("sessao_ativa_id")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const sessaoOk =
+        !profile?.sessao_ativa_id ||
+        (sessaoCookie != null && sessaoCookie === profile.sessao_ativa_id);
+
+      if (sessaoOk) {
+        const dashboardUrl = request.nextUrl.clone();
+        dashboardUrl.pathname = "/dashboard";
+        return NextResponse.redirect(dashboardUrl);
+      }
+    }
   }
 
   return supabaseResponse;

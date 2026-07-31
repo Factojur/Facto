@@ -18,8 +18,7 @@ export function SessionGuard() {
 
         if (res.status === 401) {
           await supabase.auth.signOut();
-          router.replace("/login?sessao=encerrada");
-          router.refresh();
+          window.location.assign("/login?sessao=encerrada");
           return;
         }
 

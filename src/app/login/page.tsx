@@ -7,8 +7,19 @@ import { FactoLogo } from "@/components/brand/facto-logo";
 import { createClient } from "@/lib/supabase/client";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
 
-async function registrarSessaoAtiva() {
-  await fetch("/api/auth/sessao", { method: "POST" });
+async function registrarSessaoAtiva(): Promise<{ ok: boolean; erro?: string }> {
+  try {
+    const res = await fetch("/api/auth/sessao", { method: "POST" });
+    if (!res.ok) {
+      const data = (await res.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      return { ok: false, erro: data?.error ?? "Falha ao registrar sessão." };
+    }
+    return { ok: true };
+  } catch {
+    return { ok: false, erro: "Falha de rede ao registrar sessão." };
+  }
 }
 
 function LoginForm() {
@@ -23,15 +34,46 @@ function LoginForm() {
   const acessoExpirado = searchParams.get("acesso") === "expirado";
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        router.replace("/dashboard");
-      } else {
+    async function preparar() {
+      // Se chegamos aqui por conflito de sessão, garante limpeza do auth
+      // residual (cookie antigo de outro domínio/aba) antes de tentar de novo.
+      if (sessaoEncerrada) {
+        await supabase.auth.signOut();
         setCheckingSession(false);
+        return;
       }
-    });
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        // Só redireciona se a sessão única deste dispositivo já estiver ok.
+        // Caso contrário, registra aqui (evita loop com o middleware).
+        const check = await fetch("/api/auth/sessao", { cache: "no-store" });
+        if (check.status === 401 || check.status === 200) {
+          const data = check.ok
+            ? ((await check.json()) as { valida?: boolean; pendente?: boolean })
+            : null;
+          if (check.status === 401 || data?.pendente) {
+            const reg = await registrarSessaoAtiva();
+            if (!reg.ok) {
+              setError(reg.erro ?? "Não foi possível validar a sessão.");
+              setCheckingSession(false);
+              return;
+            }
+          }
+        }
+        window.location.assign("/dashboard");
+        return;
+      }
+
+      setCheckingSession(false);
+    }
+
+    void preparar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router]);
+  }, [router, sessaoEncerrada]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -53,10 +95,16 @@ function LoginForm() {
       return;
     }
 
-    await registrarSessaoAtiva();
+    const reg = await registrarSessaoAtiva();
+    if (!reg.ok) {
+      setError(reg.erro ?? "Não foi possível registrar a sessão.");
+      setLoading(false);
+      return;
+    }
 
-    router.push("/dashboard");
-    router.refresh();
+    // Navegação completa garante que o cookie facto_sessao vá no próximo
+    // request (router.push às vezes corre antes do browser aplicar Set-Cookie).
+    window.location.assign("/dashboard");
   }
 
   if (checkingSession) {
