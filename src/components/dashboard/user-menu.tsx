@@ -18,6 +18,11 @@ const LINKS_DESENVOLVIMENTO = [
   },
   { label: "Node.js", href: "https://nodejs.org", icon: "🟢" },
   { label: "Resend", href: "https://resend.com/overview", icon: "✉️" },
+  {
+    label: "Google AI Studio",
+    href: "https://aistudio.google.com/api-keys",
+    icon: "✨",
+  },
 ] as const;
 
 function iniciais(nome: string): string {
@@ -108,6 +113,16 @@ export function UserMenu({ perfil }: { perfil: PerfilResumo }) {
               >
                 <span aria-hidden>📚</span>
                 Base de Conhecimento
+              </Link>
+            )}
+            {perfil.email === EMAIL_ADMIN && (
+              <Link
+                href="/admin/teste-ia"
+                onClick={() => setAberto(false)}
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
+              >
+                <span aria-hidden>🧪</span>
+                Teste de IA (sandbox)
               </Link>
             )}
             {perfil.email === EMAIL_ADMIN && (

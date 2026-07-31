@@ -222,6 +222,13 @@ export function JecForm() {
         comprovanteResidencia: getFileNames(
           form.querySelector<HTMLInputElement>("#comprovanteResidencia")
         ),
+        declaracaoHipossuficiencia: getFileNames(
+          form.querySelector<HTMLInputElement>("#declaracaoHipossuficiencia")
+        ),
+        procuracao: getFileNames(form.querySelector<HTMLInputElement>("#procuracao")),
+        mandadoLevantamentoEletronico: getFileNames(
+          form.querySelector<HTMLInputElement>("#mandadoLevantamentoEletronico")
+        ),
       },
       provas: getFileNames(form.querySelector<HTMLInputElement>("#provas")),
       fotos: getFileNames(form.querySelector<HTMLInputElement>("#fotos")),
@@ -408,7 +415,26 @@ export function JecForm() {
             label="Comprovante de Residência"
             accept="image/*,.pdf"
           />
+          <FileField
+            id="declaracaoHipossuficiencia"
+            label="Declaração de Hipossuficiência"
+            accept="image/*,.pdf,.doc,.docx"
+          />
+          <FileField
+            id="procuracao"
+            label="Procuração"
+            accept="image/*,.pdf,.doc,.docx"
+          />
+          <FileField
+            id="mandadoLevantamentoEletronico"
+            label="Mandado de Levantamento Eletrônico (MLE)"
+            accept="image/*,.pdf,.doc,.docx"
+          />
         </div>
+        <p className="mt-3 text-xs text-slate-500">
+          Os três últimos são opcionais — envie caso o advogado ou a parte já tenham esses
+          documentos prontos para anexar à peça.
+        </p>
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">

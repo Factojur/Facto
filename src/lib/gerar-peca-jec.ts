@@ -14,7 +14,7 @@ import {
 } from "@/lib/valores-causa";
 import {
   montarPromptBaseConhecimento,
-  type ItemConhecimento,
+  type TrechoConhecimento,
 } from "@/lib/base-conhecimento";
 
 export type GerarPecaJecInput = {
@@ -26,6 +26,9 @@ export type GerarPecaJecInput = {
     cpf?: string[];
     cnh?: string[];
     comprovanteResidencia?: string[];
+    declaracaoHipossuficiencia?: string[];
+    procuracao?: string[];
+    mandadoLevantamentoEletronico?: string[];
   };
   provas: string[];
   fotos: string[];
@@ -35,7 +38,7 @@ export type GerarPecaJecInput = {
   autorOab?: string;
   comarca?: ComarcaInfo;
   valoresCausa?: Record<CategoriaValorId, ItemValor[]>;
-  baseConhecimento?: ItemConhecimento[];
+  baseConhecimento?: TrechoConhecimento[];
 };
 
 export type GerarPecaJecOutput = {
@@ -230,6 +233,9 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     `- CPF: ${listarArquivos(input.documentos.cpf)}`,
     `- CNH: ${listarArquivos(input.documentos.cnh)}`,
     `- Comprovante de residência: ${listarArquivos(input.documentos.comprovanteResidencia)}`,
+    `- Declaração de Hipossuficiência: ${listarArquivos(input.documentos.declaracaoHipossuficiencia)}`,
+    `- Procuração: ${listarArquivos(input.documentos.procuracao)}`,
+    `- Mandado de Levantamento Eletrônico (MLE): ${listarArquivos(input.documentos.mandadoLevantamentoEletronico)}`,
     "",
     `Prints, recibos e documentos (${input.provas.length}): ${listarArquivos(input.provas)}`,
     `Fotos e outros (${input.fotos.length}): ${listarArquivos(input.fotos)}`,
@@ -314,6 +320,15 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
         ...(input.documentos.cnh ?? []),
         ...(input.documentos.comprovanteResidencia ?? []),
       ].join(", ") || "a serem juntados",
+    ...(input.documentos.declaracaoHipossuficiencia?.length
+      ? [`- Declaração de Hipossuficiência: ${input.documentos.declaracaoHipossuficiencia.join(", ")}`]
+      : []),
+    ...(input.documentos.procuracao?.length
+      ? [`- Procuração: ${input.documentos.procuracao.join(", ")}`]
+      : []),
+    ...(input.documentos.mandadoLevantamentoEletronico?.length
+      ? [`- Mandado de Levantamento Eletrônico (MLE): ${input.documentos.mandadoLevantamentoEletronico.join(", ")}`]
+      : []),
     input.provas.length
       ? `- Documentos probatórios (prints, recibos): ${input.provas.join(", ")}`
       : "- Documentos probatórios: a serem juntados",

@@ -21,6 +21,19 @@ export type ItemConhecimento = {
   arquivo_tipo?: string | null;
 };
 
+/**
+ * Um trecho relevante extraído de um item da base de conhecimento. Documentos
+ * grandes (uma lei inteira, um código, a Constituição) são cadastrados por
+ * completo em `base_conhecimento`, mas nunca são injetados inteiros num
+ * prompt — são quebrados em trechos (artigo a artigo, quando possível) e só
+ * os trechos mais relevantes para o tema da ação entram no contexto da IA.
+ */
+export type TrechoConhecimento = {
+  titulo: string;
+  categoria: string;
+  texto: string;
+};
+
 export const TIPOS_ARQUIVO_ACEITOS = {
   "application/pdf": "pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
@@ -83,16 +96,84 @@ function palavrasChave(tipoAcao: string): string[] {
   );
 }
 
+// Tamanho máximo de um trecho individual — grande o bastante para caber um
+// artigo inteiro com seus parágrafos e incisos, pequeno o bastante para que
+// vários trechos de fontes diferentes caibam no orçamento total do prompt.
+const TAMANHO_MAXIMO_TRECHO = 2_500;
+
 /**
- * Busca na base de conhecimento os itens relacionados ao tema da ação, por
- * palavra-chave em título, categoria e texto. Falha de forma silenciosa
- * (retorna lista vazia) se a tabela ainda não existir ou a busca der erro —
- * a geração da peça nunca deve travar por causa disso.
+ * Quebra o texto de um item em trechos menores. Leis, códigos e a
+ * Constituição têm uma estrutura previsível ("Art. 5º ...", "Art. 6º ..."),
+ * então a divisão é feita por artigo sempre que o texto tiver artigos
+ * suficientes para isso valer a pena. Súmulas e ementas de jurisprudência
+ * (textos curtos, sem essa estrutura) simplesmente viram um único trecho.
+ */
+function dividirEmTrechos(texto: string): string[] {
+  const textoLimpo = texto.trim();
+  if (!textoLimpo) return [];
+
+  const porArtigo = textoLimpo
+    .split(/(?=art(?:igo)?\.?\s*\d+[º°]?\b)/gi)
+    .map((parte) => parte.trim())
+    .filter(Boolean);
+
+  const partesBase = porArtigo.length > 3 ? porArtigo : [textoLimpo];
+
+  const trechos: string[] = [];
+  for (const parte of partesBase) {
+    if (parte.length <= TAMANHO_MAXIMO_TRECHO) {
+      trechos.push(parte);
+      continue;
+    }
+
+    // Artigo (ou documento sem estrutura de artigos) grande demais: quebra
+    // por parágrafo em blocos que caibam no limite.
+    const paragrafos = parte.split(/\n{2,}/);
+    let atual = "";
+    for (const paragrafo of paragrafos) {
+      const candidato = atual ? `${atual}\n\n${paragrafo}` : paragrafo;
+      if (candidato.length > TAMANHO_MAXIMO_TRECHO && atual) {
+        trechos.push(atual.trim());
+        atual = paragrafo;
+      } else {
+        atual = candidato;
+      }
+    }
+    if (atual.trim()) trechos.push(atual.trim());
+  }
+
+  return trechos;
+}
+
+function pontuarTrecho(trechoNormalizado: string, palavras: string[]): number {
+  let pontos = 0;
+  for (const palavra of palavras) {
+    if (!palavra) continue;
+    pontos += trechoNormalizado.split(palavra).length - 1;
+  }
+  return pontos;
+}
+
+/**
+ * Busca na base de conhecimento os trechos relacionados ao tema da ação.
+ *
+ * Funciona em duas etapas: primeiro um filtro grosseiro no banco (documentos
+ * que mencionam pelo menos uma palavra-chave em algum lugar) só para reduzir
+ * o que precisa ser lido; depois, cada documento candidato é quebrado em
+ * trechos (por artigo, quando possível) e cada trecho é pontuado pela
+ * quantidade de palavras-chave que contém. Só os trechos mais relevantes são
+ * retornados — nunca o documento inteiro. Isso permite cadastrar uma lei ou
+ * código inteiro na base sem que ele "vença" a busca inteiro toda vez que
+ * contiver algum termo genérico em algum canto.
+ *
+ * Falha de forma silenciosa (retorna lista vazia) se a tabela ainda não
+ * existir ou a busca der erro — a geração da peça nunca deve travar por
+ * causa disso.
  */
 export async function buscarConhecimentoRelacionado(
   tipoAcao: string,
   limite = 6
-): Promise<ItemConhecimento[]> {
+): Promise<TrechoConhecimento[]> {
   const palavras = palavrasChave(tipoAcao);
   if (palavras.length === 0) return [];
 
@@ -111,13 +192,73 @@ export async function buscarConhecimentoRelacionado(
       .select("id, titulo, categoria, texto, criado_em")
       .or(condicoes)
       .order("criado_em", { ascending: false })
-      .limit(limite);
+      .limit(30);
 
     if (error) throw error;
-    return (data ?? []) as ItemConhecimento[];
+    const documentos = (data ?? []) as ItemConhecimento[];
+    if (documentos.length === 0) return [];
+
+    const candidatos: (TrechoConhecimento & { score: number })[] = [];
+    for (const documento of documentos) {
+      const trechos = dividirEmTrechos(documento.texto);
+      for (const trecho of trechos) {
+        const score = pontuarTrecho(normalizar(trecho), palavras);
+        if (score > 0) {
+          candidatos.push({
+            titulo: documento.titulo,
+            categoria: documento.categoria,
+            texto: trecho,
+            score,
+          });
+        }
+      }
+    }
+
+    candidatos.sort((a, b) => b.score - a.score);
+    return candidatos
+      .slice(0, limite)
+      .map(({ titulo, categoria, texto }) => ({ titulo, categoria, texto }));
   } catch {
     return [];
   }
+}
+
+// Um item de base de conhecimento pode ser uma lei inteira, uma constituição,
+// um PDF de centenas de páginas — não há limite no cadastro. Sem um teto por
+// item e por soma total, um único documento grande estoura sozinho a quota de
+// tokens de qualquer provedor de IA (foi o que aconteceu em produção: alguém
+// cadastrou a Constituição Federal inteira como "Lei", 1,5 milhão de
+// caracteres, e ela passou a entrar em praticamente toda busca por conter
+// termos genéricos como "indenização" e "dano"). Os limites abaixo protegem
+// qualquer chamada de IA — real ou de teste — desse cenário.
+const LIMITE_CARACTERES_POR_ITEM = 12_000; // ~3.000 tokens por item
+const LIMITE_CARACTERES_TOTAL_CONTEXTO = 40_000; // ~10.000 tokens no total injetado
+
+function truncarParaOrcamento(texto: string, limite: number): string {
+  if (texto.length <= limite) return texto;
+  return `${texto.slice(0, limite)}\n[...texto truncado — item muito longo para caber no limite de contexto da IA; cadastre trechos mais específicos em vez do documento inteiro...]`;
+}
+
+/**
+ * Monta o texto da base de conhecimento a ser injetado no prompt de uma IA,
+ * respeitando um orçamento de caracteres por item e no total — nunca deixa
+ * um único documento grande estourar a quota de tokens da chamada. Usada
+ * tanto pelo prompt de referência do fluxo determinístico quanto pelo
+ * sandbox de teste em /admin/teste-ia.
+ */
+export function montarContextoConhecimento(itens: TrechoConhecimento[]): string {
+  let restante = LIMITE_CARACTERES_TOTAL_CONTEXTO;
+  const blocos: string[] = [];
+
+  for (const item of itens) {
+    if (restante <= 0) break;
+    const limiteItem = Math.min(LIMITE_CARACTERES_POR_ITEM, restante);
+    const textoAjustado = truncarParaOrcamento(item.texto.trim(), limiteItem);
+    blocos.push(`[${item.categoria}] ${item.titulo}\n${textoAjustado}`);
+    restante -= textoAjustado.length;
+  }
+
+  return blocos.join("\n\n---\n\n");
 }
 
 /**
@@ -128,13 +269,9 @@ export async function buscarConhecimentoRelacionado(
  * modelo for integrado.
  */
 export function montarPromptBaseConhecimento(
-  itens: ItemConhecimento[]
+  itens: TrechoConhecimento[]
 ): string | null {
   if (itens.length === 0) return null;
 
-  const textos = itens
-    .map((item) => `[${item.categoria}] ${item.titulo}\n${item.texto.trim()}`)
-    .join("\n\n---\n\n");
-
-  return `Utilize obrigatoriamente as seguintes leis e jurisprudências:\n\n${textos}`;
+  return `Utilize obrigatoriamente as seguintes leis e jurisprudências:\n\n${montarContextoConhecimento(itens)}`;
 }

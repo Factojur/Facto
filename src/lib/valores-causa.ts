@@ -14,7 +14,7 @@ export type ItemValor = {
 export type CategoriaValorId = "danosMateriais" | "danosMorais";
 
 export const CATEGORIAS_VALOR: { id: CategoriaValorId; label: string }[] = [
-  { id: "danosMateriais", label: "Danos Materiais" },
+  { id: "danosMateriais", label: "Danos Materiais e/ou Restituições" },
   { id: "danosMorais", label: "Danos Morais" },
 ];
 
