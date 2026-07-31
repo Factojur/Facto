@@ -1,14 +1,16 @@
-import { FactoIcon } from "./facto-icon";
+import { FactoIcon, FactoIconBrain } from "./facto-icon";
 import { FactoLogoCompleto, FactoWordmark } from "./facto-wordmark";
 
 export const FACTO_TAGLINE = "Inteligência Jurídica";
 
+// Só a altura — a arte do ícone não é quadrada (casa+balança+cérebro lado a
+// lado), então fixar largura junto com altura esticaria/achataria a imagem.
 const iconSizes = {
-  xs: "h-7 w-7",
-  sm: "h-9 w-9",
-  md: "h-11 w-11",
-  lg: "h-16 w-16",
-  xl: "h-20 w-20",
+  xs: "h-7",
+  sm: "h-9",
+  md: "h-11",
+  lg: "h-16",
+  xl: "h-20",
 } as const;
 
 const logoStackSizes = {
@@ -27,29 +29,49 @@ const wordmarkSizes = {
   xl: "h-[52px] text-[52px]",
 } as const;
 
+// O cérebro sozinho tem proporção diferente do ícone completo (casa+balança).
+const brainIconSizes = {
+  xs: "h-8",
+  sm: "h-12",
+  md: "h-16",
+  lg: "h-24",
+  xl: "h-32",
+} as const;
+
 export function FactoLogo({
   variant = "stacked",
   size = "md",
   showTagline = false,
   className,
 }: {
-  variant?: "stacked" | "horizontal" | "icon";
+  variant?: "stacked" | "horizontal" | "icon" | "brain";
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   showTagline?: boolean;
   className?: string;
 }) {
   if (variant === "icon") {
+    return <FactoIcon className={`${iconSizes[size]} ${className ?? ""}`} />;
+  }
+
+  // Marca só com o cérebro (elemento de IA) + tagline, sem casa/balança e sem
+  // a palavra "FACTO" — usada no menu lateral da página de geração de peças.
+  if (variant === "brain") {
     return (
-      <FactoIcon
-        className={`text-facto-gold ${iconSizes[size]} ${className ?? ""}`}
-      />
+      <div className={`flex flex-col items-center ${className ?? ""}`}>
+        <FactoIconBrain className={brainIconSizes[size]} />
+        {showTagline && (
+          <p className="mt-2 font-sans text-[9px] font-medium uppercase tracking-[0.28em] text-stone-500">
+            {FACTO_TAGLINE}
+          </p>
+        )}
+      </div>
     );
   }
 
   if (variant === "horizontal") {
     return (
       <div className={`flex items-center gap-3 ${className ?? ""}`}>
-        <FactoIcon className={`shrink-0 text-facto-gold ${iconSizes[size]}`} />
+        <FactoIcon className={`shrink-0 ${iconSizes[size]}`} />
         <div className="min-w-0 leading-none">
           <div className={wordmarkSizes[size]}>
             <FactoWordmark className="h-full w-auto" />

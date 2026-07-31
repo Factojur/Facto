@@ -42,8 +42,3 @@ body {
 .animate-fade-up {
   animation: fade-up 0.5s ease-out both;
 }
-
-/* Remove o retângulo do fundo das artes PNG do logo sobre header escuro */
-.facto-wordmark-blend {
-  mix-blend-mode: lighten;
-}

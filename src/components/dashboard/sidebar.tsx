@@ -26,7 +26,7 @@ export function DashboardSidebar() {
     <aside className="flex h-full w-64 shrink-0 flex-col bg-facto-dark text-stone-100">
       <div className="border-b border-stone-800 px-5 py-6">
         <Link href="/dashboard" className="block">
-          <FactoLogo variant="horizontal" size="sm" showTagline />
+          <FactoLogo variant="brain" size="sm" showTagline />
         </Link>
       </div>
 
