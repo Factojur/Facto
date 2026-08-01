@@ -17,6 +17,7 @@ import {
   type TrechoConhecimento,
 } from "@/lib/base-conhecimento";
 import type { CitacaoVerificada } from "@/lib/ia/verificacao-citacoes";
+import { MARCADOR_ESPACO_ENDEREÇAMENTO } from "@/lib/formatacao-forense";
 
 export type GerarPecaJecInput = {
   tipoAcao: string;
@@ -266,6 +267,8 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
 
   const pecaBruta = [
     ...enderecamento.split("\n"),
+    "",
+    MARCADOR_ESPACO_ENDEREÇAMENTO,
     "",
     // Nome da ação aparece uma única vez — entre as qualificações, nunca
     // logo abaixo do endereçamento.

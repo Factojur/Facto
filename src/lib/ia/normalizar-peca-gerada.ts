@@ -1,8 +1,10 @@
 /**
  * Pós-processamento da peça gerada pela IA: espaçamento dissertativo,
  * remoção do título da ação logo após o endereçamento (fica só entre as
- * qualificações) e deduplicação de parágrafos consecutivos idênticos.
+ * qualificações), espaço forense de ~10 linhas e deduplicação.
  */
+
+import { MARCADOR_ESPACO_ENDEREÇAMENTO } from "@/lib/formatacao-forense";
 
 const PADRAO_NOME_ACAO =
   /^(?:PETI[CÇ][AÃ]O\s+INICIAL\s*[—–-]?\s*)?(?:A[CÇ][AÃ]O\s+DE\s+|EXECU[CÇ][AÃ]O\s+|EMBARGOS\s+|RECURSO\s+)/i;
@@ -164,10 +166,54 @@ function deduplicarParagrafosConsecutivos(texto: string): string {
   return saida.join("\n\n");
 }
 
+/**
+ * Insere o marcador de ~10 linhas em branco entre o último bloco de
+ * endereçamento e o início da qualificação (praxe forense).
+ */
+export function inserirEspacoAposEnderecamento(texto: string): string {
+  const blocos = texto
+    .split(/\n\s*\n/)
+    .map((b) => b.trim())
+    .filter(Boolean)
+    .filter((b) => b !== MARCADOR_ESPACO_ENDEREÇAMENTO);
+
+  const saida: string[] = [];
+  let inseriu = false;
+
+  for (let i = 0; i < blocos.length; i++) {
+    const b = blocos[i]!;
+    const proximo = blocos[i + 1];
+    saida.push(b);
+
+    if (
+      !inseriu &&
+      ehLinhaEnderecamento(b) &&
+      proximo &&
+      !ehLinhaEnderecamento(proximo)
+    ) {
+      saida.push(MARCADOR_ESPACO_ENDEREÇAMENTO);
+      inseriu = true;
+    }
+  }
+
+  return saida.join("\n\n");
+}
+
+/** Detecta fundamentação genérica típica do template de reserva. */
+export function pecaTemFundamentacaoGenerica(texto: string): boolean {
+  return (
+    /plausibilidade do direito invocado/i.test(texto) ||
+    /necessidade de\s+interven[cç][aã]o do Poder Judici[aá]rio para restabelecer/i.test(
+      texto
+    )
+  );
+}
+
 /** Pipeline completo aplicado à saída da IA antes de HTML/PDF/Word. */
 export function normalizarPecaGerada(texto: string): string {
   let t = promoverQuebrasEmParagrafos(texto);
   t = removerTituloAcaoAposEnderecamento(t);
   t = deduplicarParagrafosConsecutivos(t);
+  t = inserirEspacoAposEnderecamento(t);
   return t.trim();
 }

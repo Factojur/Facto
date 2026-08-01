@@ -15,10 +15,15 @@ import {
 } from "docx";
 import { saveAs } from "file-saver";
 import type { EscritorioConfig } from "./escritorio-types";
+import {
+  FORMATACAO_FORENSE,
+  cmParaTwips,
+  ehMarcadorEspacoEnderecamento,
+} from "./formatacao-forense";
 
-const FONTE = "Times New Roman";
-const TAMANHO = 24; // 12 pt em half-points
-const RECUO_PARAGRAFO = 1134; // ~2 cm em twips
+const FONTE = FORMATACAO_FORENSE.fonte;
+const TAMANHO = FORMATACAO_FORENSE.tamanhoPt * 2; // half-points
+const RECUO_PARAGRAFO = cmParaTwips(FORMATACAO_FORENSE.recuoPrimeiraLinhaCm);
 const ESPACO_LINHA = 360; // 1,5 entrelinhas
 
 function dataUrlParaBytes(dataUrl: string): Uint8Array {
@@ -97,15 +102,24 @@ function paragrafoTimbre(texto: string): Paragraph {
   });
 }
 
-function linhaParaParagrafo(linha: string): Paragraph {
+function linhaParaParagrafo(linha: string): Paragraph | Paragraph[] {
   const t = linha.trim();
   if (!t) {
     return new Paragraph({ spacing: { after: 120 } });
   }
 
+  if (ehMarcadorEspacoEnderecamento(t)) {
+    return Array.from({ length: FORMATACAO_FORENSE.linhasAposEnderecamento }, () =>
+      new Paragraph({
+        spacing: { after: 0, line: ESPACO_LINHA },
+        children: [new TextRun({ text: "", font: FONTE, size: TAMANHO })],
+      })
+    );
+  }
+
   const base = { font: FONTE, size: TAMANHO };
 
-  if (/^[IVX]+ —/.test(t)) {
+  if (/^[IVXLCDM]+ —/i.test(t)) {
     return new Paragraph({
       spacing: { before: 280, after: 160, line: ESPACO_LINHA },
       children: [new TextRun({ ...base, text: t, bold: true })],
@@ -113,8 +127,9 @@ function linhaParaParagrafo(linha: string): Paragraph {
   }
 
   if (
-    /^EXCELENTÍSSIMO|^DA COMARCA/.test(t) ||
-    (t === t.toUpperCase() && t.length < 90 && !linha.startsWith("\t"))
+    /^EXCELENTÍSSIMO|^DA COMARCA|^JU[IÍ]ZO\s+DA/i.test(t) ||
+    (/^(?:PETI[CÇ][AÃ]O|A[CÇ][AÃ]O|EXECU[CÇ][AÃ]O|EMBARGOS|RECURSO)/i.test(t) &&
+      t.length < 140)
   ) {
     return new Paragraph({
       alignment: AlignmentType.CENTER,
@@ -247,14 +262,20 @@ async function paragrafoMarcaDagua(marcaDaguaBase64: string): Promise<Paragraph>
   });
 }
 
-export async function baixarPecaDocx(
+export async function gerarPecaDocxBlob(
   peca: string,
-  escritorio?: EscritorioConfig,
-  nomeArquivo = "peca-facto.docx"
-): Promise<void> {
-  const paragrafos: Paragraph[] = peca
-    .split("\n")
-    .map((linha) => linhaParaParagrafo(linha));
+  escritorio?: EscritorioConfig
+): Promise<Blob> {
+  const paragrafos: Paragraph[] = [];
+  for (const bloco of peca
+    .replace(/\r\n/g, "\n")
+    .split(/\n\s*\n/)
+    .map((b) => b.replace(/\n+/g, " ").trim())
+    .filter(Boolean)) {
+    const p = linhaParaParagrafo(bloco);
+    if (Array.isArray(p)) paragrafos.push(...p);
+    else paragrafos.push(p);
+  }
 
   const usarTimbre = Boolean(escritorio?.usarTimbre);
   const headerParagrafos: Paragraph[] = [];
@@ -288,10 +309,10 @@ export async function baixarPecaDocx(
         properties: {
           page: {
             margin: {
-              top: 1701,
-              right: 1134,
-              bottom: 1134,
-              left: 1701,
+              top: cmParaTwips(FORMATACAO_FORENSE.margemSuperiorCm),
+              right: cmParaTwips(FORMATACAO_FORENSE.margemDireitaCm),
+              bottom: cmParaTwips(FORMATACAO_FORENSE.margemInferiorCm),
+              left: cmParaTwips(FORMATACAO_FORENSE.margemEsquerdaCm),
             },
           },
         },
@@ -302,6 +323,15 @@ export async function baixarPecaDocx(
     ],
   });
 
-  const blob = await Packer.toBlob(doc);
+  return Packer.toBlob(doc);
+}
+
+export async function baixarPecaDocx(
+  peca: string,
+  escritorio?: EscritorioConfig,
+  nomeArquivo = "peca-facto.docx"
+): Promise<Blob> {
+  const blob = await gerarPecaDocxBlob(peca, escritorio);
   saveAs(blob, nomeArquivo);
+  return blob;
 }

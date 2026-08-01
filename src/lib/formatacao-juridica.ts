@@ -1,4 +1,8 @@
 import type { EscritorioConfig } from "./escritorio-types";
+import {
+  FORMATACAO_FORENSE,
+  ehMarcadorEspacoEnderecamento,
+} from "./formatacao-forense";
 
 /** Formata parágrafos dos fatos com recuo de primeira linha (padrão forense). */
 function formatarParagrafos(texto: string): string {
@@ -47,6 +51,9 @@ function blocoParaHtml(bloco: string): string {
 
   return paragrafos
     .map((t) => {
+      if (ehMarcadorEspacoEnderecamento(t)) {
+        return `<div class="espaco-enderecamento" aria-hidden="true"></div>`;
+      }
       if (titulosSecao.test(t)) {
         return `<p class="secao-titulo">${escapeHtml(t)}</p>`;
       }
@@ -135,16 +142,26 @@ export function gerarDocumentoTimbrado(
   const marcaDagua = escritorio?.usarTimbre ? gerarMarcaDaguaHtml(escritorio) : "";
 
   const cssImpressao = `
-    @page { size: A4; margin: 3cm 2cm 2cm 3cm; }
+    @page {
+      size: A4;
+      margin: ${FORMATACAO_FORENSE.margemSuperiorCm}cm ${FORMATACAO_FORENSE.margemDireitaCm}cm ${FORMATACAO_FORENSE.margemInferiorCm}cm ${FORMATACAO_FORENSE.margemEsquerdaCm}cm;
+    }
     .documento-juridico {
       position: relative;
-      font-family: "Times New Roman", Times, serif;
-      font-size: 12pt;
-      line-height: 1.5;
+      font-family: "${FORMATACAO_FORENSE.fonte}", Times, serif;
+      font-size: ${FORMATACAO_FORENSE.tamanhoPt}pt;
+      line-height: ${FORMATACAO_FORENSE.entrelinhas};
       color: #000;
       max-width: 21cm;
       margin: 0 auto;
       background: #fff;
+      padding: ${FORMATACAO_FORENSE.margemSuperiorCm}cm ${FORMATACAO_FORENSE.margemDireitaCm}cm ${FORMATACAO_FORENSE.margemInferiorCm}cm ${FORMATACAO_FORENSE.margemEsquerdaCm}cm;
+      box-sizing: border-box;
+    }
+    .documento-juridico .espaco-enderecamento {
+      /* ~10 linhas com entrelinha 1,5 (praxe forense) */
+      height: calc(1.5em * ${FORMATACAO_FORENSE.linhasAposEnderecamento});
+      width: 100%;
     }
     .documento-juridico .documento-conteudo {
       position: relative;

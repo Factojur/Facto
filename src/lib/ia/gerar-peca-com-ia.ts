@@ -58,9 +58,10 @@ function montarUserPrompt(params: {
       : null,
     "",
     "IMPORTANTE:",
-    "- Qualifique o NOME CORRETO da ação com base no relato.",
-    "- NÃO copie o relato bruto. Reescreva os fatos em 3ª pessoa, parágrafos curtos separados por linha em branco (\\n\\n).",
-    "- Fundamentação profunda em DO DIREITO (CDC/CC/súmulas consolidadas quando couber), com subsunção.",
+    "- Qualifique o NOME CORRETO da ação com base no relato (golpe/PIX/banco = indenização, NÃO execução).",
+    "- Após o endereçamento, deixe 10 linhas em branco antes da qualificação.",
+    "- NÃO copie o relato bruto. Reescreva os fatos em 3ª pessoa, parágrafos curtos com \\n\\n.",
+    "- DO DIREITO OBRIGATORIAMENTE com subtópicos a), b), c)... e SUBSUNÇÃO aos fatos deste caso (valores, datas, condutas). Proibido texto genérico de \"plausibilidade do direito\".",
     "",
     params.casoReal
       ? "<RELATO_BRUTO_DO_USUARIO> (insumo — reescrever, nunca colar):"

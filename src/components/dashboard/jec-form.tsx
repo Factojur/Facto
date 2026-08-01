@@ -118,8 +118,15 @@ function PecasResultado({
       </div>
 
       {resultado.avisoIA && (
+        <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900">
+          <p className="font-semibold">Atenção — peça incompleta para protocolo</p>
+          <p className="mt-1">{resultado.avisoIA}</p>
+        </div>
+      )}
+      {!resultado.geradoPorIA && !resultado.avisoIA && (
         <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          {resultado.avisoIA}
+          Esta peça não foi redigida pela IA (template de reserva). A seção DO
+          DIREITO tende a ficar genérica — gere novamente com a IA ativa.
         </div>
       )}
 

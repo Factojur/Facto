@@ -14,10 +14,16 @@ import {
   TIPOS_ARQUIVO_ACEITOS,
 } from "@/lib/base-conhecimento";
 import { gerarPecaComIA } from "@/lib/ia/gerar-peca-com-ia";
-import { normalizarPecaGerada } from "@/lib/ia/normalizar-peca-gerada";
+import {
+  normalizarPecaGerada,
+  pecaTemFundamentacaoGenerica,
+} from "@/lib/ia/normalizar-peca-gerada";
 import { geminiConfigurado } from "@/lib/ia/gemini-client";
 import { gerarDocumentoTimbrado } from "@/lib/formatacao-juridica";
 import { calcularResumoValorCausa } from "@/lib/valores-causa";
+
+/** Gemini costuma passar de 10s — sem isso a Vercel corta e cai no template genérico. */
+export const maxDuration = 60;
 
 type LeiMunicipalPayload = {
   nome?: string;
@@ -134,14 +140,21 @@ export async function POST(request: Request) {
     scaffold.decisaoAssistente?.tutelaUrgencia ?? body.tutelaUrgencia;
 
   if (!geminiConfigurado()) {
+    const peca = normalizarPecaGerada(scaffold.peca);
+    const { pecaHtml } = gerarDocumentoTimbrado(
+      peca,
+      body.escritorio?.usarTimbre ? body.escritorio : undefined
+    );
     const semIa: GerarPecaJecOutput = {
       ...scaffold,
+      peca,
+      pecaHtml,
       geradoPorIA: false,
       leiMunicipalUtilizada: leiMunicipal
         ? { nome: leiMunicipal.nome }
         : null,
       avisoIA:
-        "GEMINI_API_KEY não configurada — peça gerada pelo modelo determinístico (sem redação por IA).",
+        "GEMINI_API_KEY não configurada — peça gerada pelo modelo determinístico (fundamentação genérica). Configure a chave na Vercel para redação completa.",
     };
     return NextResponse.json(semIa);
   }
@@ -175,18 +188,47 @@ export async function POST(request: Request) {
   });
 
   if (!ia.ok) {
+    const fallbackNorm = normalizarPecaGerada(scaffold.peca);
+    const { pecaHtml } = gerarDocumentoTimbrado(
+      fallbackNorm,
+      body.escritorio?.usarTimbre ? body.escritorio : undefined
+    );
     const fallback: GerarPecaJecOutput = {
       ...scaffold,
+      peca: fallbackNorm,
+      pecaHtml,
       geradoPorIA: false,
       leiMunicipalUtilizada: leiMunicipal
         ? { nome: leiMunicipal.nome }
         : null,
-      avisoIA: `Falha na IA (${ia.erro}). Foi usada a peça determinística de reserva.`,
+      avisoIA:
+        `A IA não concluiu a redação (${ia.erro}). Foi usada a peça de reserva com fundamentação GENÉRICA — não protocolar assim. Clique em gerar novamente; se persistir, confira GEMINI_API_KEY e o tempo de resposta na Vercel.`,
     };
     return NextResponse.json(fallback);
   }
 
   const peca = normalizarPecaGerada(ia.textoGerado);
+
+  if (pecaTemFundamentacaoGenerica(peca)) {
+    const fallbackNorm = normalizarPecaGerada(scaffold.peca);
+    const { pecaHtml } = gerarDocumentoTimbrado(
+      fallbackNorm,
+      body.escritorio?.usarTimbre ? body.escritorio : undefined
+    );
+    return NextResponse.json({
+      ...scaffold,
+      peca: fallbackNorm,
+      pecaHtml,
+      geradoPorIA: false,
+      modeloIA: ia.modelo,
+      leiMunicipalUtilizada: leiMunicipal
+        ? { nome: leiMunicipal.nome }
+        : null,
+      avisoIA:
+        "A IA devolveu fundamentação genérica (rejeitada). Gere novamente para obter DO DIREITO específico do caso com subtópicos a), b), c)...",
+    } satisfies GerarPecaJecOutput);
+  }
+
   const { pecaHtml } = gerarDocumentoTimbrado(
     peca,
     body.escritorio?.usarTimbre ? body.escritorio : undefined
