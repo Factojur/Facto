@@ -22,8 +22,8 @@ import { geminiConfigurado } from "@/lib/ia/gemini-client";
 import { gerarDocumentoTimbrado } from "@/lib/formatacao-juridica";
 import { calcularResumoValorCausa } from "@/lib/valores-causa";
 
-/** Gemini costuma passar de 10s — sem isso a Vercel corta e cai no template genérico. */
-export const maxDuration = 60;
+/** CoT em 2 chamadas Gemini — precisa de margem acima do default 10s. */
+export const maxDuration = 120;
 
 type LeiMunicipalPayload = {
   nome?: string;
@@ -248,6 +248,15 @@ export async function POST(request: Request) {
       ? { nome: leiMunicipal.nome }
       : null,
     avisoIA: null,
+    analiseEstrategica: ia.analiseEstrategica
+      ? {
+          tesePrincipal: ia.analiseEstrategica.tesePrincipal,
+          naturezaRelacao: ia.analiseEstrategica.naturezaRelacao,
+          nomeAcao: ia.analiseEstrategica.nomeAcao,
+          direitosViolados: ia.analiseEstrategica.direitosViolados,
+          topicosPlanejados: ia.analiseEstrategica.topicosPlanejados,
+        }
+      : null,
   };
 
   return NextResponse.json(resultado);

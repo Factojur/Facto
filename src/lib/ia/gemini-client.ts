@@ -58,6 +58,8 @@ async function chamarGemini(params: {
   userPrompt: string;
   modelo: string;
   apiKey: string;
+  temperature?: number;
+  maxOutputTokens?: number;
 }): Promise<ResultadoGemini> {
   const resposta = await fetch(
     `${GEMINI_API_URL}/${params.modelo}:generateContent?key=${params.apiKey}`,
@@ -75,10 +77,8 @@ async function chamarGemini(params: {
           },
         ],
         generationConfig: {
-          // Um pouco acima de 0.3 melhora narrativa/fatos sem abrir demais
-          // para invenção de números de processo.
-          temperature: 0.45,
-          maxOutputTokens: 8192,
+          temperature: params.temperature ?? 0.4,
+          maxOutputTokens: params.maxOutputTokens ?? 8192,
         },
       }),
     }
@@ -119,6 +119,8 @@ export async function gerarTextoComGemini(params: {
   systemPrompt: string;
   userPrompt: string;
   modelo?: string;
+  temperature?: number;
+  maxOutputTokens?: number;
 }): Promise<ResultadoGemini> {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) {
@@ -129,9 +131,16 @@ export async function gerarTextoComGemini(params: {
   }
 
   const modelo = params.modelo ?? MODELO_PADRAO;
+  const opts = {
+    systemPrompt: params.systemPrompt,
+    userPrompt: params.userPrompt,
+    temperature: params.temperature,
+    maxOutputTokens: params.maxOutputTokens,
+    apiKey,
+  };
 
   try {
-    const resultado = await chamarGemini({ ...params, modelo, apiKey });
+    const resultado = await chamarGemini({ ...opts, modelo });
 
     // Se o modelo pedido não existe mais (descontinuado pelo Google) e ainda
     // não era o fallback, tenta uma vez com o fallback antes de desistir.
@@ -140,7 +149,7 @@ export async function gerarTextoComGemini(params: {
       resultado.erro.startsWith("__MODELO_INDISPONIVEL__") &&
       modelo !== MODELO_FALLBACK
     ) {
-      return await chamarGemini({ ...params, modelo: MODELO_FALLBACK, apiKey });
+      return await chamarGemini({ ...opts, modelo: MODELO_FALLBACK });
     }
 
     if (!resultado.ok && resultado.erro.startsWith("__MODELO_INDISPONIVEL__")) {

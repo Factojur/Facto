@@ -103,6 +103,9 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
     const titulo = ehTituloSecao(p);
     const lista = ehLista(p);
 
+    // PDF: remove marcação ** (negrito pleno no jsPDF exigiria runs complexos)
+    const textoLimpo = p.replace(/\*\*(.+?)\*\*/g, "$1");
+
     doc.setFont("times", centro || titulo ? "bold" : "normal");
     doc.setFontSize(FORMATACAO_FORENSE.tamanhoPt);
 
@@ -111,7 +114,7 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
       : lista
         ? maxWidth - 8
         : maxWidth - (titulo ? 0 : indent);
-    const lines = doc.splitTextToSize(p, Math.max(largura, 40));
+    const lines = doc.splitTextToSize(textoLimpo, Math.max(largura, 40));
     const blockH = lines.length * lineH + (titulo ? 4 : 2);
 
     novaPaginaSePreciso(blockH);

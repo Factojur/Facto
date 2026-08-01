@@ -119,10 +119,19 @@ function linhaParaParagrafo(linha: string): Paragraph | Paragraph[] {
 
   const base = { font: FONTE, size: TAMANHO };
 
+  function runsDeMarkdown(texto: string, forcarNegrito = false): TextRun[] {
+    const partes = texto.split(/(\*\*.+?\*\*)/g).filter(Boolean);
+    return partes.map((parte) => {
+      const negrito = forcarNegrito || /^\*\*(.+)\*\*$/.test(parte);
+      const limpo = parte.replace(/^\*\*(.+)\*\*$/, "$1");
+      return new TextRun({ ...base, text: limpo, bold: negrito });
+    });
+  }
+
   if (/^[IVXLCDM]+ —/i.test(t)) {
     return new Paragraph({
       spacing: { before: 280, after: 160, line: ESPACO_LINHA },
-      children: [new TextRun({ ...base, text: t, bold: true })],
+      children: runsDeMarkdown(t, true),
     });
   }
 
@@ -134,7 +143,7 @@ function linhaParaParagrafo(linha: string): Paragraph | Paragraph[] {
     return new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { before: 120, after: 120, line: ESPACO_LINHA },
-      children: [new TextRun({ ...base, text: t, bold: true })],
+      children: runsDeMarkdown(t, true),
     });
   }
 
@@ -142,7 +151,7 @@ function linhaParaParagrafo(linha: string): Paragraph | Paragraph[] {
     return new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { before: 240, after: 80, line: ESPACO_LINHA },
-      children: [new TextRun({ ...base, text: t })],
+      children: runsDeMarkdown(t),
     });
   }
 
@@ -151,7 +160,7 @@ function linhaParaParagrafo(linha: string): Paragraph | Paragraph[] {
       alignment: AlignmentType.JUSTIFIED,
       indent: { left: 567 },
       spacing: { after: 120, line: ESPACO_LINHA },
-      children: [new TextRun({ ...base, text: t })],
+      children: runsDeMarkdown(t),
     });
   }
 
@@ -159,7 +168,7 @@ function linhaParaParagrafo(linha: string): Paragraph | Paragraph[] {
     alignment: AlignmentType.JUSTIFIED,
     indent: { firstLine: RECUO_PARAGRAFO },
     spacing: { after: 200, line: ESPACO_LINHA },
-    children: [new TextRun({ ...base, text: t })],
+    children: runsDeMarkdown(t),
   });
 }
 

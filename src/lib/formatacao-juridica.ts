@@ -33,6 +33,12 @@ function escapeHtml(texto: string): string {
     .replace(/"/g, "&quot;");
 }
 
+/** Escapa HTML e converte **negrito** Markdown em <strong>. */
+function formatarInlineHtml(texto: string): string {
+  const escapado = escapeHtml(texto);
+  return escapado.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+}
+
 function blocoParaHtml(bloco: string): string {
   // Une linhas soltas em parágrafos (quebra dupla = novo parágrafo).
   const paragrafos = bloco
@@ -55,16 +61,16 @@ function blocoParaHtml(bloco: string): string {
         return `<div class="espaco-enderecamento" aria-hidden="true"></div>`;
       }
       if (titulosSecao.test(t)) {
-        return `<p class="secao-titulo">${escapeHtml(t)}</p>`;
+        return `<p class="secao-titulo">${formatarInlineHtml(t)}</p>`;
       }
       if (enderecamento.test(t)) {
-        return `<p class="enderecamento">${escapeHtml(t)}</p>`;
+        return `<p class="enderecamento">${formatarInlineHtml(t)}</p>`;
       }
       if (
         nomeAcao.test(t) &&
         (t === t.toUpperCase() || t.length < 140)
       ) {
-        return `<p class="nome-acao">${escapeHtml(t)}</p>`;
+        return `<p class="nome-acao">${formatarInlineHtml(t)}</p>`;
       }
       if (
         t === t.toUpperCase() &&
@@ -72,18 +78,18 @@ function blocoParaHtml(bloco: string): string {
         !t.startsWith("-") &&
         !t.startsWith("[")
       ) {
-        return `<p class="enderecamento">${escapeHtml(t)}</p>`;
+        return `<p class="enderecamento">${formatarInlineHtml(t)}</p>`;
       }
       if (fechamento.test(t) || t.startsWith("OAB/")) {
-        return `<p class="fechamento">${escapeHtml(t)}</p>`;
+        return `<p class="fechamento">${formatarInlineHtml(t)}</p>`;
       }
       if (pedido.test(t) || subtopico.test(t)) {
-        return `<p class="pedido">${escapeHtml(t)}</p>`;
+        return `<p class="pedido">${formatarInlineHtml(t)}</p>`;
       }
       if (t.startsWith("- ")) {
-        return `<p class="prova-item">${escapeHtml(t)}</p>`;
+        return `<p class="prova-item">${formatarInlineHtml(t)}</p>`;
       }
-      return `<p class="paragrafo">${escapeHtml(t)}</p>`;
+      return `<p class="paragrafo">${formatarInlineHtml(t)}</p>`;
     })
     .join("\n");
 }

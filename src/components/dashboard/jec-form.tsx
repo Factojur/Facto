@@ -130,6 +130,38 @@ function PecasResultado({
         </div>
       )}
 
+      {resultado.analiseEstrategica && (
+        <section className="rounded-lg border border-stone-300 bg-stone-50 p-5 shadow-sm">
+          <h3 className="font-semibold text-stone-800">
+            Análise estratégica (Chain of Thought)
+          </h3>
+          {resultado.analiseEstrategica.nomeAcao && (
+            <p className="mt-2 text-sm text-stone-700">
+              <strong>Ação qualificada:</strong>{" "}
+              {resultado.analiseEstrategica.nomeAcao}
+            </p>
+          )}
+          {resultado.analiseEstrategica.tesePrincipal && (
+            <p className="mt-1 text-sm text-stone-700">
+              <strong>Tese:</strong> {resultado.analiseEstrategica.tesePrincipal}
+            </p>
+          )}
+          {resultado.analiseEstrategica.naturezaRelacao && (
+            <p className="mt-1 text-sm text-stone-700">
+              <strong>Natureza:</strong>{" "}
+              {resultado.analiseEstrategica.naturezaRelacao}
+            </p>
+          )}
+          {resultado.analiseEstrategica.direitosViolados &&
+            resultado.analiseEstrategica.direitosViolados.length > 0 && (
+              <p className="mt-1 text-sm text-stone-700">
+                <strong>Direitos violados:</strong>{" "}
+                {resultado.analiseEstrategica.direitosViolados.join("; ")}
+              </p>
+            )}
+        </section>
+      )}
+
       {jurisSemLastro.length > 0 && (
         <section className="rounded-lg border border-red-200 bg-red-50 p-4">
           <h3 className="text-sm font-semibold text-red-800">
@@ -654,7 +686,7 @@ export function JecForm() {
           className="rounded-lg bg-stone-700 px-8 py-3.5 text-base font-semibold text-amber-50 shadow-sm transition hover:bg-stone-600 disabled:opacity-60"
         >
           {loading
-            ? "Buscando fontes e redigindo com IA..."
+            ? "Análise estratégica + redação Tier-1 (pode levar até ~1 min)..."
             : isAssistente
               ? "Analisar Case e Gerar Peça"
               : "Analisar Provas e Gerar Peça"}

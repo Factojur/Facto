@@ -96,10 +96,10 @@ export function removerTituloAcaoAposEnderecamento(texto: string): string {
 function promoverQuebrasEmParagrafos(texto: string): string {
   let t = texto.replace(/\r\n/g, "\n").trim();
 
+  // Mantém **negrito** (datas/valores) — HTML/DOCX/PDF convertem depois.
   t = t
     .replace(/^#{1,6}\s+/gm, "")
-    .replace(/\*\*(.+?)\*\*/g, "$1")
-    .replace(/__(.+?)__/g, "$1")
+    .replace(/__(.+?)__/g, "**$1**")
     .replace(/^\s*[-*]\s+/gm, "- ");
 
   t = t.replace(

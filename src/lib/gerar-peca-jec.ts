@@ -65,6 +65,14 @@ export type GerarPecaJecOutput = {
   marcadoresNaoEncontrado?: number;
   leiMunicipalUtilizada?: { nome: string } | null;
   avisoIA?: string | null;
+  /** Brief da análise Chain of Thought (fase 1). */
+  analiseEstrategica?: {
+    tesePrincipal?: string;
+    naturezaRelacao?: string;
+    nomeAcao?: string;
+    direitosViolados?: string[];
+    topicosPlanejados?: string[];
+  } | null;
 };
 
 function localFechamento(comarca?: ComarcaInfo): string {
