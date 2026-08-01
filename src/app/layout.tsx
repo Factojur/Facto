@@ -30,17 +30,17 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
   },
   other: {
-    "theme-color": "#000000",
+    "theme-color": "#1c1c16",
   },
   icons: {
     icon: [
-      { url: "/favicon.ico?v=20260801c", sizes: "48x48" },
-      { url: "/icon-atalho-192.png?v=20260801c", sizes: "192x192", type: "image/png" },
-      { url: "/icon-atalho-512.png?v=20260801c", sizes: "512x512", type: "image/png" },
+      { url: "/favicon.ico?v=20260801d", sizes: "48x48" },
+      { url: "/icon-atalho-192.png?v=20260801d", sizes: "192x192", type: "image/png" },
+      { url: "/icon-atalho-512.png?v=20260801d", sizes: "512x512", type: "image/png" },
     ],
     apple: [
       {
-        url: "/icon-atalho-180.png?v=20260801c",
+        url: "/icon-atalho-180.png?v=20260801d",
         sizes: "180x180",
         type: "image/png",
       },
