@@ -1,9 +1,9 @@
 /**
- * Cliente mínimo para a Gemini API (camada gratuita do Google AI Studio).
- * Usa fetch puro (sem SDK) para não adicionar dependência nova. Pensado
- * apenas para o sandbox de teste em /admin/teste-ia — nunca deve ser chamado
- * com dados reais de cliente enquanto a política de dados não for decidida
- * (a camada gratuita da Gemini API pode usar os prompts para treinamento).
+ * Cliente mínimo para a Gemini API (Google AI Studio / AI Gemini).
+ * Usa fetch puro (sem SDK) para não adicionar dependência nova.
+ * Usado no sandbox (/admin/teste-ia) e na geração real (/api/gerar-peca).
+ * Atenção: a camada gratuita pode usar prompts para treinamento — em
+ * produção recomenda-se chave/plano sem retenção quando disponível.
  */
 
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";

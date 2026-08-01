@@ -16,6 +16,7 @@ import {
   montarPromptBaseConhecimento,
   type TrechoConhecimento,
 } from "@/lib/base-conhecimento";
+import type { CitacaoVerificada } from "@/lib/ia/verificacao-citacoes";
 
 export type GerarPecaJecInput = {
   tipoAcao: string;
@@ -54,12 +55,15 @@ export type GerarPecaJecOutput = {
     justificativa: string;
   };
   baseConhecimentoUtilizada?: { titulo: string; categoria: string }[];
-  /**
-   * Prompt pronto para ser usado como System Prompt quando a geração por IA
-   * generativa for integrada a esta rota. Hoje não é consumido por nenhum
-   * modelo — a peça é montada de forma determinística.
-   */
+  /** Prompt de referência da base (ainda útil para debug/admin). */
   promptSistemaIA?: string | null;
+  /** true quando a peça veio do Gemini (não do template determinístico). */
+  geradoPorIA?: boolean;
+  modeloIA?: string;
+  citacoes?: CitacaoVerificada[];
+  marcadoresNaoEncontrado?: number;
+  leiMunicipalUtilizada?: { nome: string } | null;
+  avisoIA?: string | null;
 };
 
 function localFechamento(comarca?: ComarcaInfo): string {
@@ -146,7 +150,7 @@ function extrairPedidos(
  * em código (soma exata em centavos). A IA nunca recalcula nem reescreve
  * este trecho — ele é montado inteiramente aqui, de forma determinística.
  */
-function montarSecaoValorCausa(resumo?: ResumoValorCausa): string[] {
+export function montarSecaoValorCausa(resumo?: ResumoValorCausa): string[] {
   if (!resumo || resumo.totalCentavos <= 0) {
     return [
       "Dá-se à causa o valor de R$ [VALOR DA CAUSA] ([valor por extenso]), para fins de alçada e competência.",

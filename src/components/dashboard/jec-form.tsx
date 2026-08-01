@@ -82,6 +82,17 @@ function PecasResultado({
     await navigator.clipboard.writeText(texto);
   }
 
+  const citacoes = resultado.citacoes ?? [];
+  const jurisSemLastro = citacoes.filter(
+    (c) => c.tipo === "jurisprudencia" && !c.verificada
+  );
+  const jurisVerificada = citacoes.filter(
+    (c) => c.tipo === "jurisprudencia" && c.verificada
+  );
+  const fontes = resultado.baseConhecimentoUtilizada ?? [];
+  const faltouNaBase =
+    (resultado.marcadoresNaoEncontrado ?? 0) > 0 || fontes.length === 0;
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
@@ -92,6 +103,9 @@ function PecasResultado({
           <p className="mt-1 text-sm text-slate-500">
             Revise o texto antes de protocolar. Campos entre colchetes devem ser
             completados.
+            {resultado.geradoPorIA && resultado.modeloIA
+              ? ` Redigida por IA (${resultado.modeloIA}).`
+              : ""}
           </p>
         </div>
         <button
@@ -102,6 +116,91 @@ function PecasResultado({
           Novo formulário
         </button>
       </div>
+
+      {resultado.avisoIA && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {resultado.avisoIA}
+        </div>
+      )}
+
+      {jurisSemLastro.length > 0 && (
+        <section className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <h3 className="text-sm font-semibold text-red-800">
+            Jurisprudência sem lastro na base — conferir antes de protocolar
+          </h3>
+          <p className="mt-1 text-xs text-red-700">
+            Estes trechos aparecem na peça, mas não foram encontrados no
+            material injetado da base de conhecimento (possível invenção da IA).
+          </p>
+          <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-red-800">
+            {jurisSemLastro.map((c) => (
+              <li key={c.trecho}>{c.trecho}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {(fontes.length > 0 ||
+        faltouNaBase ||
+        resultado.leiMunicipalUtilizada ||
+        jurisVerificada.length > 0) && (
+        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="font-semibold text-slate-800">Fontes e verificação</h3>
+
+          {resultado.leiMunicipalUtilizada && (
+            <p className="mt-2 text-sm text-slate-600">
+              <strong>Lei municipal anexada:</strong>{" "}
+              {resultado.leiMunicipalUtilizada.nome}
+            </p>
+          )}
+
+          <div className="mt-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Base de conhecimento usada ({fontes.length})
+            </p>
+            {fontes.length === 0 ? (
+              <p className="mt-1 text-sm text-amber-800">
+                Nenhum trecho da base foi recuperado para este tema. Súmulas e
+                acórdãos não devem ser citados até você cadastrar jurisprudência
+                pertinente em Admin → Base de conhecimento.
+              </p>
+            ) : (
+              <ul className="mt-1 space-y-1 text-sm text-slate-700">
+                {fontes.map((item, i) => (
+                  <li key={`${item.titulo}-${i}`}>
+                    <span className="font-medium text-stone-700">
+                      {item.categoria}
+                    </span>{" "}
+                    — {item.titulo}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {(resultado.marcadoresNaoEncontrado ?? 0) > 0 && (
+            <p className="mt-3 text-sm text-amber-800">
+              A IA sinalizou {resultado.marcadoresNaoEncontrado}{" "}
+              {resultado.marcadoresNaoEncontrado === 1 ? "trecho" : "trechos"}{" "}
+              sem fundamentação específica na base ([NÃO ENCONTRADO NA BASE]).
+              Considere cadastrar súmula/julgado correspondente.
+            </p>
+          )}
+
+          {jurisVerificada.length > 0 && (
+            <div className="mt-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                Jurisprudência verificada na base
+              </p>
+              <ul className="mt-1 list-inside list-disc text-sm text-emerald-800">
+                {jurisVerificada.map((c) => (
+                  <li key={c.trecho}>{c.trecho}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
+      )}
 
       {resultado.decisaoAssistente && (
         <section className="rounded-lg border border-stone-300 bg-stone-50 p-6 shadow-sm">
@@ -191,12 +290,29 @@ export function JecForm() {
   const [comarca, setComarca] = useState<ComarcaValue>(comarcaVazia);
   const [valoresCausa, setValoresCausa] =
     useState<ValoresPorCategoria>(valoresCausaVazio);
+  const [usaLeiMunicipal, setUsaLeiMunicipal] = useState(false);
 
   const isAssistente = tipoSelecionado === ASSISTENTE_FACTO;
 
   useEffect(() => {
     setEscritorio(carregarEscritorioConfig());
   }, []);
+
+  async function lerArquivoComoBase64(
+    file: File
+  ): Promise<{ nome: string; mimeType: string; base64: string }> {
+    const buffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]!);
+    }
+    return {
+      nome: file.name,
+      mimeType: file.type || "application/pdf",
+      base64: btoa(binary),
+    };
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -208,6 +324,29 @@ export function JecForm() {
 
     const tipoAcao = String(formData.get("tipoAcao"));
     const modoAssistente = tipoAcao === ASSISTENTE_FACTO;
+
+    let leiMunicipal: {
+      nome: string;
+      mimeType: string;
+      base64: string;
+    } | null = null;
+
+    if (usaLeiMunicipal) {
+      const inputLei = form.querySelector<HTMLInputElement>("#leiMunicipal");
+      const arquivo = inputLei?.files?.[0];
+      if (!arquivo) {
+        setError("Marque a lei municipal e anexe o PDF ou Word (.docx).");
+        setLoading(false);
+        return;
+      }
+      try {
+        leiMunicipal = await lerArquivoComoBase64(arquivo);
+      } catch {
+        setError("Não foi possível ler o arquivo da lei municipal.");
+        setLoading(false);
+        return;
+      }
+    }
 
     const payload = {
       tipoAcao,
@@ -241,6 +380,7 @@ export function JecForm() {
         numeroJuizado: comarca.numeroJuizado || undefined,
       },
       valoresCausa,
+      leiMunicipal,
     };
 
     try {
@@ -401,6 +541,37 @@ export function JecForm() {
 
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="mb-1 text-lg font-semibold text-slate-800">
+          Lei municipal (opcional)
+        </h2>
+        <p className="mb-4 text-sm text-slate-500">
+          Use apenas quando a ação depender de lei, decreto ou código do
+          município. A IA analisa só o arquivo anexado — não inventa norma
+          municipal.
+        </p>
+        <label className="flex items-start gap-2 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            checked={usaLeiMunicipal}
+            onChange={(e) => setUsaLeiMunicipal(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
+          />
+          <span>
+            Este caso depende de norma municipal — anexar PDF ou Word (.docx)
+          </span>
+        </label>
+        {usaLeiMunicipal && (
+          <div className="mt-4">
+            <FileField
+              id="leiMunicipal"
+              label="Arquivo da lei / decreto municipal"
+              accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            />
+          </div>
+        )}
+      </section>
+
+      <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="mb-1 text-lg font-semibold text-slate-800">
           Documentos Pessoais
         </h2>
         <p className="mb-4 text-sm text-slate-500">
@@ -476,9 +647,7 @@ export function JecForm() {
           className="rounded-lg bg-stone-700 px-8 py-3.5 text-base font-semibold text-amber-50 shadow-sm transition hover:bg-stone-600 disabled:opacity-60"
         >
           {loading
-            ? isAssistente
-              ? "Assistente analisando..."
-              : "Analisando e gerando..."
+            ? "Buscando fontes e redigindo com IA..."
             : isAssistente
               ? "Analisar Case e Gerar Peça"
               : "Analisar Provas e Gerar Peça"}

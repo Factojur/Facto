@@ -86,14 +86,71 @@ function normalizar(texto: string): string {
     .toLowerCase();
 }
 
-function palavrasChave(tipoAcao: string): string[] {
-  const palavrasDoTipo = normalizar(tipoAcao)
+const STOPWORDS = new Set([
+  "para",
+  "pela",
+  "pelo",
+  "pelos",
+  "pelas",
+  "uma",
+  "umas",
+  "uns",
+  "com",
+  "sem",
+  "sob",
+  "sobre",
+  "entre",
+  "quando",
+  "onde",
+  "como",
+  "mais",
+  "menos",
+  "muito",
+  "muitos",
+  "apos",
+  "antes",
+  "depois",
+  "este",
+  "esta",
+  "estes",
+  "estas",
+  "esse",
+  "essa",
+  "isso",
+  "aquele",
+  "aquela",
+  "dele",
+  "dela",
+  "deles",
+  "delas",
+  "seu",
+  "sua",
+  "seus",
+  "suas",
+  "que",
+  "qual",
+  "quais",
+  "foi",
+  "ser",
+  "ter",
+  "havia",
+  "tendo",
+  "sendo",
+  "nao",
+  "sim",
+  "também",
+  "tambem",
+]);
+
+function palavrasChave(tipoAcao: string, textoExtra?: string): string[] {
+  const bruto = normalizar([tipoAcao, textoExtra ?? ""].filter(Boolean).join(" "));
+  const palavras = bruto
     .split(/[^a-z0-9]+/)
-    .filter((p) => p.length > 3);
+    .filter((p) => p.length > 3 && !STOPWORDS.has(p));
 
   return Array.from(
-    new Set([...palavrasDoTipo, "juizado especial civel", "9099", "9.099"])
-  );
+    new Set([...palavras, "juizado especial civel", "9099", "9.099"])
+  ).slice(0, 24);
 }
 
 // Tamanho máximo de um trecho individual — grande o bastante para caber um
@@ -172,9 +229,11 @@ function pontuarTrecho(trechoNormalizado: string, palavras: string[]): number {
  */
 export async function buscarConhecimentoRelacionado(
   tipoAcao: string,
-  limite = 6
+  limite = 6,
+  /** Fatos / tese do caso — amplia as palavras-chave da busca (RAG). */
+  textoExtra?: string
 ): Promise<TrechoConhecimento[]> {
-  const palavras = palavrasChave(tipoAcao);
+  const palavras = palavrasChave(tipoAcao, textoExtra);
   if (palavras.length === 0) return [];
 
   try {
