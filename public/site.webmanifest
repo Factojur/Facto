@@ -4,8 +4,8 @@
   "description": "Inteligência Artificial para peças jurídicas",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1c1c16",
-  "theme_color": "#1c1c16",
+  "background_color": "#282722",
+  "theme_color": "#282722",
   "icons": [
     {
       "src": "/favicon-192.png",
