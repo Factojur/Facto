@@ -34,13 +34,13 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon.ico?v=20260801d", sizes: "48x48" },
-      { url: "/icon-atalho-192.png?v=20260801d", sizes: "192x192", type: "image/png" },
-      { url: "/icon-atalho-512.png?v=20260801d", sizes: "512x512", type: "image/png" },
+      { url: "/favicon.ico?v=20260801e", sizes: "48x48" },
+      { url: "/icon-atalho-192.png?v=20260801e", sizes: "192x192", type: "image/png" },
+      { url: "/icon-atalho-512.png?v=20260801e", sizes: "512x512", type: "image/png" },
     ],
     apple: [
       {
-        url: "/icon-atalho-180.png?v=20260801d",
+        url: "/icon-atalho-180.png?v=20260801e",
         sizes: "180x180",
         type: "image/png",
       },
