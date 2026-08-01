@@ -30,31 +30,35 @@ function escapeHtml(texto: string): string {
 }
 
 function blocoParaHtml(bloco: string): string {
-  const linhas = bloco.split("\n");
-  const titulosSecao = /^[IVX]+ — /;
-  const enderecamento = /^EXCELENTÍSSIMO|^DA COMARCA/;
-  const fechamento = /^(Termos em que|Pede deferimento|\[CIDADE)/;
-  const pedido = /^[a-z]\) /;
+  // Une linhas soltas em parágrafos (quebra dupla = novo parágrafo).
+  const paragrafos = bloco
+    .replace(/\r\n/g, "\n")
+    .split(/\n\s*\n/)
+    .map((p) => p.replace(/\n+/g, " ").replace(/\s+/g, " ").trim())
+    .filter(Boolean);
 
-  return linhas
-    .map((linha) => {
-      const t = linha.trim();
-      if (!t) return "<br />";
+  const titulosSecao = /^([IVXLCDM]+)\s*—\s+/i;
+  const subtopico = /^([a-z]\)|\d+\.\d*|\([a-z]\))\s+/i;
+  const enderecamento = /^EXCELENTÍSSIMO|^DA COMARCA/i;
+  const fechamento = /^(Termos em que|Pede deferimento|\[CIDADE)/i;
+  const pedido = /^[a-z]\)\s+/i;
 
+  return paragrafos
+    .map((t) => {
       if (titulosSecao.test(t)) {
         return `<p class="secao-titulo">${escapeHtml(t)}</p>`;
       }
-      if (enderecamento.test(t) || t === t.toUpperCase() && t.length < 80 && !t.startsWith("\t")) {
+      if (
+        enderecamento.test(t) ||
+        (t === t.toUpperCase() && t.length < 100 && !t.startsWith("-"))
+      ) {
         return `<p class="enderecamento">${escapeHtml(t)}</p>`;
       }
       if (fechamento.test(t) || t.startsWith("OAB/")) {
         return `<p class="fechamento">${escapeHtml(t)}</p>`;
       }
-      if (pedido.test(t)) {
+      if (pedido.test(t) || subtopico.test(t)) {
         return `<p class="pedido">${escapeHtml(t)}</p>`;
-      }
-      if (linha.startsWith("\t")) {
-        return `<p class="paragrafo">${escapeHtml(t)}</p>`;
       }
       if (t.startsWith("- ")) {
         return `<p class="prova-item">${escapeHtml(t)}</p>`;

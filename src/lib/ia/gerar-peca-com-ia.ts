@@ -50,15 +50,23 @@ function montarUserPrompt(params: {
   casoReal: boolean;
 }): string {
   const partes = [
-    `Tipo de ação: ${params.tipoAcao}`,
+    "TAREFA: redija a peça JEC completa seguindo o system prompt (workflow de advogado sênior).",
+    "",
+    `Indicação do formulário (pista — NÃO prevalece sobre a qualificação correta dos fatos): ${params.tipoAcao}`,
     params.instrucoes?.tutelaUrgencia != null
-      ? `Tutela de urgência: ${params.instrucoes.tutelaUrgencia ? "Sim — incluir pedido e fundamentação" : "Não"}`
+      ? `Tutela de urgência indicada no formulário: ${params.instrucoes.tutelaUrgencia ? "Sim — incluir pedido e fundamentação (art. 300 do CPC)" : "Não — só inclua se os fatos revelarem urgência manifesta"}`
       : null,
     "",
+    "IMPORTANTE:",
+    "- Qualifique o NOME CORRETO da ação com base no relato.",
+    "- NÃO copie o relato bruto. Reescreva os fatos em 3ª pessoa, parágrafos curtos separados por linha em branco (\\n\\n).",
+    "- Fundamentação profunda em DO DIREITO (CDC/CC/súmulas consolidadas quando couber), com subsunção.",
+    "",
     params.casoReal
-      ? "Fatos do caso (redija a peça com base nisto):"
-      : "Fatos (caso de TESTE, fictício):",
+      ? "<RELATO_BRUTO_DO_USUARIO> (insumo — reescrever, nunca colar):"
+      : "<RELATO_BRUTO_DO_USUARIO> (caso de TESTE fictício — reescrever, nunca colar):",
     params.fatos.trim(),
+    "</RELATO_BRUTO_DO_USUARIO>",
   ].filter((p): p is string => p != null);
 
   if (params.instrucoes?.enderecamento?.trim()) {
@@ -96,15 +104,36 @@ function montarUserPrompt(params: {
   return partes.join("\n");
 }
 
-/** Remove marcação Markdown leve para o preview/exporto da peça. */
+/**
+ * Remove Markdown leve e garante espaçamento dissertativo entre parágrafos
+ * para o preview HTML / PDF / Word.
+ */
 export function markdownLeveParaTexto(texto: string): string {
-  return texto
+  let t = texto
     .replace(/\r\n/g, "\n")
     .replace(/^#{1,6}\s+/gm, "")
     .replace(/\*\*(.+?)\*\*/g, "$1")
     .replace(/__(.+?)__/g, "$1")
     .replace(/^\s*[-*]\s+/gm, "- ")
+    .replace(/[ \t]+\n/g, "\n")
     .trim();
+
+  // Normaliza títulos "I. DOS FATOS" / "I - DOS FATOS" → "I — DOS FATOS"
+  t = t.replace(
+    /^([IVXLCDM]+)\s*[.\-–—:]\s+/gim,
+    (_m, romanos: string) => `${romanos.toUpperCase()} — `
+  );
+
+  // Se o modelo entregou quase tudo em um bloco, tenta abrir parágrafos
+  // após pontuação forte seguida de maiúscula (sem já haver quebra dupla).
+  if (!/\n\s*\n/.test(t) && t.length > 400) {
+    t = t.replace(/([.!?])\s+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ])/g, "$1\n\n");
+  }
+
+  // Colapsa 3+ quebras em exatamente 2 (parágrafo)
+  t = t.replace(/\n{3,}/g, "\n\n");
+
+  return t.trim();
 }
 
 export async function gerarPecaComIA(params: {

@@ -15,18 +15,17 @@
 // negativo é o risco real, porque deixaria uma citação passar sem checagem).
 //
 // Separados em duas categorias porque o nível de confiança é diferente:
-// - "lei": artigos de códigos consolidados (CF, CC, CPC, CDC, CLT, Lei
-//   9.099/95). O modelo pode citar isso de memória (é conteúdo público,
-//   estável e fartamente repetido no treinamento) — não citar de base
-//   forçaria a IA a marcar até "Art. 5º da CF" como "não encontrado".
-// - "jurisprudencia": súmulas, acórdãos, número de processo. Aqui o risco de
-//   invenção é real e documentado (datas, relatores e números de processo
-//   são praticamente arbitrários) — o prompt exige que só sejam citados se
-//   estiverem literalmente na base_conhecimento injetada.
+// - "lei": artigos de códigos consolidados e súmulas STF/STJ (podem vir da
+//   memória do modelo). Falso "não verificado" aqui é só informativo.
+// - "jurisprudencia": acórdãos / número de processo. Risco alto de invenção
+//   (datas, relatores, números) — só valem com lastro na base injetada.
 export type TipoCitacao = "lei" | "jurisprudencia";
 
 const PADROES_CITACAO: { tipo: TipoCitacao; regex: RegExp }[] = [
-  { tipo: "jurisprudencia", regex: /súmula\s+(?:vinculante\s+)?n?[ºo°.]?\s*\d+(?:\s+d[oa]\s+\w+)?/gi },
+  // Súmulas consolidadas STF/STJ: tratadas como "lei" na verificação (podem
+  // vir da memória do modelo, como códigos). Acórdãos/processos continuam
+  // exigindo lastro na base.
+  { tipo: "lei", regex: /súmula\s+(?:vinculante\s+)?n?[ºo°.]?\s*\d+(?:\s+d[oa]\s+\w+)?/gi },
   { tipo: "lei", regex: /lei\s+n?[ºo°.]?\s*[\d.]+(?:\/\d{2,4})?/gi },
   { tipo: "lei", regex: /decreto(?:-lei)?\s+n?[ºo°.]?\s*[\d.]+(?:\/\d{2,4})?/gi },
   { tipo: "lei", regex: /art(?:igo)?\.?\s*\d+[º°]?(?:[,-]?\s*(?:§\s*\d+[º°]?|inciso\s+[ivxlcdm]+|caput))?/gi },

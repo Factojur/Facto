@@ -1,34 +1,69 @@
+/**
+ * Exporta a peça para PDF no browser via html2pdf.js.
+ * Usa o HTML timbrado (não o nó da tela) para evitar CSS do layout
+ * interferir no html2canvas — causa comum de falha silenciosa.
+ */
+
+type Html2PdfChain = {
+  set: (options: Record<string, unknown>) => Html2PdfChain;
+  from: (element: HTMLElement) => Html2PdfChain;
+  save: () => Promise<void>;
+};
+
+type Html2PdfFactory = () => Html2PdfChain;
+
+function sanitizarHtmlParaCanvas(html: string): string {
+  // Alguns ambientes do html2canvas falham com emoji / símbolos fora do BMP.
+  return html
+    .replace(/\uFE0F/g, "")
+    .replace(/⚠️/g, "[ATENCAO]")
+    .replace(/[^\u0000-\uFFFF]/g, "");
+}
+
 export async function baixarPecaPdf(
-  elemento: HTMLElement,
+  pecaHtml: string,
   nomeArquivo = "peca-facto.pdf"
 ): Promise<void> {
-  const html2pdf = (await import("html2pdf.js")).default;
-
-  const clone = elemento.cloneNode(true) as HTMLElement;
-  clone.style.maxWidth = "21cm";
-  clone.style.padding = "0";
-  clone.style.background = "#fff";
+  const mod = (await import("html2pdf.js")) as unknown as {
+    default?: Html2PdfFactory;
+  } & Html2PdfFactory;
+  const html2pdf: Html2PdfFactory =
+    typeof mod.default === "function" ? mod.default : mod;
+  if (typeof html2pdf !== "function") {
+    throw new Error("Biblioteca html2pdf.js indisponível neste navegador.");
+  }
 
   const container = document.createElement("div");
-  container.style.position = "fixed";
-  container.style.left = "-9999px";
-  container.style.top = "0";
-  container.style.width = "21cm";
-  container.appendChild(clone);
+  container.setAttribute("data-facto-pdf-export", "1");
+  container.style.cssText =
+    "position:fixed;left:-10000px;top:0;width:190mm;background:#fff;color:#000;";
+  container.innerHTML = sanitizarHtmlParaCanvas(pecaHtml);
   document.body.appendChild(container);
+
+  const artigo =
+    (container.querySelector(".documento-juridico") as HTMLElement | null) ??
+    container;
 
   try {
     await html2pdf()
       .set({
-        margin: [30, 20, 20, 30],
+        margin: [15, 15, 15, 15],
         filename: nomeArquivo,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+        image: { type: "jpeg", quality: 0.96 },
+        pagebreak: { mode: ["css", "legacy"] },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: "#ffffff",
+          logging: false,
+          windowWidth: 794,
+        },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
       })
-      .from(clone)
+      .from(artigo)
       .save();
   } finally {
-    document.body.removeChild(container);
+    container.remove();
   }
 }

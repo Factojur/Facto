@@ -35,13 +35,17 @@ export function PecaDocumentoView({
   }
 
   async function handleBaixarPdf() {
-    if (!ref.current) return;
     setErro(null);
     setBaixando("pdf");
     try {
-      await baixarPecaPdf(ref.current);
-    } catch {
-      setErro("Não foi possível gerar o arquivo PDF.");
+      await baixarPecaPdf(pecaHtml);
+    } catch (e) {
+      const detalhe = e instanceof Error ? e.message : "";
+      setErro(
+        detalhe
+          ? `Não foi possível gerar o PDF: ${detalhe}`
+          : "Não foi possível gerar o arquivo PDF."
+      );
     }
     setBaixando(null);
   }

@@ -75,7 +75,9 @@ async function chamarGemini(params: {
           },
         ],
         generationConfig: {
-          temperature: 0.3,
+          // Um pouco acima de 0.3 melhora narrativa/fatos sem abrir demais
+          // para invenção de números de processo.
+          temperature: 0.45,
           maxOutputTokens: 8192,
         },
       }),
