@@ -39,18 +39,31 @@ function blocoParaHtml(bloco: string): string {
 
   const titulosSecao = /^([IVXLCDM]+)\s*—\s+/i;
   const subtopico = /^([a-z]\)|\d+\.\d*|\([a-z]\))\s+/i;
-  const enderecamento = /^EXCELENTÍSSIMO|^DA COMARCA/i;
+  const enderecamento = /^EXCELENTÍSSIMO|^DA COMARCA|^JU[IÍ]ZO\s+DA/i;
   const fechamento = /^(Termos em que|Pede deferimento|\[CIDADE)/i;
   const pedido = /^[a-z]\)\s+/i;
+  const nomeAcao =
+    /^(?:PETI[CÇ][AÃ]O\s+INICIAL\s*[—–-]?\s*)?(?:A[CÇ][AÃ]O\s+DE\s+|EXECU[CÇ][AÃ]O\s+|EMBARGOS\s+|RECURSO\s+)/i;
 
   return paragrafos
     .map((t) => {
       if (titulosSecao.test(t)) {
         return `<p class="secao-titulo">${escapeHtml(t)}</p>`;
       }
+      if (enderecamento.test(t)) {
+        return `<p class="enderecamento">${escapeHtml(t)}</p>`;
+      }
       if (
-        enderecamento.test(t) ||
-        (t === t.toUpperCase() && t.length < 100 && !t.startsWith("-"))
+        nomeAcao.test(t) &&
+        (t === t.toUpperCase() || t.length < 140)
+      ) {
+        return `<p class="nome-acao">${escapeHtml(t)}</p>`;
+      }
+      if (
+        t === t.toUpperCase() &&
+        t.length < 100 &&
+        !t.startsWith("-") &&
+        !t.startsWith("[")
       ) {
         return `<p class="enderecamento">${escapeHtml(t)}</p>`;
       }
@@ -195,7 +208,15 @@ export function gerarDocumentoTimbrado(
     .documento-juridico .paragrafo {
       text-align: justify;
       text-indent: 2cm;
-      margin: 0 0 0.75rem;
+      margin: 0 0 0.9rem;
+      white-space: normal;
+    }
+    .documento-juridico .nome-acao {
+      text-align: center;
+      font-weight: bold;
+      text-indent: 0;
+      margin: 1rem 0;
+      text-transform: uppercase;
     }
     .documento-juridico .prova-item,
     .documento-juridico .pedido {

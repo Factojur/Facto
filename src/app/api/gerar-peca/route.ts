@@ -13,10 +13,8 @@ import {
   TAMANHO_MAXIMO_ARQUIVO_BYTES,
   TIPOS_ARQUIVO_ACEITOS,
 } from "@/lib/base-conhecimento";
-import {
-  gerarPecaComIA,
-  markdownLeveParaTexto,
-} from "@/lib/ia/gerar-peca-com-ia";
+import { gerarPecaComIA } from "@/lib/ia/gerar-peca-com-ia";
+import { normalizarPecaGerada } from "@/lib/ia/normalizar-peca-gerada";
 import { geminiConfigurado } from "@/lib/ia/gemini-client";
 import { gerarDocumentoTimbrado } from "@/lib/formatacao-juridica";
 import { calcularResumoValorCausa } from "@/lib/valores-causa";
@@ -188,7 +186,7 @@ export async function POST(request: Request) {
     return NextResponse.json(fallback);
   }
 
-  const peca = markdownLeveParaTexto(ia.textoGerado);
+  const peca = normalizarPecaGerada(ia.textoGerado);
   const { pecaHtml } = gerarDocumentoTimbrado(
     peca,
     body.escritorio?.usarTimbre ? body.escritorio : undefined

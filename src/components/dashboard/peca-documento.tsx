@@ -38,7 +38,7 @@ export function PecaDocumentoView({
     setErro(null);
     setBaixando("pdf");
     try {
-      await baixarPecaPdf(pecaHtml);
+      await baixarPecaPdf(peca);
     } catch (e) {
       const detalhe = e instanceof Error ? e.message : "";
       setErro(

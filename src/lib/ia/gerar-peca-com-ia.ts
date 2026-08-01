@@ -104,37 +104,8 @@ function montarUserPrompt(params: {
   return partes.join("\n");
 }
 
-/**
- * Remove Markdown leve e garante espaçamento dissertativo entre parágrafos
- * para o preview HTML / PDF / Word.
- */
-export function markdownLeveParaTexto(texto: string): string {
-  let t = texto
-    .replace(/\r\n/g, "\n")
-    .replace(/^#{1,6}\s+/gm, "")
-    .replace(/\*\*(.+?)\*\*/g, "$1")
-    .replace(/__(.+?)__/g, "$1")
-    .replace(/^\s*[-*]\s+/gm, "- ")
-    .replace(/[ \t]+\n/g, "\n")
-    .trim();
-
-  // Normaliza títulos "I. DOS FATOS" / "I - DOS FATOS" → "I — DOS FATOS"
-  t = t.replace(
-    /^([IVXLCDM]+)\s*[.\-–—:]\s+/gim,
-    (_m, romanos: string) => `${romanos.toUpperCase()} — `
-  );
-
-  // Se o modelo entregou quase tudo em um bloco, tenta abrir parágrafos
-  // após pontuação forte seguida de maiúscula (sem já haver quebra dupla).
-  if (!/\n\s*\n/.test(t) && t.length > 400) {
-    t = t.replace(/([.!?])\s+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ])/g, "$1\n\n");
-  }
-
-  // Colapsa 3+ quebras em exatamente 2 (parágrafo)
-  t = t.replace(/\n{3,}/g, "\n\n");
-
-  return t.trim();
-}
+/** @deprecated Use normalizarPecaGerada — mantido para imports antigos. */
+export { normalizarPecaGerada as markdownLeveParaTexto } from "@/lib/ia/normalizar-peca-gerada";
 
 export async function gerarPecaComIA(params: {
   tipoAcao: string;

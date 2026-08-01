@@ -267,8 +267,8 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
   const pecaBruta = [
     ...enderecamento.split("\n"),
     "",
-    `${tipoAcao.toUpperCase()}`,
-    "",
+    // Nome da ação aparece uma única vez — entre as qualificações, nunca
+    // logo abaixo do endereçamento.
     `[NOME COMPLETO DO(A) AUTOR(A)], [nacionalidade], [estado civil], [profissão], inscrito(a) no CPF sob nº [CPF], `
       + "portador(a) do RG nº [RG], residente e domiciliado(a) na [endereço completo], "
       + "endereço eletrônico [e-mail], por seu advogado que esta subscreve "
