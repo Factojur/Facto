@@ -17,6 +17,12 @@ const navItems = [
     icon: "⚖️",
     match: (path: string) => path.startsWith("/dashboard/jec"),
   },
+  {
+    href: "/dashboard/suporte",
+    label: "Suporte",
+    icon: "💬",
+    match: (path: string) => path.startsWith("/dashboard/suporte"),
+  },
 ] as const;
 
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
