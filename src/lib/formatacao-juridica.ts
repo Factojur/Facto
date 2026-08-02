@@ -1,18 +1,18 @@
 import type { EscritorioConfig } from "./escritorio-types";
 import {
   FORMATACAO_FORENSE,
+  dividirBlocosPeca,
   ehMarcadorEspacoEnderecamento,
 } from "./formatacao-forense";
 
-/** Formata parágrafos dos fatos com recuo de primeira linha (padrão forense). */
+/** Formata parágrafos dos fatos (linha sob linha, sem linha em branco interna). */
 function formatarParagrafos(texto: string): string {
   return texto
     .trim()
-    .split(/\n\s*\n/)
+    .split(/\n+/)
     .map((p) => p.trim().replace(/\s+/g, " "))
     .filter(Boolean)
-    .map((p) => `\t${p}`)
-    .join("\n\n");
+    .join("\n");
 }
 
 /** Aplica regras de espaçamento entre seções da peça. */
@@ -20,8 +20,8 @@ export function aplicarFormatacaoTextoJuridico(pecaBruta: string, fatos: string)
   const fatosFormatados = formatarParagrafos(fatos);
 
   return pecaBruta.replace(
-    /I — DOS FATOS\n\n[\s\S]*?(?=\n\nII — DO DIREITO)/,
-    `I — DOS FATOS\n\n${fatosFormatados}`
+    /I\s*[-—–]\s*DOS FATOS\n+[\s\S]*?(?=\n+II\s*[-—–]\s*DO DIREITO)/i,
+    `I - DOS FATOS\n${fatosFormatados}`
   );
 }
 
@@ -33,32 +33,47 @@ function escapeHtml(texto: string): string {
     .replace(/"/g, "&quot;");
 }
 
-/** Escapa HTML e converte **negrito** Markdown em <strong>. */
+/** Escapa HTML e converte **negrito** / *itálico* Markdown. */
 function formatarInlineHtml(texto: string): string {
-  const escapado = escapeHtml(texto);
-  return escapado.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  const tokens = texto.split(/(\*\*[^*]+?\*\*|\*[^*]+?\*)/g).filter((t) => t.length > 0);
+
+  return tokens
+    .map((token) => {
+      const negrito = /^\*\*([^*]+?)\*\*$/.exec(token);
+      if (negrito) {
+        return `<strong>${escapeHtml(negrito[1]!)}</strong>`;
+      }
+      const italico = /^\*([^*]+?)\*$/.exec(token);
+      if (italico) {
+        return `<em>${escapeHtml(italico[1]!)}</em>`;
+      }
+      return escapeHtml(token);
+    })
+    .join("");
 }
 
 function blocoParaHtml(bloco: string): string {
-  // Une linhas soltas em parágrafos (quebra dupla = novo parágrafo).
-  const paragrafos = bloco
-    .replace(/\r\n/g, "\n")
-    .split(/\n\s*\n/)
-    .map((p) => p.replace(/\n+/g, " ").replace(/\s+/g, " ").trim())
-    .filter(Boolean);
+  // 1 linha = 1 parágrafo (espaçamento rígido: sem linha em branco interna).
+  const paragrafos = dividirBlocosPeca(bloco);
 
-  const titulosSecao = /^([IVXLCDM]+)\s*—\s+/i;
+  const titulosSecao = /^([IVXLCDM]+)\s*[-—–]\s+/i;
   const subtopico = /^([a-z]\)|\d+\.\d*|\([a-z]\))\s+/i;
   const enderecamento = /^EXCELENTÍSSIMO|^DA COMARCA|^JU[IÍ]ZO\s+DA/i;
-  const fechamento = /^(Termos em que|Pede deferimento|\[CIDADE)/i;
+  const inicioFechamento =
+    /^(Termos em que|Pede e espera deferimento|Pede deferimento)/i;
   const pedido = /^[a-z]\)\s+/i;
   const nomeAcao =
     /^(?:PETI[CÇ][AÃ]O\s+INICIAL\s*[—–-]?\s*)?(?:A[CÇ][AÃ]O\s+DE\s+|EXECU[CÇ][AÃ]O\s+|EMBARGOS\s+|RECURSO\s+)/i;
+
+  let emFechamento = false;
 
   return paragrafos
     .map((t) => {
       if (ehMarcadorEspacoEnderecamento(t)) {
         return `<div class="espaco-enderecamento" aria-hidden="true"></div>`;
+      }
+      if (inicioFechamento.test(t)) {
+        emFechamento = true;
       }
       if (titulosSecao.test(t)) {
         return `<p class="secao-titulo">${formatarInlineHtml(t)}</p>`;
@@ -73,14 +88,16 @@ function blocoParaHtml(bloco: string): string {
         return `<p class="nome-acao">${formatarInlineHtml(t)}</p>`;
       }
       if (
+        !emFechamento &&
         t === t.toUpperCase() &&
         t.length < 100 &&
         !t.startsWith("-") &&
-        !t.startsWith("[")
+        !t.startsWith("[") &&
+        !titulosSecao.test(t)
       ) {
         return `<p class="enderecamento">${formatarInlineHtml(t)}</p>`;
       }
-      if (fechamento.test(t) || t.startsWith("OAB/")) {
+      if (emFechamento || t.startsWith("OAB/")) {
         return `<p class="fechamento">${formatarInlineHtml(t)}</p>`;
       }
       if (pedido.test(t) || subtopico.test(t)) {
@@ -163,9 +180,10 @@ export function gerarDocumentoTimbrado(
       background: #fff;
       padding: ${FORMATACAO_FORENSE.margemSuperiorCm}cm ${FORMATACAO_FORENSE.margemDireitaCm}cm ${FORMATACAO_FORENSE.margemInferiorCm}cm ${FORMATACAO_FORENSE.margemEsquerdaCm}cm;
       box-sizing: border-box;
+      text-align: justify;
     }
     .documento-juridico .espaco-enderecamento {
-      /* ~10 linhas com entrelinha 1,5 (praxe forense) */
+      /* 6 quebras com entrelinha 1,5 (praxe forense FACTO) */
       height: calc(1.5em * ${FORMATACAO_FORENSE.linhasAposEnderecamento});
       width: 100%;
     }
@@ -220,37 +238,47 @@ export function gerarDocumentoTimbrado(
       text-align: center;
       font-weight: bold;
       text-indent: 0;
-      margin: 1rem 0 0.5rem;
+      margin: 0.35rem 0 0.15rem;
     }
     .documento-juridico .secao-titulo {
       font-weight: bold;
-      text-align: left;
+      text-align: justify;
       text-indent: 0;
-      margin: 1.25rem 0 0.75rem;
+      margin: 0.6em 0 0.15em;
     }
+    .documento-juridico p,
     .documento-juridico .paragrafo {
       text-align: justify;
       text-indent: 2cm;
-      margin: 0 0 0.9rem;
+      margin: 0 0 4px;
       white-space: normal;
+    }
+    .documento-juridico .secao-titulo,
+    .documento-juridico .enderecamento,
+    .documento-juridico .nome-acao,
+    .documento-juridico .pedido,
+    .documento-juridico .prova-item,
+    .documento-juridico .fechamento {
+      text-indent: 0;
     }
     .documento-juridico .nome-acao {
       text-align: center;
       font-weight: bold;
-      text-indent: 0;
-      margin: 1rem 0;
+      margin: 0.5em 0 0;
       text-transform: uppercase;
+    }
+    .documento-juridico em {
+      font-style: italic;
     }
     .documento-juridico .prova-item,
     .documento-juridico .pedido {
       text-align: justify;
-      text-indent: 0;
-      margin: 0 0 0.5rem 1cm;
+      margin: 0.5em 0 4px 1cm;
     }
     .documento-juridico .fechamento {
       text-align: center;
       text-indent: 0;
-      margin: 1.5rem 0 0.25rem;
+      margin: 0.35rem 0 4px;
     }
     @media print {
       body { margin: 0; }

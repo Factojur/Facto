@@ -18,6 +18,7 @@ import type { EscritorioConfig } from "./escritorio-types";
 import {
   FORMATACAO_FORENSE,
   cmParaTwips,
+  dividirBlocosPeca,
   ehMarcadorEspacoEnderecamento,
 } from "./formatacao-forense";
 
@@ -102,10 +103,13 @@ function paragrafoTimbre(texto: string): Paragraph {
   });
 }
 
-function linhaParaParagrafo(linha: string): Paragraph | Paragraph[] {
+function linhaParaParagrafo(
+  linha: string,
+  emFechamento = false
+): Paragraph | Paragraph[] {
   const t = linha.trim();
   if (!t) {
-    return new Paragraph({ spacing: { after: 120 } });
+    return new Paragraph({ spacing: { after: 40 } });
   }
 
   if (ehMarcadorEspacoEnderecamento(t)) {
@@ -120,17 +124,29 @@ function linhaParaParagrafo(linha: string): Paragraph | Paragraph[] {
   const base = { font: FONTE, size: TAMANHO };
 
   function runsDeMarkdown(texto: string, forcarNegrito = false): TextRun[] {
-    const partes = texto.split(/(\*\*.+?\*\*)/g).filter(Boolean);
+    const partes = texto.split(/(\*\*[^*]+?\*\*|\*[^*]+?\*)/g).filter(Boolean);
     return partes.map((parte) => {
-      const negrito = forcarNegrito || /^\*\*(.+)\*\*$/.test(parte);
-      const limpo = parte.replace(/^\*\*(.+)\*\*$/, "$1");
-      return new TextRun({ ...base, text: limpo, bold: negrito });
+      if (/^\*\*([^*]+?)\*\*$/.test(parte)) {
+        const limpo = parte.replace(/^\*\*([^*]+?)\*\*$/, "$1");
+        return new TextRun({ ...base, text: limpo, bold: true });
+      }
+      if (/^\*([^*]+?)\*$/.test(parte)) {
+        const limpo = parte.replace(/^\*([^*]+?)\*$/, "$1");
+        return new TextRun({
+          ...base,
+          text: limpo,
+          italics: true,
+          bold: forcarNegrito,
+        });
+      }
+      return new TextRun({ ...base, text: parte, bold: forcarNegrito });
     });
   }
 
-  if (/^[IVXLCDM]+ —/i.test(t)) {
+  if (/^[IVXLCDM]+\s*[-—–]/i.test(t)) {
     return new Paragraph({
-      spacing: { before: 280, after: 160, line: ESPACO_LINHA },
+      alignment: AlignmentType.JUSTIFIED,
+      spacing: { before: 160, after: 40, line: ESPACO_LINHA },
       children: runsDeMarkdown(t, true),
     });
   }
@@ -142,15 +158,19 @@ function linhaParaParagrafo(linha: string): Paragraph | Paragraph[] {
   ) {
     return new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { before: 120, after: 120, line: ESPACO_LINHA },
+      spacing: { before: 80, after: 40, line: ESPACO_LINHA },
       children: runsDeMarkdown(t, true),
     });
   }
 
-  if (/^(Termos em que|Pede deferimento)/.test(t) || t.startsWith("OAB/")) {
+  if (
+    emFechamento ||
+    /^(Termos em que|Pede e espera deferimento|Pede deferimento)/.test(t) ||
+    t.startsWith("OAB/")
+  ) {
     return new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { before: 240, after: 80, line: ESPACO_LINHA },
+      spacing: { before: 80, after: 40, line: ESPACO_LINHA },
       children: runsDeMarkdown(t),
     });
   }
@@ -159,7 +179,7 @@ function linhaParaParagrafo(linha: string): Paragraph | Paragraph[] {
     return new Paragraph({
       alignment: AlignmentType.JUSTIFIED,
       indent: { left: 567 },
-      spacing: { after: 120, line: ESPACO_LINHA },
+      spacing: { before: 160, after: 40, line: ESPACO_LINHA },
       children: runsDeMarkdown(t),
     });
   }
@@ -167,7 +187,7 @@ function linhaParaParagrafo(linha: string): Paragraph | Paragraph[] {
   return new Paragraph({
     alignment: AlignmentType.JUSTIFIED,
     indent: { firstLine: RECUO_PARAGRAFO },
-    spacing: { after: 200, line: ESPACO_LINHA },
+    spacing: { after: 40, line: ESPACO_LINHA },
     children: runsDeMarkdown(t),
   });
 }
@@ -276,12 +296,12 @@ export async function gerarPecaDocxBlob(
   escritorio?: EscritorioConfig
 ): Promise<Blob> {
   const paragrafos: Paragraph[] = [];
-  for (const bloco of peca
-    .replace(/\r\n/g, "\n")
-    .split(/\n\s*\n/)
-    .map((b) => b.replace(/\n+/g, " ").trim())
-    .filter(Boolean)) {
-    const p = linhaParaParagrafo(bloco);
+  let emFechamento = false;
+  for (const bloco of dividirBlocosPeca(peca)) {
+    if (/^(Termos em que|Pede e espera deferimento|Pede deferimento)/i.test(bloco)) {
+      emFechamento = true;
+    }
+    const p = linhaParaParagrafo(bloco, emFechamento);
     if (Array.isArray(p)) paragrafos.push(...p);
     else paragrafos.push(p);
   }

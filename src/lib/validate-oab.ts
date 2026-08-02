@@ -1,3 +1,5 @@
+import { somenteNumeroOab } from "@/lib/formatar-oab";
+
 export type UserRole = "admin" | "teste";
 
 export type OabValidationResult =
@@ -14,12 +16,9 @@ const TEST_OAB = "147099";
 
 const INVALID_MOCK_OAB = "123456";
 
-function normalizeOab(oab: string): string {
-  return oab.replace(/\D/g, "");
-}
-
 /**
  * Validação mock da OAB antes do cadastro no Supabase.
+ * Aceita UF+número (ex.: SP147099); compara só os dígitos.
  * Substituir por integração real com API da OAB no futuro.
  */
 export function validateOabMock(input: {
@@ -28,7 +27,7 @@ export function validateOabMock(input: {
   oabNumero: string;
 }): OabValidationResult {
   const email = input.email.trim().toLowerCase();
-  const oab = normalizeOab(input.oabNumero);
+  const oab = somenteNumeroOab(input.oabNumero);
 
   if (
     email === ADMIN_EMAIL &&

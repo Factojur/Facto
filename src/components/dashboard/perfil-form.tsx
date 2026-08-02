@@ -275,11 +275,19 @@ export function PerfilForm({ perfilInicial }: { perfilInicial: PerfilUsuario }) 
             onChange: (e) => atualizar("cpf", e.target.value),
             required: true,
           })}
-          {campo("oab", "OAB", {
-            value: perfil.oab_numero,
-            onChange: (e) => atualizar("oab_numero", e.target.value),
-            required: true,
-          })}
+          <div>
+            {campo("oab", "OAB (UF + número)", {
+              value: perfil.oab_numero,
+              onChange: (e) => atualizar("oab_numero", e.target.value.toUpperCase()),
+              required: true,
+              placeholder: "SP147099",
+              autoComplete: "off",
+            })}
+            <p className="mt-1.5 text-xs text-slate-500">
+              Digite a UF junto com o número (ex.: SP147099, PR147099). Na
+              assinatura da peça: OAB/SP 147099.
+            </p>
+          </div>
           {campo("telefone", "Telefone", {
             value: perfil.telefone ?? "",
             onChange: (e) => handleTelefoneChange(e.target.value),

@@ -1,11 +1,12 @@
 /**
  * PDF forense com texto selecionável (jsPDF):
- * margens 3/2 cm, Times 12, entrelinha ~1,5, ~10 linhas após endereçamento.
+ * margens 3/2 cm, Times 12, entrelinha ~1,5, 6 quebras após endereçamento.
  */
 
 import {
   FORMATACAO_FORENSE,
   alturaLinhasMm,
+  dividirBlocosPeca,
   ehMarcadorEspacoEnderecamento,
 } from "@/lib/formatacao-forense";
 
@@ -30,13 +31,18 @@ function ehEnderecamento(t: string): boolean {
 }
 
 function ehTituloSecao(t: string): boolean {
-  return /^([IVXLCDM]+)\s*—\s+/i.test(t);
+  return /^([IVXLCDM]+)\s*[-—–]\s+/i.test(t);
+}
+
+function ehInicioFechamento(t: string): boolean {
+  return /^(Termos em que|Pede e espera deferimento|Pede deferimento)/i.test(t);
 }
 
 function ehFechamento(t: string): boolean {
   return (
-    /^(Termos em que|Pede deferimento|OAB\/)/i.test(t) ||
-    /^[A-Za-zÀ-ÿ' ]+ - [A-Z]{2},\s+\d/i.test(t)
+    ehInicioFechamento(t) ||
+    /^OAB\//i.test(t) ||
+    /^[A-Za-zÀ-ÿ' .]+[/-]\s*[A-Z]{2},\s+\d/i.test(t)
   );
 }
 
@@ -74,11 +80,7 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
   const lineH = 6.35; // ~12pt * 1.5
   let y = marginTop;
 
-  const paragrafos = pecaTexto
-    .replace(/\r\n/g, "\n")
-    .split(/\n\s*\n/)
-    .map((p) => p.replace(/\n+/g, " ").replace(/\s+/g, " ").trim())
-    .filter(Boolean);
+  const paragrafos = dividirBlocosPeca(pecaTexto);
 
   if (paragrafos.length === 0) {
     throw new Error("A peça está vazia — nada para exportar em PDF.");
@@ -91,6 +93,8 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
     }
   }
 
+  let emFechamento = false;
+
   for (const p of paragrafos) {
     if (ehMarcadorEspacoEnderecamento(p)) {
       const h = alturaLinhasMm(FORMATACAO_FORENSE.linhasAposEnderecamento);
@@ -99,12 +103,19 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
       continue;
     }
 
-    const centro = ehEnderecamento(p) || ehFechamento(p) || ehNomeAcao(p);
+    if (ehInicioFechamento(p)) {
+      emFechamento = true;
+    }
+
+    const centro =
+      ehEnderecamento(p) || ehNomeAcao(p) || emFechamento || ehFechamento(p);
     const titulo = ehTituloSecao(p);
     const lista = ehLista(p);
 
-    // PDF: remove marcação ** (negrito pleno no jsPDF exigiria runs complexos)
-    const textoLimpo = p.replace(/\*\*(.+?)\*\*/g, "$1");
+    // PDF: remove marcação ** e * (negrito/itálico pleno exigiria runs complexos)
+    const textoLimpo = p
+      .replace(/\*\*(.+?)\*\*/g, "$1")
+      .replace(/\*([^*]+?)\*/g, "$1");
 
     doc.setFont("times", centro || titulo ? "bold" : "normal");
     doc.setFontSize(FORMATACAO_FORENSE.tamanhoPt);
@@ -115,33 +126,40 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
         ? maxWidth - 8
         : maxWidth - (titulo ? 0 : indent);
     const lines = doc.splitTextToSize(textoLimpo, Math.max(largura, 40));
-    const blockH = lines.length * lineH + (titulo ? 4 : 2);
+    const blockH = lines.length * lineH + (titulo || lista ? 2 : 0);
 
-    novaPaginaSePreciso(blockH);
+    novaPaginaSePreciso(blockH + 1);
 
     if (centro) {
+      // Endereçamento e nome da ação em negrito; assinatura em peso normal
+      doc.setFont(
+        "times",
+        ehNomeAcao(p) || ehEnderecamento(p) ? "bold" : "normal"
+      );
       for (const line of lines) {
         doc.text(line, pageW / 2, y, { align: "center" });
         y += lineH;
       }
-      y += 2;
+      y += 0.8;
       continue;
     }
 
     if (titulo) {
-      y += 3;
+      y += 2;
       doc.text(lines, marginLeft, y);
-      y += lines.length * lineH + 3;
+      y += lines.length * lineH + 1;
       continue;
     }
 
     if (lista) {
+      y += 2;
       doc.setFont("times", "normal");
       doc.text(lines, marginLeft + 8, y);
-      y += lines.length * lineH + 2;
+      y += lines.length * lineH + 1;
       continue;
     }
 
+    // Corpo: justificado aproximado via largura total (jsPDF sem justify nativo)
     doc.setFont("times", "normal");
     if (lines.length > 0) {
       doc.text(lines[0]!, marginLeft + indent, y);
@@ -151,7 +169,8 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
         y += (lines.length - 1) * lineH;
       }
     }
-    y += 3;
+    // Quase 0 entre parágrafos do mesmo tópico (~4px)
+    y += 1;
   }
 
   return doc;

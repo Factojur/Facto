@@ -5,11 +5,11 @@
  * - Fonte: Times New Roman 12 pt, preto
  * - Entrelinhas: 1,5
  * - Texto justificado; recuo de 1ª linha ≈ 2 cm nos parágrafos do corpo
- * - ~10 linhas em branco entre o endereçamento e a qualificação das partes
- *   (espaço clássico para despacho / autuação — ~8 cm / ~10 linhas)
+ * - Exatamente 6 quebras de linha (\n\n\n\n\n\n) entre o endereçamento
+ *   e a qualificação das partes
  *
- * Refs. de praxe: manuais de peça processual (ex.: ~10 linhas após
- * endereçamento); margens ABNT 3/2 cm; Times 12; espaçamento 1,5.
+ * Refs. de praxe: manuais de peça processual; margens ABNT 3/2 cm;
+ * Times 12; espaçamento 1,5.
  */
 
 export const FORMATACAO_FORENSE = {
@@ -21,12 +21,19 @@ export const FORMATACAO_FORENSE = {
   margemInferiorCm: 2,
   margemDireitaCm: 2,
   recuoPrimeiraLinhaCm: 2,
-  /** Linhas em branco entre endereçamento e qualificação. */
-  linhasAposEnderecamento: 10,
+  /** Quebras de linha entre endereçamento e qualificação. */
+  linhasAposEnderecamento: 6,
 } as const;
 
 /** Marcador interno expandido no HTML / PDF / Word. */
-export const MARCADOR_ESPACO_ENDEREÇAMENTO = "[[ESPACO_10_LINHAS_APOS_ENDEREÇAMENTO]]";
+export const MARCADOR_ESPACO_ENDEREÇAMENTO =
+  "[[ESPACO_6_LINHAS_APOS_ENDEREÇAMENTO]]";
+
+/** Aceita marcador antigo (10 linhas) por compatibilidade. */
+const MARCADORES_ESPACO_LEGADOS = new Set([
+  MARCADOR_ESPACO_ENDEREÇAMENTO,
+  "[[ESPACO_10_LINHAS_APOS_ENDEREÇAMENTO]]",
+]);
 
 /** Converte cm → twips (1 cm ≈ 567 twips) para docx. */
 export function cmParaTwips(cm: number): number {
@@ -40,5 +47,18 @@ export function alturaLinhasMm(linhas: number): number {
 }
 
 export function ehMarcadorEspacoEnderecamento(texto: string): boolean {
-  return texto.trim() === MARCADOR_ESPACO_ENDEREÇAMENTO;
+  return MARCADORES_ESPACO_LEGADOS.has(texto.trim());
+}
+
+/**
+ * Divide a peça em blocos de linha (1 linha = 1 parágrafo).
+ * Linhas em branco do texto-fonte são descartadas — o espaçamento
+ * visual entre tópicos fica a cargo do HTML/PDF/DOCX (margem do título).
+ */
+export function dividirBlocosPeca(texto: string): string[] {
+  return texto
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((l) => l.replace(/\s+/g, " ").trim())
+    .filter((l) => l.length > 0);
 }

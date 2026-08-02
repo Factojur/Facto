@@ -260,15 +260,19 @@ export function CadastroForm({
                   htmlFor="oabNumero"
                   className="mb-1.5 block text-sm font-medium text-stone-300"
                 >
-                  Número da OAB
+                  OAB (UF + número)
                 </label>
                 <input
                   id="oabNumero"
                   name="oabNumero"
                   required={souAdvogado}
                   className="w-full rounded-lg border border-stone-700 bg-stone-800 px-4 py-2.5 text-white placeholder-stone-500 outline-none focus:border-facto-gold focus:ring-1 focus:ring-facto-gold"
-                  placeholder="SP 123456"
+                  placeholder="SP147099"
                 />
+                <p className="mt-1.5 text-xs text-stone-500">
+                  Digite a UF junto com o número, sem espaços (ex.: SP147099,
+                  PR147099). Na peça, a assinatura sai como OAB/SP 147099.
+                </p>
               </div>
             ) : (
               <div className="rounded-lg border border-amber-800/50 bg-amber-950/20 p-4">

@@ -1,7 +1,7 @@
 /**
- * Geração Tier-1 com Chain of Thought em duas fases (Gemini):
- * 1) Análise estratégica estruturada
- * 2) Redação da peça condicionada ao brief
+ * Workflow agentic sequencial (2 etapas) — Gemini:
+ * 1) Paralegal triador → estrategiaJuridica
+ * 2) Advogado sênior → peça final em Markdown
  */
 
 import {
@@ -14,12 +14,18 @@ import {
   montarSystemPromptRedacaoTier1,
   type BlocoLeiMunicipal,
 } from "@/lib/ia/assistente-facto-prompt";
-import { gerarTextoComGemini, geminiConfigurado } from "@/lib/ia/gemini-client";
+import {
+  gerarTextoComGemini,
+  geminiConfigurado,
+  MODELOS_REDACAO,
+  MODELOS_TRIAGEM,
+} from "@/lib/ia/gemini-client";
 import {
   contarMarcadoresNaoEncontrado,
   verificarCitacoes,
   type CitacaoVerificada,
 } from "@/lib/ia/verificacao-citacoes";
+import { formatarOabAssinatura } from "@/lib/formatar-oab";
 
 export type InstrucoesDeterministicas = {
   enderecamento?: string;
@@ -43,6 +49,7 @@ export type AnaliseEstrategica = {
   topicosPlanejados?: string[];
   pedidosEssenciais?: string[];
   riscosOuLacunas?: string[];
+  /** Texto integral da Etapa 1 (estratégia jurídica). */
   bruto?: string;
 };
 
@@ -62,56 +69,43 @@ export type ResultadoPecaIA =
       erro: string;
     };
 
-function extrairJsonObjeto(texto: string): string | null {
-  const fenced = texto.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidato = (fenced?.[1] ?? texto).trim();
-  const inicio = candidato.indexOf("{");
-  const fim = candidato.lastIndexOf("}");
-  if (inicio < 0 || fim <= inicio) return null;
-  return candidato.slice(inicio, fim + 1);
+/** Extrai campos úteis do resumo textual do Paralegal (Etapa 1). */
+function parseEstrategiaJuridica(texto: string): AnaliseEstrategica {
+  const bruto = texto.trim();
+  const teseMatch = bruto.match(
+    /(?:tese\s+jur[ií]dica\s+principal|tese\s+principal)\s*[:\-–]?\s*([\s\S]*?)(?=\n\s*\d+\.|$)/i
+  );
+  const acaoMatch = bruto.match(
+    /(?:nome\s+t[eé]cnico\s+da\s+a[cç][aã]o|a[cç][aã]o\s+cab[ií]vel)[^\n]*[:\-–]?\s*([^\n]+)/i
+  );
+  const pedidosMatch = bruto.match(
+    /(?:pedidos\s+essenciais)[^\n]*[:\-–]?\s*([\s\S]*?)(?=\n\s*\d+\.|$)/i
+  );
+
+  const pedidosEssenciais = pedidosMatch?.[1]
+    ? pedidosMatch[1]
+        .split(/\n|;|•|-/)
+        .map((p) => p.replace(/^\s*\d+[.)]\s*/, "").trim())
+        .filter((p) => p.length > 3)
+        .slice(0, 8)
+    : undefined;
+
+  return {
+    bruto,
+    tesePrincipal: teseMatch?.[1]?.trim().slice(0, 500) || bruto.slice(0, 280),
+    nomeAcao: acaoMatch?.[1]?.trim(),
+    pedidosEssenciais,
+  };
 }
 
-function parseAnaliseEstrategica(texto: string): AnaliseEstrategica {
-  const json = extrairJsonObjeto(texto);
-  if (!json) {
-    return { bruto: texto.trim() };
-  }
-  try {
-    const obj = JSON.parse(json) as AnaliseEstrategica;
-    return { ...obj, bruto: texto.trim() };
-  } catch {
-    return { bruto: texto.trim() };
-  }
-}
-
-function formatarBriefAnalise(analise: AnaliseEstrategica): string {
-  if (!analise.tesePrincipal && analise.bruto && !analise.nomeAcao) {
-    return analise.bruto;
-  }
-  return [
-    `Tese principal: ${analise.tesePrincipal ?? "(não informada)"}`,
-    `Natureza da relação: ${analise.naturezaRelacao ?? "(não informada)"}`,
-    `Direitos violados: ${(analise.direitosViolados ?? []).join("; ") || "(não informados)"}`,
-    `Nome técnico da ação: ${analise.nomeAcao ?? "(definir pelos fatos)"}`,
-    `Tutela de urgência (análise): ${analise.tutelaUrgencia === true ? "Sim" : analise.tutelaUrgencia === false ? "Não" : "avaliar"}`,
-    `Justiça gratuita (análise): ${analise.justicaGratuita === true ? "Sim" : analise.justicaGratuita === false ? "Não" : "avaliar"}`,
-    `Princípios: ${(analise.principios ?? []).join("; ") || "—"}`,
-    `Súmulas consolidadas a invocar: ${(analise.sumulasConsolidadas ?? []).join("; ") || "—"}`,
-    `Artigos-chave: ${(analise.artigosChave ?? []).join("; ") || "—"}`,
-    `Tópicos planejados: ${(analise.topicosPlanejados ?? []).join(" | ") || "—"}`,
-    `Pedidos essenciais: ${(analise.pedidosEssenciais ?? []).join(" | ") || "—"}`,
-    `Riscos/lacunas: ${(analise.riscosOuLacunas ?? []).join("; ") || "—"}`,
-  ].join("\n");
-}
-
-function montarUserPromptAnalise(params: {
+function montarUserPromptTriagem(params: {
   tipoAcao: string;
   fatos: string;
   tutelaUrgencia?: boolean;
   casoReal: boolean;
 }): string {
   return [
-    "Analise estrategicamente o caso abaixo e devolva APENAS o JSON solicitado no system prompt.",
+    "Processe o relato abaixo e devolva APENAS o resumo estruturado pedido no system prompt.",
     "",
     `Indicação do formulário (pista): ${params.tipoAcao}`,
     params.tutelaUrgencia != null
@@ -133,23 +127,23 @@ function montarUserPromptRedacao(params: {
   fatos: string;
   instrucoes?: InstrucoesDeterministicas;
   casoReal: boolean;
-  briefAnalise: string;
+  estrategiaJuridica: string;
 }): string {
   const partes = [
-    "TAREFA: redija a PEÇA COMPLETA (Tier-1) seguindo o system prompt e o brief abaixo.",
-    "NÃO devolva JSON. NÃO copie o relato bruto. Use storytelling jurídico e fundamentação densa com subsunção.",
+    "TAREFA: redija a PEÇA COMPLETA seguindo o system prompt e o resumo estratégico abaixo.",
+    "NÃO devolva o resumo — só a petição em Markdown limpo.",
     "",
-    "<ANALISE_ESTRATEGICA_PREVIA>",
-    params.briefAnalise,
-    "</ANALISE_ESTRATEGICA_PREVIA>",
+    "<ESTRATEGIA_JURIDICA>",
+    params.estrategiaJuridica,
+    "</ESTRATEGIA_JURIDICA>",
     "",
     `Indicação do formulário (pista): ${params.tipoAcao}`,
     params.instrucoes?.tutelaUrgencia != null
-      ? `Tutela no formulário: ${params.instrucoes.tutelaUrgencia ? "Sim — incluir se confirmada na análise/fatos" : "Não — só se os fatos revelarem urgência manifesta"}`
+      ? `Tutela no formulário: ${params.instrucoes.tutelaUrgencia ? "Sim — incluir se confirmada na estratégia/fatos" : "Não — só se os fatos revelarem urgência manifesta"}`
       : null,
     "",
     params.casoReal
-      ? "<RELATO_BRUTO_DO_USUARIO> (insumo — reescrever, nunca colar):"
+      ? "<RELATO_BRUTO_DO_USUARIO> (insumo complementar — reescrever, nunca colar):"
       : "<RELATO_BRUTO_DO_USUARIO> (TESTE fictício — reescrever, nunca colar):",
     params.fatos.trim(),
     "</RELATO_BRUTO_DO_USUARIO>",
@@ -171,21 +165,36 @@ function montarUserPromptRedacao(params: {
     );
   }
 
-  if (params.instrucoes?.autorNome || params.instrucoes?.autorOab) {
-    partes.push(
-      "",
-      "Advogado subscritor:",
-      `Nome: ${params.instrucoes.autorNome ?? "[NOME DO(A) ADVOGADO(A)]"}`,
-      `OAB: ${params.instrucoes.autorOab ?? "[Nº OAB/UF]"}`
-    );
-  }
+  const dataExtenso = new Date().toLocaleDateString("pt-BR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  const cidadeUf =
+    params.instrucoes?.localFechamento?.replace(/\s*-\s*/, "/") ??
+    "[Cidade/UF]";
+  const nomeAdv =
+    params.instrucoes?.autorNome?.trim() || "[Nome do Advogado]";
+  const ufFallback = cidadeUf.includes("/")
+    ? cidadeUf.split("/").pop()?.trim().toUpperCase()
+    : undefined;
+  // Não prefixe com "OAB:" — a string já vem pronta: OAB/SP 147099
+  const linhaOab = formatarOabAssinatura(
+    params.instrucoes?.autorOab,
+    ufFallback
+  );
 
-  if (params.instrucoes?.localFechamento) {
-    partes.push(
-      "",
-      `Local/data sugeridos: ${params.instrucoes.localFechamento}, ${new Date().toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })}.`
-    );
-  }
+  partes.push(
+    "",
+    "ASSINATURA FINAL OBRIGATÓRIA (reproduzir ao final EXATAMENTE assim — sem as palavras \"Nome:\" ou \"OAB:\"):",
+    "Termos em que,",
+    "Pede e espera deferimento.",
+    "",
+    `${cidadeUf}, ${dataExtenso}.`,
+    "",
+    nomeAdv,
+    linhaOab
+  );
 
   return partes.join("\n");
 }
@@ -193,8 +202,8 @@ function montarUserPromptRedacao(params: {
 function removerVazamentoDeAnalise(texto: string): string {
   return texto
     .replace(/```json[\s\S]*?```/gi, "")
+    .replace(/<ESTRATEGIA_JURIDICA>[\s\S]*?<\/ESTRATEGIA_JURIDICA>/gi, "")
     .replace(/<ANALISE_ESTRATEGICA_PREVIA>[\s\S]*?<\/ANALISE_ESTRATEGICA_PREVIA>/gi, "")
-    .replace(/^\s*\{[\s\S]*?"tesePrincipal"[\s\S]*?\}\s*/m, "")
     .trim();
 }
 
@@ -229,34 +238,41 @@ export async function gerarPecaComIA(params: {
       }
     : null;
 
-  // —— Fase 1: Chain of Thought / análise estratégica ——
-  const analiseRes = await gerarTextoComGemini({
+  // —— ETAPA 1: Paralegal Triador / Estrategista (Flash) ——
+  const triagemRes = await gerarTextoComGemini({
     systemPrompt: montarSystemPromptAnaliseEstrategica(
       contextoBase,
       leiMunicipal
     ),
-    userPrompt: montarUserPromptAnalise({
+    userPrompt: montarUserPromptTriagem({
       tipoAcao: params.tipoAcao,
       fatos: params.fatos,
       tutelaUrgencia: params.instrucoes?.tutelaUrgencia,
       casoReal,
     }),
+    modelos: MODELOS_TRIAGEM,
     temperature: 0.25,
     maxOutputTokens: 4096,
   });
 
-  if (!analiseRes.ok) {
-    return { ok: false, erro: `Falha na análise estratégica: ${analiseRes.erro}` };
+  if (!triagemRes.ok) {
+    return { ok: false, erro: `Falha na triagem estratégica: ${triagemRes.erro}` };
   }
 
-  const analiseEstrategica = parseAnaliseEstrategica(analiseRes.texto);
-  const briefAnalise = formatarBriefAnalise(analiseEstrategica);
+  const estrategiaJuridica = triagemRes.texto.trim();
+  if (!estrategiaJuridica || estrategiaJuridica.length < 40) {
+    return {
+      ok: false,
+      erro: "A triagem da IA retornou resumo insuficiente.",
+    };
+  }
 
-  // Amplia RAG com o nome da ação / tese descobertos na análise
+  const analiseEstrategica = parseEstrategiaJuridica(estrategiaJuridica);
+
+  // Amplia RAG com tese / nome da ação descobertos na triagem
   const queryExtra = [
     analiseEstrategica.nomeAcao,
     analiseEstrategica.tesePrincipal,
-    ...(analiseEstrategica.artigosChave ?? []),
   ]
     .filter(Boolean)
     .join(" ");
@@ -283,7 +299,7 @@ export async function gerarPecaComIA(params: {
 
   const contextoRedacao = montarContextoConhecimento(itensFinais);
 
-  // —— Fase 2: redação Tier-1 ——
+  // —— ETAPA 2: Advogado Sênior Redator (Pro → Flash) ——
   const redacaoRes = await gerarTextoComGemini({
     systemPrompt: montarSystemPromptRedacaoTier1(contextoRedacao, leiMunicipal),
     userPrompt: montarUserPromptRedacao({
@@ -291,8 +307,9 @@ export async function gerarPecaComIA(params: {
       fatos: params.fatos,
       instrucoes: params.instrucoes,
       casoReal,
-      briefAnalise,
+      estrategiaJuridica,
     }),
+    modelos: MODELOS_REDACAO,
     temperature: 0.4,
     maxOutputTokens: 8192,
   });
@@ -314,8 +331,7 @@ export async function gerarPecaComIA(params: {
     leiMunicipal
       ? `[Lei municipal] ${leiMunicipal.nome}\n${leiMunicipal.texto}`
       : "",
-    // Súmulas do brief entram como lastro informativo na checagem de "lei"
-    (analiseEstrategica.sumulasConsolidadas ?? []).join("\n"),
+    estrategiaJuridica,
   ]
     .filter(Boolean)
     .join("\n\n---\n\n");
@@ -323,7 +339,7 @@ export async function gerarPecaComIA(params: {
   return {
     ok: true,
     textoGerado,
-    modelo: `${analiseRes.modelo} → ${redacaoRes.modelo}`,
+    modelo: `${triagemRes.modelo} → ${redacaoRes.modelo}`,
     contextoUtilizado: itensFinais.map((item) => ({
       titulo: item.titulo,
       categoria: item.categoria,

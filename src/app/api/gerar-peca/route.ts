@@ -19,11 +19,15 @@ import {
   pecaTemFundamentacaoGenerica,
 } from "@/lib/ia/normalizar-peca-gerada";
 import { geminiConfigurado } from "@/lib/ia/gemini-client";
+import { formatarOabAssinatura } from "@/lib/formatar-oab";
 import { gerarDocumentoTimbrado } from "@/lib/formatacao-juridica";
 import { calcularResumoValorCausa } from "@/lib/valores-causa";
 
-/** CoT em 2 chamadas Gemini — precisa de margem acima do default 10s. */
-export const maxDuration = 120;
+/**
+ * Workflow agentic: 2 chamadas Gemini (triagem Flash + redação Pro/Flash).
+ * 60s = teto típico do plano Hobby na Vercel; em Pro pode subir se precisar.
+ */
+export const maxDuration = 60;
 
 type LeiMunicipalPayload = {
   nome?: string;
@@ -127,10 +131,13 @@ export async function POST(request: Request) {
     body.fatos
   );
 
+  const oabBruta = user.user_metadata?.oab_numero as string | undefined;
+  const oabFormatada = formatarOabAssinatura(oabBruta, body.comarca?.uf);
+
   const scaffold = gerarPecaJec({
     ...body,
     autorNome: user.user_metadata?.nome_completo,
-    autorOab: user.user_metadata?.oab_numero,
+    autorOab: oabBruta,
     baseConhecimento,
   });
 
@@ -169,7 +176,7 @@ export async function POST(request: Request) {
   const cidade = body.comarca?.cidade?.trim();
   const uf = body.comarca?.uf?.trim();
   const localFechamento =
-    cidade && uf ? `${cidade} - ${uf.toUpperCase()}` : undefined;
+    cidade && uf ? `${cidade}/${uf.toUpperCase()}` : undefined;
 
   const ia = await gerarPecaComIA({
     tipoAcao: tipoResolvido,
@@ -182,7 +189,7 @@ export async function POST(request: Request) {
       valorCausa: montarSecaoValorCausa(valorCausaResumo).join("\n"),
       tutelaUrgencia: tutelaResolvida,
       autorNome: user.user_metadata?.nome_completo,
-      autorOab: user.user_metadata?.oab_numero,
+      autorOab: oabFormatada,
       localFechamento,
     },
   });

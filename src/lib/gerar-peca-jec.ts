@@ -18,6 +18,7 @@ import {
 } from "@/lib/base-conhecimento";
 import type { CitacaoVerificada } from "@/lib/ia/verificacao-citacoes";
 import { MARCADOR_ESPACO_ENDEREÇAMENTO } from "@/lib/formatacao-forense";
+import { formatarOabAssinatura } from "@/lib/formatar-oab";
 
 export type GerarPecaJecInput = {
   tipoAcao: string;
@@ -78,8 +79,9 @@ export type GerarPecaJecOutput = {
 function localFechamento(comarca?: ComarcaInfo): string {
   const cidade = comarca?.cidade?.trim();
   const uf = comarca?.uf?.trim();
-  return cidade && uf ? `${cidade} - ${uf.toUpperCase()}` : "[CIDADE/UF]";
+  return cidade && uf ? `${cidade}/${uf.toUpperCase()}` : "[Cidade/UF]";
 }
+
 
 function formatarDataPorExtenso(data: Date): string {
   return data.toLocaleDateString("pt-BR", {
@@ -263,7 +265,12 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
   const analise = analisePartes.join("\n");
 
   const autor = input.autorNome ?? "[NOME DO(A) ADVOGADO(A)]";
-  const oab = input.autorOab ?? "[Nº OAB/UF]";
+  const oabAssinatura = formatarOabAssinatura(
+    input.autorOab,
+    input.comarca?.uf
+  );
+  // Texto curto na qualificação: "OAB/SP 147099"
+  const oabQualificacao = oabAssinatura;
 
   const valorCausaResumo = input.valoresCausa
     ? calcularResumoValorCausa(input.valoresCausa)
@@ -283,95 +290,57 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     `[NOME COMPLETO DO(A) AUTOR(A)], [nacionalidade], [estado civil], [profissão], inscrito(a) no CPF sob nº [CPF], `
       + "portador(a) do RG nº [RG], residente e domiciliado(a) na [endereço completo], "
       + "endereço eletrônico [e-mail], por seu advogado que esta subscreve "
-      + `(procuração anexa), ${autor}, inscrito na OAB/${oab}, `
+      + `(procuração anexa), ${autor}, inscrito na ${oabQualificacao}, `
       + "com escritório profissional na [endereço do advogado], onde recebe intimações, "
       + "vem, respeitosamente, à presença de Vossa Excelência, com fundamento na Lei nº 9.099/95, "
       + "propor a presente",
     "",
     `${tipoAcao.toUpperCase()}`,
-    "",
+    MARCADOR_ESPACO_ENDEREÇAMENTO,
     "em face de [NOME COMPLETO DO(A) RÉU(RÉ)], [qualificação completa do(a) réu(ré)], "
       + "pelos fatos e fundamentos jurídicos a seguir expostos.",
     "",
-    "I — DOS FATOS",
-    "",
+    "I - DOS FATOS",
     input.fatos.trim(),
     "",
-    "II — DO DIREITO",
-    "",
+    "II - DO DIREITO",
     "A presente demanda tramita perante o Juizado Especial Cível, nos termos da Lei nº 9.099/95, "
-      + " sendo a via adequada para causas de menor complexidade e valor, privilegiando a oralidade, "
+      + "sendo a via adequada para causas de menor complexidade e valor, privilegiando a oralidade, "
       + "simplicidade, informalidade, economia processual e celeridade.",
-    "",
     "Os fatos narrados demonstram a plausibilidade do direito invocado e a necessidade de "
       + "intervenção do Poder Judiciário para restabelecer a situação jurídica violada.",
-    "",
     ...(tutelaUrgencia
       ? [
-          "Presentes, ainda, os requisitos do art. 300 do CPC — probabilidade do direito e perigo de dano "
-            + "ou risco ao resultado útil do processo — autorizando a concessão de tutela de urgência.",
           "",
+          "III - DA TUTELA DE URGÊNCIA",
+          "Presentes os requisitos do art. 300 do CPC — probabilidade do direito e perigo de dano "
+            + "ou risco ao resultado útil do processo — autorizando a concessão de tutela de urgência.",
         ]
       : []),
     ...(itensConhecimento.length > 0
       ? [
           "Aplicam-se ao caso, em especial, os seguintes dispositivos legais e entendimentos "
             + "jurisprudenciais cadastrados na base de conhecimento do escritório:",
-          "",
           ...itensConhecimento.flatMap((item) => [
             `${item.categoria.toUpperCase()} — ${item.titulo}`,
             item.texto.trim(),
-            "",
           ]),
         ]
       : []),
-    "III — DAS PROVAS",
-    "",
-    "Protesta provar o alegado por todos os meios de prova em direito admitidos, especialmente:",
-    "- Documentos pessoais: "
-      + [
-        ...(input.documentos.rg ?? []),
-        ...(input.documentos.cpf ?? []),
-        ...(input.documentos.cnh ?? []),
-        ...(input.documentos.comprovanteResidencia ?? []),
-      ].join(", ") || "a serem juntados",
-    ...(input.documentos.declaracaoHipossuficiencia?.length
-      ? [`- Declaração de Hipossuficiência: ${input.documentos.declaracaoHipossuficiencia.join(", ")}`]
-      : []),
-    ...(input.documentos.procuracao?.length
-      ? [`- Procuração: ${input.documentos.procuracao.join(", ")}`]
-      : []),
-    ...(input.documentos.mandadoLevantamentoEletronico?.length
-      ? [`- Mandado de Levantamento Eletrônico (MLE): ${input.documentos.mandadoLevantamentoEletronico.join(", ")}`]
-      : []),
-    input.provas.length
-      ? `- Documentos probatórios (prints, recibos): ${input.provas.join(", ")}`
-      : "- Documentos probatórios: a serem juntados",
-    input.fotos.length
-      ? `- Fotos e outros: ${input.fotos.join(", ")}`
-      : "- Fotos e outros: a serem juntados",
-    input.midias.length
-      ? `- Áudios e vídeos: ${input.midias.join(", ")}`
-      : "- Áudios e vídeos: a serem juntados",
-    "- Depoimento pessoal das partes, oitiva de testemunhas e demais provas permitidas em sede de JEC.",
-    "",
-    "IV — DO VALOR DA CAUSA",
     "",
     ...montarSecaoValorCausa(valorCausaResumo),
     "",
-    "V — DO PEDIDO",
-    "",
+    tutelaUrgencia ? "IV - DOS PEDIDOS" : "III - DOS PEDIDOS",
     "Ante o exposto, requer:",
-    "",
     extrairPedidos(tipoAcao, tutelaUrgencia, valorCausaResumo),
     "",
     "Termos em que,",
-    "Pede deferimento.",
+    "Pede e espera deferimento.",
     "",
     `${localFechamento(input.comarca)}, ${formatarDataPorExtenso(new Date())}.`,
     "",
     autor,
-    `OAB/${oab}`,
+    oabAssinatura,
   ].join("\n");
 
   const peca = aplicarFormatacaoTextoJuridico(pecaBruta, input.fatos);
