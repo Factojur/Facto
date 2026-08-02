@@ -7,6 +7,7 @@ import {
   DashboardSidebarMobile,
 } from "@/components/dashboard/sidebar";
 import { DashboardTopBar } from "@/components/dashboard/dashboard-topbar";
+import { WhatsAppFloat } from "@/components/whatsapp-float";
 import type { PerfilResumo } from "@/lib/perfil-types";
 
 export function DashboardLayoutClient({
@@ -32,6 +33,7 @@ export function DashboardLayoutClient({
       <div className="flex min-h-screen flex-col bg-facto-dark">
         <DashboardTopBar perfil={perfil} />
         <main className="flex-1 overflow-x-clip">{children}</main>
+        <WhatsAppFloat />
       </div>
     );
   }
@@ -62,6 +64,7 @@ export function DashboardLayoutClient({
           </main>
         </div>
       </div>
+      <WhatsAppFloat />
     </div>
   );
 }

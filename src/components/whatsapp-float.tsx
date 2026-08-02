@@ -1,5 +1,12 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+
 const WHATSAPP_URL =
   "https://wa.me/5511985036364?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20com%20o%20FACTO";
+
+/** Rotas autenticadas onde o suporte pode aparecer (não exibe na landing/login). */
+const ROTAS_PERMITIDAS = [/^\/dashboard\/?$/, /^\/dashboard\/jec(\/|$)/];
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -15,9 +22,15 @@ function WhatsAppIcon({ className }: { className?: string }) {
 }
 
 /**
- * Botão flutuante de suporte via WhatsApp — visível em todas as páginas.
+ * Botão flutuante 3D no verde oliva da marca (facto-dark / facto-gold).
+ * Só em /dashboard (home) e /dashboard/jec — evita expor o número na landing.
  */
 export function WhatsAppFloat() {
+  const pathname = usePathname();
+  const visivel = ROTAS_PERMITIDAS.some((re) => re.test(pathname));
+
+  if (!visivel) return null;
+
   return (
     <a
       href={WHATSAPP_URL}
@@ -25,9 +38,14 @@ export function WhatsAppFloat() {
       rel="noopener noreferrer"
       aria-label="Falar com o suporte do FACTO no WhatsApp"
       title="Suporte no WhatsApp"
-      className="fixed bottom-4 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg shadow-emerald-900/25 transition duration-200 hover:scale-110 hover:bg-[#20BD5A] hover:shadow-xl hover:shadow-emerald-700/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25D366] active:scale-105"
+      className="group fixed bottom-4 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#6e6a52] via-[#3f3e32] to-facto-dark text-facto-gold shadow-[0_10px_24px_rgba(28,28,22,0.55),0_2px_0_rgba(144,139,106,0.35),inset_0_2px_6px_rgba(255,255,255,0.22),inset_0_-4px_10px_rgba(0,0,0,0.45)] ring-1 ring-facto-gold/45 transition duration-200 hover:scale-110 hover:from-[#8a8466] hover:via-[#4a4838] hover:to-[#12120e] hover:shadow-[0_14px_32px_rgba(144,139,106,0.45),0_2px_0_rgba(144,139,106,0.5),inset_0_2px_8px_rgba(255,255,255,0.28),inset_0_-4px_10px_rgba(0,0,0,0.5)] hover:ring-facto-gold/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-facto-gold active:scale-105"
     >
-      <WhatsAppIcon className="h-7 w-7" />
+      {/* Brilho superior “3D” */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-2 top-1 h-4 rounded-full bg-gradient-to-b from-white/35 to-transparent opacity-80"
+      />
+      <WhatsAppIcon className="relative h-7 w-7 drop-shadow-[0_2px_2px_rgba(0,0,0,0.45)] transition group-hover:scale-105" />
       <span className="sr-only">Abrir WhatsApp de suporte</span>
     </a>
   );
