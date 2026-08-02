@@ -61,11 +61,15 @@ async function chamarGemini(params: {
   temperature?: number;
   maxOutputTokens?: number;
 }): Promise<ResultadoGemini> {
+  // Auth key (AQ.) e Standard (AIza): header nativo é o caminho mais estável.
   const resposta = await fetch(
-    `${GEMINI_API_URL}/${params.modelo}:generateContent?key=${params.apiKey}`,
+    `${GEMINI_API_URL}/${params.modelo}:generateContent`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": params.apiKey,
+      },
       body: JSON.stringify({
         systemInstruction: {
           parts: [{ text: params.systemPrompt }],

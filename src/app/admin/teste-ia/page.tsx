@@ -54,7 +54,14 @@ export default async function TesteIaPage() {
           ) : (
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-sm text-stone-400">
               <p className="font-semibold text-white">
-                Falta configurar a chave gratuita da Gemini API.
+                Falta configurar a chave da Gemini API neste ambiente.
+              </p>
+              <p className="mt-2 text-stone-500">
+                Em <strong className="font-medium text-stone-300">localhost</strong>, a chave
+                fica no <code className="rounded bg-white/10 px-1 py-0.5">.env.local</code>.
+                Em <strong className="font-medium text-stone-300">produção (factoia.com.br)</strong>,
+                ela precisa estar nas Environment Variables da Vercel — o{" "}
+                <code className="rounded bg-white/10 px-1 py-0.5">.env.local</code> não sobe no deploy.
               </p>
               <ol className="mt-3 list-decimal space-y-1.5 pl-5">
                 <li>
@@ -67,13 +74,21 @@ export default async function TesteIaPage() {
                   >
                     Google AI Studio
                   </a>{" "}
-                  e crie uma chave gratuita (não pede cartão de crédito).
+                  e copie/crie uma chave (gratuita).
                 </li>
                 <li>
-                  Cole a chave em <code className="rounded bg-white/10 px-1 py-0.5">GEMINI_API_KEY</code>{" "}
-                  no arquivo <code className="rounded bg-white/10 px-1 py-0.5">.env.local</code>.
+                  <strong className="font-medium text-stone-300">Local:</strong> cole em{" "}
+                  <code className="rounded bg-white/10 px-1 py-0.5">GEMINI_API_KEY=...</code> no{" "}
+                  <code className="rounded bg-white/10 px-1 py-0.5">.env.local</code> e reinicie{" "}
+                  <code className="rounded bg-white/10 px-1 py-0.5">npm run dev</code>.
                 </li>
-                <li>Reinicie o servidor de desenvolvimento e recarregue esta página.</li>
+                <li>
+                  <strong className="font-medium text-stone-300">Produção:</strong> Vercel → projeto{" "}
+                  <code className="rounded bg-white/10 px-1 py-0.5">facto</code> → Settings →
+                  Environment Variables → adicione{" "}
+                  <code className="rounded bg-white/10 px-1 py-0.5">GEMINI_API_KEY</code> (Production)
+                  → Redeploy.
+                </li>
               </ol>
             </div>
           )}
