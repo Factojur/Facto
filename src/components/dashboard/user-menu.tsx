@@ -25,6 +25,11 @@ const LINKS_DESENVOLVIMENTO = [
   },
   { label: "Registro.br", href: "https://registro.br/painel", icon: "🌐" },
   {
+    label: "Cloudflare",
+    href: "https://dash.cloudflare.com",
+    icon: "☁️",
+  },
+  {
     label: "Mercado Pago",
     href: "https://www.mercadopago.com.br/developers/panel",
     icon: "💳",
