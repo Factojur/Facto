@@ -104,8 +104,13 @@ export function dentroPrazoArrependimentoCdc(
 
 /**
  * Campos a gravar no banco após cancelamento local (espelha o webhook).
+ * `dentroPrazoCdc` pode vir calculado a partir do pagamento inicial no MP;
+ * se omitido, usa `data_inicio` da assinatura.
  */
-export function montarUpdateCancelamentoCliente(row: AssinaturaDb): {
+export function montarUpdateCancelamentoCliente(
+  row: AssinaturaDb,
+  dentroPrazoCdc = dentroPrazoArrependimentoCdc(row.data_inicio)
+): {
   status: "canceled";
   data_cancelamento: string;
   motivo_encerramento: "arrependimento_cdc" | "cancelado_pelo_cliente";
@@ -113,9 +118,8 @@ export function montarUpdateCancelamentoCliente(row: AssinaturaDb): {
   atualizado_em: string;
 } {
   const agora = new Date().toISOString();
-  const cdc = dentroPrazoArrependimentoCdc(row.data_inicio);
 
-  if (cdc) {
+  if (dentroPrazoCdc) {
     return {
       status: "canceled",
       data_cancelamento: agora,

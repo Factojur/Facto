@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { cancelarPreapprovalMercadoPago } from "@/lib/mercadopago/client";
+import { executarCancelamentoNoMercadoPago } from "@/lib/mercadopago/cancelar-assinatura";
 import {
   mapearAssinaturaParaUI,
   montarUpdateCancelamentoCliente,
@@ -10,8 +10,9 @@ import {
 
 /**
  * POST /api/assinatura/cancelar
- * Cancela a preapproval no Mercado Pago e espelha o status no banco
- * (mesmas regras do webhook: CDC 7 dias vs fim de ciclo).
+ *
+ * ≤ 7 dias do pagamento inicial (CDC): cancela recorrência + estorna pagamento.
+ * > 7 dias: só cancela recorrência; acesso segue até o fim do ciclo pago.
  */
 export async function POST() {
   const supabase = await createClient();
@@ -56,11 +57,17 @@ export async function POST() {
 
     const assinatura = row as AssinaturaDb;
 
-    // 1) Cancela no Mercado Pago (irreversível — para cobranças futuras)
-    await cancelarPreapprovalMercadoPago(assinatura.mp_preapproval_id);
+    // 1–4) MP: decide CDC, cancela preapproval e, se CDC, estorna
+    const mp = await executarCancelamentoNoMercadoPago({
+      mpPreapprovalId: assinatura.mp_preapproval_id,
+      dataInicio: assinatura.data_inicio,
+    });
 
-    // 2) Espelha no banco imediatamente (webhook também sincroniza depois)
-    const update = montarUpdateCancelamentoCliente(assinatura);
+    // Espelha status no banco (webhook também sincroniza depois)
+    const update = montarUpdateCancelamentoCliente(
+      assinatura,
+      mp.dentroPrazoCdc
+    );
     const { data: atualizada, error: updateError } = await admin
       .from("assinaturas")
       .update(update)
@@ -70,33 +77,41 @@ export async function POST() {
       )
       .single();
 
-    if (updateError) {
-      console.error("[api/assinatura/cancelar] update", updateError);
-      // MP já cancelou; avisa mas não falha totalmente
-      return NextResponse.json({
-        ok: true,
-        aviso:
-          "Assinatura cancelada no Mercado Pago. A sincronização no FACTO pode levar alguns minutos via webhook.",
-        assinatura: mapearAssinaturaParaUI({
-          ...assinatura,
-          ...update,
-          acesso_valido_ate:
-            update.acesso_valido_ate ?? assinatura.acesso_valido_ate,
-        }),
-        motivo: update.motivo_encerramento,
-      });
+    // Marca fatura local como refunded quando o estorno CDC deu certo
+    if (mp.estorno?.sucesso && mp.estorno.invoiceId) {
+      await admin
+        .from("pagamentos")
+        .update({ status: "refunded" })
+        .eq("mp_payment_id", mp.estorno.invoiceId);
     }
 
-    const ui = mapearAssinaturaParaUI(atualizada as AssinaturaDb);
-    const cdc = update.motivo_encerramento === "arrependimento_cdc";
+    const ui = mapearAssinaturaParaUI(
+      (atualizada as AssinaturaDb | null) ?? {
+        ...assinatura,
+        ...update,
+        acesso_valido_ate:
+          update.acesso_valido_ate ?? assinatura.acesso_valido_ate,
+      }
+    );
+
+    if (updateError) {
+      console.error("[api/assinatura/cancelar] update", updateError);
+    }
+
+    const mensagem = montarMensagemCancelamento(mp, ui.proximaCobrancaLabel);
 
     return NextResponse.json({
       ok: true,
       assinatura: ui,
       motivo: update.motivo_encerramento,
-      mensagem: cdc
-        ? "Cancelamento concluído dentro do prazo de 7 dias (CDC). O acesso foi encerrado. O estorno do valor, quando aplicável, segue as regras do Mercado Pago / meio de pagamento."
-        : `Cancelamento concluído. Não haverá renovação. Seu acesso permanece até ${ui.proximaCobrancaLabel === "Não haverá novas cobranças" ? "o fim do ciclo já pago" : ui.proximaCobrancaLabel}.`,
+      dentroPrazoCdc: mp.dentroPrazoCdc,
+      estorno: mp.estorno,
+      aviso: updateError
+        ? "Assinatura cancelada no Mercado Pago. A sincronização no FACTO pode levar alguns minutos via webhook."
+        : mp.estorno?.sucesso === false
+          ? mp.estorno.aviso
+          : undefined,
+      mensagem,
     });
   } catch (erro) {
     console.error("[api/assinatura/cancelar]", erro);
@@ -110,4 +125,26 @@ export async function POST() {
       { status: 500 }
     );
   }
+}
+
+function montarMensagemCancelamento(
+  mp: Awaited<ReturnType<typeof executarCancelamentoNoMercadoPago>>,
+  proximaCobrancaLabel: string
+): string {
+  if (!mp.dentroPrazoCdc) {
+    const ate =
+      proximaCobrancaLabel === "Não haverá novas cobranças"
+        ? "o fim do ciclo já pago"
+        : proximaCobrancaLabel;
+    return `Cancelamento concluído. Não haverá renovação. Seu acesso permanece até ${ate}.`;
+  }
+
+  if (mp.estorno?.sucesso) {
+    return "Cancelamento concluído dentro do prazo de 7 dias (CDC). O valor foi estornado no Mercado Pago e o acesso foi encerrado.";
+  }
+
+  return (
+    mp.estorno?.aviso ??
+    "Cancelamento concluído dentro do prazo de 7 dias (CDC). O acesso foi encerrado; o estorno precisa ser concluído pelo suporte."
+  );
 }
