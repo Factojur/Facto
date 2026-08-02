@@ -10,6 +10,7 @@ import {
   formatarTelefone,
 } from "@/lib/mascaras-endereco";
 import { createClient } from "@/lib/supabase/client";
+import { AssinaturaPainel } from "@/components/dashboard/assinatura-painel";
 
 function campo(
   id: string,
@@ -356,6 +357,8 @@ export function PerfilForm({ perfilInicial }: { perfilInicial: PerfilUsuario }) 
           })}
         </div>
       </section>
+
+      <AssinaturaPainel />
 
       <button
         type="submit"

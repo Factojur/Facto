@@ -173,6 +173,14 @@ export function UserMenu({ perfil }: { perfil: PerfilResumo }) {
                   ))}
               </>
             )}
+            <Link
+              href="/dashboard/perfil#assinatura"
+              onClick={() => setAberto(false)}
+              className="mt-1 flex items-center gap-3 border-t border-stone-800 px-4 py-2.5 text-sm font-medium text-facto-gold transition hover:bg-stone-800 hover:text-[#c4bc8f]"
+            >
+              <span aria-hidden>✦</span>
+              Gerenciar assinatura
+            </Link>
             <button
               type="button"
               onClick={sair}
