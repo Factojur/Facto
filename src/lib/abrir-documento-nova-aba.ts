@@ -1,22 +1,31 @@
 /**
  * Abre PDF/Word em nova aba para não tirar o usuário da dashboard de elaboração.
+ * Não passa "noopener" no 3º argumento de window.open — isso faz o browser
+ * retornar null e cair no fallback de download na mesma aba.
  */
 
 export function abrirBlobEmNovaAba(blob: Blob, nomeArquivo: string): boolean {
   const url = URL.createObjectURL(blob);
-  const aba = window.open(url, "_blank", "noopener,noreferrer");
+  const aba = window.open(url, "_blank");
 
   if (!aba) {
-    // Popup bloqueado: faz download na aba atual sem navegar.
+    // Popup bloqueado: faz download sem navegar a aba atual.
     const a = document.createElement("a");
     a.href = url;
     a.download = nomeArquivo;
-    a.rel = "noopener";
+    a.rel = "noopener noreferrer";
+    a.target = "_blank";
     document.body.appendChild(a);
     a.click();
     a.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
     return false;
+  }
+
+  try {
+    aba.opener = null;
+  } catch {
+    /* ignore */
   }
 
   // Revoga depois que a aba teve tempo de carregar o blob.
@@ -29,8 +38,14 @@ export function abrirPreviewHtmlEmNovaAba(
   pecaHtml: string,
   titulo = "Peça FACTO — visualização"
 ): boolean {
-  const aba = window.open("", "_blank", "noopener,noreferrer");
+  const aba = window.open("about:blank", "_blank");
   if (!aba) return false;
+
+  try {
+    aba.opener = null;
+  } catch {
+    /* ignore */
+  }
 
   aba.document.open();
   aba.document.write(`<!DOCTYPE html>

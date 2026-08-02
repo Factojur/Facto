@@ -113,7 +113,7 @@ function PecasResultado({
           onClick={onFechar}
           className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
         >
-          Novo formulário
+          Ocultar peça
         </button>
       </div>
 
@@ -324,6 +324,8 @@ export function JecForm() {
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<GerarPecaJecOutput | null>(null);
   const [tipoSelecionado, setTipoSelecionado] = useState("");
+  const [fatos, setFatos] = useState("");
+  const [tutelaUrgencia, setTutelaUrgencia] = useState(false);
   const [escritorio, setEscritorio] =
     useState<EscritorioConfig>(escritorioConfigVazio);
   const [comarca, setComarca] = useState<ComarcaValue>(comarcaVazia);
@@ -389,10 +391,8 @@ export function JecForm() {
 
     const payload = {
       tipoAcao,
-      tutelaUrgencia: modoAssistente
-        ? false
-        : formData.get("tutelaUrgencia") === "on",
-      fatos: String(formData.get("fatos")),
+      tutelaUrgencia: modoAssistente ? false : tutelaUrgencia,
+      fatos: fatos.trim(),
       documentos: {
         rg: getFileNames(form.querySelector<HTMLInputElement>("#rg")),
         cpf: getFileNames(form.querySelector<HTMLInputElement>("#cpf")),
@@ -437,7 +437,13 @@ export function JecForm() {
         return;
       }
 
+      // Mantém o formulário intacto; só atualiza o resultado abaixo.
       setResultado(data);
+      window.setTimeout(() => {
+        document
+          .getElementById("peca-gerada")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
     } catch {
       setError("Falha na comunicação com o servidor. Tente novamente.");
     }
@@ -445,17 +451,8 @@ export function JecForm() {
     setLoading(false);
   }
 
-  if (resultado) {
-    return (
-      <PecasResultado
-        resultado={resultado}
-        escritorio={escritorio}
-        onFechar={() => setResultado(null)}
-      />
-    );
-  }
-
   return (
+    <div className="space-y-8">
     <form onSubmit={handleSubmit} className="space-y-6">
       <header>
         <Link
@@ -536,7 +533,9 @@ export function JecForm() {
               id="tutelaUrgencia"
               name="tutelaUrgencia"
               type="checkbox"
+              checked={tutelaUrgencia}
               disabled={isAssistente}
+              onChange={(e) => setTutelaUrgencia(e.target.checked)}
               className="h-4 w-4 rounded border-slate-300 text-stone-700 focus:ring-stone-500 disabled:cursor-not-allowed"
             />
             <label
@@ -572,6 +571,8 @@ export function JecForm() {
             name="fatos"
             required
             rows={10}
+            value={fatos}
+            onChange={(e) => setFatos(e.target.value)}
             placeholder="Descreva detalhadamente os fatos relevantes para a peça no Juizado Especial Cível..."
             className="w-full resize-y rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-800 placeholder-slate-400 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
           />
@@ -693,5 +694,20 @@ export function JecForm() {
         </button>
       </div>
     </form>
+
+      {resultado && (
+        <div id="peca-gerada" className="scroll-mt-6 border-t border-slate-200 pt-8">
+          <p className="mb-4 text-sm text-slate-500">
+            O formulário acima permanece preenchido. Edite os fatos e gere de novo
+            quando quiser — PDF e Word abrem em nova aba.
+          </p>
+          <PecasResultado
+            resultado={resultado}
+            escritorio={escritorio}
+            onFechar={() => setResultado(null)}
+          />
+        </div>
+      )}
+    </div>
   );
 }

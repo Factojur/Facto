@@ -8,7 +8,6 @@ import {
   abrirBlobEmNovaAba,
   abrirPreviewHtmlEmNovaAba,
 } from "@/lib/abrir-documento-nova-aba";
-import { saveAs } from "file-saver";
 
 export function PecaDocumentoView({
   peca,
@@ -29,8 +28,8 @@ export function PecaDocumentoView({
     setErro(null);
     setBaixando("docx");
     try {
-      // Preview em nova aba (dashboard permanece) + download do .docx
-      const abriu = abrirPreviewHtmlEmNovaAba(
+      // Abre a nova aba de imediato (evita bloqueio de popup após await)
+      const previewOk = abrirPreviewHtmlEmNovaAba(
         pecaHtml,
         "Peça FACTO — Word / visualização"
       );
@@ -38,10 +37,21 @@ export function PecaDocumentoView({
         peca,
         escritorio?.usarTimbre ? escritorio : undefined
       );
-      saveAs(blob, "peca-facto.docx");
-      if (!abriu) {
+      // Download do .docx também em fluxo de nova aba (target=_blank no fallback)
+      const a = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      a.href = url;
+      a.download = "peca-facto.docx";
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+
+      if (!previewOk) {
         setErro(
-          "O navegador bloqueou a nova aba. Permita pop-ups para visualizar sem sair da dashboard. O Word foi baixado normalmente."
+          "O navegador bloqueou a nova aba. Permita pop-ups para o FACTO. O Word foi baixado normalmente."
         );
       }
     } catch {
@@ -53,15 +63,34 @@ export function PecaDocumentoView({
   async function handleBaixarPdf() {
     setErro(null);
     setBaixando("pdf");
+    // Abre aba placeholder síncrona para não perder o gesto do clique (anti-popup)
+    const abaPdf = window.open("about:blank", "_blank");
     try {
-      const blob = await gerarPecaPdfBlob(peca);
-      const abriu = abrirBlobEmNovaAba(blob, "peca-facto.pdf");
-      if (!abriu) {
-        setErro(
-          "O navegador bloqueou a nova aba. Permita pop-ups para o FACTO. O PDF foi baixado como alternativa."
+      if (abaPdf) {
+        try {
+          abaPdf.opener = null;
+        } catch {
+          /* ignore */
+        }
+        abaPdf.document.write(
+          "<p style='font-family:system-ui;padding:24px'>Gerando PDF FACTO…</p>"
         );
       }
+      const blob = await gerarPecaPdfBlob(peca);
+      const url = URL.createObjectURL(blob);
+      if (abaPdf) {
+        abaPdf.location.href = url;
+        window.setTimeout(() => URL.revokeObjectURL(url), 120_000);
+      } else {
+        const abriu = abrirBlobEmNovaAba(blob, "peca-facto.pdf");
+        if (!abriu) {
+          setErro(
+            "O navegador bloqueou a nova aba. Permita pop-ups para o FACTO. O PDF foi baixado como alternativa."
+          );
+        }
+      }
     } catch (e) {
+      if (abaPdf) abaPdf.close();
       const detalhe = e instanceof Error ? e.message : "";
       setErro(
         detalhe
@@ -102,7 +131,7 @@ export function PecaDocumentoView({
         >
           {baixando === "docx"
             ? "Gerando Word..."
-            : "Abrir Word em nova aba"}
+            : "Baixar Word"}
         </button>
         <button
           type="button"
@@ -110,7 +139,7 @@ export function PecaDocumentoView({
           disabled={baixando !== null}
           className="rounded-lg bg-stone-700 px-4 py-2 text-sm font-medium text-amber-50 hover:bg-stone-600 disabled:opacity-50"
         >
-          {baixando === "pdf" ? "Gerando PDF..." : "Abrir PDF em nova aba"}
+          {baixando === "pdf" ? "Gerando PDF..." : "Visualizar PDF"}
         </button>
       </div>
 
