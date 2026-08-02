@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Montserrat } from "next/font/google";
+import { WhatsAppFloat } from "@/components/whatsapp-float";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -58,7 +59,10 @@ export default function RootLayout({
       lang="pt-BR"
       className={`${geistSans.variable} ${geistMono.variable} ${montserrat.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <WhatsAppFloat />
+      </body>
     </html>
   );
 }
