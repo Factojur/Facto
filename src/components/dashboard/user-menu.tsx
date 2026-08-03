@@ -19,6 +19,11 @@ const LINKS_DESENVOLVIMENTO = [
   { label: "Node.js", href: "https://nodejs.org", icon: "🟢" },
   { label: "Resend", href: "https://resend.com/overview", icon: "✉️" },
   {
+    label: "Sentry",
+    href: "https://us.sentry.io/issues/?project=4511847845068800",
+    icon: "🩺",
+  },
+  {
     label: "Google AI Studio",
     href: "https://aistudio.google.com/api-keys",
     icon: "✨",
