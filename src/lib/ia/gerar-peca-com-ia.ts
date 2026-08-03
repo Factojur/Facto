@@ -34,6 +34,11 @@ export type InstrucoesDeterministicas = {
   autorNome?: string;
   autorOab?: string;
   localFechamento?: string;
+  linkNuvem?: string | null;
+  provasArquivos?: string[];
+  midiasArquivos?: string[];
+  /** Qualificação completa após "em face de" (sem o prefixo). */
+  qualificacaoReus?: string | null;
 };
 
 export type AnaliseEstrategica = {
@@ -157,11 +162,41 @@ function montarUserPromptRedacao(params: {
     );
   }
 
+  if (params.instrucoes?.qualificacaoReus?.trim()) {
+    partes.push(
+      "",
+      "QUALIFICAÇÃO DO(S) RÉU(S) DETERMINÍSTICA (após o nome da ação, usar literalmente):",
+      `em face de ${params.instrucoes.qualificacaoReus.trim()}, pelos fatos e fundamentos jurídicos a seguir expostos.`
+    );
+  }
+
   if (params.instrucoes?.valorCausa?.trim()) {
     partes.push(
       "",
       "VALOR DA CAUSA DETERMINÍSTICO (reproduzir literalmente):",
       params.instrucoes.valorCausa.trim()
+    );
+  }
+
+  if (params.instrucoes?.linkNuvem?.trim()) {
+    partes.push(
+      "",
+      "LINK DE NUVEM DETERMINÍSTICO (reproduzir literalmente):",
+      params.instrucoes.linkNuvem.trim(),
+      "Em DOS FATOS: uma frase breve no final sobre acesso digital.",
+      "Em DAS PROVAS E ANEXOS: o link completo + lista dos arquivos informados."
+    );
+  }
+
+  const arquivosProva = [
+    ...(params.instrucoes?.provasArquivos ?? []),
+    ...(params.instrucoes?.midiasArquivos ?? []),
+  ];
+  if (arquivosProva.length > 0) {
+    partes.push(
+      "",
+      "ARQUIVOS INFORMADOS NO FORMULÁRIO (citar no tópico de provas):",
+      arquivosProva.join(", ")
     );
   }
 

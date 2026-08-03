@@ -22,6 +22,8 @@ import {
   type ValoresPorCategoria,
 } from "@/components/dashboard/valores-causa-form";
 import { TIPOS_ACAO_JEC } from "@/lib/tipos-acao-jec";
+import { ReusSection } from "@/components/dashboard/reus-form";
+import { reuVazio, type ReuValue } from "@/lib/reu-types";
 
 function getFileNames(input: HTMLInputElement | null): string[] {
   if (!input?.files?.length) return [];
@@ -325,6 +327,9 @@ export function JecForm() {
   const [leiMunicipalTexto, setLeiMunicipalTexto] = useState("");
   const [leiMunicipalTitulo, setLeiMunicipalTitulo] = useState("");
   const [mostrarDocsOpcionais, setMostrarDocsOpcionais] = useState(false);
+  const [mostrarMidiasOpcionais, setMostrarMidiasOpcionais] = useState(false);
+  const [linkNuvem, setLinkNuvem] = useState("");
+  const [reus, setReus] = useState<ReuValue[]>([reuVazio()]);
 
   const isAssistente = tipoSelecionado === ASSISTENTE_FACTO;
 
@@ -410,9 +415,13 @@ export function JecForm() {
           form.querySelector<HTMLInputElement>("#mandadoLevantamentoEletronico")
         ),
       },
-      provas: getFileNames(form.querySelector<HTMLInputElement>("#provas")),
-      fotos: getFileNames(form.querySelector<HTMLInputElement>("#fotos")),
+      provas: getFileNames(
+        form.querySelector<HTMLInputElement>("#provasEssenciais")
+      ),
+      fotos: [],
       midias: getFileNames(form.querySelector<HTMLInputElement>("#midias")),
+      linkNuvem: linkNuvem.trim() || null,
+      reus,
       escritorio,
       comarca: {
         cep: comarca.cep,
@@ -685,17 +694,23 @@ export function JecForm() {
           </div>
 
           <div className="border-t border-slate-100 pt-4">
-            <button
-              type="button"
-              onClick={() => setMostrarDocsOpcionais((v) => !v)}
-              className="flex w-full items-center justify-between text-left text-sm font-semibold text-slate-800"
-            >
-              <span>Documentos opcionais</span>
-              <span className="text-xs font-normal text-slate-500">
-                {mostrarDocsOpcionais ? "Ocultar" : "Mostrar"} · hipossuficiência,
-                MLE
+            <label className="flex items-start gap-2.5 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={mostrarDocsOpcionais}
+                onChange={(e) => setMostrarDocsOpcionais(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
+              />
+              <span>
+                <span className="font-medium text-slate-800">
+                  Anexar documentos opcionais
+                </span>
+                <span className="mt-0.5 block text-xs font-normal leading-relaxed text-slate-500">
+                  Declaração de hipossuficiência (justiça gratuita) e/ou Mandado
+                  de Levantamento Eletrônico (MLE), quando já estiverem prontos.
+                </span>
               </span>
-            </button>
+            </label>
             <div
               className={
                 mostrarDocsOpcionais
@@ -714,42 +729,88 @@ export function JecForm() {
                 accept="image/*,.pdf,.doc,.docx"
               />
             </div>
-            {!mostrarDocsOpcionais && (
-              <p className="mt-2 text-xs text-slate-500">
-                Use se houver pedido de justiça gratuita ou MLE já preparado.
-              </p>
-            )}
           </div>
         </div>
       </section>
 
+      <ReusSection value={reus} onChange={setReus} />
+
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="mb-1 text-lg font-semibold text-slate-800">
-          Provas e Áudios
+          Provas e mídias
         </h2>
         <p className="mb-4 text-sm text-slate-500">
-          Envie prints, recibos, fotos, contratos, áudios e vídeos relevantes ao
-          caso.
+          Anexe as provas do caso. Os nomes dos arquivos entram na peça (tópico
+          de provas e anexos). O link de nuvem (Drive etc.) é colado por você —
+          o FACTO ainda não cria a pasta automaticamente.
         </p>
-        <div className="grid gap-4">
-          <FileField
-            id="provas"
-            label="Prints, recibos e documentos probatórios"
-            accept="image/*,.pdf,.doc,.docx"
-            multiple
-          />
-          <FileField
-            id="fotos"
-            label="Fotos e outros"
-            accept="image/*,.heic,.heif,.webp"
-            multiple
-          />
-          <FileField
-            id="midias"
-            label="Áudios e Vídeos"
-            accept="audio/*,video/*,.mp3,.wav,.m4a,.ogg,.mp4,.mov,.avi,.mkv,.webm"
-            multiple
-          />
+
+        <div className="space-y-5">
+          <div>
+            <h3 className="mb-1 text-sm font-semibold text-slate-800">
+              Essenciais
+            </h3>
+            <p className="mb-3 text-xs leading-relaxed text-slate-500">
+              Prints, recibos, contratos, fotos e demais documentos probatórios —
+              vários arquivos de uma vez.
+            </p>
+            <FileField
+              id="provasEssenciais"
+              label="Documentos e imagens de prova"
+              accept="image/*,.pdf,.doc,.docx,.heic,.heif,.webp"
+              multiple
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="linkNuvem"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
+            >
+              Link da nuvem (Drive / Dropbox / OneDrive)
+            </label>
+            <input
+              id="linkNuvem"
+              type="url"
+              value={linkNuvem}
+              onChange={(e) => setLinkNuvem(e.target.value)}
+              placeholder="https://drive.google.com/drive/folders/..."
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
+            />
+            <p className="mt-1.5 text-xs text-slate-500">
+              Monte a pasta no seu Drive, compartilhe com acesso de leitura e cole
+              o link aqui. Na peça: menção breve em DOS FATOS e o link completo em
+              DAS PROVAS E ANEXOS.
+            </p>
+          </div>
+
+          <div className="border-t border-slate-100 pt-4">
+            <label className="flex items-start gap-2.5 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={mostrarMidiasOpcionais}
+                onChange={(e) => setMostrarMidiasOpcionais(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
+              />
+              <span>
+                <span className="font-medium text-slate-800">
+                  Anexar áudios e vídeos
+                </span>
+                <span className="mt-0.5 block text-xs font-normal leading-relaxed text-slate-500">
+                  Gravações relevantes ao caso (WhatsApp, ligações, imagens em
+                  movimento etc.).
+                </span>
+              </span>
+            </label>
+            <div className={mostrarMidiasOpcionais ? "mt-3" : "hidden"}>
+              <FileField
+                id="midias"
+                label="Áudios e vídeos"
+                accept="audio/*,video/*,.mp3,.wav,.m4a,.ogg,.mp4,.mov,.avi,.mkv,.webm"
+                multiple
+              />
+            </div>
+          </div>
         </div>
       </section>
 

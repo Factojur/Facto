@@ -19,6 +19,15 @@ import {
 import type { CitacaoVerificada } from "@/lib/ia/verificacao-citacoes";
 import { MARCADOR_ESPACO_ENDEREÇAMENTO } from "@/lib/formatacao-forense";
 import { formatarOabAssinatura } from "@/lib/formatar-oab";
+import {
+  injetarProvasELinkNuvem,
+  normalizarLinkNuvem,
+} from "@/lib/provas-anexos";
+import {
+  formatarQualificacaoReus,
+  injetarQualificacaoReus,
+  type ReuValue,
+} from "@/lib/reu-types";
 
 export type GerarPecaJecInput = {
   tipoAcao: string;
@@ -39,6 +48,10 @@ export type GerarPecaJecInput = {
   provas: string[];
   fotos: string[];
   midias: string[];
+  /** Link manual de Drive/Dropbox/etc. colado pelo advogado. */
+  linkNuvem?: string | null;
+  /** Qualificação da(s) parte(s) passiva(s). */
+  reus?: ReuValue[];
   escritorio?: EscritorioConfig;
   autorNome?: string;
   autorOab?: string;
@@ -199,6 +212,8 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     input.midias.length +
     Object.values(input.documentos).flat().length;
 
+  const linkNuvem = normalizarLinkNuvem(input.linkNuvem);
+
   let tipoAcao = input.tipoAcao;
   let tutelaUrgencia = input.tutelaUrgencia;
   let decisaoAssistente;
@@ -251,9 +266,9 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     `- Declaração de Hipossuficiência: ${listarArquivos(input.documentos.declaracaoHipossuficiencia)}`,
     `- Mandado de Levantamento Eletrônico (MLE): ${listarArquivos(input.documentos.mandadoLevantamentoEletronico)}`,
     "",
-    `Prints, recibos e documentos (${input.provas.length}): ${listarArquivos(input.provas)}`,
-    `Fotos e outros (${input.fotos.length}): ${listarArquivos(input.fotos)}`,
+    `Prints, recibos, fotos e documentos (${input.provas.length + input.fotos.length}): ${listarArquivos([...input.provas, ...input.fotos])}`,
     `Áudios e vídeos (${input.midias.length}): ${listarArquivos(input.midias)}`,
+    `Link de nuvem: ${linkNuvem ?? "não informado"}`,
     "",
     `Total de arquivos para análise: ${totalProvas}`,
     "",
@@ -279,6 +294,10 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     input.comarca ?? { cidade: "", uf: "" }
   );
 
+  const qualificacaoReus =
+    formatarQualificacaoReus(input.reus ?? []) ??
+    "[NOME COMPLETO DO(A) RÉU(RÉ)], [qualificação completa do(a) réu(ré)]";
+
   const pecaBruta = [
     ...enderecamento.split("\n"),
     "",
@@ -296,8 +315,7 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     "",
     `${tipoAcao.toUpperCase()}`,
     MARCADOR_ESPACO_ENDEREÇAMENTO,
-    "em face de [NOME COMPLETO DO(A) RÉU(RÉ)], [qualificação completa do(a) réu(ré)], "
-      + "pelos fatos e fundamentos jurídicos a seguir expostos.",
+    `em face de ${qualificacaoReus}, pelos fatos e fundamentos jurídicos a seguir expostos.`,
     "",
     "I - DOS FATOS",
     input.fatos.trim(),
@@ -342,7 +360,15 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     oabAssinatura,
   ].join("\n");
 
-  const peca = aplicarFormatacaoTextoJuridico(pecaBruta, input.fatos);
+  const pecaComProvas = injetarQualificacaoReus(
+    injetarProvasELinkNuvem(pecaBruta, {
+      linkNuvem,
+      provas: [...input.provas, ...input.fotos],
+      midias: input.midias,
+    }),
+    formatarQualificacaoReus(input.reus ?? [])
+  );
+  const peca = aplicarFormatacaoTextoJuridico(pecaComProvas, input.fatos);
   const { pecaHtml } = gerarDocumentoTimbrado(
     peca,
     input.escritorio?.usarTimbre ? input.escritorio : undefined

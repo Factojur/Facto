@@ -22,6 +22,11 @@ import { geminiConfigurado } from "@/lib/ia/gemini-client";
 import { formatarOabAssinatura } from "@/lib/formatar-oab";
 import { gerarDocumentoTimbrado } from "@/lib/formatacao-juridica";
 import { calcularResumoValorCausa } from "@/lib/valores-causa";
+import { injetarProvasELinkNuvem } from "@/lib/provas-anexos";
+import {
+  formatarQualificacaoReus,
+  injetarQualificacaoReus,
+} from "@/lib/reu-types";
 
 /**
  * Workflow agentic: 2 chamadas Gemini (triagem Flash + redação Pro/Flash).
@@ -93,6 +98,21 @@ async function extrairLeiMunicipal(
   };
 }
 
+function finalizarTextoPeca(
+  texto: string,
+  body: GerarPecaBody
+): string {
+  const comProvas = injetarProvasELinkNuvem(normalizarPecaGerada(texto), {
+    linkNuvem: body.linkNuvem,
+    provas: [...(body.provas ?? []), ...(body.fotos ?? [])],
+    midias: body.midias ?? [],
+  });
+  return injetarQualificacaoReus(
+    comProvas,
+    formatarQualificacaoReus(body.reus ?? [])
+  );
+}
+
 export async function POST(request: Request) {
   const supabase = await createClient();
   const {
@@ -162,7 +182,7 @@ export async function POST(request: Request) {
     scaffold.decisaoAssistente?.tutelaUrgencia ?? body.tutelaUrgencia;
 
   if (!geminiConfigurado()) {
-    const peca = normalizarPecaGerada(scaffold.peca);
+    const peca = finalizarTextoPeca(scaffold.peca, body);
     const { pecaHtml } = gerarDocumentoTimbrado(
       peca,
       body.escritorio?.usarTimbre ? body.escritorio : undefined
@@ -206,11 +226,15 @@ export async function POST(request: Request) {
       autorNome: user.user_metadata?.nome_completo,
       autorOab: oabFormatada,
       localFechamento,
+      linkNuvem: body.linkNuvem,
+      provasArquivos: [...(body.provas ?? []), ...(body.fotos ?? [])],
+      midiasArquivos: body.midias ?? [],
+      qualificacaoReus: formatarQualificacaoReus(body.reus ?? []),
     },
   });
 
   if (!ia.ok) {
-    const fallbackNorm = normalizarPecaGerada(scaffold.peca);
+    const fallbackNorm = finalizarTextoPeca(scaffold.peca, body);
     const { pecaHtml } = gerarDocumentoTimbrado(
       fallbackNorm,
       body.escritorio?.usarTimbre ? body.escritorio : undefined
@@ -229,10 +253,10 @@ export async function POST(request: Request) {
     return NextResponse.json(fallback);
   }
 
-  const peca = normalizarPecaGerada(ia.textoGerado);
+  const pecaBrutaIa = normalizarPecaGerada(ia.textoGerado);
 
-  if (pecaTemFundamentacaoGenerica(peca)) {
-    const fallbackNorm = normalizarPecaGerada(scaffold.peca);
+  if (pecaTemFundamentacaoGenerica(pecaBrutaIa)) {
+    const fallbackNorm = finalizarTextoPeca(scaffold.peca, body);
     const { pecaHtml } = gerarDocumentoTimbrado(
       fallbackNorm,
       body.escritorio?.usarTimbre ? body.escritorio : undefined
@@ -251,6 +275,7 @@ export async function POST(request: Request) {
     } satisfies GerarPecaJecOutput);
   }
 
+  const peca = finalizarTextoPeca(pecaBrutaIa, body);
   const { pecaHtml } = gerarDocumentoTimbrado(
     peca,
     body.escritorio?.usarTimbre ? body.escritorio : undefined
