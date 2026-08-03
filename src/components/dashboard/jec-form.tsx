@@ -23,7 +23,7 @@ import {
 } from "@/components/dashboard/valores-causa-form";
 import { TIPOS_ACAO_JEC } from "@/lib/tipos-acao-jec";
 import { ReusSection } from "@/components/dashboard/reus-form";
-import { reuVazio, type ReuValue } from "@/lib/reu-types";
+import type { ReuValue } from "@/lib/reu-types";
 
 function getFileNames(input: HTMLInputElement | null): string[] {
   if (!input?.files?.length) return [];
@@ -329,7 +329,7 @@ export function JecForm() {
   const [mostrarDocsOpcionais, setMostrarDocsOpcionais] = useState(false);
   const [mostrarMidiasOpcionais, setMostrarMidiasOpcionais] = useState(false);
   const [linkNuvem, setLinkNuvem] = useState("");
-  const [reus, setReus] = useState<ReuValue[]>([reuVazio()]);
+  const [reus, setReus] = useState<ReuValue[]>([]);
 
   const isAssistente = tipoSelecionado === ASSISTENTE_FACTO;
 

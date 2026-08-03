@@ -11,6 +11,8 @@ import {
   cnpjValido,
   formatarCnpj,
   formatarCpf,
+  resumoReu,
+  reuTemDadosMinimos,
   reuVazio,
   type ReuValue,
   type TipoReu,
@@ -20,23 +22,24 @@ function campoClasse() {
   return "w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200";
 }
 
-function ReuCard({
+function ReuEditor({
   reu,
-  indice,
-  total,
   onChange,
-  onRemover,
+  onSalvar,
+  onCancelar,
+  modoEdicao,
 }: {
   reu: ReuValue;
-  indice: number;
-  total: number;
   onChange: (r: ReuValue) => void;
-  onRemover: () => void;
+  onSalvar: () => void;
+  onCancelar: () => void;
+  modoEdicao: boolean;
 }) {
   const [buscandoCnpj, setBuscandoCnpj] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);
   const [erroCnpj, setErroCnpj] = useState<string | null>(null);
   const [erroCep, setErroCep] = useState<string | null>(null);
+  const [erroSalvar, setErroSalvar] = useState<string | null>(null);
 
   function atualizar(parcial: Partial<ReuValue>) {
     onChange({ ...reu, ...parcial });
@@ -109,22 +112,32 @@ function ReuCard({
     }
   }
 
+  function tentarSalvar() {
+    if (!reuTemDadosMinimos(reu)) {
+      setErroSalvar(
+        reu.tipo === "pj"
+          ? "Informe ao menos a razão social ou um CNPJ válido."
+          : "Informe ao menos o nome completo ou um CPF válido."
+      );
+      return;
+    }
+    setErroSalvar(null);
+    onSalvar();
+  }
+
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-semibold text-slate-800">
-          Réu {indice + 1}
-          {total > 1 ? ` de ${total}` : ""}
+          {modoEdicao ? "Editar réu" : "Novo réu"}
         </h3>
-        {total > 1 && (
-          <button
-            type="button"
-            onClick={onRemover}
-            className="text-xs font-medium text-red-600 hover:text-red-700"
-          >
-            Remover
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={onCancelar}
+          className="text-xs font-medium text-slate-500 hover:text-slate-700"
+        >
+          Cancelar
+        </button>
       </div>
 
       <div className="mb-4 flex flex-wrap gap-4 text-sm">
@@ -367,7 +380,81 @@ function ReuCard({
           />
         </div>
       </div>
+
+      {erroSalvar && (
+        <p className="mt-3 text-sm text-amber-700">{erroSalvar}</p>
+      )}
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={tentarSalvar}
+          className="rounded-lg bg-stone-800 px-4 py-2.5 text-sm font-medium text-amber-50 transition hover:bg-stone-700"
+        >
+          {modoEdicao ? "Salvar alterações" : "Salvar réu"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancelar}
+          className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-white"
+        >
+          Cancelar
+        </button>
+      </div>
     </div>
+  );
+}
+
+function ReuChecklistItem({
+  reu,
+  indice,
+  onEditar,
+  onRemover,
+}: {
+  reu: ReuValue;
+  indice: number;
+  onEditar: () => void;
+  onRemover: () => void;
+}) {
+  const { titulo, detalhe } = resumoReu(reu);
+
+  return (
+    <li className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5">
+      <span
+        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border border-stone-400 bg-stone-50 text-[11px] font-semibold text-stone-700"
+        aria-hidden
+      >
+        ✓
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-slate-800">
+          <span className="text-slate-400">{indice + 1}.</span> {titulo}
+        </p>
+        {detalhe ? (
+          <p className="truncate text-xs text-slate-500">{detalhe}</p>
+        ) : (
+          <p className="text-xs text-slate-400">
+            {reu.tipo === "pj" ? "Pessoa jurídica" : "Pessoa física"}
+          </p>
+        )}
+      </div>
+      <div className="flex shrink-0 gap-2">
+        <button
+          type="button"
+          onClick={onEditar}
+          className="text-xs font-medium text-stone-700 hover:text-stone-900"
+        >
+          Editar
+        </button>
+        <button
+          type="button"
+          onClick={onRemover}
+          className="text-xs font-medium text-red-600 hover:text-red-700"
+        >
+          Remover
+        </button>
+      </div>
+    </li>
   );
 }
 
@@ -378,16 +465,39 @@ export function ReusSection({
   value: ReuValue[];
   onChange: (reus: ReuValue[]) => void;
 }) {
-  function atualizarEm(i: number, reu: ReuValue) {
-    onChange(value.map((r, idx) => (idx === i ? reu : r)));
+  const [rascunho, setRascunho] = useState<ReuValue | null>(null);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+
+  const editorAberto = rascunho != null;
+
+  function abrirNovo() {
+    setEditandoId(null);
+    setRascunho(reuVazio());
   }
 
-  function remover(i: number) {
-    if (value.length <= 1) {
-      onChange([reuVazio()]);
-      return;
+  function abrirEdicao(reu: ReuValue) {
+    setEditandoId(reu.id);
+    setRascunho({ ...reu });
+  }
+
+  function fecharEditor() {
+    setRascunho(null);
+    setEditandoId(null);
+  }
+
+  function salvarRascunho() {
+    if (!rascunho) return;
+    if (editandoId) {
+      onChange(value.map((r) => (r.id === editandoId ? rascunho : r)));
+    } else {
+      onChange([...value, rascunho]);
     }
-    onChange(value.filter((_, idx) => idx !== i));
+    fecharEditor();
+  }
+
+  function remover(id: string) {
+    onChange(value.filter((r) => r.id !== id));
+    if (editandoId === id) fecharEditor();
   }
 
   return (
@@ -396,31 +506,48 @@ export function ReusSection({
         Qualificação do(s) réu(s)
       </h2>
       <p className="mb-4 text-sm text-slate-500">
-        Dados da parte passiva para o trecho &quot;em face de…&quot;. Em pessoa
-        jurídica, o CNPJ busca razão social e endereço (BrasilAPI). O CEP
-        completa o endereço (ViaCEP).
+        Preencha e salve cada réu na checklist. CNPJ busca razão social
+        (BrasilAPI); CEP completa o endereço (ViaCEP).
       </p>
 
-      <div className="space-y-4">
-        {value.map((reu, i) => (
-          <ReuCard
-            key={reu.id}
-            reu={reu}
-            indice={i}
-            total={value.length}
-            onChange={(r) => atualizarEm(i, r)}
-            onRemover={() => remover(i)}
-          />
-        ))}
-      </div>
+      {value.length > 0 ? (
+        <ul className="mb-3 space-y-2">
+          {value.map((reu, i) => (
+            <ReuChecklistItem
+              key={reu.id}
+              reu={reu}
+              indice={i}
+              onEditar={() => abrirEdicao(reu)}
+              onRemover={() => remover(reu.id)}
+            />
+          ))}
+        </ul>
+      ) : (
+        !editorAberto && (
+          <p className="mb-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-500">
+            Nenhum réu salvo ainda.
+          </p>
+        )
+      )}
 
-      <button
-        type="button"
-        onClick={() => onChange([...value, reuVazio()])}
-        className="mt-4 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-      >
-        + Adicionar outro réu
-      </button>
+      {editorAberto && rascunho ? (
+        <ReuEditor
+          key={rascunho.id + (editandoId ?? "novo")}
+          reu={rascunho}
+          onChange={setRascunho}
+          onSalvar={salvarRascunho}
+          onCancelar={fecharEditor}
+          modoEdicao={editandoId != null}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={abrirNovo}
+          className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+        >
+          + Adicionar réu
+        </button>
+      )}
     </section>
   );
 }

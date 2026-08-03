@@ -94,11 +94,37 @@ function enderecoFormatado(r: ReuValue): string {
   return partes.join(", ");
 }
 
-function reuTemDadosMinimos(r: ReuValue): boolean {
+export function reuTemDadosMinimos(r: ReuValue): boolean {
   if (r.tipo === "pj") {
     return Boolean(r.razaoSocial.trim() || cnpjValido(r.cnpj));
   }
   return Boolean(r.nomeCompleto.trim() || apenasDigitos(r.cpf).length === 11);
+}
+
+/** Linha curta para checklist (nome + documento + cidade). */
+export function resumoReu(r: ReuValue): { titulo: string; detalhe: string } {
+  if (r.tipo === "pj") {
+    const titulo =
+      r.razaoSocial.trim() ||
+      r.nomeFantasia.trim() ||
+      (cnpjValido(r.cnpj) ? formatarCnpj(r.cnpj) : "Pessoa jurídica");
+    const partes = [
+      cnpjValido(r.cnpj) ? `CNPJ ${formatarCnpj(r.cnpj)}` : null,
+      r.cidade.trim() && r.uf.trim()
+        ? `${r.cidade.trim()}/${r.uf.trim().toUpperCase()}`
+        : r.cidade.trim() || null,
+    ].filter(Boolean);
+    return { titulo, detalhe: partes.join(" · ") };
+  }
+
+  const titulo = r.nomeCompleto.trim() || "Pessoa física";
+  const partes = [
+    apenasDigitos(r.cpf).length === 11 ? `CPF ${formatarCpf(r.cpf)}` : null,
+    r.cidade.trim() && r.uf.trim()
+      ? `${r.cidade.trim()}/${r.uf.trim().toUpperCase()}`
+      : r.cidade.trim() || null,
+  ].filter(Boolean);
+  return { titulo, detalhe: partes.join(" · ") };
 }
 
 export function formatarUmReu(r: ReuValue): string {
