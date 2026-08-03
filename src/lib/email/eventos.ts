@@ -67,6 +67,36 @@ export async function registrarEmailEvento(opcoes: {
   }
 }
 
+/**
+ * Idempotência de envio por tipo + mpPaymentId (metadados JSON).
+ * Se a tabela/consulta falhar, assume que ainda não enviou (permite retry).
+ */
+export async function emailJaEnviadoParaPagamento(
+  tipo: TipoEmailEvento,
+  mpPaymentId: string
+): Promise<boolean> {
+  if (!mpPaymentId) return false;
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("email_eventos")
+      .select("id")
+      .eq("tipo", tipo)
+      .eq("status", "enviado")
+      .contains("metadados", { mpPaymentId })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("[email_eventos] idempotência:", error.message);
+      return false;
+    }
+    return Boolean(data?.id);
+  } catch {
+    return false;
+  }
+}
+
 const LIMITE_SUPORTE = 5;
 const JANELA_SUPORTE_MS = 60 * 60 * 1000; // 1 h
 

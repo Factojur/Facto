@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { enviarEmailConvite } from "@/lib/email/convite-pago";
 import { enviarEmailsFinanceiroCompra } from "@/lib/email/pagamento-aprovado";
+import { emailJaEnviadoParaPagamento } from "@/lib/email/eventos";
 import {
   marcarPagamentosLocaisRefunded,
   tentarEstornoCdc,
@@ -198,12 +199,13 @@ async function processarPreapproval(admin: AdminClient, id: string) {
 }
 
 /**
- * Gera convite + e-mails (financeiro + boas-vindas) para cliente novo.
- * Usado tanto em pagamento avulso (`payment`) quanto na 1ª cobrança de
- * assinatura (`subscription_authorized_payment`).
+ * Gera convite + e-mails (financeiro + boas-vindas) após cobrança aprovada.
  *
- * Não dispara em renovação: se já existe perfil ou qualquer convite para o
- * e-mail, só ignora (idempotente por mp_payment_id).
+ * Regras:
+ * - financeiro@ (interno + confirmação ao cliente) SEMPRE tenta enviar uma vez
+ *   por mp_payment_id — mesmo se já existir perfil/convite (reteste / renovação).
+ * - noreply@ (boas-vindas) só para cliente sem perfil; reutiliza convite pendente.
+ * - Idempotência por email_eventos (não pelo mere fato de existir convite).
  */
 async function garantirConviteEEmailsPosCompra(
   admin: AdminClient,
@@ -214,56 +216,145 @@ async function garantirConviteEEmailsPosCompra(
   }
 ): Promise<void> {
   const email = opcoes.email.trim();
-  if (!email) return;
+  if (!email) {
+    console.warn(
+      "[webhook mercadopago] pós-compra sem e-mail; mp_payment_id=",
+      opcoes.mpPaymentId
+    );
+    return;
+  }
 
-  const { data: porPagamento } = await admin
-    .from("convites_pagos")
-    .select("id")
-    .eq("mp_payment_id", opcoes.mpPaymentId)
-    .maybeSingle();
-  if (porPagamento) return;
+  // 1) Financeiro — independente de convite/perfil
+  const financeiroJaEnviado = await emailJaEnviadoParaPagamento(
+    "financeiro_compra",
+    opcoes.mpPaymentId
+  );
+  if (!financeiroJaEnviado) {
+    try {
+      await enviarEmailsFinanceiroCompra({
+        emailCliente: email,
+        valor: opcoes.valor,
+        mpPaymentId: opcoes.mpPaymentId,
+      });
+    } catch (erro) {
+      console.error(
+        "[webhook mercadopago] falha e-mails financeiro",
+        erro
+      );
+    }
+  }
 
+  // 2) Convite / boas-vindas — só se ainda não tem conta
   const { data: perfil } = await admin
     .from("profiles")
     .select("id")
     .ilike("email", email)
     .maybeSingle();
-  if (perfil) return;
+  if (perfil) {
+    console.info(
+      "[webhook mercadopago] cliente já possui perfil; pulando convite",
+      email
+    );
+    return;
+  }
 
-  const { data: conviteAnterior } = await admin
+  const conviteJaEnviado = await emailJaEnviadoParaPagamento(
+    "convite",
+    opcoes.mpPaymentId
+  );
+  if (conviteJaEnviado) return;
+
+  let token: string | null = null;
+
+  const { data: porPagamento } = await admin
     .from("convites_pagos")
-    .select("id")
-    .ilike("email", email)
-    .limit(1)
+    .select("id, token, status")
+    .eq("mp_payment_id", opcoes.mpPaymentId)
     .maybeSingle();
-  if (conviteAnterior) return;
 
-  const token = crypto.randomBytes(32).toString("hex");
-  const { error: erroInsercao } = await admin.from("convites_pagos").insert({
-    email,
-    token,
-    status: "pendente",
-    mp_payment_id: opcoes.mpPaymentId,
-  });
-  if (erroInsercao) throw erroInsercao;
+  if (porPagamento?.token) {
+    token = porPagamento.token as string;
+  } else {
+    const { data: convitePendente } = await admin
+      .from("convites_pagos")
+      .select("id, token, status, mp_payment_id")
+      .ilike("email", email)
+      .eq("status", "pendente")
+      .order("criado_em", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-  const envios = await Promise.allSettled([
-    enviarEmailsFinanceiroCompra({
-      emailCliente: email,
-      valor: opcoes.valor,
-      mpPaymentId: opcoes.mpPaymentId,
-    }),
-    enviarEmailConvite(email, token),
-  ]);
-
-  for (const envio of envios) {
-    if (envio.status === "rejected") {
-      console.error(
-        "[webhook mercadopago] falha ao enviar e-mail",
-        envio.reason
-      );
+    if (convitePendente?.token) {
+      token = convitePendente.token as string;
+      // Vincula este pagamento ao convite pendente (se ainda sem id).
+      if (!convitePendente.mp_payment_id) {
+        await admin
+          .from("convites_pagos")
+          .update({ mp_payment_id: opcoes.mpPaymentId })
+          .eq("id", convitePendente.id);
+      }
+    } else {
+      token = crypto.randomBytes(32).toString("hex");
+      const { error: erroInsercao } = await admin.from("convites_pagos").insert({
+        email,
+        token,
+        status: "pendente",
+        mp_payment_id: opcoes.mpPaymentId,
+      });
+      if (erroInsercao) {
+        // Corrida: outro webhook inseriu no meio — busca de novo.
+        const { data: existente } = await admin
+          .from("convites_pagos")
+          .select("token")
+          .eq("mp_payment_id", opcoes.mpPaymentId)
+          .maybeSingle();
+        if (existente?.token) {
+          token = existente.token as string;
+        } else {
+          throw erroInsercao;
+        }
+      }
     }
   }
+
+  if (!token) return;
+
+  try {
+    await enviarEmailConvite(email, token, {
+      mpPaymentId: opcoes.mpPaymentId,
+    });
+  } catch (erro) {
+    console.error("[webhook mercadopago] falha e-mail convite", erro);
+  }
+}
+
+function cobrancaAssinaturaAprovada(invoice: {
+  status?: string | null;
+  payment?: { id?: number | string | null; status?: string | null } | null;
+}): boolean {
+  const paymentStatus = invoice.payment?.status?.toLowerCase() ?? null;
+  if (paymentStatus === "approved") return true;
+  if (
+    paymentStatus === "refunded" ||
+    paymentStatus === "charged_back" ||
+    paymentStatus === "rejected" ||
+    paymentStatus === "cancelled" ||
+    paymentStatus === "canceled"
+  ) {
+    return false;
+  }
+
+  const invoiceStatus = invoice.status?.toLowerCase() ?? null;
+  // Fatura processada com payment.id = cobrança coletada (search às vezes
+  // omite payment.status).
+  if (
+    (invoiceStatus === "processed" || invoiceStatus === "approved") &&
+    invoice.payment?.id != null
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 async function processarAuthorizedPayment(admin: AdminClient, id: string) {
@@ -272,6 +363,7 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
   const preapprovalId = invoice.preapproval_id as string | undefined;
   const statusPagamento: string | undefined =
     invoice.payment?.status ?? invoice.status ?? undefined;
+  const cobrancaAprovada = cobrancaAssinaturaAprovada(invoice);
   const valor =
     typeof invoice.transaction_amount === "string"
       ? parseFloat(invoice.transaction_amount)
@@ -305,7 +397,7 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
       }
     }
 
-    if (assinaturaId && statusPagamento === "approved") {
+    if (assinaturaId && cobrancaAprovada) {
       // Cada pagamento aprovado estende o acesso por um ciclo do plano a
       // partir da data da cobrança — é assim que "não renovou" se resolve
       // sozinho: sem um novo pagamento aprovado, essa data para de avançar
@@ -323,7 +415,14 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
           ...(emailCliente ? { email: emailCliente } : {}),
         })
         .eq("id", assinaturaId);
-    } else if (assinaturaId && statusPagamento && statusPagamento !== "approved") {
+    } else if (
+      assinaturaId &&
+      (statusPagamento === "rejected" ||
+        statusPagamento === "cancelled" ||
+        statusPagamento === "canceled" ||
+        statusPagamento === "refunded" ||
+        statusPagamento === "charged_back")
+    ) {
       // Cobrança recorrente falhou/foi recusada numa assinatura que ainda
       // não tinha motivo de encerramento registrado: marcamos como "não
       // renovou" (diferente de um cancelamento explícito pelo cliente). O
@@ -351,7 +450,16 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
   );
 
   // Links mpago.la (assinatura) chegam aqui — não no tópico `payment`.
-  if (statusPagamento === "approved" && emailCliente) {
+  if (cobrancaAprovada) {
+    if (!emailCliente) {
+      console.error(
+        "[webhook mercadopago] cobrança aprovada sem e-mail do pagador; mp_payment_id=",
+        mpPaymentId,
+        "preapproval=",
+        preapprovalId
+      );
+      return;
+    }
     await garantirConviteEEmailsPosCompra(admin, {
       email: emailCliente,
       mpPaymentId,

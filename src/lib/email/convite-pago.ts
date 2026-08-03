@@ -75,13 +75,19 @@ function montarHtmlBoasVindas(link: string): string {
  * Boas-vindas + link de cadastro (remetente noreply@).
  * O comprovante financeiro vai em paralelo por financeiro@.
  */
-export async function enviarEmailConvite(email: string, token: string) {
+export async function enviarEmailConvite(
+  email: string,
+  token: string,
+  opcoes?: { mpPaymentId?: string }
+) {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const remetente =
     process.env.RESEND_FROM_EMAIL?.trim() || REMETENTE_NOREPLY;
   const siteUrl = getSiteUrl();
   const link = `${siteUrl}/cadastro?token=${token}`;
   const assunto = "Bem-vindo ao FACTO — crie sua conta";
+  const metadados: Record<string, unknown> = { link };
+  if (opcoes?.mpPaymentId) metadados.mpPaymentId = opcoes.mpPaymentId;
 
   if (!apiKey) {
     console.warn(
@@ -94,7 +100,7 @@ export async function enviarEmailConvite(email: string, token: string) {
       destinatario: email,
       assunto,
       erro: "RESEND_API_KEY ausente",
-      metadados: { link },
+      metadados,
     });
     return;
   }
@@ -115,7 +121,7 @@ export async function enviarEmailConvite(email: string, token: string) {
       destinatario: email,
       assunto,
       erro: error.message,
-      metadados: { link },
+      metadados,
     });
     throw new Error(`Falha ao enviar e-mail via Resend: ${error.message}`);
   }
@@ -125,6 +131,6 @@ export async function enviarEmailConvite(email: string, token: string) {
     status: "enviado",
     destinatario: email,
     assunto,
-    metadados: { link },
+    metadados,
   });
 }
