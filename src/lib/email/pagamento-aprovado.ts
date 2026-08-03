@@ -1,5 +1,8 @@
 import { Resend } from "resend";
-import { registrarEmailEvento } from "@/lib/email/eventos";
+import {
+  emailJaEnviadoParaPagamento,
+  registrarEmailEvento,
+} from "@/lib/email/eventos";
 
 const REMETENTE_FINANCEIRO =
   "FACTO Financeiro <financeiro@factoia.com.br>";
@@ -111,6 +114,9 @@ function htmlConfirmacaoCliente(opcoes: {
  * Após compra aprovada:
  * 1) avisa a equipe em financeiro@
  * 2) confirma o pagamento ao cliente (remetente financeiro@)
+ *
+ * Cada destino é idempotente: se um já foi enviado e o outro falhou,
+ * o retry só reenvia o que falta.
  */
 export async function enviarEmailsFinanceiroCompra(opcoes: {
   emailCliente: string;
@@ -137,59 +143,86 @@ export async function enviarEmailsFinanceiroCompra(opcoes: {
     process.env.RESEND_FROM_FINANCEIRO?.trim() || REMETENTE_FINANCEIRO;
   const resend = new Resend(apiKey);
 
-  const resultados = await Promise.allSettled([
-    resend.emails.send({
-      from,
-      to: DESTINO_FINANCEIRO,
+  const envios: {
+    destinatario: string;
+    subject: string;
+    html: string;
+    replyTo?: string;
+  }[] = [];
+
+  const adminJaEnviado = await emailJaEnviadoParaPagamento(
+    "financeiro_compra",
+    opcoes.mpPaymentId,
+    DESTINO_FINANCEIRO
+  );
+  if (!adminJaEnviado) {
+    envios.push({
+      destinatario: DESTINO_FINANCEIRO,
       subject: `[FACTO] Compra aprovada — ${opcoes.emailCliente}`,
       html: htmlAvisoInterno({
         emailCliente: opcoes.emailCliente,
         valor: opcoes.valor ?? null,
         mpPaymentId: opcoes.mpPaymentId,
       }),
-    }),
-    resend.emails.send({
-      from,
-      to: opcoes.emailCliente,
-      replyTo: DESTINO_FINANCEIRO,
+    });
+  }
+
+  const clienteJaEnviado = await emailJaEnviadoParaPagamento(
+    "financeiro_compra",
+    opcoes.mpPaymentId,
+    opcoes.emailCliente
+  );
+  if (!clienteJaEnviado) {
+    envios.push({
+      destinatario: opcoes.emailCliente,
       subject: "Pagamento aprovado — FACTO",
       html: htmlConfirmacaoCliente({ valor: opcoes.valor ?? null }),
-    }),
-  ]);
-
-  const destinos = [DESTINO_FINANCEIRO, opcoes.emailCliente];
-  for (let i = 0; i < resultados.length; i++) {
-    const resultado = resultados[i]!;
-    const destinatario = destinos[i]!;
-    if (resultado.status === "rejected") {
-      const erro =
-        resultado.reason instanceof Error
-          ? resultado.reason.message
-          : String(resultado.reason);
-      await registrarEmailEvento({
-        tipo: "financeiro_compra",
-        status: "falha",
-        destinatario,
-        erro,
-        metadados: { mpPaymentId: opcoes.mpPaymentId },
-      });
-      continue;
-    }
-    if (resultado.value.error) {
-      await registrarEmailEvento({
-        tipo: "financeiro_compra",
-        status: "falha",
-        destinatario,
-        erro: resultado.value.error.message,
-        metadados: { mpPaymentId: opcoes.mpPaymentId },
-      });
-      continue;
-    }
-    await registrarEmailEvento({
-      tipo: "financeiro_compra",
-      status: "enviado",
-      destinatario,
-      metadados: { mpPaymentId: opcoes.mpPaymentId },
+      replyTo: DESTINO_FINANCEIRO,
     });
+  }
+
+  if (envios.length === 0) return;
+
+  for (const envio of envios) {
+    try {
+      const { error } = await resend.emails.send({
+        from,
+        to: envio.destinatario,
+        subject: envio.subject,
+        html: envio.html,
+        ...(envio.replyTo ? { replyTo: envio.replyTo } : {}),
+      });
+
+      if (error) {
+        await registrarEmailEvento({
+          tipo: "financeiro_compra",
+          status: "falha",
+          destinatario: envio.destinatario,
+          assunto: envio.subject,
+          erro: error.message,
+          metadados: { mpPaymentId: opcoes.mpPaymentId },
+        });
+        continue;
+      }
+
+      await registrarEmailEvento({
+        tipo: "financeiro_compra",
+        status: "enviado",
+        destinatario: envio.destinatario,
+        assunto: envio.subject,
+        metadados: { mpPaymentId: opcoes.mpPaymentId },
+      });
+    } catch (erro) {
+      const mensagem =
+        erro instanceof Error ? erro.message : String(erro);
+      await registrarEmailEvento({
+        tipo: "financeiro_compra",
+        status: "falha",
+        destinatario: envio.destinatario,
+        assunto: envio.subject,
+        erro: mensagem,
+        metadados: { mpPaymentId: opcoes.mpPaymentId },
+      });
+    }
   }
 }

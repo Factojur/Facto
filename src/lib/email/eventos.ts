@@ -69,23 +69,30 @@ export async function registrarEmailEvento(opcoes: {
 
 /**
  * Idempotência de envio por tipo + mpPaymentId (metadados JSON).
+ * Opcionalmente filtra por destinatário (ex.: só a confirmação ao cliente).
  * Se a tabela/consulta falhar, assume que ainda não enviou (permite retry).
  */
 export async function emailJaEnviadoParaPagamento(
   tipo: TipoEmailEvento,
-  mpPaymentId: string
+  mpPaymentId: string,
+  destinatario?: string
 ): Promise<boolean> {
   if (!mpPaymentId) return false;
   try {
     const admin = createAdminClient();
-    const { data, error } = await admin
+    let query = admin
       .from("email_eventos")
       .select("id")
       .eq("tipo", tipo)
       .eq("status", "enviado")
       .contains("metadados", { mpPaymentId })
-      .limit(1)
-      .maybeSingle();
+      .limit(1);
+
+    if (destinatario) {
+      query = query.ilike("destinatario", destinatario);
+    }
+
+    const { data, error } = await query.maybeSingle();
 
     if (error) {
       console.warn("[email_eventos] idempotência:", error.message);

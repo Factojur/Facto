@@ -224,24 +224,15 @@ async function garantirConviteEEmailsPosCompra(
     return;
   }
 
-  // 1) Financeiro — independente de convite/perfil
-  const financeiroJaEnviado = await emailJaEnviadoParaPagamento(
-    "financeiro_compra",
-    opcoes.mpPaymentId
-  );
-  if (!financeiroJaEnviado) {
-    try {
-      await enviarEmailsFinanceiroCompra({
-        emailCliente: email,
-        valor: opcoes.valor,
-        mpPaymentId: opcoes.mpPaymentId,
-      });
-    } catch (erro) {
-      console.error(
-        "[webhook mercadopago] falha e-mails financeiro",
-        erro
-      );
-    }
+  // 1) Financeiro — independente de convite/perfil (idempotente por destino)
+  try {
+    await enviarEmailsFinanceiroCompra({
+      emailCliente: email,
+      valor: opcoes.valor,
+      mpPaymentId: opcoes.mpPaymentId,
+    });
+  } catch (erro) {
+    console.error("[webhook mercadopago] falha e-mails financeiro", erro);
   }
 
   // 2) Convite / boas-vindas — só se ainda não tem conta
@@ -368,6 +359,7 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
     typeof invoice.transaction_amount === "string"
       ? parseFloat(invoice.transaction_amount)
       : (invoice.transaction_amount as number | null);
+  const mpPaymentId = String(invoice.payment?.id ?? id);
 
   let assinaturaId: string | null = null;
   let emailCliente: string | null = null;
@@ -436,7 +428,30 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
     }
   }
 
-  const mpPaymentId = String(invoice.payment?.id ?? id);
+  // Último recurso: e-mail no próprio payment do Mercado Pago.
+  if (!emailCliente && invoice.payment?.id) {
+    try {
+      const payment = await chamarApiMercadoPago(
+        `/v1/payments/${invoice.payment.id}`
+      );
+      emailCliente =
+        (payment.payer?.email as string | undefined) ??
+        (payment.additional_info?.payer?.email as string | undefined) ??
+        null;
+    } catch (erro) {
+      console.warn(
+        "[webhook mercadopago] não foi possível obter e-mail do payment",
+        erro
+      );
+    }
+  }
+
+  if (assinaturaId && emailCliente) {
+    await admin
+      .from("assinaturas")
+      .update({ email: emailCliente })
+      .eq("id", assinaturaId);
+  }
 
   await admin.from("pagamentos").upsert(
     {
@@ -456,7 +471,11 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
         "[webhook mercadopago] cobrança aprovada sem e-mail do pagador; mp_payment_id=",
         mpPaymentId,
         "preapproval=",
-        preapprovalId
+        preapprovalId,
+        "invoice_status=",
+        invoice.status,
+        "payment_status=",
+        invoice.payment?.status
       );
       return;
     }
@@ -465,6 +484,16 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
       mpPaymentId,
       valor: typeof valor === "number" && !Number.isNaN(valor) ? valor : null,
     });
+  } else {
+    console.info(
+      "[webhook mercadopago] authorized_payment sem e-mails (não aprovado)",
+      {
+        id,
+        mpPaymentId,
+        invoiceStatus: invoice.status,
+        paymentStatus: invoice.payment?.status,
+      }
+    );
   }
 }
 
