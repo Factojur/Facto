@@ -26,6 +26,10 @@ import {
   type CitacaoVerificada,
 } from "@/lib/ia/verificacao-citacoes";
 import { formatarOabAssinatura } from "@/lib/formatar-oab";
+import {
+  contextoVerificacaoJurisCaso,
+  type BlocoJurisCaso,
+} from "@/lib/juris-caso-types";
 
 export type InstrucoesDeterministicas = {
   enderecamento?: string;
@@ -250,6 +254,7 @@ export async function gerarPecaComIA(params: {
   fatos: string;
   itensConhecimento?: TrechoConhecimento[];
   leiMunicipal?: BlocoLeiMunicipal | null;
+  jurisDoCaso?: BlocoJurisCaso[] | null;
   instrucoes?: InstrucoesDeterministicas;
   casoReal?: boolean;
 }): Promise<ResultadoPecaIA> {
@@ -272,12 +277,19 @@ export async function gerarPecaComIA(params: {
         texto: params.leiMunicipal.texto.trim(),
       }
     : null;
+  const jurisDoCaso =
+    params.jurisDoCaso?.filter((j) => j.texto?.trim()).map((j) => ({
+      titulo: j.titulo?.trim() || "Jurisprudência do caso",
+      tipo: j.tipo,
+      texto: j.texto.trim(),
+    })) ?? null;
 
   // —— ETAPA 1: Paralegal Triador / Estrategista (Flash) ——
   const triagemRes = await gerarTextoComGemini({
     systemPrompt: montarSystemPromptAnaliseEstrategica(
       contextoBase,
-      leiMunicipal
+      leiMunicipal,
+      jurisDoCaso
     ),
     userPrompt: montarUserPromptTriagem({
       tipoAcao: params.tipoAcao,
@@ -336,7 +348,11 @@ export async function gerarPecaComIA(params: {
 
   // —— ETAPA 2: Advogado Sênior Redator (Pro → Flash) ——
   const redacaoRes = await gerarTextoComGemini({
-    systemPrompt: montarSystemPromptRedacaoTier1(contextoRedacao, leiMunicipal),
+    systemPrompt: montarSystemPromptRedacaoTier1(
+      contextoRedacao,
+      leiMunicipal,
+      jurisDoCaso
+    ),
     userPrompt: montarUserPromptRedacao({
       tipoAcao: analiseEstrategica.nomeAcao || params.tipoAcao,
       fatos: params.fatos,
@@ -366,6 +382,7 @@ export async function gerarPecaComIA(params: {
     leiMunicipal
       ? `[Lei municipal] ${leiMunicipal.nome}\n${leiMunicipal.texto}`
       : "",
+    contextoVerificacaoJurisCaso(jurisDoCaso),
     estrategiaJuridica,
   ]
     .filter(Boolean)

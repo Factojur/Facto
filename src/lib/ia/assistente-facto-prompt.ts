@@ -6,15 +6,20 @@
  */
 
 import { MARCADOR_NAO_ENCONTRADO } from "@/lib/ia/verificacao-citacoes";
+import {
+  montarBlocoPromptJurisCaso,
+  type BlocoJurisCaso,
+} from "@/lib/juris-caso-types";
 
 export type BlocoLeiMunicipal = {
   nome: string;
   texto: string;
 };
 
-function blocoBaseEMunicipal(
+function blocoBaseMunicipalEJuris(
   contextoBase: string,
-  leiMunicipal?: BlocoLeiMunicipal | null
+  leiMunicipal?: BlocoLeiMunicipal | null,
+  jurisDoCaso?: BlocoJurisCaso[] | null
 ): string {
   const municipal = leiMunicipal?.texto?.trim()
     ? [
@@ -35,6 +40,7 @@ function blocoBaseEMunicipal(
         ")",
     "</BASE_DE_CONHECIMENTO>",
     municipal,
+    montarBlocoPromptJurisCaso(jurisDoCaso),
   ].join("\n");
 }
 
@@ -44,7 +50,8 @@ function blocoBaseEMunicipal(
  */
 export function montarSystemPromptAnaliseEstrategica(
   contextoBase: string,
-  leiMunicipal?: BlocoLeiMunicipal | null
+  leiMunicipal?: BlocoLeiMunicipal | null,
+  jurisDoCaso?: BlocoJurisCaso[] | null
 ): string {
   return [
     "Você é um Paralegal Especialista em juizados especiais cíveis brasileiros.",
@@ -55,18 +62,19 @@ export function montarSystemPromptAnaliseEstrategica(
     "3. A tese jurídica principal a ser aplicada (ex: CDC, Súmulas aplicáveis);",
     "4. Nome técnico da ação cabível no JEC;",
     "5. Pedidos essenciais sugeridos (lista curta);",
-    "6. Súmulas/artigos-chave pertinentes (só se realmente aplicáveis).",
+    "6. Súmulas/artigos-chave pertinentes (só se realmente aplicáveis);",
+    "7. Se houver <JURISPRUDENCIA_DO_CASO>, liste quais fontes usar e a tese de cada uma (sem inventar).",
     "",
     "REGRAS:",
     "- NÃO redija a petição nesta etapa.",
     "- Seja objetivo, específico ao caso (datas, valores, condutas do relato).",
     "- Indicação do formulário é só pista; a ação vem dos FATOS.",
     "- Golpe/fraude/PIX/cartão/falsa central/falha de segurança bancária → indenização (consumo), NÃO execução de título.",
-    "- Acórdãos com número de processo: só se estiverem na base abaixo.",
+    "- Acórdãos com número de processo: só se estiverem na base ou na jurisprudência do caso.",
     "",
-    "Formato livre em texto claro (pode usar numeração 1–6). Sem saudações.",
+    "Formato livre em texto claro (pode usar numeração 1–7). Sem saudações.",
     "",
-    blocoBaseEMunicipal(contextoBase, leiMunicipal),
+    blocoBaseMunicipalEJuris(contextoBase, leiMunicipal, jurisDoCaso),
   ].join("\n");
 }
 
@@ -76,7 +84,8 @@ export function montarSystemPromptAnaliseEstrategica(
  */
 export function montarSystemPromptRedacaoTier1(
   contextoBase: string,
-  leiMunicipal?: BlocoLeiMunicipal | null
+  leiMunicipal?: BlocoLeiMunicipal | null,
+  jurisDoCaso?: BlocoJurisCaso[] | null
 ): string {
   return [
     "Você é um Advogado Sênior de elite, especialista em contencioso cível e direito do consumidor, conhecido por redigir petições iniciais impecáveis, persuasivas, cultas e irretocáveis.",
@@ -93,13 +102,15 @@ export function montarSystemPromptRedacaoTier1(
     "   - NÃO copie e cole o relato do usuário. Reescreva com vocabulário jurídico culto, persuasivo e detalhado, demonstrando a gravidade do problema.",
     "   - Divida em parágrafos curtos (máximo 3 a 4 linhas) para facilitar a leitura.",
     "   - NÃO invente fatos ou dados que não foram relatados.",
+    "   - Se a jurisprudência do caso reforçar a narrativa fática, pode mencionar brevemente o alinhamento com o entendimento (sem colar ementa inteira aqui).",
     "",
     "2) DO DIREITO: (parte mais importante)",
     "   - Utilize as teses jurídicas mapeadas pelo Agente 1.",
     "   - Desenvolva argumentação robusta, conectando os fatos às leis (ex: CDC, LGPD, Código Civil, CPC, CF, Lei 9.099/95) e súmulas/jurisprudência consolidada (ex: Súmula 479 do STJ).",
     "   - Em cada subtópico a), b), c)...: norma → sentido → aplicação AOS FATOS DESTE CASO (subsunção).",
     "   - PROIBIDO frases genéricas do tipo \"plausibilidade do direito invocado\".",
-    "   - Acórdãos / números de processo: SOMENTE se estiverem LITERALMENTE na <BASE_DE_CONHECIMENTO>; senão use " +
+    "   - Se houver <JURISPRUDENCIA_DO_CASO>: extraia ementa/tese do voto e CITE no padrão forense brasileiro no subtópico pertinente (tribunal, classe/nº, ementa ou trecho *\"entre aspas\"*).",
+    "   - Acórdãos / números de processo: SOMENTE se estiverem LITERALMENTE na <BASE_DE_CONHECIMENTO> ou em <JURISPRUDENCIA_DO_CASO>; senão use " +
       MARCADOR_NAO_ENCONTRADO +
       ".",
     "",
@@ -184,14 +195,19 @@ export function montarSystemPromptRedacaoTier1(
     "",
     "   Use os dados do advogado/local fornecidos no pedido. Não invente OAB.",
     "",
-    blocoBaseEMunicipal(contextoBase, leiMunicipal),
+    blocoBaseMunicipalEJuris(contextoBase, leiMunicipal, jurisDoCaso),
   ].join("\n");
 }
 
 /** @deprecated — use montarSystemPromptRedacaoTier1 */
 export function montarSystemPromptAssistenteFacto(
   contextoBase: string,
-  leiMunicipal?: BlocoLeiMunicipal | null
+  leiMunicipal?: BlocoLeiMunicipal | null,
+  jurisDoCaso?: BlocoJurisCaso[] | null
 ): string {
-  return montarSystemPromptRedacaoTier1(contextoBase, leiMunicipal);
+  return montarSystemPromptRedacaoTier1(
+    contextoBase,
+    leiMunicipal,
+    jurisDoCaso
+  );
 }

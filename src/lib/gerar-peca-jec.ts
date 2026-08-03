@@ -81,6 +81,8 @@ export type GerarPecaJecOutput = {
   citacoes?: CitacaoVerificada[];
   marcadoresNaoEncontrado?: number;
   leiMunicipalUtilizada?: { nome: string } | null;
+  /** Fontes de juris/súmula anexadas pelo advogado neste caso. */
+  jurisDoCasoUtilizada?: { titulo: string }[] | null;
   avisoIA?: string | null;
   /** Brief da análise Chain of Thought (fase 1). */
   analiseEstrategica?: {

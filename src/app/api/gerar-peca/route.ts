@@ -27,6 +27,13 @@ import {
   formatarQualificacaoReus,
   injetarQualificacaoReus,
 } from "@/lib/reu-types";
+import {
+  MAX_JURIS_CASO,
+  truncarTextoJuris,
+  type BlocoJurisCaso,
+  type JurisCasoPayload,
+  type TipoFonteJurisCaso,
+} from "@/lib/juris-caso-types";
 
 /**
  * Workflow agentic: 2 chamadas Gemini (triagem Flash + redação Pro/Flash).
@@ -44,6 +51,7 @@ type LeiMunicipalPayload = {
 
 type GerarPecaBody = GerarPecaJecInput & {
   leiMunicipal?: LeiMunicipalPayload | null;
+  jurisDoCaso?: JurisCasoPayload[] | null;
 };
 
 const LIMITE_TEXTO_LEI_MUNICIPAL = 40_000;
@@ -52,6 +60,18 @@ function truncarLeiMunicipal(texto: string): string {
   return texto.length > LIMITE_TEXTO_LEI_MUNICIPAL
     ? `${texto.slice(0, LIMITE_TEXTO_LEI_MUNICIPAL)}\n[...texto truncado...]`
     : texto;
+}
+
+function tipoJurisOuPadrao(tipo?: string): TipoFonteJurisCaso {
+  if (
+    tipo === "acordao" ||
+    tipo === "sumula" ||
+    tipo === "decisao" ||
+    tipo === "outro"
+  ) {
+    return tipo;
+  }
+  return "acordao";
 }
 
 async function extrairLeiMunicipal(
@@ -96,6 +116,65 @@ async function extrairLeiMunicipal(
     nome: lei.nome?.trim() || "Lei municipal anexada",
     texto: truncarLeiMunicipal(texto),
   };
+}
+
+async function extrairUmaFonteJuris(
+  item: JurisCasoPayload,
+  indice: number
+): Promise<BlocoJurisCaso> {
+  const titulo =
+    item.titulo?.trim() ||
+    item.nomeArquivo?.trim() ||
+    `Jurisprudência ${indice + 1}`;
+  const tipo = tipoJurisOuPadrao(item.tipo);
+
+  const textoColado = item.texto?.trim();
+  if (textoColado) {
+    return { titulo, tipo, texto: truncarTextoJuris(textoColado) };
+  }
+
+  if (!item.base64?.trim() || !item.mimeType) {
+    throw new Error(
+      `Jurisprudência "${titulo}": envie PDF/Word ou cole a ementa/texto.`
+    );
+  }
+
+  if (!(item.mimeType in TIPOS_ARQUIVO_ACEITOS)) {
+    throw new Error(
+      `Jurisprudência "${titulo}": use PDF ou Word (.docx), ou cole o texto.`
+    );
+  }
+
+  const buffer = Buffer.from(item.base64, "base64");
+  if (buffer.length === 0) {
+    throw new Error(`Jurisprudência "${titulo}": arquivo vazio.`);
+  }
+  if (buffer.length > TAMANHO_MAXIMO_ARQUIVO_BYTES) {
+    throw new Error(
+      `Jurisprudência "${titulo}": arquivo maior que 8 MB. Cole só a ementa/trechos do voto.`
+    );
+  }
+
+  const texto = await extrairTextoDeArquivo(buffer, item.mimeType);
+  if (!texto.trim()) {
+    throw new Error(
+      `Jurisprudência "${titulo}": não foi possível extrair texto. Cole a ementa no campo de texto.`
+    );
+  }
+
+  return { titulo, tipo, texto: truncarTextoJuris(texto) };
+}
+
+async function extrairJurisDoCaso(
+  itens?: JurisCasoPayload[] | null
+): Promise<BlocoJurisCaso[]> {
+  if (!itens?.length) return [];
+  const fatia = itens.slice(0, MAX_JURIS_CASO);
+  const out: BlocoJurisCaso[] = [];
+  for (let i = 0; i < fatia.length; i++) {
+    out.push(await extrairUmaFonteJuris(fatia[i]!, i));
+  }
+  return out;
 }
 
 function finalizarTextoPeca(
@@ -145,19 +224,26 @@ export async function POST(request: Request) {
   }
 
   let leiMunicipal: { nome: string; texto: string } | null = null;
+  let jurisDoCaso: BlocoJurisCaso[] = [];
   try {
     leiMunicipal = await extrairLeiMunicipal(body.leiMunicipal);
+    jurisDoCaso = await extrairJurisDoCaso(body.jurisDoCaso);
   } catch (erro) {
     return NextResponse.json(
       {
         error:
           erro instanceof Error
             ? erro.message
-            : "Falha ao ler a lei municipal anexada.",
+            : "Falha ao ler lei municipal ou jurisprudência anexada.",
       },
       { status: 400 }
     );
   }
+
+  const jurisMeta =
+    jurisDoCaso.length > 0
+      ? jurisDoCaso.map((j) => ({ titulo: j.titulo }))
+      : null;
 
   // RAG: tipo da ação + palavras dos fatos (tese do caso).
   const baseConhecimento = await buscarConhecimentoRelacionado(
@@ -195,6 +281,7 @@ export async function POST(request: Request) {
       leiMunicipalUtilizada: leiMunicipal
         ? { nome: leiMunicipal.nome }
         : null,
+      jurisDoCasoUtilizada: jurisMeta,
       avisoIA:
         "GEMINI_API_KEY não configurada — peça gerada pelo modelo determinístico (fundamentação genérica). Configure a chave na Vercel para redação completa.",
     };
@@ -218,6 +305,7 @@ export async function POST(request: Request) {
     fatos: body.fatos,
     itensConhecimento: baseConhecimento,
     leiMunicipal,
+    jurisDoCaso,
     casoReal: true,
     instrucoes: {
       enderecamento,
@@ -247,6 +335,7 @@ export async function POST(request: Request) {
       leiMunicipalUtilizada: leiMunicipal
         ? { nome: leiMunicipal.nome }
         : null,
+      jurisDoCasoUtilizada: jurisMeta,
       avisoIA:
         `A IA não concluiu a redação (${ia.erro}). Foi usada a peça de reserva com fundamentação GENÉRICA — não protocolar assim. Clique em gerar novamente; se persistir, confira GEMINI_API_KEY e o tempo de resposta na Vercel.`,
     };
@@ -270,6 +359,7 @@ export async function POST(request: Request) {
       leiMunicipalUtilizada: leiMunicipal
         ? { nome: leiMunicipal.nome }
         : null,
+      jurisDoCasoUtilizada: jurisMeta,
       avisoIA:
         "A IA devolveu fundamentação genérica (rejeitada). Gere novamente para obter DO DIREITO específico do caso com subtópicos a), b), c)...",
     } satisfies GerarPecaJecOutput);
@@ -294,6 +384,7 @@ export async function POST(request: Request) {
     leiMunicipalUtilizada: leiMunicipal
       ? { nome: leiMunicipal.nome }
       : null,
+    jurisDoCasoUtilizada: jurisMeta,
     avisoIA: null,
     analiseEstrategica: ia.analiseEstrategica
       ? {

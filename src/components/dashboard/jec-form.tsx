@@ -23,7 +23,12 @@ import {
 } from "@/components/dashboard/valores-causa-form";
 import { TIPOS_ACAO_JEC } from "@/lib/tipos-acao-jec";
 import { ReusSection } from "@/components/dashboard/reus-form";
+import {
+  JurisCasoSection,
+  type JurisCasoSalvo,
+} from "@/components/dashboard/juris-caso-form";
 import type { ReuValue } from "@/lib/reu-types";
+import type { JurisCasoPayload } from "@/lib/juris-caso-types";
 
 function getFileNames(input: HTMLInputElement | null): string[] {
   if (!input?.files?.length) return [];
@@ -161,7 +166,8 @@ function PecasResultado({
           </h3>
           <p className="mt-1 text-xs text-red-700">
             Estes trechos aparecem na peça, mas não foram encontrados no
-            material injetado da base de conhecimento (possível invenção da IA).
+            material injetado (base de conhecimento ou jurisprudência anexada ao
+            caso). Possível invenção da IA.
           </p>
           <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-red-800">
             {jurisSemLastro.map((c) => (
@@ -174,6 +180,8 @@ function PecasResultado({
       {(fontes.length > 0 ||
         faltouNaBase ||
         resultado.leiMunicipalUtilizada ||
+        (resultado.jurisDoCasoUtilizada &&
+          resultado.jurisDoCasoUtilizada.length > 0) ||
         jurisVerificada.length > 0) && (
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <h3 className="font-semibold text-slate-800">Fontes e verificação</h3>
@@ -184,6 +192,14 @@ function PecasResultado({
               {resultado.leiMunicipalUtilizada.nome}
             </p>
           )}
+
+          {resultado.jurisDoCasoUtilizada &&
+            resultado.jurisDoCasoUtilizada.length > 0 && (
+              <p className="mt-2 text-sm text-slate-600">
+                <strong>Jurisprudência/súmulas do caso:</strong>{" "}
+                {resultado.jurisDoCasoUtilizada.map((j) => j.titulo).join("; ")}
+              </p>
+            )}
 
           <div className="mt-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -330,6 +346,7 @@ export function JecForm() {
   const [mostrarMidiasOpcionais, setMostrarMidiasOpcionais] = useState(false);
   const [linkNuvem, setLinkNuvem] = useState("");
   const [reus, setReus] = useState<ReuValue[]>([]);
+  const [jurisCaso, setJurisCaso] = useState<JurisCasoSalvo[]>([]);
 
   const isAssistente = tipoSelecionado === ASSISTENTE_FACTO;
 
@@ -400,6 +417,16 @@ export function JecForm() {
       }
     }
 
+    const jurisDoCaso: JurisCasoPayload[] = jurisCaso.map((j) => ({
+      id: j.id,
+      tipo: j.tipo,
+      titulo: j.titulo,
+      texto: j.texto.trim() || undefined,
+      nomeArquivo: j.nomeArquivo ?? j.arquivo?.nome,
+      mimeType: j.texto.trim() ? undefined : j.arquivo?.mimeType,
+      base64: j.texto.trim() ? undefined : j.arquivo?.base64,
+    }));
+
     const payload = {
       tipoAcao,
       tutelaUrgencia: modoAssistente ? false : tutelaUrgencia,
@@ -422,6 +449,7 @@ export function JecForm() {
       midias: getFileNames(form.querySelector<HTMLInputElement>("#midias")),
       linkNuvem: linkNuvem.trim() || null,
       reus,
+      jurisDoCaso: jurisDoCaso.length > 0 ? jurisDoCaso : null,
       escritorio,
       comarca: {
         cep: comarca.cep,
@@ -666,6 +694,8 @@ export function JecForm() {
           </div>
         )}
       </section>
+
+      <JurisCasoSection value={jurisCaso} onChange={setJurisCaso} />
 
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="mb-1 text-lg font-semibold text-slate-800">
