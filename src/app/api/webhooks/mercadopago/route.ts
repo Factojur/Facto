@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { enviarEmailConvite } from "@/lib/email/convite-pago";
+import { enviarEmailsFinanceiroCompra } from "@/lib/email/pagamento-aprovado";
 
 const MP_API = "https://api.mercadopago.com";
 const VALOR_MENSAL = 49.9;
@@ -224,9 +225,11 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
 
 /**
  * Pagamento avulso aprovado (ex.: link de pagamento do Checkout Pro): gera
- * um convite de acesso com token único e dispara o e-mail de boas-vindas
- * com o link de cadastro. Idempotente por mp_payment_id — se o Mercado Pago
- * reenviar a mesma notificação, não duplica o convite nem reenvia o e-mail.
+ * um convite de acesso com token único e dispara, em paralelo:
+ * - financeiro@: aviso interno + confirmação de pagamento ao cliente
+ * - noreply@: boas-vindas com link de cadastro
+ * Idempotente por mp_payment_id — se o Mercado Pago reenviar a mesma
+ * notificação, não duplica o convite nem reenvia os e-mails.
  */
 async function processarPayment(admin: AdminClient, id: string) {
   const payment = await chamarApiMercadoPago(`/v1/payments/${id}`);
@@ -244,6 +247,12 @@ async function processarPayment(admin: AdminClient, id: string) {
   if (existente) return;
 
   const token = crypto.randomBytes(32).toString("hex");
+  const valor =
+    typeof payment.transaction_amount === "number"
+      ? payment.transaction_amount
+      : typeof payment.transaction_amount === "string"
+        ? parseFloat(payment.transaction_amount)
+        : null;
 
   const { error: erroInsercao } = await admin.from("convites_pagos").insert({
     email,
@@ -253,7 +262,21 @@ async function processarPayment(admin: AdminClient, id: string) {
   });
   if (erroInsercao) throw erroInsercao;
 
-  await enviarEmailConvite(email, token);
+  // E-mails em paralelo; falha de envio não apaga o convite (já persistido).
+  const envios = await Promise.allSettled([
+    enviarEmailsFinanceiroCompra({
+      emailCliente: email,
+      valor,
+      mpPaymentId: String(id),
+    }),
+    enviarEmailConvite(email, token),
+  ]);
+
+  for (const envio of envios) {
+    if (envio.status === "rejected") {
+      console.error("[webhook mercadopago] falha ao enviar e-mail", envio.reason);
+    }
+  }
 }
 
 export async function POST(request: Request) {

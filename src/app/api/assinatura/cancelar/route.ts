@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { executarCancelamentoNoMercadoPago } from "@/lib/mercadopago/cancelar-assinatura";
+import { enviarEmailsCancelamentoAssinatura } from "@/lib/email/cancelamento-assinatura";
 import {
   mapearAssinaturaParaUI,
   montarUpdateCancelamentoCliente,
@@ -13,6 +14,7 @@ import {
  *
  * ≤ 7 dias do pagamento inicial (CDC): cancela recorrência + estorna pagamento.
  * > 7 dias: só cancela recorrência; acesso segue até o fim do ciclo pago.
+ * Em ambos os casos, financeiro@ notifica a equipe e o cliente.
  */
 export async function POST() {
   const supabase = await createClient();
@@ -85,18 +87,31 @@ export async function POST() {
         .eq("mp_payment_id", mp.estorno.invoiceId);
     }
 
-    const ui = mapearAssinaturaParaUI(
+    const assinaturaFinal: AssinaturaDb =
       (atualizada as AssinaturaDb | null) ?? {
         ...assinatura,
         ...update,
         acesso_valido_ate:
           update.acesso_valido_ate ?? assinatura.acesso_valido_ate,
-      }
-    );
+      };
+
+    const ui = mapearAssinaturaParaUI(assinaturaFinal);
 
     if (updateError) {
       console.error("[api/assinatura/cancelar] update", updateError);
     }
+
+    // E-mails via financeiro@ (não bloqueia a resposta se o envio falhar)
+    await enviarEmailsCancelamentoAssinatura({
+      emailCliente: user.email,
+      plano: assinatura.plano,
+      dentroPrazoCdc: mp.dentroPrazoCdc,
+      estornoSucesso: mp.dentroPrazoCdc
+        ? (mp.estorno?.sucesso ?? null)
+        : null,
+      acessoValidoAte: assinaturaFinal.acesso_valido_ate,
+      mpPreapprovalId: assinatura.mp_preapproval_id,
+    });
 
     const mensagem = montarMensagemCancelamento(mp, ui.proximaCobrancaLabel);
 

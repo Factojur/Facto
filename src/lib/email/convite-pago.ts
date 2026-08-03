@@ -1,8 +1,8 @@
 import { Resend } from "resend";
 
-const REMETENTE_PADRAO = "FACTO <onboarding@resend.dev>";
+const REMETENTE_NOREPLY = "FACTO <noreply@factoia.com.br>";
 
-function montarHtml(link: string): string {
+function montarHtmlBoasVindas(link: string): string {
   const ano = new Date().getFullYear();
 
   return `<!DOCTYPE html>
@@ -20,23 +20,23 @@ function montarHtml(link: string): string {
             <tr>
               <td style="padding:12px 40px 0;text-align:center;">
                 <span style="display:inline-block;background-color:rgba(144,139,106,0.14);color:#908b6a;font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:6px 14px;border-radius:999px;">
-                  Pagamento aprovado
+                  Boas-vindas
                 </span>
               </td>
             </tr>
             <tr>
               <td style="padding:24px 40px 0;text-align:center;">
                 <h1 style="margin:0;color:#ffffff;font-size:22px;line-height:1.35;">
-                  Bem-vindo ao FACTO!
+                  Sua conta está liberada
                 </h1>
               </td>
             </tr>
             <tr>
               <td style="padding:14px 40px 0;text-align:center;">
                 <p style="margin:0;color:#a8a29e;font-size:15px;line-height:1.6;">
-                  Seu pagamento foi confirmado. Clique no botão abaixo para
-                  criar sua conta e começar a usar a inteligência artificial
-                  que redige suas peças jurídicas.
+                  Bem-vindo ao FACTO. Seu acesso foi liberado. Clique no botão
+                  abaixo para criar sua conta e começar a redigir peças com
+                  inteligência artificial.
                 </p>
               </td>
             </tr>
@@ -70,14 +70,13 @@ function montarHtml(link: string): string {
 }
 
 /**
- * Envia o e-mail de boas-vindas com o link de cadastro após um pagamento
- * aprovado. Se o Resend ainda não estiver configurado (chave ausente),
- * apenas registra um aviso no log em vez de derrubar o processamento do
- * webhook — o convite já fica salvo no banco e pode ser reenviado depois.
+ * Boas-vindas + link de cadastro (remetente noreply@).
+ * O comprovante financeiro vai em paralelo por financeiro@.
  */
 export async function enviarEmailConvite(email: string, token: string) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const remetente = process.env.RESEND_FROM_EMAIL || REMETENTE_PADRAO;
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  const remetente =
+    process.env.RESEND_FROM_EMAIL?.trim() || REMETENTE_NOREPLY;
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
   const link = `${siteUrl}/cadastro?token=${token}`;
 
@@ -94,8 +93,8 @@ export async function enviarEmailConvite(email: string, token: string) {
   const { error } = await resend.emails.send({
     from: remetente,
     to: email,
-    subject: "Pagamento aprovado — bem-vindo ao FACTO",
-    html: montarHtml(link),
+    subject: "Bem-vindo ao FACTO — crie sua conta",
+    html: montarHtmlBoasVindas(link),
   });
 
   if (error) {
