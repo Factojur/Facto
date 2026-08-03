@@ -324,6 +324,7 @@ export function JecForm() {
   const [usaLeiMunicipal, setUsaLeiMunicipal] = useState(false);
   const [leiMunicipalTexto, setLeiMunicipalTexto] = useState("");
   const [leiMunicipalTitulo, setLeiMunicipalTitulo] = useState("");
+  const [mostrarDocsOpcionais, setMostrarDocsOpcionais] = useState(false);
 
   const isAssistente = tipoSelecionado === ASSISTENTE_FACTO;
 
@@ -399,16 +400,12 @@ export function JecForm() {
       tutelaUrgencia: modoAssistente ? false : tutelaUrgencia,
       fatos: fatos.trim(),
       documentos: {
-        rg: getFileNames(form.querySelector<HTMLInputElement>("#rg")),
-        cpf: getFileNames(form.querySelector<HTMLInputElement>("#cpf")),
-        cnh: getFileNames(form.querySelector<HTMLInputElement>("#cnh")),
-        comprovanteResidencia: getFileNames(
-          form.querySelector<HTMLInputElement>("#comprovanteResidencia")
+        essenciais: getFileNames(
+          form.querySelector<HTMLInputElement>("#documentosEssenciais")
         ),
         declaracaoHipossuficiencia: getFileNames(
           form.querySelector<HTMLInputElement>("#declaracaoHipossuficiencia")
         ),
-        procuracao: getFileNames(form.querySelector<HTMLInputElement>("#procuracao")),
         mandadoLevantamentoEletronico: getFileNames(
           form.querySelector<HTMLInputElement>("#mandadoLevantamentoEletronico")
         ),
@@ -663,40 +660,67 @@ export function JecForm() {
 
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="mb-1 text-lg font-semibold text-slate-800">
-          Documentos Pessoais
+          Documentos pessoais
         </h2>
         <p className="mb-4 text-sm text-slate-500">
-          Anexe documentos de identificação do cliente ou das partes envolvidas.
+          Anexe o que for protocolar com a peça. Os nomes dos arquivos entram na
+          checklist da petição.
         </p>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FileField id="rg" label="RG" accept="image/*,.pdf" />
-          <FileField id="cpf" label="CPF" accept="image/*,.pdf" />
-          <FileField id="cnh" label="CNH" accept="image/*,.pdf" />
-          <FileField
-            id="comprovanteResidencia"
-            label="Comprovante de Residência"
-            accept="image/*,.pdf"
-          />
-          <FileField
-            id="declaracaoHipossuficiencia"
-            label="Declaração de Hipossuficiência"
-            accept="image/*,.pdf,.doc,.docx"
-          />
-          <FileField
-            id="procuracao"
-            label="Procuração"
-            accept="image/*,.pdf,.doc,.docx"
-          />
-          <FileField
-            id="mandadoLevantamentoEletronico"
-            label="Mandado de Levantamento Eletrônico (MLE)"
-            accept="image/*,.pdf,.doc,.docx"
-          />
+
+        <div className="space-y-5">
+          <div>
+            <h3 className="mb-1 text-sm font-semibold text-slate-800">
+              Essenciais
+            </h3>
+            <p className="mb-3 text-xs leading-relaxed text-slate-500">
+              Em um único envio: identidade (RG ou CNH), CPF, comprovante de
+              residência e procuração — selecione vários arquivos de uma vez.
+            </p>
+            <FileField
+              id="documentosEssenciais"
+              label="Identidade, CPF, residência e procuração"
+              accept="image/*,.pdf,.doc,.docx"
+              multiple
+            />
+          </div>
+
+          <div className="border-t border-slate-100 pt-4">
+            <button
+              type="button"
+              onClick={() => setMostrarDocsOpcionais((v) => !v)}
+              className="flex w-full items-center justify-between text-left text-sm font-semibold text-slate-800"
+            >
+              <span>Documentos opcionais</span>
+              <span className="text-xs font-normal text-slate-500">
+                {mostrarDocsOpcionais ? "Ocultar" : "Mostrar"} · hipossuficiência,
+                MLE
+              </span>
+            </button>
+            <div
+              className={
+                mostrarDocsOpcionais
+                  ? "mt-3 grid gap-4 sm:grid-cols-2"
+                  : "hidden"
+              }
+            >
+              <FileField
+                id="declaracaoHipossuficiencia"
+                label="Declaração de hipossuficiência"
+                accept="image/*,.pdf,.doc,.docx"
+              />
+              <FileField
+                id="mandadoLevantamentoEletronico"
+                label="Mandado de Levantamento Eletrônico (MLE)"
+                accept="image/*,.pdf,.doc,.docx"
+              />
+            </div>
+            {!mostrarDocsOpcionais && (
+              <p className="mt-2 text-xs text-slate-500">
+                Use se houver pedido de justiça gratuita ou MLE já preparado.
+              </p>
+            )}
+          </div>
         </div>
-        <p className="mt-3 text-xs text-slate-500">
-          Os três últimos são opcionais — envie caso o advogado ou a parte já tenham esses
-          documentos prontos para anexar à peça.
-        </p>
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">

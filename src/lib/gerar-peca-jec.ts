@@ -25,6 +25,9 @@ export type GerarPecaJecInput = {
   tutelaUrgencia: boolean;
   fatos: string;
   documentos: {
+    /** Identidade (RG/CNH), CPF, residência e procuração — upload único. */
+    essenciais?: string[];
+    /** @deprecated campos antigos mantidos só por compatibilidade */
     rg?: string[];
     cpf?: string[];
     cnh?: string[];
@@ -244,12 +247,8 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     `Tutela de urgência: ${tutelaUrgencia ? "Sim" : "Não"}`,
     "",
     "Documentos pessoais recebidos:",
-    `- RG: ${listarArquivos(input.documentos.rg)}`,
-    `- CPF: ${listarArquivos(input.documentos.cpf)}`,
-    `- CNH: ${listarArquivos(input.documentos.cnh)}`,
-    `- Comprovante de residência: ${listarArquivos(input.documentos.comprovanteResidencia)}`,
+    `- Essenciais (identidade/CPF/residência/procuração): ${listarArquivos(input.documentos.essenciais)}`,
     `- Declaração de Hipossuficiência: ${listarArquivos(input.documentos.declaracaoHipossuficiencia)}`,
-    `- Procuração: ${listarArquivos(input.documentos.procuracao)}`,
     `- Mandado de Levantamento Eletrônico (MLE): ${listarArquivos(input.documentos.mandadoLevantamentoEletronico)}`,
     "",
     `Prints, recibos e documentos (${input.provas.length}): ${listarArquivos(input.provas)}`,
