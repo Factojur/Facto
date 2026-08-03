@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { PerfilResumo } from "@/lib/perfil-types";
 
-const EMAIL_ADMIN = "admin@facto.com";
+import { EMAIL_ADMIN } from "@/lib/admin-auth";
 
 const LINKS_DESENVOLVIMENTO = [
   { label: "GitHub", href: "https://github.com/Factojur/Facto", icon: "🐙" },
@@ -124,6 +124,26 @@ export function UserMenu({ perfil }: { perfil: PerfilResumo }) {
               >
                 <span aria-hidden>📊</span>
                 Financeiro
+              </Link>
+            )}
+            {perfil.email === EMAIL_ADMIN && (
+              <Link
+                href="/admin/convites"
+                onClick={() => setAberto(false)}
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
+              >
+                <span aria-hidden>✉️</span>
+                Convites
+              </Link>
+            )}
+            {perfil.email === EMAIL_ADMIN && (
+              <Link
+                href="/admin/emails"
+                onClick={() => setAberto(false)}
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
+              >
+                <span aria-hidden>📡</span>
+                Log de e-mails
               </Link>
             )}
             {perfil.email === EMAIL_ADMIN && (

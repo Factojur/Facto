@@ -331,6 +331,26 @@ export function LandingPage() {
       <footer className="border-t border-white/10 px-6 py-10 md:px-10">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
           <FactoLogo variant="horizontal" size="sm" />
+          <nav className="flex flex-wrap items-center justify-center gap-4 text-xs text-stone-500">
+            <Link href="/privacidade" className="hover:text-stone-300">
+              Privacidade
+            </Link>
+            <Link href="/termos" className="hover:text-stone-300">
+              Termos de uso
+            </Link>
+            <a
+              href="mailto:privacidade@factoia.com.br"
+              className="hover:text-stone-300"
+            >
+              privacidade@
+            </a>
+            <a
+              href="mailto:financeiro@factoia.com.br"
+              className="hover:text-stone-300"
+            >
+              financeiro@
+            </a>
+          </nav>
           <p className="text-xs text-stone-600">
             © 2026 FACTO. Todos os direitos reservados.
           </p>

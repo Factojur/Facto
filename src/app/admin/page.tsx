@@ -3,8 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { FactoLogo } from "@/components/brand/facto-logo";
-
-const EMAIL_ADMIN = "admin@facto.com";
+import { EMAIL_ADMIN, isAdminEmail } from "@/lib/admin-auth";
 
 const PERIODOS = {
   mensal: { label: "Último mês", dias: 30 },
@@ -43,7 +42,7 @@ export default async function AdminPage({
 
   // O middleware já bloqueia quem não é admin, mas checamos de novo aqui —
   // esta página nunca deve confiar só numa camada de proteção.
-  if (!user || user.email !== EMAIL_ADMIN) {
+  if (!user || !isAdminEmail(user.email)) {
     redirect("/dashboard");
   }
 
@@ -173,12 +172,26 @@ export default async function AdminPage({
               Visível apenas para {EMAIL_ADMIN}.
             </p>
           </div>
-          <Link
-            href="/dashboard"
-            className="rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-stone-300 transition hover:border-facto-gold/50 hover:text-white"
-          >
-            ← Voltar ao dashboard
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/admin/convites"
+              className="rounded-lg border border-white/15 px-3 py-2 text-sm font-medium text-stone-300 transition hover:border-facto-gold/50 hover:text-white"
+            >
+              Convites
+            </Link>
+            <Link
+              href="/admin/emails"
+              className="rounded-lg border border-white/15 px-3 py-2 text-sm font-medium text-stone-300 transition hover:border-facto-gold/50 hover:text-white"
+            >
+              E-mails
+            </Link>
+            <Link
+              href="/dashboard"
+              className="rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-stone-300 transition hover:border-facto-gold/50 hover:text-white"
+            >
+              ← Voltar ao dashboard
+            </Link>
+          </div>
         </div>
 
         <div className="mt-8 flex gap-2">

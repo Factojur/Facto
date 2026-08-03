@@ -8,6 +8,7 @@ import {
   enviarEmailSuporte,
   isAssuntoSuporte,
 } from "@/lib/email/suporte";
+import { verificarLimiteSuporte } from "@/lib/email/eventos";
 
 /**
  * POST /api/suporte
@@ -22,6 +23,16 @@ export async function POST(request: Request) {
 
   if (!user?.email) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  }
+
+  const limite = await verificarLimiteSuporte(user.id);
+  if (!limite.ok) {
+    return NextResponse.json(
+      {
+        error: `Limite de mensagens atingido. Aguarde cerca de ${limite.retryAfterMin} minutos antes de enviar outra.`,
+      },
+      { status: 429 }
+    );
   }
 
   let body: unknown;
@@ -83,6 +94,7 @@ export async function POST(request: Request) {
       emailUsuario: user.email,
       nomeUsuario,
       telefoneUsuario,
+      userId: user.id,
     });
 
     return NextResponse.json({

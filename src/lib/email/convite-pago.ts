@@ -1,4 +1,6 @@
 import { Resend } from "resend";
+import { registrarEmailEvento } from "@/lib/email/eventos";
+import { getSiteUrl } from "@/lib/site-url";
 
 const REMETENTE_NOREPLY = "FACTO <noreply@factoia.com.br>";
 
@@ -77,14 +79,23 @@ export async function enviarEmailConvite(email: string, token: string) {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const remetente =
     process.env.RESEND_FROM_EMAIL?.trim() || REMETENTE_NOREPLY;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const siteUrl = getSiteUrl();
   const link = `${siteUrl}/cadastro?token=${token}`;
+  const assunto = "Bem-vindo ao FACTO — crie sua conta";
 
   if (!apiKey) {
     console.warn(
       "[email convite] RESEND_API_KEY não configurada; e-mail não enviado. Link gerado:",
       link
     );
+    await registrarEmailEvento({
+      tipo: "convite",
+      status: "falha",
+      destinatario: email,
+      assunto,
+      erro: "RESEND_API_KEY ausente",
+      metadados: { link },
+    });
     return;
   }
 
@@ -93,11 +104,27 @@ export async function enviarEmailConvite(email: string, token: string) {
   const { error } = await resend.emails.send({
     from: remetente,
     to: email,
-    subject: "Bem-vindo ao FACTO — crie sua conta",
+    subject: assunto,
     html: montarHtmlBoasVindas(link),
   });
 
   if (error) {
+    await registrarEmailEvento({
+      tipo: "convite",
+      status: "falha",
+      destinatario: email,
+      assunto,
+      erro: error.message,
+      metadados: { link },
+    });
     throw new Error(`Falha ao enviar e-mail via Resend: ${error.message}`);
   }
+
+  await registrarEmailEvento({
+    tipo: "convite",
+    status: "enviado",
+    destinatario: email,
+    assunto,
+    metadados: { link },
+  });
 }

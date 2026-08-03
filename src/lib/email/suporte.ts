@@ -3,6 +3,7 @@ import {
   destinoPorAssunto,
   type AssuntoSuporte,
 } from "@/lib/email/suporte-assuntos";
+import { registrarEmailEvento } from "@/lib/email/eventos";
 
 export type { AssuntoSuporte } from "@/lib/email/suporte-assuntos";
 export {
@@ -79,23 +80,34 @@ export async function enviarEmailSuporte(opcoes: {
   emailUsuario: string;
   nomeUsuario?: string | null;
   telefoneUsuario?: string | null;
+  userId?: string | null;
 }): Promise<{ id?: string; destino: string }> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
+  const destino = destinoPorAssunto(opcoes.assunto);
+  const assuntoMail = `[FACTO Suporte] ${opcoes.assunto} — ${opcoes.emailUsuario}`;
+
   if (!apiKey) {
+    await registrarEmailEvento({
+      tipo: "suporte",
+      status: "falha",
+      destinatario: destino,
+      assunto: assuntoMail,
+      erro: "RESEND_API_KEY ausente",
+      userId: opcoes.userId,
+    });
     throw new Error("RESEND_API_KEY não configurada.");
   }
 
   const from =
     process.env.RESEND_FROM_EMAIL?.trim() ||
     "FACTO <noreply@factoia.com.br>";
-  const destino = destinoPorAssunto(opcoes.assunto);
 
   const resend = new Resend(apiKey);
   const { data, error } = await resend.emails.send({
     from,
     to: destino,
     replyTo: opcoes.emailUsuario,
-    subject: `[FACTO Suporte] ${opcoes.assunto} — ${opcoes.emailUsuario}`,
+    subject: assuntoMail,
     html: montarHtmlSuporte({
       assunto: opcoes.assunto,
       mensagem: opcoes.mensagem,
@@ -106,8 +118,25 @@ export async function enviarEmailSuporte(opcoes: {
   });
 
   if (error) {
+    await registrarEmailEvento({
+      tipo: "suporte",
+      status: "falha",
+      destinatario: destino,
+      assunto: assuntoMail,
+      erro: error.message,
+      userId: opcoes.userId,
+    });
     throw new Error(error.message || "Falha ao enviar e-mail de suporte.");
   }
+
+  await registrarEmailEvento({
+    tipo: "suporte",
+    status: "enviado",
+    destinatario: destino,
+    assunto: assuntoMail,
+    userId: opcoes.userId,
+    metadados: { resendId: data?.id ?? null },
+  });
 
   return { id: data?.id, destino };
 }

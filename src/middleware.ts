@@ -2,9 +2,9 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { limparFotoDeMetadata } from "@/lib/perfil-merge";
 import { acessoAssinaturaLiberado } from "@/lib/acesso-assinatura";
+import { EMAIL_ADMIN } from "@/lib/admin-auth";
 
 const COOKIE_SESSAO = "facto_sessao";
-const EMAIL_ADMIN = "admin@facto.com";
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });

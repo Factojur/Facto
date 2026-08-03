@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { rotuloPlano, type AssinaturaDb } from "@/lib/assinatura-format";
+import { registrarEmailEvento } from "@/lib/email/eventos";
 
 const REMETENTE_FINANCEIRO =
   "FACTO Financeiro <financeiro@factoia.com.br>";
@@ -146,6 +147,14 @@ export async function enviarEmailsCancelamentoAssinatura(opcoes: {
     console.warn(
       "[email cancelamento] RESEND_API_KEY não configurada; e-mails não enviados."
     );
+    await registrarEmailEvento({
+      tipo: "financeiro_cancelamento",
+      status: "falha",
+      destinatario: opcoes.emailCliente,
+      assunto: "Assinatura cancelada — FACTO",
+      erro: "RESEND_API_KEY ausente",
+      metadados: { mpPreapprovalId: opcoes.mpPreapprovalId },
+    });
     return;
   }
 
@@ -182,13 +191,39 @@ export async function enviarEmailsCancelamentoAssinatura(opcoes: {
     }),
   ]);
 
-  for (const resultado of resultados) {
+  const destinos = [DESTINO_FINANCEIRO, opcoes.emailCliente];
+  for (let i = 0; i < resultados.length; i++) {
+    const resultado = resultados[i]!;
+    const destinatario = destinos[i]!;
     if (resultado.status === "rejected") {
-      console.error("[email cancelamento]", resultado.reason);
+      const erro =
+        resultado.reason instanceof Error
+          ? resultado.reason.message
+          : String(resultado.reason);
+      await registrarEmailEvento({
+        tipo: "financeiro_cancelamento",
+        status: "falha",
+        destinatario,
+        erro,
+        metadados: { mpPreapprovalId: opcoes.mpPreapprovalId },
+      });
       continue;
     }
     if (resultado.value.error) {
-      console.error("[email cancelamento]", resultado.value.error);
+      await registrarEmailEvento({
+        tipo: "financeiro_cancelamento",
+        status: "falha",
+        destinatario,
+        erro: resultado.value.error.message,
+        metadados: { mpPreapprovalId: opcoes.mpPreapprovalId },
+      });
+      continue;
     }
+    await registrarEmailEvento({
+      tipo: "financeiro_cancelamento",
+      status: "enviado",
+      destinatario,
+      metadados: { mpPreapprovalId: opcoes.mpPreapprovalId },
+    });
   }
 }

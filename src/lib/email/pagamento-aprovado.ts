@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { registrarEmailEvento } from "@/lib/email/eventos";
 
 const REMETENTE_FINANCEIRO =
   "FACTO Financeiro <financeiro@factoia.com.br>";
@@ -121,6 +122,14 @@ export async function enviarEmailsFinanceiroCompra(opcoes: {
     console.warn(
       "[email financeiro] RESEND_API_KEY não configurada; e-mails financeiros não enviados."
     );
+    await registrarEmailEvento({
+      tipo: "financeiro_compra",
+      status: "falha",
+      destinatario: opcoes.emailCliente,
+      assunto: "Pagamento aprovado — FACTO",
+      erro: "RESEND_API_KEY ausente",
+      metadados: { mpPaymentId: opcoes.mpPaymentId },
+    });
     return;
   }
 
@@ -148,13 +157,39 @@ export async function enviarEmailsFinanceiroCompra(opcoes: {
     }),
   ]);
 
-  for (const resultado of resultados) {
+  const destinos = [DESTINO_FINANCEIRO, opcoes.emailCliente];
+  for (let i = 0; i < resultados.length; i++) {
+    const resultado = resultados[i]!;
+    const destinatario = destinos[i]!;
     if (resultado.status === "rejected") {
-      console.error("[email financeiro]", resultado.reason);
+      const erro =
+        resultado.reason instanceof Error
+          ? resultado.reason.message
+          : String(resultado.reason);
+      await registrarEmailEvento({
+        tipo: "financeiro_compra",
+        status: "falha",
+        destinatario,
+        erro,
+        metadados: { mpPaymentId: opcoes.mpPaymentId },
+      });
       continue;
     }
     if (resultado.value.error) {
-      console.error("[email financeiro]", resultado.value.error);
+      await registrarEmailEvento({
+        tipo: "financeiro_compra",
+        status: "falha",
+        destinatario,
+        erro: resultado.value.error.message,
+        metadados: { mpPaymentId: opcoes.mpPaymentId },
+      });
+      continue;
     }
+    await registrarEmailEvento({
+      tipo: "financeiro_compra",
+      status: "enviado",
+      destinatario,
+      metadados: { mpPaymentId: opcoes.mpPaymentId },
+    });
   }
 }
