@@ -162,6 +162,75 @@ async function processarPreapproval(admin: AdminClient, id: string) {
   await admin.from("assinaturas").upsert(dados, { onConflict: "mp_preapproval_id" });
 }
 
+/**
+ * Gera convite + e-mails (financeiro + boas-vindas) para cliente novo.
+ * Usado tanto em pagamento avulso (`payment`) quanto na 1ª cobrança de
+ * assinatura (`subscription_authorized_payment`).
+ *
+ * Não dispara em renovação: se já existe perfil ou qualquer convite para o
+ * e-mail, só ignora (idempotente por mp_payment_id).
+ */
+async function garantirConviteEEmailsPosCompra(
+  admin: AdminClient,
+  opcoes: {
+    email: string;
+    mpPaymentId: string;
+    valor: number | null;
+  }
+): Promise<void> {
+  const email = opcoes.email.trim();
+  if (!email) return;
+
+  const { data: porPagamento } = await admin
+    .from("convites_pagos")
+    .select("id")
+    .eq("mp_payment_id", opcoes.mpPaymentId)
+    .maybeSingle();
+  if (porPagamento) return;
+
+  const { data: perfil } = await admin
+    .from("profiles")
+    .select("id")
+    .ilike("email", email)
+    .maybeSingle();
+  if (perfil) return;
+
+  const { data: conviteAnterior } = await admin
+    .from("convites_pagos")
+    .select("id")
+    .ilike("email", email)
+    .limit(1)
+    .maybeSingle();
+  if (conviteAnterior) return;
+
+  const token = crypto.randomBytes(32).toString("hex");
+  const { error: erroInsercao } = await admin.from("convites_pagos").insert({
+    email,
+    token,
+    status: "pendente",
+    mp_payment_id: opcoes.mpPaymentId,
+  });
+  if (erroInsercao) throw erroInsercao;
+
+  const envios = await Promise.allSettled([
+    enviarEmailsFinanceiroCompra({
+      emailCliente: email,
+      valor: opcoes.valor,
+      mpPaymentId: opcoes.mpPaymentId,
+    }),
+    enviarEmailConvite(email, token),
+  ]);
+
+  for (const envio of envios) {
+    if (envio.status === "rejected") {
+      console.error(
+        "[webhook mercadopago] falha ao enviar e-mail",
+        envio.reason
+      );
+    }
+  }
+}
+
 async function processarAuthorizedPayment(admin: AdminClient, id: string) {
   const invoice = await chamarApiMercadoPago(`/authorized_payments/${id}`);
 
@@ -174,13 +243,32 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
       : (invoice.transaction_amount as number | null);
 
   let assinaturaId: string | null = null;
+  let emailCliente: string | null = null;
+
   if (preapprovalId) {
     const { data: assinatura } = await admin
       .from("assinaturas")
-      .select("id, plano")
+      .select("id, plano, email")
       .eq("mp_preapproval_id", preapprovalId)
       .maybeSingle();
     assinaturaId = assinatura?.id ?? null;
+    emailCliente = (assinatura?.email as string | undefined) ?? null;
+
+    // Preapproval pode ter chegado depois / sem e-mail na linha ainda.
+    if (!emailCliente) {
+      try {
+        const preapproval = await chamarApiMercadoPago(
+          `/preapproval/${preapprovalId}`
+        );
+        emailCliente =
+          (preapproval.payer_email as string | undefined) ?? null;
+      } catch (erro) {
+        console.warn(
+          "[webhook mercadopago] não foi possível obter e-mail do preapproval",
+          erro
+        );
+      }
+    }
 
     if (assinaturaId && statusPagamento === "approved") {
       // Cada pagamento aprovado estende o acesso por um ciclo do plano a
@@ -195,7 +283,10 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
 
       await admin
         .from("assinaturas")
-        .update({ acesso_valido_ate: acessoValidoAte })
+        .update({
+          acesso_valido_ate: acessoValidoAte,
+          ...(emailCliente ? { email: emailCliente } : {}),
+        })
         .eq("id", assinaturaId);
     } else if (assinaturaId && statusPagamento && statusPagamento !== "approved") {
       // Cobrança recorrente falhou/foi recusada numa assinatura que ainda
@@ -211,9 +302,11 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
     }
   }
 
+  const mpPaymentId = String(invoice.payment?.id ?? id);
+
   await admin.from("pagamentos").upsert(
     {
-      mp_payment_id: String(id),
+      mp_payment_id: mpPaymentId,
       assinatura_id: assinaturaId,
       valor,
       status: statusPagamento ?? null,
@@ -221,15 +314,20 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
     },
     { onConflict: "mp_payment_id" }
   );
+
+  // Links mpago.la (assinatura) chegam aqui — não no tópico `payment`.
+  if (statusPagamento === "approved" && emailCliente) {
+    await garantirConviteEEmailsPosCompra(admin, {
+      email: emailCliente,
+      mpPaymentId,
+      valor: typeof valor === "number" && !Number.isNaN(valor) ? valor : null,
+    });
+  }
 }
 
 /**
- * Pagamento avulso aprovado (ex.: link de pagamento do Checkout Pro): gera
- * um convite de acesso com token único e dispara, em paralelo:
- * - financeiro@: aviso interno + confirmação de pagamento ao cliente
- * - noreply@: boas-vindas com link de cadastro
- * Idempotente por mp_payment_id — se o Mercado Pago reenviar a mesma
- * notificação, não duplica o convite nem reenvia os e-mails.
+ * Pagamento avulso aprovado (Checkout Pro / payment avulso).
+ * Assinaturas recorrentes usam processarAuthorizedPayment.
  */
 async function processarPayment(admin: AdminClient, id: string) {
   const payment = await chamarApiMercadoPago(`/v1/payments/${id}`);
@@ -239,14 +337,6 @@ async function processarPayment(admin: AdminClient, id: string) {
   const email = (payment.payer?.email as string | undefined) ?? null;
   if (!email) return;
 
-  const { data: existente } = await admin
-    .from("convites_pagos")
-    .select("id")
-    .eq("mp_payment_id", String(id))
-    .maybeSingle();
-  if (existente) return;
-
-  const token = crypto.randomBytes(32).toString("hex");
   const valor =
     typeof payment.transaction_amount === "number"
       ? payment.transaction_amount
@@ -254,29 +344,11 @@ async function processarPayment(admin: AdminClient, id: string) {
         ? parseFloat(payment.transaction_amount)
         : null;
 
-  const { error: erroInsercao } = await admin.from("convites_pagos").insert({
+  await garantirConviteEEmailsPosCompra(admin, {
     email,
-    token,
-    status: "pendente",
-    mp_payment_id: String(id),
+    mpPaymentId: String(id),
+    valor,
   });
-  if (erroInsercao) throw erroInsercao;
-
-  // E-mails em paralelo; falha de envio não apaga o convite (já persistido).
-  const envios = await Promise.allSettled([
-    enviarEmailsFinanceiroCompra({
-      emailCliente: email,
-      valor,
-      mpPaymentId: String(id),
-    }),
-    enviarEmailConvite(email, token),
-  ]);
-
-  for (const envio of envios) {
-    if (envio.status === "rejected") {
-      console.error("[webhook mercadopago] falha ao enviar e-mail", envio.reason);
-    }
-  }
 }
 
 export async function POST(request: Request) {
