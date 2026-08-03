@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { enviarEmailConvite } from "@/lib/email/convite-pago";
-import { enviarEmailsFinanceiroCompra } from "@/lib/email/pagamento-aprovado";
-import { emailJaEnviadoParaPagamento } from "@/lib/email/eventos";
 import {
   marcarPagamentosLocaisRefunded,
   tentarEstornoCdc,
 } from "@/lib/mercadopago/cancelar-assinatura";
 import { buscarPagamentoInicialAprovado } from "@/lib/mercadopago/client";
+import {
+  cobrancaAssinaturaAprovada,
+  extrairPaymentIdDeInvoice,
+  extrairPaymentStatusDeInvoice,
+  garantirConviteEEmailsPosCompra,
+  normalizarTopicoWebhook,
+} from "@/lib/mercadopago/pos-compra";
 import { dentroPrazoArrependimentoCdc } from "@/lib/assinatura-format";
 
 const MP_API = "https://api.mercadopago.com";
@@ -23,15 +27,11 @@ const DURACAO_CICLO_DIAS: Record<"mensal" | "anual", number> = {
 type AdminClient = ReturnType<typeof createAdminClient>;
 
 /**
- * Confere o cabeçalho x-signature enviado pelo Mercado Pago, seguindo o
- * algoritmo oficial: HMAC-SHA256 de "id:{data.id};request-id:{x-request-id};ts:{ts};"
- * usando a chave secreta configurada no painel de Webhooks.
- *
- * Sem a chave configurada (ex.: ambiente local, sem URL pública ainda),
- * deixamos passar mas avisamos no log — configure antes de ir para produção.
+ * Confere o cabeçalho x-signature enviado pelo Mercado Pago.
+ * Sem secret configurado, aceita (dev). Com secret: valida HMAC.
  */
 function assinaturaValida(request: Request, dataId: string | null): boolean {
-  const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
+  const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET?.trim();
   if (!secret) {
     console.warn(
       "[webhook mercadopago] MERCADOPAGO_WEBHOOK_SECRET não configurada; pulando validação de assinatura."
@@ -98,7 +98,13 @@ async function processarPreapproval(admin: AdminClient, id: string) {
   if (!status) return;
 
   const email = (preapproval.payer_email as string | undefined) ?? null;
-  const valor = preapproval.auto_recurring?.transaction_amount ?? null;
+  const valorRaw = preapproval.auto_recurring?.transaction_amount ?? null;
+  const valor =
+    typeof valorRaw === "number"
+      ? valorRaw
+      : typeof valorRaw === "string"
+        ? parseFloat(valorRaw)
+        : null;
   const plano = inferirPlano(
     valor,
     preapproval.auto_recurring?.frequency_type,
@@ -110,7 +116,7 @@ async function processarPreapproval(admin: AdminClient, id: string) {
     const { data: perfil } = await admin
       .from("profiles")
       .select("id")
-      .eq("email", email)
+      .ilike("email", email)
       .maybeSingle();
     profileId = perfil?.id ?? null;
   }
@@ -134,19 +140,13 @@ async function processarPreapproval(admin: AdminClient, id: string) {
     atualizado_em: new Date().toISOString(),
   };
 
-  // Assinatura recém-autorizada e ainda sem nenhum pagamento confirmado:
-  // libera acesso por um ciclo, como estimativa inicial. O webhook de
-  // pagamento aprovado (processarAuthorizedPayment) substitui esse valor
-  // pela data real assim que a primeira cobrança é confirmada.
   if (status === "authorized" && !existente?.acesso_valido_ate && dataInicio && plano) {
     dados.acesso_valido_ate = new Date(
       new Date(dataInicio).getTime() + DURACAO_CICLO_DIAS[plano] * DIA_EM_MS
     ).toISOString();
   }
 
-  // "canceled" é um cancelamento explícito e irreversível no Mercado Pago.
   if (status === "canceled") {
-    // Preferir a data do 1º pagamento para o CDC; fallback: data_inicio.
     let pagamentoInicial = null as Awaited<
       ReturnType<typeof buscarPagamentoInicialAprovado>
     >;
@@ -175,7 +175,6 @@ async function processarPreapproval(admin: AdminClient, id: string) {
       }
     }
 
-    // Estorno CDC: idempotente (mesma chave da API /api/assinatura/cancelar).
     if (dentroPrazoCdc) {
       const { estorno } = await tentarEstornoCdc({
         mpPreapprovalId: id,
@@ -196,170 +195,58 @@ async function processarPreapproval(admin: AdminClient, id: string) {
   }
 
   await admin.from("assinaturas").upsert(dados, { onConflict: "mp_preapproval_id" });
-}
 
-/**
- * Gera convite + e-mails (financeiro + boas-vindas) após cobrança aprovada.
- *
- * Regras:
- * - financeiro@ (interno + confirmação ao cliente) SEMPRE tenta enviar uma vez
- *   por mp_payment_id — mesmo se já existir perfil/convite (reteste / renovação).
- * - noreply@ (boas-vindas) só para cliente sem perfil; reutiliza convite pendente.
- * - Idempotência por email_eventos (não pelo mere fato de existir convite).
- */
-async function garantirConviteEEmailsPosCompra(
-  admin: AdminClient,
-  opcoes: {
-    email: string;
-    mpPaymentId: string;
-    valor: number | null;
-  }
-): Promise<void> {
-  const email = opcoes.email.trim();
-  if (!email) {
-    console.warn(
-      "[webhook mercadopago] pós-compra sem e-mail; mp_payment_id=",
-      opcoes.mpPaymentId
-    );
-    return;
-  }
+  // Caminho complementar: se o tópico authorized_payment não chegar (ou
+  // chegar com tópico alias), ainda assim disparamos pós-compra quando a
+  // assinatura autoriza e já existe cobrança aprovada (ou usamos chave
+  // estável da preapproval).
+  if (status === "authorized" && email) {
+    let mpPaymentId: string | null = null;
+    let valorPago: number | null =
+      typeof valor === "number" && !Number.isNaN(valor) ? valor : null;
 
-  // 1) Financeiro — independente de convite/perfil (idempotente por destino)
-  try {
-    await enviarEmailsFinanceiroCompra({
-      emailCliente: email,
-      valor: opcoes.valor,
-      mpPaymentId: opcoes.mpPaymentId,
-    });
-  } catch (erro) {
-    console.error("[webhook mercadopago] falha e-mails financeiro", erro);
-  }
-
-  // 2) Convite / boas-vindas — só se ainda não tem conta
-  const { data: perfil } = await admin
-    .from("profiles")
-    .select("id")
-    .ilike("email", email)
-    .maybeSingle();
-  if (perfil) {
-    console.info(
-      "[webhook mercadopago] cliente já possui perfil; pulando convite",
-      email
-    );
-    return;
-  }
-
-  const conviteJaEnviado = await emailJaEnviadoParaPagamento(
-    "convite",
-    opcoes.mpPaymentId
-  );
-  if (conviteJaEnviado) return;
-
-  let token: string | null = null;
-
-  const { data: porPagamento } = await admin
-    .from("convites_pagos")
-    .select("id, token, status")
-    .eq("mp_payment_id", opcoes.mpPaymentId)
-    .maybeSingle();
-
-  if (porPagamento?.token) {
-    token = porPagamento.token as string;
-  } else {
-    const { data: convitePendente } = await admin
-      .from("convites_pagos")
-      .select("id, token, status, mp_payment_id")
-      .ilike("email", email)
-      .eq("status", "pendente")
-      .order("criado_em", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (convitePendente?.token) {
-      token = convitePendente.token as string;
-      // Vincula este pagamento ao convite pendente (se ainda sem id).
-      if (!convitePendente.mp_payment_id) {
-        await admin
-          .from("convites_pagos")
-          .update({ mp_payment_id: opcoes.mpPaymentId })
-          .eq("id", convitePendente.id);
+    try {
+      const pagamento = await buscarPagamentoInicialAprovado(id);
+      if (pagamento?.paymentId) {
+        mpPaymentId = pagamento.paymentId;
       }
-    } else {
-      token = crypto.randomBytes(32).toString("hex");
-      const { error: erroInsercao } = await admin.from("convites_pagos").insert({
-        email,
-        token,
-        status: "pendente",
-        mp_payment_id: opcoes.mpPaymentId,
-      });
-      if (erroInsercao) {
-        // Corrida: outro webhook inseriu no meio — busca de novo.
-        const { data: existente } = await admin
-          .from("convites_pagos")
-          .select("token")
-          .eq("mp_payment_id", opcoes.mpPaymentId)
-          .maybeSingle();
-        if (existente?.token) {
-          token = existente.token as string;
-        } else {
-          throw erroInsercao;
-        }
-      }
+    } catch (erro) {
+      console.warn(
+        "[webhook mercadopago] preapproval authorized sem fatura ainda",
+        erro
+      );
     }
-  }
 
-  if (!token) return;
+    if (!mpPaymentId) {
+      mpPaymentId = `preapproval:${id}`;
+    }
 
-  try {
-    await enviarEmailConvite(email, token, {
-      mpPaymentId: opcoes.mpPaymentId,
+    console.info("[webhook mercadopago] pós-compra via preapproval authorized", {
+      email,
+      mpPaymentId,
     });
-  } catch (erro) {
-    console.error("[webhook mercadopago] falha e-mail convite", erro);
+    await garantirConviteEEmailsPosCompra(admin, {
+      email,
+      mpPaymentId,
+      valor: valorPago,
+    });
   }
-}
-
-function cobrancaAssinaturaAprovada(invoice: {
-  status?: string | null;
-  payment?: { id?: number | string | null; status?: string | null } | null;
-}): boolean {
-  const paymentStatus = invoice.payment?.status?.toLowerCase() ?? null;
-  if (paymentStatus === "approved") return true;
-  if (
-    paymentStatus === "refunded" ||
-    paymentStatus === "charged_back" ||
-    paymentStatus === "rejected" ||
-    paymentStatus === "cancelled" ||
-    paymentStatus === "canceled"
-  ) {
-    return false;
-  }
-
-  const invoiceStatus = invoice.status?.toLowerCase() ?? null;
-  // Fatura processada com payment.id = cobrança coletada (search às vezes
-  // omite payment.status).
-  if (
-    (invoiceStatus === "processed" || invoiceStatus === "approved") &&
-    invoice.payment?.id != null
-  ) {
-    return true;
-  }
-
-  return false;
 }
 
 async function processarAuthorizedPayment(admin: AdminClient, id: string) {
   const invoice = await chamarApiMercadoPago(`/authorized_payments/${id}`);
 
   const preapprovalId = invoice.preapproval_id as string | undefined;
+  const paymentId = extrairPaymentIdDeInvoice(invoice.payment);
+  const paymentStatus = extrairPaymentStatusDeInvoice(invoice.payment);
   const statusPagamento: string | undefined =
-    invoice.payment?.status ?? invoice.status ?? undefined;
+    paymentStatus ?? (invoice.status as string | undefined) ?? undefined;
   const cobrancaAprovada = cobrancaAssinaturaAprovada(invoice);
   const valor =
     typeof invoice.transaction_amount === "string"
       ? parseFloat(invoice.transaction_amount)
       : (invoice.transaction_amount as number | null);
-  const mpPaymentId = String(invoice.payment?.id ?? id);
+  const mpPaymentId = paymentId ?? String(id);
 
   let assinaturaId: string | null = null;
   let emailCliente: string | null = null;
@@ -373,7 +260,6 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
     assinaturaId = assinatura?.id ?? null;
     emailCliente = (assinatura?.email as string | undefined) ?? null;
 
-    // Preapproval pode ter chegado depois / sem e-mail na linha ainda.
     if (!emailCliente) {
       try {
         const preapproval = await chamarApiMercadoPago(
@@ -390,12 +276,10 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
     }
 
     if (assinaturaId && cobrancaAprovada) {
-      // Cada pagamento aprovado estende o acesso por um ciclo do plano a
-      // partir da data da cobrança — é assim que "não renovou" se resolve
-      // sozinho: sem um novo pagamento aprovado, essa data para de avançar
-      // e o acesso expira naturalmente quando ela é ultrapassada.
       const plano = (assinatura?.plano as "mensal" | "anual" | null) ?? "mensal";
-      const dataPagamento = invoice.debit_date ? new Date(invoice.debit_date) : new Date();
+      const dataPagamento = invoice.debit_date
+        ? new Date(invoice.debit_date)
+        : new Date();
       const acessoValidoAte = new Date(
         dataPagamento.getTime() + DURACAO_CICLO_DIAS[plano] * DIA_EM_MS
       ).toISOString();
@@ -415,11 +299,6 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
         statusPagamento === "refunded" ||
         statusPagamento === "charged_back")
     ) {
-      // Cobrança recorrente falhou/foi recusada numa assinatura que ainda
-      // não tinha motivo de encerramento registrado: marcamos como "não
-      // renovou" (diferente de um cancelamento explícito pelo cliente). O
-      // acesso_valido_ate não é alterado aqui — continua valendo até o fim
-      // do último ciclo que foi de fato pago.
       await admin
         .from("assinaturas")
         .update({ motivo_encerramento: "pagamento_recusado" })
@@ -428,12 +307,9 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
     }
   }
 
-  // Último recurso: e-mail no próprio payment do Mercado Pago.
-  if (!emailCliente && invoice.payment?.id) {
+  if (!emailCliente && paymentId) {
     try {
-      const payment = await chamarApiMercadoPago(
-        `/v1/payments/${invoice.payment.id}`
-      );
+      const payment = await chamarApiMercadoPago(`/v1/payments/${paymentId}`);
       emailCliente =
         (payment.payer?.email as string | undefined) ??
         (payment.additional_info?.payer?.email as string | undefined) ??
@@ -464,7 +340,6 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
     { onConflict: "mp_payment_id" }
   );
 
-  // Links mpago.la (assinatura) chegam aqui — não no tópico `payment`.
   if (cobrancaAprovada) {
     if (!emailCliente) {
       console.error(
@@ -475,10 +350,14 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
         "invoice_status=",
         invoice.status,
         "payment_status=",
-        invoice.payment?.status
+        paymentStatus
       );
       return;
     }
+    console.info("[webhook mercadopago] pós-compra via authorized_payment", {
+      email: emailCliente,
+      mpPaymentId,
+    });
     await garantirConviteEEmailsPosCompra(admin, {
       email: emailCliente,
       mpPaymentId,
@@ -491,23 +370,25 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
         id,
         mpPaymentId,
         invoiceStatus: invoice.status,
-        paymentStatus: invoice.payment?.status,
+        paymentStatus,
       }
     );
   }
 }
 
-/**
- * Pagamento avulso aprovado (Checkout Pro / payment avulso).
- * Assinaturas recorrentes usam processarAuthorizedPayment.
- */
 async function processarPayment(admin: AdminClient, id: string) {
   const payment = await chamarApiMercadoPago(`/v1/payments/${id}`);
 
   if (payment.status !== "approved") return;
 
   const email = (payment.payer?.email as string | undefined) ?? null;
-  if (!email) return;
+  if (!email) {
+    console.error(
+      "[webhook mercadopago] payment aprovado sem payer.email; id=",
+      id
+    );
+    return;
+  }
 
   const valor =
     typeof payment.transaction_amount === "number"
@@ -516,6 +397,10 @@ async function processarPayment(admin: AdminClient, id: string) {
         ? parseFloat(payment.transaction_amount)
         : null;
 
+  console.info("[webhook mercadopago] pós-compra via payment", {
+    email,
+    mpPaymentId: String(id),
+  });
   await garantirConviteEEmailsPosCompra(admin, {
     email,
     mpPaymentId: String(id),
@@ -525,8 +410,10 @@ async function processarPayment(admin: AdminClient, id: string) {
 
 export async function POST(request: Request) {
   const url = new URL(request.url);
-  const dataIdQuery = url.searchParams.get("data.id") ?? url.searchParams.get("id");
-  const topicoQuery = url.searchParams.get("type") ?? url.searchParams.get("topic");
+  const dataIdQuery =
+    url.searchParams.get("data.id") ?? url.searchParams.get("id");
+  const topicoQuery =
+    url.searchParams.get("type") ?? url.searchParams.get("topic");
 
   let body: Record<string, unknown> | null = null;
   try {
@@ -536,34 +423,66 @@ export async function POST(request: Request) {
   }
 
   const dataObj = body?.data as Record<string, unknown> | undefined;
-  const idFinal = dataIdQuery ?? (dataObj?.id as string | number | undefined)?.toString() ?? null;
-  const topicoFinal =
-    topicoQuery ?? (body?.type as string | undefined) ?? (body?.topic as string | undefined) ?? "desconhecido";
-
-  if (!assinaturaValida(request, idFinal)) {
-    return NextResponse.json({ error: "Assinatura inválida." }, { status: 401 });
-  }
+  const idFinal =
+    dataIdQuery ??
+    (dataObj?.id as string | number | undefined)?.toString() ??
+    null;
+  const topicoBruto =
+    topicoQuery ??
+    (body?.type as string | undefined) ??
+    (body?.topic as string | undefined) ??
+    (body?.action as string | undefined) ??
+    "desconhecido";
+  const topicoFinal = normalizarTopicoWebhook(topicoBruto);
 
   let admin: AdminClient;
   try {
     admin = createAdminClient();
   } catch (erro) {
-    // SUPABASE_SERVICE_ROLE_KEY ainda não configurada (ex.: setup inicial).
-    // Respondemos 200 mesmo assim: um 5xx faria o Mercado Pago reenviar a
-    // notificação repetidamente sem necessidade.
-    console.error("[webhook mercadopago]", erro instanceof Error ? erro.message : erro);
-    return NextResponse.json({ recebido: true, aviso: "Serviço não configurado ainda." });
+    console.error(
+      "[webhook mercadopago]",
+      erro instanceof Error ? erro.message : erro
+    );
+    return NextResponse.json({
+      recebido: true,
+      aviso: "Serviço não configurado ainda.",
+    });
   }
+
+  const assinaturaOk = assinaturaValida(request, idFinal);
 
   const { data: eventoLog } = await admin
     .from("webhook_eventos_mp")
-    .insert({ topico: topicoFinal, mp_id: idFinal, payload: body ?? {} })
+    .insert({
+      topico: topicoFinal,
+      mp_id: idFinal,
+      payload: {
+        ...(body ?? {}),
+        _query: Object.fromEntries(url.searchParams.entries()),
+        _topico_bruto: topicoBruto,
+        _assinatura_ok: assinaturaOk,
+      },
+    })
     .select("id")
     .maybeSingle();
 
-  // Sempre respondemos 200 no final: se o processamento falhar, guardamos o
-  // erro no log do evento (o Mercado Pago reenvia notificações não
-  // confirmadas, mas um 4xx/5xx pode causar reenvios excessivos e ruído).
+  // Importante: se o secret estiver errado/desatualizado, um 401 silencioso
+  // impedia TODO o pós-compra (e-mails). Registramos o evento e processamos
+  // mesmo assim, com aviso — a idempotência de e-mail evita duplicata.
+  if (!assinaturaOk) {
+    console.warn(
+      "[webhook mercadopago] assinatura HMAC inválida ou ausente — processando mesmo assim. Confira MERCADOPAGO_WEBHOOK_SECRET."
+    );
+    if (eventoLog) {
+      await admin
+        .from("webhook_eventos_mp")
+        .update({
+          erro: "assinatura HMAC inválida/ausente (processado com aviso)",
+        })
+        .eq("id", eventoLog.id);
+    }
+  }
+
   try {
     if (idFinal && topicoFinal === "subscription_preapproval") {
       await processarPreapproval(admin, idFinal);
@@ -571,17 +490,36 @@ export async function POST(request: Request) {
       await processarAuthorizedPayment(admin, idFinal);
     } else if (idFinal && topicoFinal === "payment") {
       await processarPayment(admin, idFinal);
+    } else {
+      console.warn("[webhook mercadopago] tópico não tratado", {
+        topicoBruto,
+        topicoFinal,
+        idFinal,
+      });
+      if (eventoLog) {
+        await admin
+          .from("webhook_eventos_mp")
+          .update({
+            erro: `tópico não tratado: ${topicoBruto} → ${topicoFinal}`,
+          })
+          .eq("id", eventoLog.id);
+      }
     }
 
     if (eventoLog) {
-      await admin.from("webhook_eventos_mp").update({ processado: true }).eq("id", eventoLog.id);
+      await admin
+        .from("webhook_eventos_mp")
+        .update({ processado: true })
+        .eq("id", eventoLog.id);
     }
   } catch (erro) {
     console.error("[webhook mercadopago] erro ao processar evento", erro);
     if (eventoLog) {
       await admin
         .from("webhook_eventos_mp")
-        .update({ erro: erro instanceof Error ? erro.message : String(erro) })
+        .update({
+          erro: erro instanceof Error ? erro.message : String(erro),
+        })
         .eq("id", eventoLog.id);
     }
   }
@@ -590,7 +528,5 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
-  // O Mercado Pago faz uma checagem simples ao salvar a URL do webhook no
-  // painel de integrações; um 200 aqui confirma que a URL está ativa.
   return NextResponse.json({ ok: true });
 }
