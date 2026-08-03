@@ -21,17 +21,7 @@ import {
   valoresCausaVazio,
   type ValoresPorCategoria,
 } from "@/components/dashboard/valores-causa-form";
-
-const tiposAcaoJec = [
-  "Petição Inicial — Ação de Cobrança (JEC)",
-  "Petição Inicial — Ação de Indenização por Danos Materiais e Morais (JEC)",
-  "Petição Inicial — Ação de Obrigação de Fazer (JEC)",
-  "Petição Inicial — Ação de Obrigação de Não Fazer (JEC)",
-  "Petição Inicial — Ação de Despejo para Fim de Locação (JEC)",
-  "Execução de Título Extrajudicial (JEC)",
-  "Embargos de Declaração (JEC)",
-  "Recurso Inominado (JEC)",
-];
+import { TIPOS_ACAO_JEC } from "@/lib/tipos-acao-jec";
 
 function getFileNames(input: HTMLInputElement | null): string[] {
   if (!input?.files?.length) return [];
@@ -332,6 +322,8 @@ export function JecForm() {
   const [valoresCausa, setValoresCausa] =
     useState<ValoresPorCategoria>(valoresCausaVazio);
   const [usaLeiMunicipal, setUsaLeiMunicipal] = useState(false);
+  const [leiMunicipalTexto, setLeiMunicipalTexto] = useState("");
+  const [leiMunicipalTitulo, setLeiMunicipalTitulo] = useState("");
 
   const isAssistente = tipoSelecionado === ASSISTENTE_FACTO;
 
@@ -367,25 +359,38 @@ export function JecForm() {
     const modoAssistente = tipoAcao === ASSISTENTE_FACTO;
 
     let leiMunicipal: {
-      nome: string;
-      mimeType: string;
-      base64: string;
+      nome?: string;
+      mimeType?: string;
+      base64?: string;
+      texto?: string;
     } | null = null;
 
     if (usaLeiMunicipal) {
+      const textoColado = leiMunicipalTexto.trim();
       const inputLei = form.querySelector<HTMLInputElement>("#leiMunicipal");
       const arquivo = inputLei?.files?.[0];
-      if (!arquivo) {
-        setError("Marque a lei municipal e anexe o PDF ou Word (.docx).");
+
+      if (!textoColado && !arquivo) {
+        setError(
+          "Marque a lei municipal e anexe o PDF/Word ou cole o texto da norma."
+        );
         setLoading(false);
         return;
       }
-      try {
-        leiMunicipal = await lerArquivoComoBase64(arquivo);
-      } catch {
-        setError("Não foi possível ler o arquivo da lei municipal.");
-        setLoading(false);
-        return;
+
+      if (textoColado) {
+        leiMunicipal = {
+          nome: leiMunicipalTitulo.trim() || "Lei municipal (texto colado)",
+          texto: textoColado,
+        };
+      } else if (arquivo) {
+        try {
+          leiMunicipal = await lerArquivoComoBase64(arquivo);
+        } catch {
+          setError("Não foi possível ler o arquivo da lei municipal.");
+          setLoading(false);
+          return;
+        }
       }
     }
 
@@ -498,13 +503,15 @@ export function JecForm() {
             >
               <option value="">Selecione o tipo de ação</option>
               <option value={ASSISTENTE_FACTO}>Assistente Facto (IA)</option>
-              <optgroup label="Escolha manual">
-                {tiposAcaoJec.map((tipo) => (
-                  <option key={tipo} value={tipo}>
-                    {tipo}
-                  </option>
-                ))}
-              </optgroup>
+              {TIPOS_ACAO_JEC.map((grupo) => (
+                <optgroup key={grupo.label} label={grupo.label}>
+                  {grupo.opcoes.map((tipo) => (
+                    <option key={tipo} value={tipo}>
+                      {tipo}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
             </select>
 
             {isAssistente && (
@@ -520,8 +527,8 @@ export function JecForm() {
                   tutela de urgência
                 </strong>
                 . Você receberá a justificativa da decisão antes da peça ser
-                gerada. Para escolher a ação manualmente, selecione uma das
-                opções abaixo de &quot;Escolha manual&quot;.
+                gerada. Para escolher a ação ou recurso manualmente, use os
+                grupos do seletor (petições, execução, defesa, recursos).
               </p>
             )}
           </div>
@@ -584,28 +591,72 @@ export function JecForm() {
           Lei municipal (opcional)
         </h2>
         <p className="mb-4 text-sm text-slate-500">
-          Use apenas quando a ação depender de lei, decreto ou código do
-          município. A IA analisa só o arquivo anexado — não inventa norma
-          municipal.
+          Use quando a ação depender de lei, decreto ou código do município. Você
+          pode <strong className="font-medium text-slate-700">anexar arquivo</strong>{" "}
+          ou{" "}
+          <strong className="font-medium text-slate-700">colar o texto</strong>. A
+          IA analisa só o que você enviar — não inventa norma municipal.
         </p>
         <label className="flex items-start gap-2 text-sm text-slate-700">
           <input
             type="checkbox"
             checked={usaLeiMunicipal}
-            onChange={(e) => setUsaLeiMunicipal(e.target.checked)}
+            onChange={(e) => {
+              setUsaLeiMunicipal(e.target.checked);
+              if (!e.target.checked) {
+                setLeiMunicipalTexto("");
+                setLeiMunicipalTitulo("");
+              }
+            }}
             className="mt-0.5 h-4 w-4 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
           />
           <span>
-            Este caso depende de norma municipal — anexar PDF ou Word (.docx)
+            Este caso depende de norma municipal — anexar arquivo ou colar texto
           </span>
         </label>
         {usaLeiMunicipal && (
-          <div className="mt-4">
+          <div className="mt-4 space-y-4">
+            <div>
+              <label
+                htmlFor="leiMunicipalTitulo"
+                className="mb-1.5 block text-sm font-medium text-slate-700"
+              >
+                Nome / identificação da norma (opcional)
+              </label>
+              <input
+                id="leiMunicipalTitulo"
+                type="text"
+                value={leiMunicipalTitulo}
+                onChange={(e) => setLeiMunicipalTitulo(e.target.value)}
+                placeholder="Ex.: Lei Municipal nº 123/2020 — Código de Posturas"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
+              />
+            </div>
             <FileField
               id="leiMunicipal"
-              label="Arquivo da lei / decreto municipal"
+              label="Arquivo da lei / decreto (PDF ou Word)"
               accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             />
+            <div>
+              <label
+                htmlFor="leiMunicipalTexto"
+                className="mb-1.5 block text-sm font-medium text-slate-700"
+              >
+                Ou cole o texto da norma
+              </label>
+              <textarea
+                id="leiMunicipalTexto"
+                rows={8}
+                value={leiMunicipalTexto}
+                onChange={(e) => setLeiMunicipalTexto(e.target.value)}
+                placeholder="Cole aqui os artigos pertinentes da lei ou decreto municipal..."
+                className="w-full resize-y rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-800 placeholder-slate-400 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
+              />
+              <p className="mt-1.5 text-xs text-slate-500">
+                Se preencher o texto e também anexar arquivo, o{" "}
+                <strong className="font-medium">texto colado tem prioridade</strong>.
+              </p>
+            </div>
           </div>
         )}
       </section>

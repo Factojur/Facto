@@ -33,6 +33,8 @@ type LeiMunicipalPayload = {
   nome?: string;
   mimeType?: string;
   base64?: string;
+  /** Texto colado pelo usuário (alternativa ao upload). */
+  texto?: string;
 };
 
 type GerarPecaBody = GerarPecaJecInput & {
@@ -41,14 +43,30 @@ type GerarPecaBody = GerarPecaJecInput & {
 
 const LIMITE_TEXTO_LEI_MUNICIPAL = 40_000;
 
+function truncarLeiMunicipal(texto: string): string {
+  return texto.length > LIMITE_TEXTO_LEI_MUNICIPAL
+    ? `${texto.slice(0, LIMITE_TEXTO_LEI_MUNICIPAL)}\n[...texto truncado...]`
+    : texto;
+}
+
 async function extrairLeiMunicipal(
   lei?: LeiMunicipalPayload | null
 ): Promise<{ nome: string; texto: string } | null> {
-  if (!lei?.base64?.trim() || !lei.mimeType) return null;
+  if (!lei) return null;
+
+  const textoColado = lei.texto?.trim();
+  if (textoColado) {
+    return {
+      nome: lei.nome?.trim() || "Lei municipal (texto colado)",
+      texto: truncarLeiMunicipal(textoColado),
+    };
+  }
+
+  if (!lei.base64?.trim() || !lei.mimeType) return null;
 
   if (!(lei.mimeType in TIPOS_ARQUIVO_ACEITOS)) {
     throw new Error(
-      "Lei municipal: envie um PDF ou Word (.docx)."
+      "Lei municipal: envie um PDF ou Word (.docx), ou cole o texto da norma."
     );
   }
 
@@ -58,23 +76,20 @@ async function extrairLeiMunicipal(
   }
   if (buffer.length > TAMANHO_MAXIMO_ARQUIVO_BYTES) {
     throw new Error(
-      "Lei municipal: arquivo maior que 8 MB. Envie um PDF/DOCX menor ou só os artigos pertinentes."
+      "Lei municipal: arquivo maior que 8 MB. Envie um PDF/DOCX menor, cole só os artigos pertinentes, ou use o campo de texto."
     );
   }
 
   const texto = await extrairTextoDeArquivo(buffer, lei.mimeType);
   if (!texto.trim()) {
     throw new Error(
-      "Lei municipal: não foi possível extrair texto do arquivo."
+      "Lei municipal: não foi possível extrair texto do arquivo. Tente colar o texto no campo correspondente."
     );
   }
 
   return {
     nome: lei.nome?.trim() || "Lei municipal anexada",
-    texto:
-      texto.length > LIMITE_TEXTO_LEI_MUNICIPAL
-        ? `${texto.slice(0, LIMITE_TEXTO_LEI_MUNICIPAL)}\n[...texto truncado...]`
-        : texto,
+    texto: truncarLeiMunicipal(texto),
   };
 }
 

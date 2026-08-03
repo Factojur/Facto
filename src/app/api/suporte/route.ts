@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import {
+  erroColunaAusente,
+  mesclarPerfil,
+} from "@/lib/perfil-merge";
+import {
   enviarEmailSuporte,
   isAssuntoSuporte,
 } from "@/lib/email/suporte";
@@ -8,7 +12,7 @@ import {
 /**
  * POST /api/suporte
  * Envia mensagem do formulário para suporte@ ou contato@ conforme o assunto.
- * Usa e-mail/telefone da conta logada (sem campos manuais no form).
+ * Nome/telefone vêm do perfil mesclado (tabela profiles + user_metadata).
  */
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -50,19 +54,35 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data: perfil } = await supabase
+  const { data: profileRow, error: profileError } = await supabase
     .from("profiles")
-    .select("nome_completo, telefone")
+    .select("*")
     .eq("id", user.id)
     .maybeSingle();
+
+  if (profileError && !erroColunaAusente(profileError.message)) {
+    console.error("[api/suporte] perfil", profileError);
+  }
+
+  const perfil = mesclarPerfil(
+    user.id,
+    user.email,
+    profileError && erroColunaAusente(profileError.message)
+      ? null
+      : (profileRow as Record<string, unknown> | null),
+    user.user_metadata as Record<string, unknown> | undefined
+  );
+
+  const nomeUsuario = perfil.nome_completo?.trim() || null;
+  const telefoneUsuario = perfil.telefone?.trim() || null;
 
   try {
     const resultado = await enviarEmailSuporte({
       assunto: dados.assunto,
       mensagem,
       emailUsuario: user.email,
-      nomeUsuario: (perfil?.nome_completo as string | null) ?? null,
-      telefoneUsuario: (perfil?.telefone as string | null) ?? null,
+      nomeUsuario,
+      telefoneUsuario,
     });
 
     return NextResponse.json({
