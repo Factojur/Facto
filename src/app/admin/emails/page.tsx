@@ -109,6 +109,11 @@ export default async function AdminEmailsPage() {
               <code className="text-stone-300">migration-email-eventos.sql</code>{" "}
               se esta lista estiver vazia/indisponível.
             </li>
+            <li>
+              Sentry (opcional):{" "}
+              <code className="text-stone-300">NEXT_PUBLIC_SENTRY_DSN</code> na
+              Vercel — erros de produção e falhas de e-mail.
+            </li>
           </ul>
         </div>
 

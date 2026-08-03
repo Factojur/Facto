@@ -47,6 +47,23 @@ export async function registrarEmailEvento(opcoes: {
       `[email ${opcoes.tipo}] falha → ${opcoes.destinatario ?? "?"}:`,
       opcoes.erro
     );
+    try {
+      const Sentry = await import("@sentry/nextjs");
+      Sentry.captureMessage(
+        `Falha e-mail ${opcoes.tipo}: ${opcoes.erro ?? "desconhecido"}`,
+        {
+          level: "error",
+          tags: { email_tipo: opcoes.tipo },
+          extra: {
+            destinatario: opcoes.destinatario,
+            assunto: opcoes.assunto,
+            metadados: opcoes.metadados,
+          },
+        }
+      );
+    } catch {
+      // Sentry ausente / DSN vazio — ignora.
+    }
   }
 }
 

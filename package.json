@@ -10,6 +10,7 @@
     "corrigir-metadados": "node scripts/limpar-metadados-perfil.mjs"
   },
   "dependencies": {
+    "@sentry/nextjs": "^10.69.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.111.0",
     "docx": "^9.7.1",
