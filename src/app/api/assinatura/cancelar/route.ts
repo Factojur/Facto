@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { executarCancelamentoNoMercadoPago } from "@/lib/mercadopago/cancelar-assinatura";
+import {
+  executarCancelamentoNoMercadoPago,
+  marcarPagamentosLocaisRefunded,
+} from "@/lib/mercadopago/cancelar-assinatura";
 import { enviarEmailsCancelamentoAssinatura } from "@/lib/email/cancelamento-assinatura";
 import {
   mapearAssinaturaParaUI,
   montarUpdateCancelamentoCliente,
   type AssinaturaDb,
 } from "@/lib/assinatura-format";
+import type { PagamentoInicialAssinatura } from "@/lib/mercadopago/client";
 
 /**
  * POST /api/assinatura/cancelar
@@ -33,7 +37,7 @@ export async function POST() {
       .select(
         "id, mp_preapproval_id, email, plano, status, data_inicio, acesso_valido_ate, motivo_encerramento, data_cancelamento"
       )
-      .eq("email", user.email)
+      .ilike("email", user.email)
       .in("status", ["authorized", "paused", "pending"])
       .order("criado_em", { ascending: false })
       .limit(1)
@@ -59,10 +63,16 @@ export async function POST() {
 
     const assinatura = row as AssinaturaDb;
 
+    const pagamentoFallback = await buscarPagamentoLocalFallback(
+      admin,
+      assinatura.id
+    );
+
     // 1–4) MP: decide CDC, cancela preapproval e, se CDC, estorna
     const mp = await executarCancelamentoNoMercadoPago({
       mpPreapprovalId: assinatura.mp_preapproval_id,
       dataInicio: assinatura.data_inicio,
+      pagamentoFallback,
     });
 
     // Espelha status no banco (webhook também sincroniza depois)
@@ -79,12 +89,11 @@ export async function POST() {
       )
       .single();
 
-    // Marca fatura local como refunded quando o estorno CDC deu certo
-    if (mp.estorno?.sucesso && mp.estorno.invoiceId) {
-      await admin
-        .from("pagamentos")
-        .update({ status: "refunded" })
-        .eq("mp_payment_id", mp.estorno.invoiceId);
+    if (mp.estorno?.sucesso) {
+      await marcarPagamentosLocaisRefunded(admin, {
+        paymentId: mp.estorno.paymentId,
+        invoiceId: mp.estorno.invoiceId,
+      });
     }
 
     const assinaturaFinal: AssinaturaDb =
@@ -140,6 +149,32 @@ export async function POST() {
       { status: 500 }
     );
   }
+}
+
+type AdminClient = ReturnType<typeof createAdminClient>;
+
+/** Primeiro pagamento local aprovado da assinatura (mais antigo). */
+async function buscarPagamentoLocalFallback(
+  admin: AdminClient,
+  assinaturaId: string
+): Promise<PagamentoInicialAssinatura | null> {
+  const { data } = await admin
+    .from("pagamentos")
+    .select("mp_payment_id, status, pago_em")
+    .eq("assinatura_id", assinaturaId)
+    .in("status", ["approved", "processed", "accredited"])
+    .order("pago_em", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (!data?.mp_payment_id) return null;
+
+  return {
+    invoiceId: String(data.mp_payment_id),
+    paymentId: String(data.mp_payment_id),
+    debitDate: (data.pago_em as string | null) ?? null,
+    status: (data.status as string) ?? "approved",
+  };
 }
 
 function montarMensagemCancelamento(

@@ -3,13 +3,17 @@ import crypto from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { enviarEmailConvite } from "@/lib/email/convite-pago";
 import { enviarEmailsFinanceiroCompra } from "@/lib/email/pagamento-aprovado";
+import {
+  marcarPagamentosLocaisRefunded,
+  tentarEstornoCdc,
+} from "@/lib/mercadopago/cancelar-assinatura";
+import { buscarPagamentoInicialAprovado } from "@/lib/mercadopago/client";
+import { dentroPrazoArrependimentoCdc } from "@/lib/assinatura-format";
 
 const MP_API = "https://api.mercadopago.com";
 const VALOR_MENSAL = 49.9;
 const VALOR_ANUAL = 478.8;
 const DIA_EM_MS = 24 * 60 * 60 * 1000;
-// Art. 49 do CDC: direito de arrependimento em até 7 dias da contratação.
-const PRAZO_ARREPENDIMENTO_CDC_DIAS = 7;
 const DURACAO_CICLO_DIAS: Record<"mensal" | "anual", number> = {
   mensal: 30,
   anual: 365,
@@ -140,22 +144,53 @@ async function processarPreapproval(admin: AdminClient, id: string) {
   }
 
   // "canceled" é um cancelamento explícito e irreversível no Mercado Pago.
-  if (status === "canceled" && existente?.status !== "canceled") {
-    dados.data_cancelamento = new Date().toISOString();
+  if (status === "canceled") {
+    // Preferir a data do 1º pagamento para o CDC; fallback: data_inicio.
+    let pagamentoInicial = null as Awaited<
+      ReturnType<typeof buscarPagamentoInicialAprovado>
+    >;
+    try {
+      pagamentoInicial = await buscarPagamentoInicialAprovado(id);
+    } catch (erro) {
+      console.warn(
+        "[webhook mercadopago] não foi possível buscar pagamento p/ CDC",
+        erro
+      );
+    }
 
-    const diasDesdeContratacao = dataInicio
-      ? (Date.now() - new Date(dataInicio).getTime()) / DIA_EM_MS
-      : Infinity;
+    const dentroPrazoCdc = dentroPrazoArrependimentoCdc(
+      pagamentoInicial?.debitDate ?? dataInicio
+    );
 
-    if (diasDesdeContratacao <= PRAZO_ARREPENDIMENTO_CDC_DIAS) {
-      // Direito de arrependimento (art. 49, CDC): corte imediato de acesso.
-      dados.motivo_encerramento = existente?.motivo_encerramento ?? "arrependimento_cdc";
-      dados.acesso_valido_ate = new Date().toISOString();
-    } else if (!existente?.motivo_encerramento) {
-      // Cancelamento fora do prazo do CDC: mantém acesso_valido_ate como já
-      // calculado pelo último pagamento aprovado — o acesso segue até o fim
-      // do ciclo já pago, não é cortado na hora.
-      dados.motivo_encerramento = "cancelado_pelo_cliente";
+    if (existente?.status !== "canceled") {
+      dados.data_cancelamento = new Date().toISOString();
+
+      if (dentroPrazoCdc) {
+        dados.motivo_encerramento =
+          existente?.motivo_encerramento ?? "arrependimento_cdc";
+        dados.acesso_valido_ate = new Date().toISOString();
+      } else if (!existente?.motivo_encerramento) {
+        dados.motivo_encerramento = "cancelado_pelo_cliente";
+      }
+    }
+
+    // Estorno CDC: idempotente (mesma chave da API /api/assinatura/cancelar).
+    if (dentroPrazoCdc) {
+      const { estorno } = await tentarEstornoCdc({
+        mpPreapprovalId: id,
+        pagamentoFallback: pagamentoInicial,
+      });
+      if (estorno.sucesso) {
+        await marcarPagamentosLocaisRefunded(admin, {
+          paymentId: estorno.paymentId,
+          invoiceId: estorno.invoiceId,
+        });
+      } else if (estorno.aviso) {
+        console.error(
+          "[webhook mercadopago] CDC sem estorno automático:",
+          estorno.aviso
+        );
+      }
     }
   }
 

@@ -2,8 +2,6 @@
  * Cliente mínimo da API Mercado Pago (server-only).
  */
 
-import { randomUUID } from "node:crypto";
-
 const MP_API = "https://api.mercadopago.com";
 
 export type FaturaAssinaturaMp = {
@@ -73,6 +71,38 @@ export async function cancelarPreapprovalMercadoPago(
   });
 }
 
+type PaymentCampo =
+  | FaturaAssinaturaMp["payment"]
+  | number
+  | string
+  | null
+  | undefined;
+
+function extrairPaymentId(payment: PaymentCampo): string | null {
+  if (payment == null) return null;
+  if (typeof payment === "number" || typeof payment === "string") {
+    const id = String(payment).trim();
+    return id || null;
+  }
+  if (typeof payment === "object" && payment.id != null) {
+    const id = String(payment.id).trim();
+    return id || null;
+  }
+  return null;
+}
+
+function extrairPaymentStatus(payment: PaymentCampo): string | null {
+  if (payment == null || typeof payment !== "object") return null;
+  return typeof payment.status === "string" ? payment.status : null;
+}
+
+/** Status de fatura/pagamento que permitem estorno total. */
+function pagamentoEstornavel(status: string | null | undefined): boolean {
+  if (!status) return false;
+  const s = status.toLowerCase();
+  return s === "approved" || s === "processed" || s === "accredited";
+}
+
 /**
  * Lista faturas (authorized_payments) de uma assinatura.
  * GET /authorized_payments/search?preapproval_id=...
@@ -92,41 +122,85 @@ export async function buscarFaturasDaAssinatura(
   return Array.isArray(data?.results) ? data.results : [];
 }
 
+async function detalharFatura(
+  invoiceId: string | number
+): Promise<FaturaAssinaturaMp | null> {
+  try {
+    return (await chamarMercadoPago(
+      `/authorized_payments/${invoiceId}`
+    )) as FaturaAssinaturaMp;
+  } catch (erro) {
+    console.warn(
+      "[mercadopago] falha ao detalhar authorized_payment",
+      invoiceId,
+      erro
+    );
+    return null;
+  }
+}
+
+function faturaParaPagamentoInicial(
+  fatura: FaturaAssinaturaMp
+): PagamentoInicialAssinatura | null {
+  const paymentId = extrairPaymentId(fatura.payment as PaymentCampo);
+  if (!paymentId) return null;
+
+  const statusPagamento =
+    extrairPaymentStatus(fatura.payment as PaymentCampo) ??
+    (typeof fatura.status === "string" ? fatura.status : null);
+
+  if (!pagamentoEstornavel(statusPagamento)) return null;
+
+  return {
+    invoiceId: String(fatura.id),
+    paymentId,
+    debitDate: fatura.debit_date ?? fatura.date_created ?? null,
+    status: statusPagamento ?? "approved",
+  };
+}
+
 /**
- * Localiza o primeiro pagamento aprovado da assinatura (pagamento inicial).
+ * Localiza o primeiro pagamento aprovado/processado da assinatura.
  * Preferimos debit_date; se ausente, date_created.
+ * Se o search vier incompleto, busca o detalhe de cada fatura candidata.
  */
 export async function buscarPagamentoInicialAprovado(
   mpPreapprovalId: string
 ): Promise<PagamentoInicialAssinatura | null> {
   const faturas = await buscarFaturasDaAssinatura(mpPreapprovalId);
+  if (faturas.length === 0) return null;
 
-  const aprovadas = faturas
-    .filter((f) => {
-      const statusPagamento = f.payment?.status ?? f.status;
-      const paymentId = f.payment?.id;
-      return Boolean(paymentId) && statusPagamento === "approved";
-    })
-    .sort((a, b) => {
-      const ta = new Date(a.debit_date ?? a.date_created ?? 0).getTime();
-      const tb = new Date(b.debit_date ?? b.date_created ?? 0).getTime();
-      return ta - tb;
-    });
+  const ordenadas = [...faturas].sort((a, b) => {
+    const ta = new Date(a.debit_date ?? a.date_created ?? 0).getTime();
+    const tb = new Date(b.debit_date ?? b.date_created ?? 0).getTime();
+    return ta - tb;
+  });
 
-  const primeira = aprovadas[0];
-  if (!primeira?.payment?.id) return null;
+  for (const fatura of ordenadas) {
+    const direto = faturaParaPagamentoInicial(fatura);
+    if (direto) return direto;
 
-  return {
-    invoiceId: String(primeira.id),
-    paymentId: String(primeira.payment.id),
-    debitDate: primeira.debit_date ?? primeira.date_created ?? null,
-    status: primeira.payment.status ?? "approved",
-  };
+    // Search às vezes omite payment.id/status — detalhe resolve.
+    const temSinalDeCobranca =
+      Boolean(extrairPaymentId(fatura.payment as PaymentCampo)) ||
+      pagamentoEstornavel(fatura.status) ||
+      fatura.status === "processed";
+
+    if (!temSinalDeCobranca) continue;
+
+    const detalhe = await detalharFatura(fatura.id);
+    if (!detalhe) continue;
+    const completo = faturaParaPagamentoInicial(detalhe);
+    if (completo) return completo;
+  }
+
+  return null;
 }
 
 /**
  * Estorno total de um pagamento.
- * POST /v1/payments/{id}/refunds (corpo vazio = full refund).
+ * POST /v1/payments/{id}/refunds — sem amount = full refund.
+ * Idempotency-Key estável evita estorno duplicado (API + webhook).
  */
 export async function estornarPagamentoMercadoPago(
   paymentId: string,
@@ -138,11 +212,42 @@ export async function estornarPagamentoMercadoPago(
       method: "POST",
       headers: {
         "X-Idempotency-Key":
-          opcoes?.idempotencyKey ?? `facto-refund-${paymentId}-${randomUUID()}`,
+          opcoes?.idempotencyKey ?? `facto-cdc-refund-${paymentId}`,
       },
-      body: JSON.stringify({}),
+      // Corpo vazio: estorno integral (não enviar amount).
+      body: "{}",
     }
   );
 
   return resultado as EstornoMp;
+}
+
+/** Chave idempotente compartilhada entre cancelamento via app e via webhook. */
+export function chaveIdempotenciaEstornoCdc(paymentId: string): string {
+  return `facto-cdc-refund-${paymentId}`;
+}
+
+/**
+ * Aceita payment.id ou authorized_payment.id e devolve o payment.id estornável.
+ */
+export async function resolverIdPagamentoParaEstorno(
+  possivelId: string
+): Promise<string> {
+  const id = possivelId.trim();
+  if (!id) return id;
+
+  try {
+    const payment = (await chamarMercadoPago(`/v1/payments/${id}`)) as {
+      id?: number | string;
+    };
+    if (payment?.id != null) return String(payment.id);
+  } catch {
+    // Pode ser id de fatura (authorized_payment), não de payment.
+  }
+
+  const fatura = await detalharFatura(id);
+  const paymentId = extrairPaymentId(fatura?.payment as PaymentCampo);
+  if (paymentId) return paymentId;
+
+  return id;
 }
