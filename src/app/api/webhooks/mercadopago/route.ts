@@ -408,6 +408,26 @@ async function processarPayment(admin: AdminClient, id: string) {
   });
 }
 
+function extrairIdRecurso(valor: unknown): string | null {
+  if (valor == null) return null;
+  if (typeof valor === "number") return String(valor);
+  if (typeof valor !== "string") return null;
+  const t = valor.trim();
+  if (!t) return null;
+  // IPN antigo: "https://api.mercadopago.com/authorized_payments/123"
+  const m = t.match(/\/(authorized_payments|preapproval|payments|v1\/payments)\/([^/?#]+)/i);
+  if (m?.[2]) return m[2];
+  // Só o id
+  if (/^[A-Za-z0-9_-]+$/.test(t)) return t;
+  return null;
+}
+
+/** IDs de simulação do painel "Testear" do Mercado Pago — não são cobranças reais. */
+function ehIdSimulacaoMp(id: string | null): boolean {
+  if (!id) return false;
+  return /^(123456|123456789|1234567890|1234567|999999)$/.test(id);
+}
+
 export async function POST(request: Request) {
   const url = new URL(request.url);
   const dataIdQuery =
@@ -425,15 +445,16 @@ export async function POST(request: Request) {
   const dataObj = body?.data as Record<string, unknown> | undefined;
   const idFinal =
     dataIdQuery ??
-    (dataObj?.id as string | number | undefined)?.toString() ??
+    extrairIdRecurso(dataObj?.id) ??
+    extrairIdRecurso(body?.id) ??
+    extrairIdRecurso(body?.resource) ??
     null;
   const topicoBruto =
     topicoQuery ??
     (body?.type as string | undefined) ??
     (body?.topic as string | undefined) ??
-    (body?.action as string | undefined) ??
-    "desconhecido";
-  const topicoFinal = normalizarTopicoWebhook(topicoBruto);
+    null;
+  const topicoFinal = normalizarTopicoWebhook(topicoBruto ?? "desconhecido");
 
   let admin: AdminClient;
   try {
@@ -446,6 +467,25 @@ export async function POST(request: Request) {
     return NextResponse.json({
       recebido: true,
       aviso: "Serviço não configurado ainda.",
+    });
+  }
+
+  // Ping de verificação / corpo vazio — só confirma URL.
+  if (!idFinal && topicoFinal === "desconhecido") {
+    return NextResponse.json({ ok: true, ping: true });
+  }
+
+  if (ehIdSimulacaoMp(idFinal)) {
+    await admin.from("webhook_eventos_mp").insert({
+      topico: topicoFinal,
+      mp_id: idFinal,
+      payload: { ...(body ?? {}), _simulacao: true },
+      processado: true,
+      erro: "Simulação do painel Mercado Pago (ID de teste) — ignorado",
+    });
+    return NextResponse.json({
+      recebido: true,
+      aviso: "Simulação ignorada",
     });
   }
 
@@ -466,9 +506,6 @@ export async function POST(request: Request) {
     .select("id")
     .maybeSingle();
 
-  // Importante: se o secret estiver errado/desatualizado, um 401 silencioso
-  // impedia TODO o pós-compra (e-mails). Registramos o evento e processamos
-  // mesmo assim, com aviso — a idempotência de e-mail evita duplicata.
   if (!assinaturaOk) {
     console.warn(
       "[webhook mercadopago] assinatura HMAC inválida ou ausente — processando mesmo assim. Confira MERCADOPAGO_WEBHOOK_SECRET."
@@ -500,7 +537,7 @@ export async function POST(request: Request) {
         await admin
           .from("webhook_eventos_mp")
           .update({
-            erro: `tópico não tratado: ${topicoBruto} → ${topicoFinal}`,
+            erro: `tópico não tratado: ${topicoBruto ?? "?"} → ${topicoFinal}`,
           })
           .eq("id", eventoLog.id);
       }

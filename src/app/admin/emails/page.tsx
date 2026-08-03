@@ -104,6 +104,41 @@ export default async function AdminEmailsPage() {
 
         <ReenviarCompraEmailForm emailInicial="nathalia.gomes1@gmail.com" />
 
+        <div className="mt-6 rounded-xl border border-amber-500/25 bg-amber-500/5 p-4 text-sm text-amber-100/90">
+          <p className="font-medium text-amber-100">
+            Envio automático (como funciona)
+          </p>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-xs leading-relaxed text-amber-100/80">
+            <li>
+              Webhook MP → e-mails na hora (financeiro@ + noreply@).
+            </li>
+            <li>
+              Rede de segurança: cron a cada 5 min varre assinaturas
+              autorizadas e dispara o que faltou (sem ação manual).
+            </li>
+            <li>
+              IDs <code className="text-amber-50">123456</code> /{" "}
+              <code className="text-amber-50">123456789</code> no log são{" "}
+              <strong className="font-medium">teste do painel MP</strong>, não
+              compra real.
+            </li>
+            <li>
+              No Mercado Pago → Sua integração → Webhooks, ative:{" "}
+              <code className="text-amber-50">subscription_preapproval</code>,{" "}
+              <code className="text-amber-50">
+                subscription_authorized_payment
+              </code>{" "}
+              e <code className="text-amber-50">payment</code>, URL{" "}
+              <code className="text-amber-50">
+                https://factoia.com.br/api/webhooks/mercadopago
+              </code>
+              . O Access Token da Vercel deve ser da{" "}
+              <strong className="font-medium">mesma conta</strong> dos links
+              mpago.la.
+            </li>
+          </ul>
+        </div>
+
         <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm text-stone-400">
           <p className="font-medium text-stone-300">
             Últimos webhooks Mercado Pago
