@@ -2,19 +2,17 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import {
+  ASSUNTOS_SUPORTE,
+  type AssuntoSuporte,
+} from "@/lib/email/suporte-assuntos";
 
-const ASSUNTOS = [
-  "Dúvida",
-  "Problema Técnico",
-  "Sugestão de Melhoria",
-  "Financeiro",
-] as const;
-
-type Assunto = (typeof ASSUNTOS)[number] | "";
+type Assunto = AssuntoSuporte | "";
 
 /**
- * Formulário de suporte (frontend).
- * onSubmit preparado para futura integração com e-mail.
+ * Formulário de suporte: envia via POST /api/suporte (Resend).
+ * Destino: Problema Técnico / Financeiro → suporte@;
+ * Dúvida / Sugestão → contato@.
  */
 export function SuporteForm() {
   const [assunto, setAssunto] = useState<Assunto>("");
@@ -38,24 +36,28 @@ export function SuporteForm() {
     }
 
     setEnviando(true);
-
-    // Placeholder: depois conectamos ao serviço de e-mail.
-    const payload = {
-      assunto,
-      mensagem: mensagem.trim(),
-      enviadoEm: new Date().toISOString(),
-    };
-    console.log("[FACTO Suporte]", payload);
-
-    await new Promise((r) => setTimeout(r, 400));
-
+    try {
+      const res = await fetch("/api/suporte", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assunto,
+          mensagem: mensagem.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErro(data.error ?? "Não foi possível enviar a mensagem.");
+        setEnviando(false);
+        return;
+      }
+      setSucesso(true);
+      setAssunto("");
+      setMensagem("");
+    } catch {
+      setErro("Falha de rede ao enviar. Tente novamente.");
+    }
     setEnviando(false);
-    setSucesso(true);
-    setAssunto("");
-    setMensagem("");
-    window.alert(
-      "Mensagem registrada com sucesso. Em breve o suporte do FACTO responderá."
-    );
   }
 
   return (
@@ -72,7 +74,7 @@ export function SuporteForm() {
         </h1>
         <p className="mt-1 text-sm text-slate-500">
           Envie sua dúvida, problema técnico, sugestão ou questão financeira.
-          Nossa equipe responderá o mais breve possível.
+          Usamos o e-mail da sua conta para responder — sem preencher de novo.
         </p>
       </header>
 
@@ -110,7 +112,7 @@ export function SuporteForm() {
               className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
             >
               <option value="">Selecione o assunto</option>
-              {ASSUNTOS.map((opcao) => (
+              {ASSUNTOS_SUPORTE.map((opcao) => (
                 <option key={opcao} value={opcao}>
                   {opcao}
                 </option>
