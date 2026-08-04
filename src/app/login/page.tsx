@@ -177,12 +177,20 @@ function LoginForm() {
             </div>
 
             <div>
-              <label
-                htmlFor="senha"
-                className="mb-1.5 block text-sm font-medium text-stone-300"
-              >
-                Senha
-              </label>
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <label
+                  htmlFor="senha"
+                  className="block text-sm font-medium text-stone-300"
+                >
+                  Senha
+                </label>
+                <Link
+                  href="/esqueci-senha"
+                  className="text-xs font-medium text-facto-gold hover:text-[#a39a78]"
+                >
+                  Esqueci minha senha
+                </Link>
+              </div>
               <input
                 id="senha"
                 name="senha"

@@ -127,6 +127,7 @@ export async function middleware(request: NextRequest) {
   // Só manda usuário autenticado embora do /login|/cadastro se a sessão
   // única deste dispositivo estiver ok. Caso contrário deixa a página
   // limpar o auth residual (evita loop com ?sessao=encerrada).
+  // /redefinir-senha e /esqueci-senha ficam acessíveis com ou sem sessão.
   if (user && (pathname === "/login" || pathname === "/cadastro")) {
     const veioDeConflito =
       request.nextUrl.searchParams.get("sessao") === "encerrada";

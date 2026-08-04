@@ -69,6 +69,12 @@ export function PerfilForm({ perfilInicial }: { perfilInicial: PerfilUsuario }) 
   const [escritorio, setEscritorio] = useState<EscritorioConfig>(
     escritorioConfigVazio
   );
+  const [senhaAtual, setSenhaAtual] = useState("");
+  const [senhaNova, setSenhaNova] = useState("");
+  const [senhaNovaConfirmacao, setSenhaNovaConfirmacao] = useState("");
+  const [salvandoSenha, setSalvandoSenha] = useState(false);
+  const [msgSenha, setMsgSenha] = useState<string | null>(null);
+  const [erroSenha, setErroSenha] = useState<string | null>(null);
 
   useEffect(() => {
     setEscritorio(carregarEscritorioConfig());
@@ -206,9 +212,42 @@ export function PerfilForm({ perfilInicial }: { perfilInicial: PerfilUsuario }) 
     router.refresh();
   }
 
+  async function handleAlterarSenha(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setSalvandoSenha(true);
+    setMsgSenha(null);
+    setErroSenha(null);
+
+    try {
+      const res = await fetch("/api/perfil/senha", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          senhaAtual,
+          senhaNova,
+          senhaNovaConfirmacao,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErroSenha(data.error ?? "Não foi possível alterar a senha.");
+        setSalvandoSenha(false);
+        return;
+      }
+      setMsgSenha(data.mensagem ?? "Senha alterada com sucesso.");
+      setSenhaAtual("");
+      setSenhaNova("");
+      setSenhaNovaConfirmacao("");
+    } catch {
+      setErroSenha("Falha de rede. Tente novamente.");
+    }
+    setSalvandoSenha(false);
+  }
+
   const camposEnderecoBloqueados = enderecoAuto && !buscandoCep;
 
   return (
+    <div className="space-y-8">
     <form onSubmit={handleSubmit} className="space-y-8">
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -373,13 +412,6 @@ export function PerfilForm({ perfilInicial }: { perfilInicial: PerfilUsuario }) 
         </div>
       </section>
 
-      <EscritorioConfigPanel
-        value={escritorio}
-        onChange={setEscritorio}
-      />
-
-      <AssinaturaPainel />
-
       <button
         type="submit"
         disabled={salvando || buscandoCep}
@@ -388,5 +420,71 @@ export function PerfilForm({ perfilInicial }: { perfilInicial: PerfilUsuario }) 
         {salvando ? "Salvando..." : "Salvar alterações"}
       </button>
     </form>
+
+      <form
+        id="alterar-senha"
+        onSubmit={handleAlterarSenha}
+        className="scroll-mt-24 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+      >
+        <h2 className="text-lg font-semibold text-slate-800">Alterar senha</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Por segurança, informe sempre a senha atual antes de definir uma nova.
+        </p>
+
+        {msgSenha && (
+          <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            {msgSenha}
+          </div>
+        )}
+        {erroSenha && (
+          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {erroSenha}
+          </div>
+        )}
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-2 sm:max-w-md">
+            {campo("senhaAtual", "Senha atual", {
+              type: "password",
+              value: senhaAtual,
+              onChange: (e) => setSenhaAtual(e.target.value),
+              required: true,
+              autoComplete: "current-password",
+            })}
+          </div>
+          {campo("senhaNova", "Nova senha", {
+            type: "password",
+            value: senhaNova,
+            onChange: (e) => setSenhaNova(e.target.value),
+            required: true,
+            minLength: 8,
+            autoComplete: "new-password",
+          })}
+          {campo("senhaNovaConfirmacao", "Confirmar nova senha", {
+            type: "password",
+            value: senhaNovaConfirmacao,
+            onChange: (e) => setSenhaNovaConfirmacao(e.target.value),
+            required: true,
+            minLength: 8,
+            autoComplete: "new-password",
+          })}
+        </div>
+
+        <button
+          type="submit"
+          disabled={salvandoSenha}
+          className="mt-5 rounded-lg border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 disabled:opacity-50"
+        >
+          {salvandoSenha ? "Alterando..." : "Atualizar senha"}
+        </button>
+      </form>
+
+      <EscritorioConfigPanel
+        value={escritorio}
+        onChange={setEscritorio}
+      />
+
+      <AssinaturaPainel />
+    </div>
   );
 }
