@@ -201,6 +201,24 @@ function finalizarTextoPeca(
 }
 
 export async function POST(request: Request) {
+  try {
+    return await postGerarPeca(request);
+  } catch (erro) {
+    console.error("[gerar-peca] exceção não tratada:", erro);
+    return NextResponse.json(
+      {
+        error:
+          erro instanceof Error
+            ? `Erro ao gerar a peça: ${erro.message}`
+            : "Erro interno ao gerar a peça. Tente novamente.",
+        codigo: "ERRO_INTERNO",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+async function postGerarPeca(request: Request) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -254,17 +272,32 @@ export async function POST(request: Request) {
     );
   }
 
+  if (body.tipoAcao === "assistente-facto") {
+    return NextResponse.json(
+      {
+        error:
+          "Use o Assistente Facto para definir o tipo de ação antes de gerar a peça.",
+        codigo: "ASSISTENTE_PENDENTE",
+      },
+      { status: 400 }
+    );
+  }
+
   // Teto JEC para leigos (sem OAB): 20 SM — contas de acesso livre não sofrem o bloqueio
   if (!isEmailAcessoLivre(email)) {
     let tipoUsuario =
       (user.user_metadata?.tipo_usuario as string | undefined) ?? "advogado";
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("tipo_usuario")
-      .eq("id", user.id)
-      .maybeSingle();
-    if (profile?.tipo_usuario) {
-      tipoUsuario = profile.tipo_usuario;
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("tipo_usuario")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (profile?.tipo_usuario) {
+        tipoUsuario = profile.tipo_usuario;
+      }
+    } catch {
+      /* perfil indisponível — segue com metadata */
     }
     if (tipoUsuario === "leigo" && body.valoresCausa) {
       const resumoTeto = calcularResumoValorCausa(body.valoresCausa);

@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { GerarPecaJecOutput } from "@/lib/gerar-peca-jec";
 import {
-  analisarCaseAssistente,
   ASSISTENTE_FACTO,
+  analisarCaseAssistente,
+  montarTituloAcaoCompleto,
   type DecisaoAssistente,
 } from "@/lib/assistente-facto";
 import {
@@ -532,9 +533,11 @@ function PecasResultado({
 
 function estadoInicialFormulario() {
   return {
-    tipoSelecionado: "",
+    tipoSelecionado: ASSISTENTE_FACTO,
     fatos: "",
     tutelaUrgencia: false,
+    cumuloDanosMorais: false,
+    cumuloDanosMateriais: false,
     comarca: comarcaVazia(),
     valoresCausa: valoresCausaVazio(),
     usaLeiMunicipal: false,
@@ -546,7 +549,7 @@ function estadoInicialFormulario() {
     pedidos: [] as PedidoItem[],
     mostrarDocsOpcionais: false,
     mostrarMidiasOpcionais: false,
-    decisaoSugerida: null as DecisaoAssistente | null,
+    justificativaAssistente: null as string | null,
     notaAssistente: false,
   };
 }
@@ -556,9 +559,11 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
   const [loadingStage, setLoadingStage] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<GerarPecaJecOutput | null>(null);
-  const [tipoSelecionado, setTipoSelecionado] = useState("");
+  const [tipoSelecionado, setTipoSelecionado] = useState(ASSISTENTE_FACTO);
   const [fatos, setFatos] = useState("");
   const [tutelaUrgencia, setTutelaUrgencia] = useState(false);
+  const [cumuloDanosMorais, setCumuloDanosMorais] = useState(false);
+  const [cumuloDanosMateriais, setCumuloDanosMateriais] = useState(false);
   const [escritorio, setEscritorio] =
     useState<EscritorioConfig>(escritorioConfigVazio);
   const [comarca, setComarca] = useState<ComarcaValue>(comarcaVazia);
@@ -576,13 +581,17 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
   const [decisaoSugerida, setDecisaoSugerida] =
     useState<DecisaoAssistente | null>(null);
   const [notaAssistente, setNotaAssistente] = useState(false);
+  const [justificativaAssistente, setJustificativaAssistente] = useState<
+    string | null
+  >(null);
+  const [analisandoAssistente, setAnalisandoAssistente] = useState(false);
   const [rascunhos, setRascunhos] = useState<JecRascunhoSalvo[]>([]);
   const [rascunhoAtivoId, setRascunhoAtivoId] = useState<string | null>(null);
   const [msgRascunho, setMsgRascunho] = useState<string | null>(null);
   const [cota, setCota] = useState<ResumoCota | null>(null);
 
   const isAssistente = tipoSelecionado === ASSISTENTE_FACTO;
-  const modoAssistentePendenteConfirmacao = isAssistente;
+  const assistentePendente = isAssistente;
 
   useEffect(() => {
     let cancelado = false;
@@ -610,13 +619,28 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
   const bloqueadoTetoLeigo =
     leigo && ultrapassaTetoJec(resumoValores.totalCentavos, false);
 
+  const tituloAcaoCompleto = useMemo(() => {
+    if (isAssistente) return "";
+    return montarTituloAcaoCompleto(tipoSelecionado, {
+      danosMorais: cumuloDanosMorais,
+      danosMateriais: cumuloDanosMateriais,
+      tutelaUrgencia,
+    });
+  }, [
+    isAssistente,
+    tipoSelecionado,
+    cumuloDanosMorais,
+    cumuloDanosMateriais,
+    tutelaUrgencia,
+  ]);
+
   const checklistItens = montarChecklistJec({
     tipoSelecionado,
     fatos,
     reusCount: reus.length,
     comarcaForo: comarca.foro ?? "",
     temValor: resumoValores.totalCentavos > 0,
-    modoAssistentePendenteConfirmacao,
+    assistentePendente,
   });
 
   const podeGerar = podeGerarPeca(checklistItens) && !bloqueadoTetoLeigo;
@@ -644,23 +668,73 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
     salvarEscritorioConfig(next);
   }
 
-  function handleSugerirAcao() {
-    if (!fatos.trim()) {
-      setError("Descreva os fatos antes de pedir sugestão do Assistente.");
-      return;
-    }
-    setError(null);
-    setDecisaoSugerida(
-      analisarCaseAssistente({ fatos, totalArquivos: 0 })
-    );
+  function aplicarDecisaoAssistente(decisao: DecisaoAssistente) {
+    setTipoSelecionado(decisao.tipoAcao);
+    setTutelaUrgencia(decisao.tutelaUrgencia);
+    setCumuloDanosMorais(decisao.danosMorais);
+    setCumuloDanosMateriais(decisao.danosMateriais);
+    setJustificativaAssistente(decisao.justificativa);
+    setNotaAssistente(true);
+    setDecisaoSugerida(decisao);
   }
 
-  function handleConfirmarSugestao() {
-    if (!decisaoSugerida) return;
-    setTipoSelecionado(decisaoSugerida.tipoAcao);
-    setTutelaUrgencia(decisaoSugerida.tutelaUrgencia);
-    setNotaAssistente(true);
-    setDecisaoSugerida(null);
+  async function handleAnalisarAssistente() {
+    if (fatos.trim().length < 40) {
+      setError(
+        "Descreva os fatos (mín. ~40 caracteres) antes de pedir a análise do Assistente."
+      );
+      document
+        .getElementById("secao-fatos")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    setError(null);
+    setAnalisandoAssistente(true);
+    try {
+      const response = await fetch("/api/assistente-facto", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fatos: fatos.trim() }),
+      });
+      const texto = await response.text();
+      let data: {
+        error?: string;
+        decisao?: DecisaoAssistente;
+      } = {};
+      try {
+        data = JSON.parse(texto) as typeof data;
+      } catch {
+        setError(
+          response.ok
+            ? "Resposta inválida do Assistente. Tente novamente."
+            : `Falha no Assistente (HTTP ${response.status}). Tente novamente.`
+        );
+        return;
+      }
+
+      if (!response.ok || !data.decisao) {
+        // Fallback local se a API falhar
+        const local = analisarCaseAssistente({ fatos });
+        aplicarDecisaoAssistente(local);
+        setError(
+          data.error
+            ? `${data.error} Usamos a análise local de respaldo.`
+            : null
+        );
+        return;
+      }
+
+      aplicarDecisaoAssistente(data.decisao);
+    } catch {
+      const local = analisarCaseAssistente({ fatos });
+      aplicarDecisaoAssistente(local);
+      setError(
+        "Não foi possível falar com a IA agora. Aplicamos a análise local — revise o tipo sugerido."
+      );
+    } finally {
+      setAnalisandoAssistente(false);
+    }
   }
 
   function handleNovoCaso() {
@@ -675,6 +749,8 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
     setTipoSelecionado(ini.tipoSelecionado);
     setFatos(ini.fatos);
     setTutelaUrgencia(ini.tutelaUrgencia);
+    setCumuloDanosMorais(ini.cumuloDanosMorais);
+    setCumuloDanosMateriais(ini.cumuloDanosMateriais);
     setComarca(ini.comarca);
     setValoresCausa(ini.valoresCausa);
     setUsaLeiMunicipal(ini.usaLeiMunicipal);
@@ -686,7 +762,8 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
     setPedidos(ini.pedidos);
     setMostrarDocsOpcionais(ini.mostrarDocsOpcionais);
     setMostrarMidiasOpcionais(ini.mostrarMidiasOpcionais);
-    setDecisaoSugerida(ini.decisaoSugerida);
+    setDecisaoSugerida(null);
+    setJustificativaAssistente(ini.justificativaAssistente);
     setNotaAssistente(ini.notaAssistente);
     setResultado(null);
     setRascunhoAtivoId(null);
@@ -722,6 +799,9 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
     );
     setDecisaoSugerida(null);
     setNotaAssistente(false);
+    setJustificativaAssistente(null);
+    setCumuloDanosMorais(false);
+    setCumuloDanosMateriais(false);
     setRascunhoAtivoId(r.id);
     setMsgRascunho(
       "Rascunho restaurado. Reenvie os anexos, se necessário."
@@ -822,8 +902,21 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
     const form = e.currentTarget;
     const formData = new FormData(form);
 
-    const tipoAcao = String(formData.get("tipoAcao"));
-    const modoAssistente = tipoAcao === ASSISTENTE_FACTO;
+    const tipoAcaoRaw = String(formData.get("tipoAcao"));
+    const modoAssistente = tipoAcaoRaw === ASSISTENTE_FACTO;
+    if (modoAssistente) {
+      setError(
+        "Peça ao Assistente Facto para analisar os fatos e definir a ação, ou escolha o tipo manualmente."
+      );
+      setLoading(false);
+      return;
+    }
+
+    const tipoAcao = montarTituloAcaoCompleto(tipoAcaoRaw, {
+      danosMorais: cumuloDanosMorais,
+      danosMateriais: cumuloDanosMateriais,
+      tutelaUrgencia,
+    });
 
     let leiMunicipal: {
       nome?: string;
@@ -877,7 +970,7 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
 
     const payload = {
       tipoAcao,
-      tutelaUrgencia: modoAssistente ? false : tutelaUrgencia,
+      tutelaUrgencia,
       fatos: fatos.trim(),
       pedidosUsuario,
       documentos: {
@@ -923,7 +1016,25 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      const texto = await response.text();
+      let data: {
+        error?: string;
+        codigo?: string;
+        cota?: ResumoCota;
+      } & Partial<GerarPecaJecOutput> = {};
+      try {
+        data = JSON.parse(texto) as typeof data;
+      } catch {
+        const dicaTimeout =
+          response.status === 504 || response.status === 408
+            ? " A geração pode ter estourado o tempo limite — tente de novo com fatos um pouco mais objetivos."
+            : "";
+        setError(
+          `Falha na comunicação com o servidor (HTTP ${response.status || "—"}). Tente novamente.${dicaTimeout}`
+        );
+        setLoading(false);
+        return;
+      }
 
       if (!response.ok) {
         if (data.codigo === "COTA_ESGOTADA" && data.cota) {
@@ -940,14 +1051,18 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
       }
 
       if (data.cota) setCota(data.cota);
-      setResultado(data);
+      setResultado(data as GerarPecaJecOutput);
       window.setTimeout(() => {
         document
           .getElementById("peca-gerada")
           ?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 50);
-    } catch {
-      setError("Falha na comunicação com o servidor. Tente novamente.");
+    } catch (erro) {
+      setError(
+        erro instanceof TypeError
+          ? "Falha de rede ao falar com o servidor. Verifique a conexão e tente novamente."
+          : "Falha na comunicação com o servidor. Tente novamente."
+      );
     }
 
     setLoading(false);
@@ -1026,11 +1141,13 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
           id="secao-acao"
           className="scroll-mt-24 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
         >
-          <h2 className="mb-4 text-lg font-semibold text-slate-800">
-            Ação
-          </h2>
+          <h2 className="mb-1 text-lg font-semibold text-slate-800">Ação</h2>
+          <p className="mb-4 text-sm text-slate-500">
+            O Assistente Facto analisa os fatos com IA e define a ação cabível,
+            cúmulos (c/c) e se cabe tutela. Você pode ajustar tudo depois.
+          </p>
           <div className="grid gap-5 sm:grid-cols-2">
-            <div className="sm:col-span-2 sm:max-w-lg">
+            <div className="sm:col-span-2 sm:max-w-2xl">
               <label
                 htmlFor="tipoAcao"
                 className="mb-1.5 block text-sm font-medium text-slate-700"
@@ -1045,15 +1162,19 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
                 onChange={(e) => {
                   const v = e.target.value;
                   setTipoSelecionado(v);
-                  setDecisaoSugerida(null);
-                  if (v !== ASSISTENTE_FACTO) {
+                  if (v === ASSISTENTE_FACTO) {
+                    setNotaAssistente(false);
+                    setJustificativaAssistente(null);
+                    setDecisaoSugerida(null);
+                  } else {
                     setNotaAssistente(false);
                   }
                 }}
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
               >
-                <option value="">Selecione o tipo de ação</option>
-                <option value={ASSISTENTE_FACTO}>Assistente Facto</option>
+                <option value={ASSISTENTE_FACTO}>
+                  Assistente Facto (IA — recomendado)
+                </option>
                 {TIPOS_ACAO_JEC.map((grupo) => (
                   <optgroup key={grupo.label} label={grupo.label}>
                     {grupo.opcoes.map((tipo) => (
@@ -1065,87 +1186,105 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
                 ))}
               </select>
 
-              {notaAssistente && !isAssistente && (
-                <p className="mt-2 text-xs text-stone-600">
-                  Tipo sugerido pelo Assistente Facto — confira antes de gerar.
-                </p>
-              )}
-
               {isAssistente && (
                 <div className="mt-4 space-y-3 rounded-lg border border-stone-200 bg-stone-50/80 p-4">
-                  <p className="text-xs text-slate-600">
-                    Sugere o tipo de ação com base nos fatos. Confirme antes de
-                    gerar a peça.
+                  <p className="text-sm text-slate-600">
+                    Preencha a seção <strong>Fatos</strong> e clique em analisar.
+                    A IA aplica a ação e os cúmulos automaticamente — sem etapa
+                    de confirmação.
                   </p>
-
-                  {!decisaoSugerida ? (
-                    <button
-                      type="button"
-                      onClick={handleSugerirAcao}
-                      className="rounded-lg border border-stone-600 bg-white px-4 py-2 text-sm font-medium text-stone-800 hover:bg-stone-100"
-                    >
-                      Sugerir tipo de ação
-                    </button>
-                  ) : (
-                    <div className="space-y-2 rounded-md border border-stone-300 bg-white p-3">
-                      <p className="text-sm text-stone-800">
-                        <strong>Ação sugerida:</strong>{" "}
-                        {decisaoSugerida.tipoAcao}
-                      </p>
-                      <p className="text-sm text-stone-700">
-                        <strong>Tutela de urgência:</strong>{" "}
-                        {decisaoSugerida.tutelaUrgencia
-                          ? "Recomendada"
-                          : "Não recomendada"}
-                      </p>
-                      <p className="text-sm text-stone-600">
-                        {decisaoSugerida.justificativa}
-                      </p>
-                      <div className="flex flex-wrap gap-2 pt-1">
-                        <button
-                          type="button"
-                          onClick={handleConfirmarSugestao}
-                          className="rounded-lg bg-stone-700 px-3 py-1.5 text-sm font-medium text-amber-50 hover:bg-stone-600"
-                        >
-                          Confirmar e usar esta ação
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDecisaoSugerida(null)}
-                          className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
-                        >
-                          Sugerir de novo
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => void handleAnalisarAssistente()}
+                    disabled={analisandoAssistente}
+                    className="rounded-lg bg-stone-700 px-4 py-2 text-sm font-medium text-amber-50 hover:bg-stone-600 disabled:opacity-60"
+                  >
+                    {analisandoAssistente
+                      ? "Analisando com IA…"
+                      : "Analisar fatos com Assistente Facto"}
+                  </button>
                 </div>
               )}
-            </div>
 
-            <div
-              className={`flex items-center sm:col-span-2 ${isAssistente ? "opacity-50" : ""}`}
-            >
-              <input
-                id="tutelaUrgencia"
-                name="tutelaUrgencia"
-                type="checkbox"
-                checked={tutelaUrgencia}
-                disabled={isAssistente}
-                onChange={(e) => setTutelaUrgencia(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-stone-700 focus:ring-stone-500 disabled:cursor-not-allowed"
-              />
-              <label
-                htmlFor="tutelaUrgencia"
-                className="ml-2 text-sm font-medium text-slate-700"
-              >
-                Pedido de Tutela de Urgência
-                {isAssistente && (
-                  <span className="ml-1 text-xs font-normal text-slate-500">
-                    (definido após confirmar sugestão)
-                  </span>
-                )}
-              </label>
+              {!isAssistente && (
+                <div className="mt-4 space-y-3 rounded-lg border border-stone-200 bg-stone-50/80 p-4">
+                  {notaAssistente && justificativaAssistente && (
+                    <p className="text-xs leading-relaxed text-stone-600">
+                      <span className="font-semibold text-stone-800">
+                        Assistente Facto
+                        {decisaoSugerida?.fonte === "gemini"
+                          ? " (IA)"
+                          : " (análise local)"}
+                        :{" "}
+                      </span>
+                      {justificativaAssistente}
+                    </p>
+                  )}
+
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Cumular (c/c)
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    <label className="flex items-center gap-2 text-sm text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={cumuloDanosMorais}
+                        onChange={(e) =>
+                          setCumuloDanosMorais(e.target.checked)
+                        }
+                        className="h-4 w-4 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
+                      />
+                      Danos Morais
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={cumuloDanosMateriais}
+                        onChange={(e) =>
+                          setCumuloDanosMateriais(e.target.checked)
+                        }
+                        className="h-4 w-4 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
+                      />
+                      Danos Materiais
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-slate-700">
+                      <input
+                        id="tutelaUrgencia"
+                        name="tutelaUrgencia"
+                        type="checkbox"
+                        checked={tutelaUrgencia}
+                        onChange={(e) => setTutelaUrgencia(e.target.checked)}
+                        className="h-4 w-4 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
+                      />
+                      Tutela de Urgência
+                    </label>
+                  </div>
+
+                  {tituloAcaoCompleto && (
+                    <div className="rounded-md border border-amber-200/80 bg-amber-50/80 px-3 py-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-800/80">
+                        Título na peça
+                      </p>
+                      <p className="mt-1 text-sm font-medium leading-snug text-stone-800">
+                        {tituloAcaoCompleto}
+                      </p>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTipoSelecionado(ASSISTENTE_FACTO);
+                      setNotaAssistente(false);
+                      setJustificativaAssistente(null);
+                      setDecisaoSugerida(null);
+                    }}
+                    className="text-xs font-medium text-stone-600 underline hover:text-stone-900"
+                  >
+                    Analisar de novo com o Assistente
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -1246,6 +1385,18 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
               className="w-full resize-y rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-800 placeholder-slate-400 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
             />
             <div className="mt-3 flex flex-wrap items-center gap-2">
+              {isAssistente && (
+                <button
+                  type="button"
+                  onClick={() => void handleAnalisarAssistente()}
+                  disabled={analisandoAssistente}
+                  className="rounded-lg bg-stone-700 px-4 py-2 text-sm font-medium text-amber-50 transition hover:bg-stone-600 disabled:opacity-60"
+                >
+                  {analisandoAssistente
+                    ? "Analisando…"
+                    : "Analisar com Assistente Facto"}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handleSalvarAteAqui}

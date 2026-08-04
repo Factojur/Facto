@@ -1,3 +1,7 @@
+/**
+ * Cota mensal de peças FACTO (plano + extras do ciclo).
+ */
+
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   cicloAtualSaoPaulo,
@@ -41,14 +45,12 @@ export async function obterResumoCotaUsuario(opcoes: {
   userId: string;
   email: string;
 }): Promise<ResumoCota> {
-  const admin = createAdminClient();
   const ciclo = cicloAtualSaoPaulo();
-  const plano = await planoDoEmail(admin, opcoes.email);
 
   // Admin / contas de teste: ilimitado, sem consumir cota
   if (isEmailAcessoLivre(opcoes.email)) {
     return montarResumoCota({
-      plano,
+      plano: null,
       usadas: 0,
       extras: 0,
       ciclo,
@@ -57,6 +59,9 @@ export async function obterResumoCotaUsuario(opcoes: {
   }
 
   try {
+    const admin = createAdminClient();
+    const plano = await planoDoEmail(admin, opcoes.email);
+
     const { data, error } = await admin
       .from("cota_pecas_ciclo")
       .select("usadas, extras")
@@ -65,7 +70,6 @@ export async function obterResumoCotaUsuario(opcoes: {
       .maybeSingle();
 
     if (error) {
-      // Tabela ausente / RLS — fail-open
       console.warn("[cota] leitura falhou (fail-open):", error.message);
       return montarResumoCota({
         plano,
@@ -86,7 +90,7 @@ export async function obterResumoCotaUsuario(opcoes: {
   } catch (erro) {
     console.warn("[cota] exceção (fail-open):", erro);
     return montarResumoCota({
-      plano,
+      plano: null,
       usadas: 0,
       extras: 0,
       ciclo,
@@ -134,10 +138,10 @@ export async function consumirUmaPeca(opcoes: {
     return { ok: false, motivo: "esgotada", cota: antes };
   }
 
-  const admin = createAdminClient();
-  const ciclo = antes.ciclo;
-
   try {
+    const admin = createAdminClient();
+    const ciclo = antes.ciclo;
+
     const { data: atual } = await admin
       .from("cota_pecas_ciclo")
       .select("usadas, extras")
