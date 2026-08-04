@@ -9,6 +9,13 @@ import {
   type EscritorioConfig,
 } from "@/lib/escritorio-types";
 import { carregarEscritorioConfig } from "@/lib/escritorio-storage";
+import {
+  excluirRascunhoJec,
+  listarRascunhosJec,
+  payloadLeveParaRascunho,
+  salvarRascunhoJec,
+  type JecRascunhoSalvo,
+} from "@/lib/jec-rascunho-storage";
 import { EscritorioConfigPanel } from "@/components/dashboard/escritorio-config";
 import { PecaDocumentoView } from "@/components/dashboard/peca-documento";
 import {
@@ -347,12 +354,88 @@ export function JecForm() {
   const [linkNuvem, setLinkNuvem] = useState("");
   const [reus, setReus] = useState<ReuValue[]>([]);
   const [jurisCaso, setJurisCaso] = useState<JurisCasoSalvo[]>([]);
+  const [rascunhos, setRascunhos] = useState<JecRascunhoSalvo[]>([]);
+  const [rascunhoAtivoId, setRascunhoAtivoId] = useState<string | null>(null);
+  const [msgRascunho, setMsgRascunho] = useState<string | null>(null);
 
   const isAssistente = tipoSelecionado === ASSISTENTE_FACTO;
 
   useEffect(() => {
     setEscritorio(carregarEscritorioConfig());
+    setRascunhos(listarRascunhosJec());
   }, []);
+
+  function aplicarRascunho(r: JecRascunhoSalvo) {
+    const p = r.payload;
+    setFatos(p.fatos ?? "");
+    setTipoSelecionado(p.tipoSelecionado ?? "");
+    setTutelaUrgencia(Boolean(p.tutelaUrgencia));
+    setComarca(p.comarca ?? comarcaVazia());
+    setValoresCausa(p.valoresCausa ?? valoresCausaVazio());
+    setUsaLeiMunicipal(Boolean(p.usaLeiMunicipal));
+    setLeiMunicipalTexto(p.leiMunicipalTexto ?? "");
+    setLeiMunicipalTitulo(p.leiMunicipalTitulo ?? "");
+    setLinkNuvem(p.linkNuvem ?? "");
+    setReus(Array.isArray(p.reus) ? p.reus : []);
+    setJurisCaso(
+      Array.isArray(p.jurisCaso)
+        ? p.jurisCaso.map((j) => ({
+            id: j.id,
+            tipo: j.tipo,
+            titulo: j.titulo,
+            texto: j.texto,
+            nomeArquivo: j.nomeArquivo ?? null,
+            arquivo: null,
+          }))
+        : []
+    );
+    setRascunhoAtivoId(r.id);
+    setMsgRascunho(
+      "Rascunho restaurado. Anexos de arquivo (provas, PDFs) precisam ser reenviados."
+    );
+    setResultado(null);
+  }
+
+  function handleSalvarAteAqui() {
+    if (!fatos.trim() && reus.length === 0) {
+      setMsgRascunho("Escreva ao menos os fatos (ou cadastre um réu) antes de salvar.");
+      return;
+    }
+    try {
+      const salvo = salvarRascunhoJec(
+        payloadLeveParaRascunho({
+          fatos,
+          tipoSelecionado,
+          tutelaUrgencia,
+          comarca,
+          valoresCausa,
+          usaLeiMunicipal,
+          leiMunicipalTexto,
+          leiMunicipalTitulo,
+          linkNuvem,
+          reus,
+          jurisCaso,
+        }),
+        rascunhoAtivoId ?? undefined
+      );
+      setRascunhoAtivoId(salvo.id);
+      setRascunhos(listarRascunhosJec());
+      setMsgRascunho(
+        "Salvo neste navegador. Você pode sair e continuar depois — anexos de arquivo não entram no rascunho."
+      );
+    } catch {
+      setMsgRascunho(
+        "Não foi possível salvar (armazenamento do navegador cheio ou bloqueado)."
+      );
+    }
+  }
+
+  function handleExcluirRascunho(id: string) {
+    excluirRascunhoJec(id);
+    setRascunhos(listarRascunhosJec());
+    if (rascunhoAtivoId === id) setRascunhoAtivoId(null);
+    setMsgRascunho("Rascunho removido.");
+  }
 
   async function lerArquivoComoBase64(
     file: File
@@ -617,6 +700,64 @@ export function JecForm() {
             placeholder="Descreva detalhadamente os fatos relevantes para a peça no Juizado Especial Cível..."
             className="w-full resize-y rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-800 placeholder-slate-400 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
           />
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSalvarAteAqui}
+              className="rounded-lg border border-stone-600 bg-white px-4 py-2 text-sm font-medium text-stone-800 transition hover:bg-stone-50"
+            >
+              Salvar até aqui
+            </button>
+            <span className="text-xs text-slate-500">
+              Guarda o texto e os dados do formulário neste navegador (não os
+              arquivos anexados).
+            </span>
+          </div>
+          {msgRascunho && (
+            <p className="mt-2 text-sm text-stone-600">{msgRascunho}</p>
+          )}
+          {rascunhos.length > 0 && (
+            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50/80 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Rascunhos salvos
+              </p>
+              <ul className="mt-2 space-y-2">
+                {rascunhos.map((r) => (
+                  <li
+                    key={r.id}
+                    className={`flex flex-wrap items-start justify-between gap-2 rounded-md border px-3 py-2 text-sm ${
+                      rascunhoAtivoId === r.id
+                        ? "border-stone-400 bg-white"
+                        : "border-slate-200 bg-white"
+                    }`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-slate-800">{r.titulo}</p>
+                      <p className="text-xs text-slate-500">
+                        {new Date(r.atualizadoEm).toLocaleString("pt-BR")}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => aplicarRascunho(r)}
+                        className="rounded border border-slate-200 px-2.5 py-1 text-xs font-medium text-stone-700 hover:bg-slate-50"
+                      >
+                        Continuar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleExcluirRascunho(r.id)}
+                        className="rounded border border-red-200 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                      >
+                        Excluir
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </section>
 
