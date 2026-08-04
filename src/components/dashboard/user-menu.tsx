@@ -8,6 +8,15 @@ import type { PerfilResumo } from "@/lib/perfil-types";
 
 import { EMAIL_ADMIN } from "@/lib/admin-auth";
 
+const LINKS_ADMIN = [
+  { label: "Aceites (Termos)", href: "/admin/aceites", icon: "☑️" },
+  { label: "Financeiro", href: "/admin", icon: "📊" },
+  { label: "Convites", href: "/admin/convites", icon: "✉️" },
+  { label: "Log de e-mails", href: "/admin/emails", icon: "📡" },
+  { label: "Base de Conhecimento", href: "/admin/conhecimento", icon: "📚" },
+  { label: "Teste de IA (sandbox)", href: "/admin/teste-ia", icon: "🧪" },
+] as const;
+
 const LINKS_DESENVOLVIMENTO = [
   { label: "GitHub", href: "https://github.com/Factojur/Facto", icon: "🐙" },
   { label: "Vercel", href: "https://vercel.com/dashboard", icon: "▲" },
@@ -52,13 +61,16 @@ export function UserMenu({ perfil }: { perfil: PerfilResumo }) {
   const router = useRouter();
   const supabase = createClient();
   const [aberto, setAberto] = useState(false);
+  const [adminAbertas, setAdminAbertas] = useState(false);
   const [ferramentasAbertas, setFerramentasAbertas] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const isAdmin = perfil.email === EMAIL_ADMIN;
 
   useEffect(() => {
     function fechar(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setAberto(false);
+        setAdminAbertas(false);
         setFerramentasAbertas(false);
       }
     }
@@ -141,68 +153,35 @@ export function UserMenu({ perfil }: { perfil: PerfilResumo }) {
               <span aria-hidden>🔒</span>
               Privacidade
             </Link>
-            {perfil.email === EMAIL_ADMIN && (
-              <Link
-                href="/admin/aceites"
-                onClick={() => setAberto(false)}
-                className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
-              >
-                <span aria-hidden>☑️</span>
-                Aceites (Termos)
-              </Link>
-            )}
-            {perfil.email === EMAIL_ADMIN && (
-              <Link
-                href="/admin"
-                onClick={() => setAberto(false)}
-                className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
-              >
-                <span aria-hidden>📊</span>
-                Financeiro
-              </Link>
-            )}
-            {perfil.email === EMAIL_ADMIN && (
-              <Link
-                href="/admin/convites"
-                onClick={() => setAberto(false)}
-                className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
-              >
-                <span aria-hidden>✉️</span>
-                Convites
-              </Link>
-            )}
-            {perfil.email === EMAIL_ADMIN && (
-              <Link
-                href="/admin/emails"
-                onClick={() => setAberto(false)}
-                className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
-              >
-                <span aria-hidden>📡</span>
-                Log de e-mails
-              </Link>
-            )}
-            {perfil.email === EMAIL_ADMIN && (
-              <Link
-                href="/admin/conhecimento"
-                onClick={() => setAberto(false)}
-                className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
-              >
-                <span aria-hidden>📚</span>
-                Base de Conhecimento
-              </Link>
-            )}
-            {perfil.email === EMAIL_ADMIN && (
-              <Link
-                href="/admin/teste-ia"
-                onClick={() => setAberto(false)}
-                className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
-              >
-                <span aria-hidden>🧪</span>
-                Teste de IA (sandbox)
-              </Link>
-            )}
-            {perfil.email === EMAIL_ADMIN && (
+            {isAdmin && (
               <>
+                <button
+                  type="button"
+                  onClick={() => setAdminAbertas((v) => !v)}
+                  className="mt-1 flex w-full items-center justify-between border-t border-stone-800 px-4 pt-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-stone-600 transition hover:text-stone-400"
+                >
+                  Ferramentas do administrador
+                  <span
+                    aria-hidden
+                    className={`text-xs transition-transform ${
+                      adminAbertas ? "rotate-180" : ""
+                    }`}
+                  >
+                    ▾
+                  </span>
+                </button>
+                {adminAbertas &&
+                  LINKS_ADMIN.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setAberto(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
+                    >
+                      <span aria-hidden>{link.icon}</span>
+                      {link.label}
+                    </Link>
+                  ))}
                 <button
                   type="button"
                   onClick={() => setFerramentasAbertas((v) => !v)}

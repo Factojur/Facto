@@ -4,9 +4,11 @@ import { FactoLogo } from "@/components/brand/facto-logo";
 
 export function LegalShell({
   titulo,
+  atualizacao = "4 de agosto de 2026",
   children,
 }: {
   titulo: string;
+  atualizacao?: string;
   children: ReactNode;
 }) {
   return (
@@ -35,7 +37,7 @@ export function LegalShell({
           {titulo}
         </h1>
         <p className="mt-2 text-sm text-stone-500">
-          Última atualização: 3 de agosto de 2026
+          Última atualização: {atualizacao}
         </p>
         <div className="prose-legal mt-10 space-y-6 text-[15px] leading-relaxed text-stone-700">
           {children}
