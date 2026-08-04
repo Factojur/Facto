@@ -2,6 +2,12 @@
 
 import { usePathname } from "next/navigation";
 
+/**
+ * Temporariamente desligado: ainda não há número profissional de WhatsApp.
+ * Quando houver número funcional, mude para `true` e atualize WHATSAPP_URL.
+ */
+const WHATSAPP_HABILITADO = false;
+
 const WHATSAPP_URL =
   "https://wa.me/5511985036364?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20com%20o%20FACTO";
 
@@ -27,7 +33,9 @@ function WhatsAppIcon({ className }: { className?: string }) {
  */
 export function WhatsAppFloat() {
   const pathname = usePathname();
-  const visivel = ROTAS_PERMITIDAS.some((re) => re.test(pathname));
+  const visivel =
+    WHATSAPP_HABILITADO &&
+    ROTAS_PERMITIDAS.some((re) => re.test(pathname));
 
   if (!visivel) return null;
 
