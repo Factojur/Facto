@@ -3,12 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { ACEITE_TERMOS_VERSAO } from "@/lib/aceite-termos";
 
 export function AceiteTermosModal({ aberto }: { aberto: boolean }) {
   const router = useRouter();
-  const supabase = createClient();
   const [marcado, setMarcado] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -22,18 +19,19 @@ export function AceiteTermosModal({ aberto }: { aberto: boolean }) {
     }
     setSalvando(true);
     setErro(null);
-    const { error } = await supabase.auth.updateUser({
-      data: {
-        aceite_termos_em: new Date().toISOString(),
-        aceite_termos_versao: ACEITE_TERMOS_VERSAO,
-      },
-    });
-    setSalvando(false);
-    if (error) {
-      setErro("Não foi possível registrar o aceite. Tente novamente.");
-      return;
+    try {
+      const res = await fetch("/api/perfil/aceite-termos", { method: "POST" });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setErro(data.error ?? "Não foi possível registrar o aceite. Tente novamente.");
+        setSalvando(false);
+        return;
+      }
+      router.refresh();
+    } catch {
+      setErro("Falha na comunicação. Tente novamente.");
+      setSalvando(false);
     }
-    router.refresh();
   }
 
   return (

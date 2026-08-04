@@ -143,6 +143,16 @@ export function UserMenu({ perfil }: { perfil: PerfilResumo }) {
             </Link>
             {perfil.email === EMAIL_ADMIN && (
               <Link
+                href="/admin/aceites"
+                onClick={() => setAberto(false)}
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
+              >
+                <span aria-hidden>☑️</span>
+                Aceites (Termos)
+              </Link>
+            )}
+            {perfil.email === EMAIL_ADMIN && (
+              <Link
                 href="/admin"
                 onClick={() => setAberto(false)}
                 className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
