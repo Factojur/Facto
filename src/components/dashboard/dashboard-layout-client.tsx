@@ -8,14 +8,17 @@ import {
 } from "@/components/dashboard/sidebar";
 import { DashboardTopBar } from "@/components/dashboard/dashboard-topbar";
 import { WhatsAppFloat } from "@/components/whatsapp-float";
+import { AceiteTermosModal } from "@/components/dashboard/aceite-termos-modal";
 import type { PerfilResumo } from "@/lib/perfil-types";
 
 export function DashboardLayoutClient({
   children,
   perfil,
+  precisaAceiteTermos = false,
 }: {
   children: React.ReactNode;
   perfil: PerfilResumo;
+  precisaAceiteTermos?: boolean;
 }) {
   const pathname = usePathname();
   const isHome = pathname === "/dashboard";
@@ -35,6 +38,7 @@ export function DashboardLayoutClient({
         <DashboardTopBar perfil={perfil} />
         <main className="flex-1 overflow-x-clip">{children}</main>
         <WhatsAppFloat />
+        <AceiteTermosModal aberto={precisaAceiteTermos} />
       </div>
     );
   }
@@ -66,6 +70,7 @@ export function DashboardLayoutClient({
         </div>
       </div>
       <WhatsAppFloat />
+      <AceiteTermosModal aberto={precisaAceiteTermos} />
     </div>
   );
 }

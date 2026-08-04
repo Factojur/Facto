@@ -121,6 +121,26 @@ export function UserMenu({ perfil }: { perfil: PerfilResumo }) {
               <span aria-hidden>💬</span>
               Suporte
             </Link>
+            <Link
+              href="/termos"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setAberto(false)}
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
+            >
+              <span aria-hidden>📄</span>
+              Termos de uso
+            </Link>
+            <Link
+              href="/privacidade"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setAberto(false)}
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
+            >
+              <span aria-hidden>🔒</span>
+              Privacidade
+            </Link>
             {perfil.email === EMAIL_ADMIN && (
               <Link
                 href="/admin"

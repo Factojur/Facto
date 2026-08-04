@@ -338,18 +338,6 @@ export function LandingPage() {
             <Link href="/termos" className="hover:text-stone-300">
               Termos de uso
             </Link>
-            <a
-              href="mailto:privacidade@factoia.com.br"
-              className="hover:text-stone-300"
-            >
-              privacidade@
-            </a>
-            <a
-              href="mailto:financeiro@factoia.com.br"
-              className="hover:text-stone-300"
-            >
-              financeiro@
-            </a>
           </nav>
           <p className="text-xs text-stone-600">
             © 2026 FACTO. Todos os direitos reservados.

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { SessionGuard } from "@/components/dashboard/session-guard";
 import { DashboardLayoutClient } from "@/components/dashboard/dashboard-layout-client";
 import { mesclarPerfil } from "@/lib/perfil-merge";
+import { temAceiteTermos } from "@/lib/aceite-termos";
 import type { PerfilResumo } from "@/lib/perfil-types";
 
 export default async function DashboardLayout({
@@ -38,10 +39,19 @@ export default async function DashboardLayout({
     foto_base64: merged.foto_base64,
   };
 
+  const precisaAceiteTermos = !temAceiteTermos(
+    user.user_metadata as Record<string, unknown> | undefined
+  );
+
   return (
     <>
       <SessionGuard />
-      <DashboardLayoutClient perfil={perfil}>{children}</DashboardLayoutClient>
+      <DashboardLayoutClient
+        perfil={perfil}
+        precisaAceiteTermos={precisaAceiteTermos}
+      >
+        {children}
+      </DashboardLayoutClient>
     </>
   );
 }
