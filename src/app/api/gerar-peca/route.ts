@@ -6,7 +6,7 @@ import {
   type GerarPecaJecInput,
   type GerarPecaJecOutput,
 } from "@/lib/gerar-peca-jec";
-import { ufValida, formatarEnderecamentoJec, extrairCidadeUfDoForo } from "@/lib/endereco-comarca";
+import { formatarEnderecamentoPadrao, extrairCidadeUfDoForo, ehPeticaoInicial, rotuloAreaJudiciaria, ufValida } from "@/lib/endereco-comarca";
 import {
   buscarConhecimentoRelacionado,
   extrairTextoDeArquivo,
@@ -395,9 +395,11 @@ async function postGerarPeca(request: Request) {
     ? calcularResumoValorCausa(body.valoresCausa)
     : scaffold.valorCausaResumo;
 
-  const enderecamento = formatarEnderecamentoJec(
-    body.comarca ?? { cidade: "", uf: "" }
-  );
+  const enderecamento = formatarEnderecamentoPadrao({
+    comarca: body.comarca ?? { cidade: "", uf: "" },
+    areaJudiciaria: rotuloAreaJudiciaria("jec"),
+    varaEmBranco: ehPeticaoInicial(tipoResolvido),
+  });
   const extraidoForo = body.comarca?.foro
     ? extrairCidadeUfDoForo(body.comarca.foro)
     : { cidade: "", uf: "" };

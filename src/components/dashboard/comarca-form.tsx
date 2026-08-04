@@ -8,10 +8,12 @@ export type ComarcaValue = {
   cidade?: string;
   uf?: string;
   numeroJuizado?: string;
+  /** Peças com processo em curso (contestação etc.). */
+  numeroProcesso?: string;
 };
 
 export function comarcaVazia(): ComarcaValue {
-  return { foro: "" };
+  return { foro: "", numeroProcesso: "" };
 }
 
 /** Converte rascunhos antigos (cidade/UF) para o campo único. */
@@ -27,6 +29,7 @@ export function normalizarComarcaValue(
       cidade: raw.cidade,
       uf: raw.uf,
       numeroJuizado: raw.numeroJuizado,
+      numeroProcesso: raw.numeroProcesso ?? "",
     };
   }
 
@@ -45,6 +48,7 @@ export function normalizarComarcaValue(
     cidade,
     uf,
     numeroJuizado: raw.numeroJuizado,
+    numeroProcesso: raw.numeroProcesso ?? "",
   };
 }
 
@@ -66,7 +70,8 @@ export function ComarcaSection({
             Comarca / Foro
           </h2>
           <p className="text-sm text-slate-500">
-            Endereçamento da peça — use a competência correta.
+            Informe município/UF no foro (ex.: … de Campinas/SP). Em petição
+            inicial a vara fica em branco (___).
           </p>
         </div>
         <a
@@ -79,20 +84,42 @@ export function ComarcaSection({
         </a>
       </div>
 
-      <div className="mt-4">
-        <label
-          htmlFor="comarca-foro"
-          className="mb-1.5 block text-sm font-medium text-slate-700"
-        >
-          Foro / Juizado
-        </label>
-        <input
-          id="comarca-foro"
-          value={value.foro}
-          onChange={(e) => onChange({ ...value, foro: e.target.value })}
-          placeholder="Ex.: 1ª Vara do Juizado Especial Cível de Campinas/SP"
-          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
-        />
+      <div className="mt-4 space-y-4">
+        <div>
+          <label
+            htmlFor="comarca-foro"
+            className="mb-1.5 block text-sm font-medium text-slate-700"
+          >
+            Foro / Comarca
+          </label>
+          <input
+            id="comarca-foro"
+            value={value.foro}
+            onChange={(e) => onChange({ ...value, foro: e.target.value })}
+            placeholder="Ex.: Juizado Especial Cível de Guarulhos/SP"
+            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="comarca-processo"
+            className="mb-1.5 block text-sm font-medium text-slate-700"
+          >
+            Número do processo{" "}
+            <span className="font-normal text-slate-500">
+              (só se já houver — contestação, recurso etc.)
+            </span>
+          </label>
+          <input
+            id="comarca-processo"
+            value={value.numeroProcesso ?? ""}
+            onChange={(e) =>
+              onChange({ ...value, numeroProcesso: e.target.value })
+            }
+            placeholder="Ex.: 0001234-56.2024.8.26.0224"
+            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
+          />
+        </div>
       </div>
     </section>
   );

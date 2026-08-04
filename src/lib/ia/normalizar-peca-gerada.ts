@@ -2,11 +2,15 @@
  * Pós-processamento da peça gerada pela IA:
  * - estrutura/espaçamento rígidos (tópicos romanos + subtópicos a)/b))
  * - sem separadores --- / _ / ***
- * - 6 quebras após endereçamento; \\n\\n após nome da ação antes de "em face de"
- * - normalização leve da linha OAB/[UF] [Número]
+ * - 6 linhas após endereçamento; 1 linha após nome da ação; fechamento FACTO
  */
 
-import { MARCADOR_ESPACO_ENDEREÇAMENTO } from "@/lib/formatacao-forense";
+import {
+  MARCADOR_ESPACO_1,
+  MARCADOR_ESPACO_6,
+  MARCADOR_ESPACO_ENDEREÇAMENTO,
+  parseMarcadorEspaco,
+} from "@/lib/formatacao-forense";
 import {
   juntarQuebrasDeLinhaSuaves,
   normalizarTextoFatos,
@@ -14,10 +18,14 @@ import {
 import { normalizarParagrafosDoDireito } from "@/lib/ia/mesclar-peca-hibrida";
 
 const PADRAO_NOME_ACAO =
-  /^(?:PETI[CÇ][AÃ]O\s+INICIAL\s*[—–-]?\s*)?(?:A[CÇ][AÃ]O\s+DE\s+|EXECU[CÇ][AÃ]O\s+|EMBARGOS\s+|RECURSO\s+)/i;
+  /^(?:PETI[CÇ][AÃ]O\s+INICIAL\s*[—–-]?\s*)?(?:A[CÇ][AÃ]O\s+|EXECU[CÇ][AÃ]O\s+|EMBARGOS\s+|RECURSO\s+|CONTESTA)/i;
 
 function ehLinhaEnderecamento(t: string): boolean {
   return /^(EXCELENT[IÍ]SSIMO|DA COMARCA|JU[IÍ]ZO\s+DA)/i.test(t);
+}
+
+function ehMarcadorEspaco(t: string): boolean {
+  return parseMarcadorEspaco(t) !== null;
 }
 
 function ehTopicoPrincipal(t: string): boolean {
@@ -63,13 +71,6 @@ function ehInicioQualificacaoReu(t: string): boolean {
   return /^\s*em face de\b/i.test(t);
 }
 
-function ehMarcadorEspaco(t: string): boolean {
-  return (
-    t.trim() === MARCADOR_ESPACO_ENDEREÇAMENTO ||
-    t.trim() === "[[ESPACO_10_LINHAS_APOS_ENDEREÇAMENTO]]"
-  );
-}
-
 /**
  * Remove o nome da ação que a IA coloca logo abaixo do endereçamento.
  * Mantém o que aparece após "propor a presente" (entre as qualificações).
@@ -97,7 +98,7 @@ export function removerTituloAcaoAposEnderecamento(texto: string): string {
     }
 
     if (ehMarcadorEspaco(raw)) {
-      saida.push(MARCADOR_ESPACO_ENDEREÇAMENTO);
+      saida.push(raw.trim().startsWith("[[ESPACO") ? raw.trim() : MARCADOR_ESPACO_6);
       continue;
     }
 
@@ -256,7 +257,7 @@ export function inserirEspacoAposEnderecamento(texto: string): string {
       while (saida.length > 0 && saida[saida.length - 1] === "") {
         saida.pop();
       }
-      saida.push(MARCADOR_ESPACO_ENDEREÇAMENTO);
+      saida.push(MARCADOR_ESPACO_6);
       inseriu = true;
       while (i + 1 < linhas.length && !linhas[i + 1]!.trim()) {
         i++;
@@ -268,7 +269,7 @@ export function inserirEspacoAposEnderecamento(texto: string): string {
 }
 
 /**
- * Garante 6 quebras (mesmo marcador forense) entre o nome da ação e "em face de...".
+ * Garante 1 linha (marcador) entre o nome da ação e "em face de...".
  */
 export function inserirEspacoAposNomeAcao(texto: string): string {
   const linhas = texto.split("\n");
@@ -292,7 +293,7 @@ export function inserirEspacoAposNomeAcao(texto: string): string {
 
     const proximo = linhas[j];
     if (proximo && ehInicioQualificacaoReu(proximo)) {
-      saida.push(MARCADOR_ESPACO_ENDEREÇAMENTO);
+      saida.push(MARCADOR_ESPACO_1);
       while (
         i + 1 < linhas.length &&
         (!linhas[i + 1]!.trim() || ehMarcadorEspaco(linhas[i + 1]!))
@@ -317,7 +318,9 @@ function normalizarLinhaOab(texto: string): string {
 /** Fecha a peça no formato rígido de assinatura FACTO. */
 function normalizarFechamentoAssinatura(texto: string): string {
   return texto
-    .replace(/^Pede deferimento\.?\s*$/gim, "Pede e espera deferimento.")
+    .replace(/^Termos em que,?\s*$/gim, "Nestes termos,")
+    .replace(/^Pede e espera deferimento\.?\s*$/gim, "pede deferimento.")
+    .replace(/^Pede deferimento\.?\s*$/gim, "pede deferimento.")
     .replace(/^Nome:\s*/gim, "")
     .replace(/^OAB:\s*(?=OAB\/)/gim, "")
     .replace(/^OAB:\s*([A-Za-z]{2})\s*[-/]?\s*/gim, "OAB/$1 ");

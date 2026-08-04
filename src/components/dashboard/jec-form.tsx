@@ -1019,6 +1019,7 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
           cidade: legadoCidade || undefined,
           uf: legadoUf || undefined,
           numeroJuizado: comarca.numeroJuizado || undefined,
+          numeroProcesso: comarca.numeroProcesso?.trim() || undefined,
         };
       })(),
       valoresCausa,

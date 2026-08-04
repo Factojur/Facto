@@ -4,7 +4,13 @@ import {
   aplicarFormatacaoTextoJuridico,
   gerarDocumentoTimbrado,
 } from "@/lib/formatacao-juridica";
-import { formatarEnderecamentoJec, extrairCidadeUfDoForo, type ComarcaInfo } from "@/lib/endereco-comarca";
+import {
+  formatarEnderecamentoPadrao,
+  extrairCidadeUfDoForo,
+  ehPeticaoInicial,
+  rotuloAreaJudiciaria,
+  type ComarcaInfo,
+} from "@/lib/endereco-comarca";
 import {
   calcularResumoValorCausa,
   formatarCentavos,
@@ -17,7 +23,11 @@ import {
   type TrechoConhecimento,
 } from "@/lib/base-conhecimento";
 import type { CitacaoVerificada } from "@/lib/ia/verificacao-citacoes";
-import { MARCADOR_ESPACO_ENDEREÇAMENTO } from "@/lib/formatacao-forense";
+import {
+  MARCADOR_ESPACO_1,
+  MARCADOR_ESPACO_2,
+  montarMarcadorEspaco6,
+} from "@/lib/formatacao-forense";
 import { formatarOabAssinatura } from "@/lib/formatar-oab";
 import {
   injetarProvasELinkNuvem,
@@ -219,9 +229,8 @@ function extrairPedidos(
 }
 
 /**
- * Monta o texto da seção "DO VALOR DA CAUSA" a partir do total já calculado
- * em código (soma exata em centavos). A IA nunca recalcula nem reescreve
- * este trecho — ele é montado inteiramente aqui, de forma determinística.
+ * Seção "DO VALOR DA CAUSA" — apenas o total (sem discriminativo).
+ * O detalhamento fica no formulário; a peça encerra no fechamento forense.
  */
 export function montarSecaoValorCausa(resumo?: ResumoValorCausa): string[] {
   if (!resumo || resumo.totalCentavos <= 0) {
@@ -230,26 +239,9 @@ export function montarSecaoValorCausa(resumo?: ResumoValorCausa): string[] {
     ];
   }
 
-  const linhas: string[] = [
-    `Dá-se à causa o valor de ${resumo.totalFormatado} (${resumo.totalPorExtenso}), para fins de alçada e competência, assim discriminado:`,
+  return [
+    `Dá-se à causa o valor de ${resumo.totalFormatado} (${resumo.totalPorExtenso}), para fins de alçada e competência.`,
   ];
-
-  for (const categoria of resumo.categorias) {
-    if (categoria.itens.length === 0) continue;
-    linhas.push(`${categoria.label}:`);
-    categoria.itens.forEach((item) => {
-      linhas.push(`- ${item.descricao}: ${formatarCentavos(item.centavos)}`);
-    });
-    linhas.push(
-      `Subtotal ${categoria.label}: ${formatarCentavos(categoria.subtotalCentavos)}`
-    );
-  }
-
-  linhas.push(
-    `TOTAL DA CAUSA: ${resumo.totalFormatado} (${resumo.totalPorExtenso}).`
-  );
-
-  return linhas;
 }
 
 export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
@@ -336,9 +328,11 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     ? calcularResumoValorCausa(input.valoresCausa)
     : undefined;
 
-  const enderecamento = formatarEnderecamentoJec(
-    input.comarca ?? { cidade: "", uf: "" }
-  );
+  const enderecamento = formatarEnderecamentoPadrao({
+    comarca: input.comarca ?? { cidade: "", uf: "" },
+    areaJudiciaria: rotuloAreaJudiciaria("jec"),
+    varaEmBranco: ehPeticaoInicial(tipoAcao),
+  });
 
   const qualificacaoReus =
     formatarQualificacaoReus(input.reus ?? []) ??
@@ -368,11 +362,13 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
   const romValor = proximaSecao();
   const romPedidos = proximaSecao();
 
+  const numeroProcesso = input.comarca?.numeroProcesso?.trim() || null;
+
   const pecaBruta = [
-    ...enderecamento.split("\n"),
-    "",
-    MARCADOR_ESPACO_ENDEREÇAMENTO,
-    "",
+    enderecamento,
+    montarMarcadorEspaco6(
+      ehPeticaoInicial(tipoAcao) ? null : numeroProcesso
+    ),
     `[NOME COMPLETO DO(A) AUTOR(A)], [nacionalidade], [estado civil], [profissão], inscrito(a) no CPF sob nº [CPF], `
       + "portador(a) do RG nº [RG], residente e domiciliado(a) na [endereço completo], "
       + "endereço eletrônico [e-mail], por seu advogado que esta subscreve "
@@ -380,11 +376,11 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
       + "com escritório profissional na [endereço do advogado], onde recebe intimações, "
       + "vem, respeitosamente, à presença de Vossa Excelência, com fundamento na Lei nº 9.099/95, "
       + "propor a presente",
-    "",
+    MARCADOR_ESPACO_1,
     `${tipoAcao.toUpperCase()}`,
-    MARCADOR_ESPACO_ENDEREÇAMENTO,
+    MARCADOR_ESPACO_1,
     `em face de ${qualificacaoReus}, pelos fatos e fundamentos jurídicos a seguir expostos.`,
-    "",
+    MARCADOR_ESPACO_2,
     "I - DOS FATOS",
     ...fatosNormalizados.split("\n").filter(Boolean),
     "",
@@ -397,12 +393,13 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     "Ante o exposto, requer a Vossa Excelência:",
     extrairPedidos(tipoAcao, tutelaUrgencia, valorCausaResumo),
     "",
-    "Termos em que,",
-    "Pede e espera deferimento.",
+    "Nestes termos,",
+    "pede deferimento.",
     "",
     `${localFechamento(input.comarca)}, ${formatarDataPorExtenso(new Date())}.`,
     "",
     autor,
+    "Advogado",
     oabAssinatura,
   ].join("\n");
 

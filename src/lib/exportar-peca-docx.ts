@@ -19,7 +19,7 @@ import {
   FORMATACAO_FORENSE,
   cmParaTwips,
   dividirBlocosPeca,
-  ehMarcadorEspacoEnderecamento,
+  parseMarcadorEspaco,
 } from "./formatacao-forense";
 
 const FONTE = FORMATACAO_FORENSE.fonte;
@@ -112,8 +112,37 @@ function linhaParaParagrafo(
     return new Paragraph({ spacing: { after: 40 } });
   }
 
-  if (ehMarcadorEspacoEnderecamento(t)) {
-    return Array.from({ length: FORMATACAO_FORENSE.linhasAposEnderecamento }, () =>
+  if (parseMarcadorEspaco(t)) {
+    const m = parseMarcadorEspaco(t)!;
+    if (m.linhas === 6) {
+      const linhas: Paragraph[] = [];
+      for (let i = 1; i <= 6; i++) {
+        if (i === 4 && m.processo) {
+          linhas.push(
+            new Paragraph({
+              alignment: AlignmentType.LEFT,
+              spacing: { after: 0, line: ESPACO_LINHA },
+              children: [
+                new TextRun({
+                  text: m.processo,
+                  font: FONTE,
+                  size: TAMANHO,
+                }),
+              ],
+            })
+          );
+        } else {
+          linhas.push(
+            new Paragraph({
+              spacing: { after: 0, line: ESPACO_LINHA },
+              children: [new TextRun({ text: "", font: FONTE, size: TAMANHO })],
+            })
+          );
+        }
+      }
+      return linhas;
+    }
+    return Array.from({ length: m.linhas }, () =>
       new Paragraph({
         spacing: { after: 0, line: ESPACO_LINHA },
         children: [new TextRun({ text: "", font: FONTE, size: TAMANHO })],
@@ -145,7 +174,7 @@ function linhaParaParagrafo(
 
   if (/^[IVXLCDM]+\s*[-—–]/i.test(t)) {
     return new Paragraph({
-      alignment: AlignmentType.JUSTIFIED,
+      alignment: AlignmentType.LEFT,
       spacing: { before: 200, after: 80, line: ESPACO_LINHA },
       children: runsDeMarkdown(t, true),
     });
@@ -165,8 +194,11 @@ function linhaParaParagrafo(
 
   if (
     emFechamento ||
-    /^(Termos em que|Pede e espera deferimento|Pede deferimento)/.test(t) ||
-    t.startsWith("OAB/")
+    /^(Nestes termos|Termos em que|Pede e espera deferimento|Pede deferimento|pede deferimento)/.test(
+      t
+    ) ||
+    t.startsWith("OAB/") ||
+    /^Advogado$/i.test(t)
   ) {
     return new Paragraph({
       alignment: AlignmentType.CENTER,
@@ -175,7 +207,16 @@ function linhaParaParagrafo(
     });
   }
 
-  if (/^[a-z]\) /.test(t) || t.startsWith("- ")) {
+  if (/^[a-z]\) /.test(t)) {
+    return new Paragraph({
+      alignment: AlignmentType.LEFT,
+      indent: { firstLine: RECUO_PARAGRAFO },
+      spacing: { before: 80, after: 80, line: ESPACO_LINHA },
+      children: runsDeMarkdown(t, true),
+    });
+  }
+
+  if (t.startsWith("- ")) {
     return new Paragraph({
       alignment: AlignmentType.JUSTIFIED,
       indent: { left: 567 },
@@ -298,7 +339,7 @@ export async function gerarPecaDocxBlob(
   const paragrafos: Paragraph[] = [];
   let emFechamento = false;
   for (const bloco of dividirBlocosPeca(peca)) {
-    if (/^(Termos em que|Pede e espera deferimento|Pede deferimento)/i.test(bloco)) {
+    if (/^(Nestes termos|Termos em que|Pede e espera deferimento|Pede deferimento|pede deferimento)/i.test(bloco)) {
       emFechamento = true;
     }
     const p = linhaParaParagrafo(bloco, emFechamento);

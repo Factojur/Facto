@@ -238,12 +238,13 @@ function montarUserPromptRedacao(params: {
   partes.push(
     "",
     "ASSINATURA FINAL OBRIGATÓRIA (reproduzir ao final EXATAMENTE assim — sem as palavras \"Nome:\" ou \"OAB:\"):",
-    "Termos em que,",
-    "Pede e espera deferimento.",
+    "Nestes termos,",
+    "pede deferimento.",
     "",
     `${cidadeUf}, ${dataExtenso}.`,
     "",
     nomeAdv,
+    "Advogado",
     linhaOab
   );
 

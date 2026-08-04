@@ -2,7 +2,7 @@ import type { EscritorioConfig } from "./escritorio-types";
 import {
   FORMATACAO_FORENSE,
   dividirBlocosPeca,
-  ehMarcadorEspacoEnderecamento,
+  parseMarcadorEspaco,
 } from "./formatacao-forense";
 import { normalizarTextoFatos } from "./peca-paragrafos";
 
@@ -43,25 +43,43 @@ function formatarInlineHtml(texto: string): string {
     .join("");
 }
 
+function htmlEspaco(linhas: 1 | 2 | 6, processo?: string): string {
+  if (linhas !== 6) {
+    return `<div class="espaco-linhas espaco-${linhas}" aria-hidden="true"></div>`;
+  }
+
+  const itens: string[] = [];
+  for (let i = 1; i <= 6; i++) {
+    if (i === 4 && processo) {
+      itens.push(
+        `<p class="numero-processo">${escapeHtml(processo)}</p>`
+      );
+    } else {
+      itens.push(`<div class="espaco-linha" aria-hidden="true"></div>`);
+    }
+  }
+  return `<div class="espaco-6-linhas">${itens.join("")}</div>`;
+}
+
 function blocoParaHtml(bloco: string): string {
-  // 1 linha = 1 parágrafo (espaçamento rígido: sem linha em branco interna).
   const paragrafos = dividirBlocosPeca(bloco);
 
   const titulosSecao = /^([IVXLCDM]+)\s*[-—–]\s+/i;
   const subtopico = /^([a-z]\)|\d+\.\d*|\([a-z]\))\s+/i;
-  const enderecamento = /^EXCELENTÍSSIMO|^DA COMARCA|^JU[IÍ]ZO\s+DA/i;
+  const enderecamento =
+    /^EXCELENTÍSSIMO|^DA COMARCA|^JU[IÍ]ZO\s+DA|^EXCELENTISSIMO/i;
   const inicioFechamento =
-    /^(Termos em que|Pede e espera deferimento|Pede deferimento)/i;
-  const pedido = /^[a-z]\)\s+/i;
+    /^(Nestes termos|Termos em que|Pede e espera deferimento|Pede deferimento|pede deferimento)/i;
   const nomeAcao =
-    /^(?:PETI[CÇ][AÃ]O\s+INICIAL\s*[—–-]?\s*)?(?:A[CÇ][AÃ]O\s+DE\s+|EXECU[CÇ][AÃ]O\s+|EMBARGOS\s+|RECURSO\s+)/i;
+    /^(?:PETI[CÇ][AÃ]O\s+INICIAL\s*[—–-]?\s*)?(?:A[CÇ][AÃ]O\s+|EXECU[CÇ][AÃ]O\s+|EMBARGOS\s+|RECURSO\s+|CONTESTA)/i;
 
   let emFechamento = false;
 
   return paragrafos
     .map((t) => {
-      if (ehMarcadorEspacoEnderecamento(t)) {
-        return `<div class="espaco-enderecamento" aria-hidden="true"></div>`;
+      const marcador = parseMarcadorEspaco(t);
+      if (marcador) {
+        return htmlEspaco(marcador.linhas, marcador.processo);
       }
       if (inicioFechamento.test(t)) {
         emFechamento = true;
@@ -74,7 +92,7 @@ function blocoParaHtml(bloco: string): string {
       }
       if (
         nomeAcao.test(t) &&
-        (t === t.toUpperCase() || t.length < 140)
+        (t === t.toUpperCase() || t.length < 180)
       ) {
         return `<p class="nome-acao">${formatarInlineHtml(t)}</p>`;
       }
@@ -84,15 +102,16 @@ function blocoParaHtml(bloco: string): string {
         t.length < 100 &&
         !t.startsWith("-") &&
         !t.startsWith("[") &&
-        !titulosSecao.test(t)
+        !titulosSecao.test(t) &&
+        !/^ADVOGADO$/i.test(t)
       ) {
         return `<p class="enderecamento">${formatarInlineHtml(t)}</p>`;
       }
-      if (emFechamento || t.startsWith("OAB/")) {
+      if (emFechamento || t.startsWith("OAB/") || /^Advogado$/i.test(t)) {
         return `<p class="fechamento">${formatarInlineHtml(t)}</p>`;
       }
-      if (pedido.test(t) || subtopico.test(t)) {
-        return `<p class="pedido">${formatarInlineHtml(t)}</p>`;
+      if (subtopico.test(t)) {
+        return `<p class="subtopico">${formatarInlineHtml(t)}</p>`;
       }
       if (t.startsWith("- ")) {
         return `<p class="prova-item">${formatarInlineHtml(t)}</p>`;
@@ -173,10 +192,85 @@ export function gerarDocumentoTimbrado(
       box-sizing: border-box;
       text-align: justify;
     }
-    .documento-juridico .espaco-enderecamento {
-      /* 6 quebras com entrelinha 1,5 (praxe forense FACTO) */
-      height: calc(1.5em * ${FORMATACAO_FORENSE.linhasAposEnderecamento});
+    .documento-juridico .espaco-enderecamento,
+    .documento-juridico .espaco-linhas {
       width: 100%;
+    }
+    .documento-juridico .espaco-1 {
+      height: calc(1.5em * 1);
+    }
+    .documento-juridico .espaco-2 {
+      height: calc(1.5em * 2);
+    }
+    .documento-juridico .espaco-6-linhas {
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    .documento-juridico .espaco-6-linhas .espaco-linha {
+      height: 1.5em;
+      margin: 0;
+      padding: 0;
+    }
+    .documento-juridico .numero-processo {
+      text-align: left;
+      text-indent: 0;
+      font-weight: normal;
+      margin: 0;
+      min-height: 1.5em;
+      line-height: 1.5;
+    }
+    .documento-juridico .enderecamento {
+      text-align: center;
+      font-weight: bold;
+      text-indent: 0;
+      text-transform: uppercase;
+      margin: 0.15rem 0;
+    }
+    .documento-juridico .secao-titulo {
+      font-weight: bold;
+      text-align: left;
+      text-indent: 0;
+      margin: 1.1em 0 0.55em;
+    }
+    .documento-juridico p,
+    .documento-juridico .paragrafo {
+      text-align: justify;
+      text-indent: 2cm;
+      margin: 0 0 0.65em;
+      white-space: normal;
+    }
+    .documento-juridico .secao-titulo,
+    .documento-juridico .enderecamento,
+    .documento-juridico .nome-acao,
+    .documento-juridico .fechamento,
+    .documento-juridico .numero-processo {
+      text-indent: 0;
+    }
+    .documento-juridico .nome-acao {
+      text-align: center;
+      font-weight: bold;
+      margin: 0;
+      text-transform: uppercase;
+    }
+    .documento-juridico .subtopico {
+      font-weight: bold;
+      text-align: left;
+      text-indent: 2cm;
+      margin: 0.55em 0 0.35em;
+    }
+    .documento-juridico em {
+      font-style: italic;
+    }
+    .documento-juridico .prova-item {
+      text-align: justify;
+      text-indent: 0;
+      margin: 0.45em 0 0.45em 1cm;
+    }
+    .documento-juridico .fechamento {
+      text-align: center;
+      text-indent: 0;
+      margin: 0.35rem 0 4px;
     }
     .documento-juridico .documento-conteudo {
       position: relative;
@@ -208,6 +302,7 @@ export function gerarDocumentoTimbrado(
       margin: 0.15rem 0;
       font-size: 10pt;
       text-align: center;
+      text-indent: 0;
     }
     .documento-juridico .timbre-linha {
       border: none;
@@ -237,52 +332,6 @@ export function gerarDocumentoTimbrado(
       background: #fffbeb;
       padding: 0.35rem 0.5rem;
       margin: 0 0 1rem;
-    }
-    .documento-juridico .enderecamento {
-      text-align: center;
-      font-weight: bold;
-      text-indent: 0;
-      margin: 0.35rem 0 0.15rem;
-    }
-    .documento-juridico .secao-titulo {
-      font-weight: bold;
-      text-align: justify;
-      text-indent: 0;
-      margin: 1.1em 0 0.55em;
-    }
-    .documento-juridico p,
-    .documento-juridico .paragrafo {
-      text-align: justify;
-      text-indent: 2cm;
-      margin: 0 0 0.65em;
-      white-space: normal;
-    }
-    .documento-juridico .secao-titulo,
-    .documento-juridico .enderecamento,
-    .documento-juridico .nome-acao,
-    .documento-juridico .pedido,
-    .documento-juridico .prova-item,
-    .documento-juridico .fechamento {
-      text-indent: 0;
-    }
-    .documento-juridico .nome-acao {
-      text-align: center;
-      font-weight: bold;
-      margin: 0.5em 0 0;
-      text-transform: uppercase;
-    }
-    .documento-juridico em {
-      font-style: italic;
-    }
-    .documento-juridico .prova-item,
-    .documento-juridico .pedido {
-      text-align: justify;
-      margin: 0.45em 0 0.45em 1cm;
-    }
-    .documento-juridico .fechamento {
-      text-align: center;
-      text-indent: 0;
-      margin: 0.35rem 0 4px;
     }
     @media print {
       body { margin: 0; }

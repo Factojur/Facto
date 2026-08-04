@@ -7,7 +7,7 @@ import {
   FORMATACAO_FORENSE,
   alturaLinhasMm,
   dividirBlocosPeca,
-  ehMarcadorEspacoEnderecamento,
+  parseMarcadorEspaco,
 } from "@/lib/formatacao-forense";
 
 type JsPdfDoc = {
@@ -35,13 +35,16 @@ function ehTituloSecao(t: string): boolean {
 }
 
 function ehInicioFechamento(t: string): boolean {
-  return /^(Termos em que|Pede e espera deferimento|Pede deferimento)/i.test(t);
+  return /^(Nestes termos|Termos em que|Pede e espera deferimento|Pede deferimento|pede deferimento)/i.test(
+    t
+  );
 }
 
 function ehFechamento(t: string): boolean {
   return (
     ehInicioFechamento(t) ||
     /^OAB\//i.test(t) ||
+    /^Advogado$/i.test(t) ||
     /^[A-Za-zÀ-ÿ' .]+[/-]\s*[A-Z]{2},\s+\d/i.test(t)
   );
 }
@@ -96,10 +99,24 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
   let emFechamento = false;
 
   for (const p of paragrafos) {
-    if (ehMarcadorEspacoEnderecamento(p)) {
-      const h = alturaLinhasMm(FORMATACAO_FORENSE.linhasAposEnderecamento);
-      novaPaginaSePreciso(h);
-      y += h;
+    const marcador = parseMarcadorEspaco(p);
+    if (marcador) {
+      if (marcador.linhas === 6 && marcador.processo) {
+        const hLinha = alturaLinhasMm(1);
+        for (let i = 1; i <= 6; i++) {
+          novaPaginaSePreciso(hLinha);
+          if (i === 4) {
+            doc.setFont("times", "normal");
+            doc.setFontSize(FORMATACAO_FORENSE.tamanhoPt);
+            doc.text(marcador.processo, marginLeft, y);
+          }
+          y += hLinha;
+        }
+      } else {
+        const h = alturaLinhasMm(marcador.linhas);
+        novaPaginaSePreciso(h);
+        y += h;
+      }
       continue;
     }
 

@@ -1,17 +1,48 @@
 /**
- * Endereçamento exato do cabeçalho da peça (comarca/foro). O texto é montado
- * inteiramente em código a partir de dados estruturados — a IA nunca recebe a
- * tarefa de escrever ou reescrever esta parte, apenas o resultado pronto.
+ * Endereçamento forense padrão FACTO.
+ * O texto é montado em código — a IA nunca reescreve o cabeçalho.
+ *
+ * Modelo:
+ * EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA ___ VARA DO
+ * [ÁREA] DO FÓRUM DA COMARCA DE MUNICÍPIO/UF
  */
 
 export type ComarcaInfo = {
-  /** Texto livre do foro (preferencial para o cabeçalho). */
+  /** Texto livre do foro (usado para extrair município/UF). */
   foro?: string;
   cep?: string;
   cidade?: string;
   uf?: string;
+  /** Nº da vara/juizado; em petição inicial fica em branco (___). */
   numeroJuizado?: string;
+  /** Ex.: "0001234-56.2024.8.26.0224" — peças com processo em curso. */
+  numeroProcesso?: string;
 };
+
+/**
+ * Rótulo da área judiciária conforme o módulo do dashboard.
+ * Extensível quando novas áreas forem liberadas.
+ */
+export function rotuloAreaJudiciaria(areaId: string = "jec"): string {
+  switch (areaId) {
+    case "jec":
+      return "JUIZADO ESPECIAL CÍVEL";
+    case "jecr":
+      return "JUIZADO ESPECIAL CRIMINAL";
+    case "trabalhista":
+      return "JUSTIÇA DO TRABALHO";
+    case "penal":
+      return "JUSTIÇA CRIMINAL";
+    case "civil":
+      return "JUSTIÇA CÍVEL";
+    case "familia":
+      return "VARA DE FAMÍLIA E SUCESSÕES";
+    case "consumidor":
+      return "JUIZADO ESPECIAL CÍVEL";
+    default:
+      return "JUÍZO COMPETENTE";
+  }
+}
 
 /**
  * Tenta extrair município/UF do texto do foro (ex.: "... de Campinas/SP",
@@ -52,11 +83,6 @@ export function cepValido(cep: string): boolean {
   return normalizarCep(cep).length === 8;
 }
 
-/**
- * Busca cidade/UF a partir do CEP do fórum via ViaCEP (API pública e
- * gratuita). Retorna null se o CEP for inválido ou a busca falhar — nesse
- * caso o formulário deve permitir preenchimento manual.
- */
 export async function buscarComarcaPorCep(
   cepBruto: string
 ): Promise<{ cidade: string; uf: string } | null> {
@@ -86,36 +112,67 @@ export function ufValida(uf: string): boolean {
   return UFS_VALIDAS.has(uf.trim().toUpperCase());
 }
 
+/** Petição inicial (e sucedâneos sem processo) → vara em branco. */
+export function ehPeticaoInicial(tipoAcao: string): boolean {
+  const t = tipoAcao.toLowerCase();
+  if (
+    /contesta[cç][aã]o|embargos|recurso|agravo|impugna[cç][aã]o|r[eé]plica|contrarraz/i.test(
+      t
+    )
+  ) {
+    return false;
+  }
+  return true;
+}
+
 /**
- * Monta o cabeçalho de endereçamento exato da peça do JEC.
- * Preferência: texto livre do foro. Fallback: cidade/UF estruturados.
- * Nunca deixa a IA reescrever esse trecho.
+ * Endereçamento padrão FACTO (todas as áreas).
+ */
+export function formatarEnderecamentoPadrao(opcoes: {
+  comarca?: ComarcaInfo | null;
+  /** Ex.: "JUIZADO ESPECIAL CÍVEL" */
+  areaJudiciaria?: string;
+  /** Se true (petição inicial), força "___" na vara. */
+  varaEmBranco?: boolean;
+}): string {
+  const info = opcoes.comarca ?? {};
+  const area = (opcoes.areaJudiciaria ?? "JUIZADO ESPECIAL CÍVEL")
+    .trim()
+    .toUpperCase();
+
+  let cidade = (info.cidade ?? "").trim();
+  let uf = (info.uf ?? "").trim().toUpperCase();
+
+  if ((!cidade || !uf) && info.foro?.trim()) {
+    const extraido = extrairCidadeUfDoForo(info.foro);
+    if (!cidade) cidade = extraido.cidade;
+    if (!uf) uf = extraido.uf;
+  }
+
+  const comarcaTxt =
+    cidade && uf ? `${cidade.toUpperCase()}/${uf}` : "___/__";
+
+  const varaEmBranco =
+    opcoes.varaEmBranco !== false &&
+    (opcoes.varaEmBranco === true || !info.numeroJuizado?.trim());
+
+  const vara = varaEmBranco
+    ? "___"
+    : info.numeroJuizado!.trim().replace(/[ªº°]/g, "");
+
+  return (
+    `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA ${vara} VARA ` +
+    `DO ${area} DO FÓRUM DA COMARCA DE ${comarcaTxt}`
+  );
+}
+
+/**
+ * Compatível com o JEC — usa o padrão unificado.
  */
 export function formatarEnderecamentoJec(info: ComarcaInfo): string {
-  const foro = info.foro?.trim();
-  if (foro) {
-    return [
-      "EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO",
-      foro.toUpperCase(),
-    ].join("\n");
-  }
-
-  const cidade = (info.cidade ?? "").trim();
-  const uf = (info.uf ?? "").trim().toUpperCase();
-
-  if (!cidade || !uf) {
-    return [
-      "EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DO JUIZADO ESPECIAL CÍVEL",
-      "DA COMARCA DE [CIDADE/UF]",
-    ].join("\n");
-  }
-
-  const juizado = info.numeroJuizado?.trim()
-    ? `${info.numeroJuizado.trim()}º JUIZADO ESPECIAL CÍVEL`
-    : "JUIZADO ESPECIAL CÍVEL";
-
-  return [
-    `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DO ${juizado}`,
-    `DA COMARCA DE ${cidade.toUpperCase()} - ${uf}`,
-  ].join("\n");
+  return formatarEnderecamentoPadrao({
+    comarca: info,
+    areaJudiciaria: rotuloAreaJudiciaria("jec"),
+    varaEmBranco: true,
+  });
 }

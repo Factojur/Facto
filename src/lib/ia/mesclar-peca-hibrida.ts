@@ -52,6 +52,7 @@ export function substituirSecaoDoDireito(
       (l, idx) =>
         idx > iDir &&
         (/^DOS PEDIDOS\b/i.test(l.trim()) ||
+          /^Nestes termos,/i.test(l.trim()) ||
           /^Termos em que,/i.test(l.trim()) ||
           /^[IVXLCDM]+\s*[-—–.]\s*DOS PEDIDOS/i.test(l.trim()))
     );
@@ -105,8 +106,10 @@ export function normalizarParagrafosDoDireito(peca: string): string {
   );
   if (iFim < 0) {
     iFim = linhas.findIndex(
-      (l, idx) => idx > iDir && /^Termos em que,/i.test(l.trim())
-    );
+      (l, idx) =>
+        idx > iDir &&
+        /^(Nestes termos|Termos em que),/i.test(l.trim())
+      );
   }
   if (iFim < 0) iFim = linhas.length;
 

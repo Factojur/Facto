@@ -127,7 +127,7 @@ export function injetarProvasELinkNuvem(
       }
     );
   } else {
-    texto = texto.replace(/\n(Termos em que,)/i, `\nIII - DAS PROVAS E ANEXOS\n${corpo}\n\n$1`);
+    texto = texto.replace(/\n(Nestes termos,|Termos em que,)/i, `\nIII - DAS PROVAS E ANEXOS\n${corpo}\n\n$1`);
   }
 
   return texto;
