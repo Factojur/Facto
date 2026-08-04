@@ -111,8 +111,10 @@ export function PecaDocumentoView({
 
       <p className="mt-3 text-xs text-slate-500">
         PDF e Word abrem em <strong>nova aba</strong> para você revisar sem perder
-        a tela de elaboração. Formatação forense: Times 12, entrelinha 1,5,
-        margens 3/2 cm e 6 quebras após o endereçamento.
+        a tela de elaboração. <strong>Word</strong> pode incluir o timbre
+        (cabeçalho/rodapé); <strong>PDF</strong> e <strong>cópia</strong> usam o
+        texto limpo. Formatação forense: Times 12, entrelinha 1,5, margens 3/2 cm
+        e 6 quebras após o endereçamento.
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2">

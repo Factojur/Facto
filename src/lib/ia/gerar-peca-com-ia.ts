@@ -38,6 +38,8 @@ export type InstrucoesDeterministicas = {
   autorNome?: string;
   autorOab?: string;
   localFechamento?: string;
+  /** Pedidos explícitos listados pelo advogado no formulário. */
+  pedidosUsuario?: string[];
   linkNuvem?: string | null;
   provasArquivos?: string[];
   midiasArquivos?: string[];
@@ -179,6 +181,16 @@ function montarUserPromptRedacao(params: {
       "",
       "VALOR DA CAUSA DETERMINÍSTICO (reproduzir literalmente):",
       params.instrucoes.valorCausa.trim()
+    );
+  }
+
+  if (params.instrucoes?.pedidosUsuario?.length) {
+    partes.push(
+      "",
+      "PEDIDOS LISTADOS PELO ADVOGADO (incorporar em DOS PEDIDOS):",
+      params.instrucoes.pedidosUsuario
+        .map((p, i) => `${String.fromCharCode(97 + i)}) ${p}`)
+        .join("\n")
     );
   }
 

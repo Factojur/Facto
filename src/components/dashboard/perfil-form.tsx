@@ -11,6 +11,14 @@ import {
 } from "@/lib/mascaras-endereco";
 import { createClient } from "@/lib/supabase/client";
 import { AssinaturaPainel } from "@/components/dashboard/assinatura-painel";
+import { EscritorioConfigPanel } from "@/components/dashboard/escritorio-config";
+import {
+  carregarEscritorioConfig,
+} from "@/lib/escritorio-storage";
+import {
+  escritorioConfigVazio,
+  type EscritorioConfig,
+} from "@/lib/escritorio-types";
 
 function campo(
   id: string,
@@ -58,6 +66,13 @@ export function PerfilForm({ perfilInicial }: { perfilInicial: PerfilUsuario }) 
   const [enderecoAuto, setEnderecoAuto] = useState(
     enderecoCompletoViaCep(perfilInicial)
   );
+  const [escritorio, setEscritorio] = useState<EscritorioConfig>(
+    escritorioConfigVazio
+  );
+
+  useEffect(() => {
+    setEscritorio(carregarEscritorioConfig());
+  }, []);
 
   useEffect(() => {
     setPerfil({
@@ -357,6 +372,11 @@ export function PerfilForm({ perfilInicial }: { perfilInicial: PerfilUsuario }) 
           })}
         </div>
       </section>
+
+      <EscritorioConfigPanel
+        value={escritorio}
+        onChange={setEscritorio}
+      />
 
       <AssinaturaPainel />
 

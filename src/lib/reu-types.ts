@@ -80,6 +80,25 @@ export function cnpjValido(valor: string): boolean {
   return apenasDigitos(valor).length === 14;
 }
 
+/** Validação de CPF com dígitos verificadores. */
+export function cpfValido(valor: string): boolean {
+  const cpf = apenasDigitos(valor);
+  if (cpf.length !== 11) return false;
+  if (/^(\d)\1{10}$/.test(cpf)) return false;
+
+  let soma = 0;
+  for (let i = 0; i < 9; i++) soma += Number(cpf[i]) * (10 - i);
+  let dig = (soma * 10) % 11;
+  if (dig === 10) dig = 0;
+  if (dig !== Number(cpf[9])) return false;
+
+  soma = 0;
+  for (let i = 0; i < 10; i++) soma += Number(cpf[i]) * (11 - i);
+  dig = (soma * 10) % 11;
+  if (dig === 10) dig = 0;
+  return dig === Number(cpf[10]);
+}
+
 function enderecoFormatado(r: ReuValue): string {
   const partes = [
     r.logradouro?.trim(),
@@ -98,7 +117,7 @@ export function reuTemDadosMinimos(r: ReuValue): boolean {
   if (r.tipo === "pj") {
     return Boolean(r.razaoSocial.trim() || cnpjValido(r.cnpj));
   }
-  return Boolean(r.nomeCompleto.trim() || apenasDigitos(r.cpf).length === 11);
+  return Boolean(r.nomeCompleto.trim() || cpfValido(r.cpf));
 }
 
 /** Linha curta para checklist (nome + documento + cidade). */
@@ -119,7 +138,9 @@ export function resumoReu(r: ReuValue): { titulo: string; detalhe: string } {
 
   const titulo = r.nomeCompleto.trim() || "Pessoa física";
   const partes = [
-    apenasDigitos(r.cpf).length === 11 ? `CPF ${formatarCpf(r.cpf)}` : null,
+    apenasDigitos(r.cpf).length === 11 && cpfValido(r.cpf)
+      ? `CPF ${formatarCpf(r.cpf)}`
+      : null,
     r.cidade.trim() && r.uf.trim()
       ? `${r.cidade.trim()}/${r.uf.trim().toUpperCase()}`
       : r.cidade.trim() || null,

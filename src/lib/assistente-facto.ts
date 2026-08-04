@@ -20,8 +20,8 @@ function contemAlgum(texto: string, termos: string[]): boolean {
 }
 
 /**
- * Assistente Facto — análise mock do case para definir ação e tutela.
- * Substituir por chamada a modelo de IA na próxima fase.
+ * Assistente Facto — classificação local por palavras-chave (sem Gemini).
+ * Custo zero: a redação da peça continua nas 2 chamadas Gemini de `/api/gerar-peca`.
  */
 export function analisarCaseAssistente(input: {
   fatos: string;

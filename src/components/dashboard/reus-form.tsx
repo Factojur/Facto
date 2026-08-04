@@ -10,6 +10,7 @@ import {
   consultarCnpj,
   cnpjValido,
   formatarCnpj,
+  cpfValido,
   formatarCpf,
   resumoReu,
   reuTemDadosMinimos,
@@ -18,8 +19,8 @@ import {
   type TipoReu,
 } from "@/lib/reu-types";
 
-function campoClasse() {
-  return "w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200";
+function campoClasse(extra?: string) {
+  return `w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200 ${extra ?? ""}`.trim();
 }
 
 function ReuEditor({
@@ -241,8 +242,17 @@ function ReuEditor({
                   atualizar({ cpf: formatarCpf(e.target.value) })
                 }
                 placeholder="000.000.000-00"
-                className={campoClasse()}
+                className={campoClasse(
+                  reu.cpf.replace(/\D/g, "").length === 11 && !cpfValido(reu.cpf)
+                    ? "border-amber-400 focus:border-amber-500 focus:ring-amber-200"
+                    : undefined
+                )}
               />
+              {reu.cpf.replace(/\D/g, "").length === 11 && !cpfValido(reu.cpf) && (
+                <p className="mt-1 text-xs text-amber-700">
+                  CPF com dígitos verificadores inválidos — confira antes de gerar.
+                </p>
+              )}
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-700">

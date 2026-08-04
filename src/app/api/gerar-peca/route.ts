@@ -52,6 +52,7 @@ type LeiMunicipalPayload = {
 type GerarPecaBody = GerarPecaJecInput & {
   leiMunicipal?: LeiMunicipalPayload | null;
   jurisDoCaso?: JurisCasoPayload[] | null;
+  pedidosUsuario?: string[];
 };
 
 const LIMITE_TEXTO_LEI_MUNICIPAL = 40_000;
@@ -318,6 +319,7 @@ export async function POST(request: Request) {
       provasArquivos: [...(body.provas ?? []), ...(body.fotos ?? [])],
       midiasArquivos: body.midias ?? [],
       qualificacaoReus: formatarQualificacaoReus(body.reus ?? []),
+      pedidosUsuario: body.pedidosUsuario?.filter((p) => p.trim()),
     },
   });
 

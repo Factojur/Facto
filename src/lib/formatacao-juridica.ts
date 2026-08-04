@@ -234,6 +234,19 @@ export function gerarDocumentoTimbrado(
       max-width: 100%;
       object-fit: contain;
     }
+    .documento-juridico .minuta-aviso {
+      text-align: center;
+      text-indent: 0;
+      font-size: 9pt;
+      font-weight: bold;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #92400e;
+      border: 1px solid #f59e0b;
+      background: #fffbeb;
+      padding: 0.35rem 0.5rem;
+      margin: 0 0 1rem;
+    }
     .documento-juridico .enderecamento {
       text-align: center;
       font-weight: bold;
@@ -291,6 +304,7 @@ export function gerarDocumentoTimbrado(
     <article class="documento-juridico">
       ${marcaDagua}
       <div class="documento-conteudo">
+        <p class="minuta-aviso">Minuta FACTO — revise antes de protocolar</p>
         ${cabecalho}
         ${corpoHtml}
         ${rodape}

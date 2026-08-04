@@ -8,6 +8,11 @@ import {
   type CategoriaValorId,
   type ItemValor,
 } from "@/lib/valores-causa";
+import {
+  formatarTetoJec,
+  mensagemAlertaTetoJec,
+  ultrapassaTetoJec,
+} from "@/lib/jec-teto";
 
 export type ValoresPorCategoria = Record<CategoriaValorId, ItemValor[]>;
 
@@ -131,7 +136,13 @@ export function ValoresCausaSection({
       </div>
       {resumo.totalCentavos > 0 && (
         <p className="mt-1.5 text-xs text-slate-500">
-          Por extenso: {resumo.totalPorExtenso}.
+          Por extenso: {resumo.totalPorExtenso}. Teto aproximado JEC (pessoa
+          física): {formatarTetoJec()}.
+        </p>
+      )}
+      {ultrapassaTetoJec(resumo.totalCentavos) && (
+        <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          {mensagemAlertaTetoJec(resumo.totalCentavos)}
         </p>
       )}
     </section>

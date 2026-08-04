@@ -4,6 +4,7 @@
  */
 
 import type { ComarcaValue } from "@/components/dashboard/comarca-form";
+import type { PedidoItem } from "@/components/dashboard/pedidos-form";
 import type { ValoresPorCategoria } from "@/components/dashboard/valores-causa-form";
 import type { ReuValue } from "@/lib/reu-types";
 import type { JurisCasoItem } from "@/lib/juris-caso-types";
@@ -22,6 +23,7 @@ export type JecRascunhoPayload = {
   leiMunicipalTitulo: string;
   linkNuvem: string;
   reus: ReuValue[];
+  pedidos: PedidoItem[];
   /** Só texto/metadados — sem base64 de arquivo. */
   jurisCaso: JurisCasoItem[];
 };
@@ -70,7 +72,8 @@ function gravarLista(lista: JecRascunhoSalvo[]): void {
 
 export function salvarRascunhoJec(
   payload: JecRascunhoPayload,
-  idExistente?: string
+  idExistente?: string,
+  tituloOverride?: string
 ): JecRascunhoSalvo {
   const agora = new Date().toISOString();
   const lista = listarRascunhosJec();
@@ -82,7 +85,7 @@ export function salvarRascunhoJec(
     id: existente?.id ?? novoId(),
     criadoEm: existente?.criadoEm ?? agora,
     atualizadoEm: agora,
-    titulo: tituloDeFatos(payload.fatos),
+    titulo: tituloOverride?.trim() || tituloDeFatos(payload.fatos),
     payload,
   };
 
@@ -108,6 +111,7 @@ export function payloadLeveParaRascunho(opcoes: {
   leiMunicipalTitulo: string;
   linkNuvem: string;
   reus: ReuValue[];
+  pedidos?: PedidoItem[];
   jurisCaso: Array<{
     id: string;
     tipo: JurisCasoItem["tipo"];
@@ -131,6 +135,7 @@ export function payloadLeveParaRascunho(opcoes: {
       ...r,
       // Nome do anexo pode ficar; o arquivo em si não.
     })),
+    pedidos: opcoes.pedidos ?? [],
     jurisCaso: opcoes.jurisCaso.map((j) => ({
       id: j.id,
       tipo: j.tipo,
