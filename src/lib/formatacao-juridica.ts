@@ -1,10 +1,9 @@
 import type { EscritorioConfig } from "./escritorio-types";
 import {
   FORMATACAO_FORENSE,
-  dividirBlocosPeca,
-  parseMarcadorEspaco,
 } from "./formatacao-forense";
 import { normalizarTextoFatos } from "./peca-paragrafos";
+import { classificarPeca } from "./tipografia-peca";
 
 /** Aplica normalização de parágrafos na seção DOS FATOS já presente na peça. */
 export function aplicarFormatacaoTextoJuridico(pecaBruta: string): string {
@@ -60,61 +59,30 @@ function htmlEspaco(linhas: 1 | 2 | 6, processo?: string): string {
 }
 
 function blocoParaHtml(bloco: string): string {
-  const paragrafos = dividirBlocosPeca(bloco);
-
-  const titulosSecao = /^([IVXLCDM]+)\s*[-—–]\s+/i;
-  const subtopico = /^(?:\*\*)?([a-z]\)|\d+\.\d*|\([a-z]\))\s+/i;
-  const enderecamento =
-    /^EXCELENTÍSSIMO|^DA COMARCA|^JU[IÍ]ZO\s+DA|^EXCELENTISSIMO/i;
-  const inicioFechamento =
-    /^(Nestes termos|Termos em que|Pede e espera deferimento|Pede deferimento|pede deferimento)/i;
-  const nomeAcao =
-    /^(?:PETI[CÇ][AÃ]O\s+INICIAL\s*[—–-]?\s*)?(?:A[CÇ][AÃ]O\s+|EXECU[CÇ][AÃ]O\s+|EMBARGOS\s+|RECURSO\s+|CONTESTA)/i;
-
-  let emFechamento = false;
-
-  return paragrafos
-    .map((t) => {
-      const marcador = parseMarcadorEspaco(t);
-      if (marcador) {
-        return htmlEspaco(marcador.linhas, marcador.processo);
+  return classificarPeca(bloco)
+    .map((b) => {
+      if (b.tipo === "marcador" && b.marcador) {
+        return htmlEspaco(b.marcador.linhas, b.marcador.processo);
       }
-      if (inicioFechamento.test(t)) {
-        emFechamento = true;
+      const html = formatarInlineHtml(b.texto);
+      switch (b.tipo) {
+        case "secao-titulo":
+          return `<p class="secao-titulo">${html}</p>`;
+        case "enderecamento":
+          return `<p class="enderecamento">${html}</p>`;
+        case "nome-acao":
+          return `<p class="nome-acao">${html}</p>`;
+        case "fechamento":
+          return `<p class="fechamento">${html}</p>`;
+        case "subtopico":
+          return `<p class="subtopico">${html}</p>`;
+        case "citacao-juris":
+          return `<p class="citacao-juris">${html}</p>`;
+        case "prova-item":
+          return `<p class="prova-item">${html}</p>`;
+        default:
+          return `<p class="paragrafo">${html}</p>`;
       }
-      if (titulosSecao.test(t)) {
-        return `<p class="secao-titulo">${formatarInlineHtml(t)}</p>`;
-      }
-      if (enderecamento.test(t)) {
-        return `<p class="enderecamento">${formatarInlineHtml(t)}</p>`;
-      }
-      if (
-        nomeAcao.test(t) &&
-        (t === t.toUpperCase() || t.length < 180)
-      ) {
-        return `<p class="nome-acao">${formatarInlineHtml(t)}</p>`;
-      }
-      if (
-        !emFechamento &&
-        t === t.toUpperCase() &&
-        t.length < 100 &&
-        !t.startsWith("-") &&
-        !t.startsWith("[") &&
-        !titulosSecao.test(t) &&
-        !/^ADVOGADO$/i.test(t)
-      ) {
-        return `<p class="enderecamento">${formatarInlineHtml(t)}</p>`;
-      }
-      if (emFechamento || t.startsWith("OAB/") || /^Advogado$/i.test(t)) {
-        return `<p class="fechamento">${formatarInlineHtml(t)}</p>`;
-      }
-      if (subtopico.test(t)) {
-        return `<p class="subtopico">${formatarInlineHtml(t)}</p>`;
-      }
-      if (t.startsWith("- ")) {
-        return `<p class="prova-item">${formatarInlineHtml(t)}</p>`;
-      }
-      return `<p class="paragrafo">${formatarInlineHtml(t)}</p>`;
     })
     .join("\n");
 }
@@ -270,6 +238,15 @@ export function gerarDocumentoTimbrado(
       text-indent: 0;
       margin: 0;
       padding-left: 1cm;
+    }
+    .documento-juridico .citacao-juris {
+      text-align: justify;
+      text-indent: 0;
+      margin: 0;
+      padding: 0;
+      padding-left: ${FORMATACAO_FORENSE.recuoCitacaoCm}cm;
+      font-size: ${FORMATACAO_FORENSE.tamanhoCitacaoPt}pt;
+      line-height: ${FORMATACAO_FORENSE.entrelinhas};
     }
     .documento-juridico .fechamento {
       text-align: center;

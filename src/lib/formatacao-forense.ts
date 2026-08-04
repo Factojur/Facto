@@ -4,8 +4,12 @@
  * - Margens: superior/esquerda 3 cm; inferior/direita 2 cm
  * - Fonte: Times New Roman 12 pt, preto
  * - Entrelinhas: 1,5
- * - Entre parágrafos do corpo: sem espaço adicional (só a entrelinha 1,5)
  * - Corpo justificado; recuo de 1ª linha ≈ 2 cm
+ * - Citação de jurisprudência: Times 10 pt, justificado, recuo esquerdo 4 cm
+ * - Entre parágrafos do corpo: sem espaço adicional (só a entrelinha 1,5)
+ * - Centralizado: endereçamento, nome da ação, fechamento
+ * - Negrito: endereçamento, nome da ação, tópicos romanos, subtítulos a)/b)
+ * - Itálico: latim, inglês e demais línguas estrangeiras; citações entre aspas
  * - Após endereçamento: 6 linhas (Processo nº na 4ª, se houver)
  * - Após autor: 1 linha → nome da ação → 1 linha → réu → 2 linhas → seções
  */
@@ -19,6 +23,9 @@ export const FORMATACAO_FORENSE = {
   margemInferiorCm: 2,
   margemDireitaCm: 2,
   recuoPrimeiraLinhaCm: 2,
+  /** Citação de jurisprudência / ementa. */
+  tamanhoCitacaoPt: 10,
+  recuoCitacaoCm: 4,
   linhasAposEnderecamento: 6,
 } as const;
 

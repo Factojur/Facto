@@ -18,14 +18,17 @@ import type { EscritorioConfig } from "./escritorio-types";
 import {
   FORMATACAO_FORENSE,
   cmParaTwips,
-  dividirBlocosPeca,
   parseMarcadorEspaco,
 } from "./formatacao-forense";
+import { classificarPeca, parseMarkdownRuns } from "./tipografia-peca";
 
 const FONTE = FORMATACAO_FORENSE.fonte;
 const TAMANHO = FORMATACAO_FORENSE.tamanhoPt * 2; // half-points
+const TAMANHO_CITACAO = FORMATACAO_FORENSE.tamanhoCitacaoPt * 2;
 const RECUO_PARAGRAFO = cmParaTwips(FORMATACAO_FORENSE.recuoPrimeiraLinhaCm);
+const RECUO_CITACAO = cmParaTwips(FORMATACAO_FORENSE.recuoCitacaoCm);
 const ESPACO_LINHA = 360; // 1,5 entrelinhas
+const ESPACO_LINHA_CITACAO = 300; // ~1,5 em 10pt
 
 function dataUrlParaBytes(dataUrl: string): Uint8Array {
   const base64 = dataUrl.split(",")[1];
@@ -103,28 +106,41 @@ function paragrafoTimbre(texto: string): Paragraph {
   });
 }
 
-function linhaParaParagrafo(
-  linha: string,
-  emFechamento = false
-): Paragraph | Paragraph[] {
-  const t = linha.trim();
-  if (!t) {
-    return new Paragraph({ spacing: { after: 40 } });
-  }
+function runsDeMarkdown(
+  texto: string,
+  opcoes?: { forcarNegrito?: boolean; tamanho?: number }
+): TextRun[] {
+  const tamanho = opcoes?.tamanho ?? TAMANHO;
+  const forcarNegrito = opcoes?.forcarNegrito ?? false;
+  return parseMarkdownRuns(texto).map(
+    (run) =>
+      new TextRun({
+        text: run.text,
+        font: FONTE,
+        size: tamanho,
+        bold: forcarNegrito || Boolean(run.bold),
+        italics: Boolean(run.italic),
+      })
+  );
+}
 
-  if (parseMarcadorEspaco(t)) {
-    const m = parseMarcadorEspaco(t)!;
-    if (m.linhas === 6) {
+function blocoParaParagrafo(
+  tipo: string,
+  texto: string,
+  marcador?: ReturnType<typeof parseMarcadorEspaco>
+): Paragraph | Paragraph[] {
+  if (tipo === "marcador" && marcador) {
+    if (marcador.linhas === 6) {
       const linhas: Paragraph[] = [];
       for (let i = 1; i <= 6; i++) {
-        if (i === 4 && m.processo) {
+        if (i === 4 && marcador.processo) {
           linhas.push(
             new Paragraph({
               alignment: AlignmentType.LEFT,
               spacing: { after: 0, line: ESPACO_LINHA },
               children: [
                 new TextRun({
-                  text: m.processo,
+                  text: marcador.processo,
                   font: FONTE,
                   size: TAMANHO,
                 }),
@@ -142,7 +158,7 @@ function linhaParaParagrafo(
       }
       return linhas;
     }
-    return Array.from({ length: m.linhas }, () =>
+    return Array.from({ length: marcador.linhas }, () =>
       new Paragraph({
         spacing: { after: 0, line: ESPACO_LINHA },
         children: [new TextRun({ text: "", font: FONTE, size: TAMANHO })],
@@ -150,78 +166,54 @@ function linhaParaParagrafo(
     );
   }
 
-  const base = { font: FONTE, size: TAMANHO };
-
-  function runsDeMarkdown(texto: string, forcarNegrito = false): TextRun[] {
-    const partes = texto.split(/(\*\*[^*]+?\*\*|\*[^*]+?\*)/g).filter(Boolean);
-    return partes.map((parte) => {
-      if (/^\*\*([^*]+?)\*\*$/.test(parte)) {
-        const limpo = parte.replace(/^\*\*([^*]+?)\*\*$/, "$1");
-        return new TextRun({ ...base, text: limpo, bold: true });
-      }
-      if (/^\*([^*]+?)\*$/.test(parte)) {
-        const limpo = parte.replace(/^\*([^*]+?)\*$/, "$1");
-        return new TextRun({
-          ...base,
-          text: limpo,
-          italics: true,
-          bold: forcarNegrito,
-        });
-      }
-      return new TextRun({ ...base, text: parte, bold: forcarNegrito });
-    });
-  }
-
-  if (/^[IVXLCDM]+\s*[-—–]/i.test(t)) {
+  if (tipo === "secao-titulo") {
     return new Paragraph({
       alignment: AlignmentType.LEFT,
       spacing: { before: 240, after: 0, line: ESPACO_LINHA },
-      children: runsDeMarkdown(t, true),
+      children: runsDeMarkdown(texto, { forcarNegrito: true }),
     });
   }
 
-  if (
-    /^EXCELENTÍSSIMO|^DA COMARCA|^JU[IÍ]ZO\s+DA/i.test(t) ||
-    (/^(?:PETI[CÇ][AÃ]O|A[CÇ][AÃ]O|EXECU[CÇ][AÃ]O|EMBARGOS|RECURSO)/i.test(t) &&
-      t.length < 140)
-  ) {
+  if (tipo === "enderecamento" || tipo === "nome-acao") {
     return new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { before: 0, after: 0, line: ESPACO_LINHA },
-      children: runsDeMarkdown(t, true),
+      children: runsDeMarkdown(texto, { forcarNegrito: true }),
     });
   }
 
-  if (
-    emFechamento ||
-    /^(Nestes termos|Termos em que|Pede e espera deferimento|Pede deferimento|pede deferimento)/.test(
-      t
-    ) ||
-    t.startsWith("OAB/") ||
-    /^Advogado$/i.test(t)
-  ) {
+  if (tipo === "fechamento") {
     return new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { before: 0, after: 0, line: ESPACO_LINHA },
-      children: runsDeMarkdown(t),
+      children: runsDeMarkdown(texto),
     });
   }
 
-  if (/^(?:\*\*)?[a-z]\)\s+/i.test(t)) {
+  if (tipo === "subtopico") {
     return new Paragraph({
       alignment: AlignmentType.LEFT,
       indent: { firstLine: RECUO_PARAGRAFO },
       spacing: { before: 0, after: 0, line: ESPACO_LINHA },
-      children: runsDeMarkdown(t, true),
+      children: runsDeMarkdown(texto, { forcarNegrito: true }),
     });
   }
 
-  if (t.startsWith("- ")) {
+  if (tipo === "citacao-juris") {
+    return new Paragraph({
+      alignment: AlignmentType.JUSTIFIED,
+      indent: { left: RECUO_CITACAO },
+      spacing: { before: 0, after: 0, line: ESPACO_LINHA_CITACAO },
+      children: runsDeMarkdown(texto, { tamanho: TAMANHO_CITACAO }),
+    });
+  }
+
+  if (tipo === "prova-item") {
     return new Paragraph({
       alignment: AlignmentType.JUSTIFIED,
       indent: { left: 567 },
       spacing: { before: 0, after: 0, line: ESPACO_LINHA },
-      children: runsDeMarkdown(t),
+      children: runsDeMarkdown(texto),
     });
   }
 
@@ -229,7 +221,7 @@ function linhaParaParagrafo(
     alignment: AlignmentType.JUSTIFIED,
     indent: { firstLine: RECUO_PARAGRAFO },
     spacing: { before: 0, after: 0, line: ESPACO_LINHA },
-    children: runsDeMarkdown(t),
+    children: runsDeMarkdown(texto),
   });
 }
 
@@ -337,12 +329,8 @@ export async function gerarPecaDocxBlob(
   escritorio?: EscritorioConfig
 ): Promise<Blob> {
   const paragrafos: Paragraph[] = [];
-  let emFechamento = false;
-  for (const bloco of dividirBlocosPeca(peca)) {
-    if (/^(Nestes termos|Termos em que|Pede e espera deferimento|Pede deferimento|pede deferimento)/i.test(bloco)) {
-      emFechamento = true;
-    }
-    const p = linhaParaParagrafo(bloco, emFechamento);
+  for (const bloco of classificarPeca(peca)) {
+    const p = blocoParaParagrafo(bloco.tipo, bloco.texto, bloco.marcador);
     if (Array.isArray(p)) paragrafos.push(...p);
     else paragrafos.push(p);
   }

@@ -15,6 +15,10 @@ import {
   juntarQuebrasDeLinhaSuaves,
   normalizarTextoFatos,
 } from "@/lib/peca-paragrafos";
+import {
+  aplicarItalicoTermosEstrangeiros,
+  normalizarBlocosJuris,
+} from "@/lib/tipografia-peca";
 import { normalizarParagrafosDoDireito } from "@/lib/ia/mesclar-peca-hibrida";
 
 const PADRAO_NOME_ACAO =
@@ -517,6 +521,7 @@ function negritarSubtitulosDireito(texto: string): string {
 /** Pipeline completo aplicado à saída da IA antes de HTML/PDF/Word. */
 export function normalizarPecaGerada(texto: string): string {
   let t = removerSeparadoresMarkdown(texto);
+  t = normalizarBlocosJuris(t);
   t = juntarQuebrasDeLinhaSuaves(t);
   t = separarTitulosESubtopicos(t);
   t = limparPrefixoPeticaoInicialNoNome(t);
@@ -528,6 +533,7 @@ export function normalizarPecaGerada(texto: string): string {
   t = normalizarSecaoFatos(t);
   t = normalizarParagrafosDoDireito(t);
   t = negritarSubtitulosDireito(t);
+  t = aplicarItalicoTermosEstrangeiros(t);
   t = normalizarLinhaOab(t);
   t = normalizarFechamentoAssinatura(t);
   t = removerSeparadoresMarkdown(t);

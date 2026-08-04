@@ -1,18 +1,25 @@
 /**
  * PDF forense com texto selecionável (jsPDF):
- * margens 3/2 cm, Times 12, entrelinha ~1,5, 6 quebras após endereçamento.
+ * margens 3/2 cm, Times 12, entrelinha 1,5;
+ * citação de jurisprudência: Times 10, recuo 4 cm, justificado;
+ * negrito/itálico via Markdown (** / *).
  */
 
 import {
   FORMATACAO_FORENSE,
   alturaLinhasMm,
-  dividirBlocosPeca,
-  parseMarcadorEspaco,
 } from "@/lib/formatacao-forense";
+import {
+  classificarPeca,
+  parseMarkdownRuns,
+  textoSemMarkdown,
+  type RunMarkdown,
+} from "@/lib/tipografia-peca";
 
 type JsPdfDoc = {
   setFont: (face: string, style?: string) => void;
   setFontSize: (size: number) => void;
+  getTextWidth: (text: string) => number;
   splitTextToSize: (text: string, width: number) => string[];
   text: (
     text: string | string[],
@@ -26,46 +33,64 @@ type JsPdfDoc = {
   internal: { pageSize: { getWidth: () => number; getHeight: () => number } };
 };
 
-function ehEnderecamento(t: string): boolean {
-  return /^(EXCELENT[IÍ]SSIMO|DA COMARCA|JU[IÍ]ZO\s+DA)/i.test(t);
+function estiloFonte(run: RunMarkdown): string {
+  if (run.bold && run.italic) return "bolditalic";
+  if (run.bold) return "bold";
+  if (run.italic) return "italic";
+  return "normal";
 }
 
-function ehTituloSecao(t: string): boolean {
-  return /^([IVXLCDM]+)\s*[-—–]\s+/i.test(t);
-}
+/**
+ * Desenha parágrafo com runs Markdown, com recuo só na 1ª linha.
+ * Retorna o novo Y (abaixo da última linha).
+ */
+function desenharParagrafoRuns(
+  doc: JsPdfDoc,
+  texto: string,
+  opts: {
+    x: number;
+    y: number;
+    maxWidth: number;
+    lineH: number;
+    fontSize: number;
+    firstLineIndentMm: number;
+    forceBold?: boolean;
+    forceItalic?: boolean;
+  }
+): number {
+  const runs = parseMarkdownRuns(texto).map((r) => ({
+    ...r,
+    bold: opts.forceBold || r.bold,
+    italic: opts.forceItalic || r.italic,
+  }));
 
-function ehInicioFechamento(t: string): boolean {
-  return /^(Nestes termos|Termos em que|Pede e espera deferimento|Pede deferimento|pede deferimento)/i.test(
-    t
-  );
-}
+  let y = opts.y;
+  let x = opts.x + opts.firstLineIndentMm;
+  let naPrimeiraLinha = true;
+  const limite = opts.x + opts.maxWidth;
 
-function ehFechamento(t: string): boolean {
-  return (
-    ehInicioFechamento(t) ||
-    /^OAB\//i.test(t) ||
-    /^Advogado$/i.test(t) ||
-    /^[A-Za-zÀ-ÿ' .]+[/-]\s*[A-Z]{2},\s+\d/i.test(t)
-  );
-}
+  doc.setFontSize(opts.fontSize);
 
-function ehNomeAcao(t: string): boolean {
-  return (
-    /(?:A[CÇ][AÃ]O|EXECU[CÇ][AÃ]O|EMBARGOS|RECURSO|PETI[CÇ][AÃ]O)/i.test(t) &&
-    t.length < 160 &&
-    (t === t.toUpperCase() || t.length < 120)
-  );
-}
+  for (const run of runs) {
+    doc.setFont("times", estiloFonte(run));
+    const palavras = run.text.split(/(\s+)/);
+    for (const palavra of palavras) {
+      if (!palavra) continue;
+      const w = doc.getTextWidth(palavra);
+      if (x + w > limite + 0.01 && !/^\s+$/.test(palavra)) {
+        y += opts.lineH;
+        x = opts.x;
+        naPrimeiraLinha = false;
+      }
+      if (/^\s+$/.test(palavra) && x === opts.x && !naPrimeiraLinha) {
+        continue; // não inicia linha com espaço
+      }
+      doc.text(palavra, x, y);
+      x += w;
+    }
+  }
 
-function ehLista(t: string): boolean {
-  return /^(?:\*\*)?([a-z]\)|- |\d+\.\d*)\s+/i.test(t);
-}
-
-function ehSubtituloNegrito(t: string): boolean {
-  return (
-    /^(?:\*\*)?[a-z]\)\s+/i.test(t.trim()) &&
-    t.replace(/\*\*/g, "").trim().length < 120
-  );
+  return y + opts.lineH;
 }
 
 async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
@@ -87,12 +112,13 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
   const marginBottom = FORMATACAO_FORENSE.margemInferiorCm * 10;
   const maxWidth = pageW - marginLeft - marginRight;
   const indent = FORMATACAO_FORENSE.recuoPrimeiraLinhaCm * 10;
-  const lineH = 6.35; // ~12pt * 1.5
+  const indentJuris = FORMATACAO_FORENSE.recuoCitacaoCm * 10;
+  const lineH = 6.35; // 12pt * 1,5
+  const lineHCitacao = (FORMATACAO_FORENSE.tamanhoCitacaoPt / 12) * 6.35;
   let y = marginTop;
 
-  const paragrafos = dividirBlocosPeca(pecaTexto);
-
-  if (paragrafos.length === 0) {
+  const blocos = classificarPeca(pecaTexto);
+  if (blocos.length === 0) {
     throw new Error("A peça está vazia — nada para exportar em PDF.");
   }
 
@@ -103,63 +129,34 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
     }
   }
 
-  let emFechamento = false;
-
-  for (const p of paragrafos) {
-    const marcador = parseMarcadorEspaco(p);
-    if (marcador) {
-      if (marcador.linhas === 6 && marcador.processo) {
+  for (const b of blocos) {
+    if (b.tipo === "marcador" && b.marcador) {
+      const m = b.marcador;
+      if (m.linhas === 6 && m.processo) {
         const hLinha = alturaLinhasMm(1);
         for (let i = 1; i <= 6; i++) {
           novaPaginaSePreciso(hLinha);
           if (i === 4) {
             doc.setFont("times", "normal");
             doc.setFontSize(FORMATACAO_FORENSE.tamanhoPt);
-            doc.text(marcador.processo, marginLeft, y);
+            doc.text(m.processo, marginLeft, y);
           }
           y += hLinha;
         }
       } else {
-        const h = alturaLinhasMm(marcador.linhas);
+        const h = alturaLinhasMm(m.linhas);
         novaPaginaSePreciso(h);
         y += h;
       }
       continue;
     }
 
-    if (ehInicioFechamento(p)) {
-      emFechamento = true;
-    }
-
-    const centro =
-      ehEnderecamento(p) || ehNomeAcao(p) || emFechamento || ehFechamento(p);
-    const titulo = ehTituloSecao(p);
-    const lista = ehLista(p);
-
-    // PDF: remove marcação ** e * (negrito/itálico pleno exigiria runs complexos)
-    const textoLimpo = p
-      .replace(/\*\*(.+?)\*\*/g, "$1")
-      .replace(/\*([^*]+?)\*/g, "$1");
-
-    doc.setFont("times", centro || titulo ? "bold" : "normal");
-    doc.setFontSize(FORMATACAO_FORENSE.tamanhoPt);
-
-    const largura = centro
-      ? maxWidth
-      : lista
-        ? maxWidth - 8
-        : maxWidth - (titulo ? 0 : indent);
-    const lines = doc.splitTextToSize(textoLimpo, Math.max(largura, 40));
-    const blockH = lines.length * lineH + (titulo || lista ? 2 : 0);
-
-    novaPaginaSePreciso(blockH + 1);
-
-    if (centro) {
-      // Endereçamento e nome da ação em negrito; assinatura em peso normal
-      doc.setFont(
-        "times",
-        ehNomeAcao(p) || ehEnderecamento(p) ? "bold" : "normal"
-      );
+    if (b.tipo === "enderecamento" || b.tipo === "nome-acao") {
+      const limpo = textoSemMarkdown(b.texto);
+      doc.setFont("times", "bold");
+      doc.setFontSize(FORMATACAO_FORENSE.tamanhoPt);
+      const lines = doc.splitTextToSize(limpo, maxWidth);
+      novaPaginaSePreciso(lines.length * lineH);
       for (const line of lines) {
         doc.text(line, pageW / 2, y, { align: "center" });
         y += lineH;
@@ -167,31 +164,85 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
       continue;
     }
 
-    if (titulo) {
-      // Um entrelinha antes do tópico romano; sem gap extra após
-      y += lineH;
-      doc.text(lines, marginLeft, y);
-      y += lines.length * lineH;
-      continue;
-    }
-
-    if (lista) {
-      doc.setFont("times", ehSubtituloNegrito(p) ? "bold" : "normal");
-      doc.text(lines, marginLeft + 8, y);
-      y += lines.length * lineH;
-      continue;
-    }
-
-    // Corpo: recuo 1ª linha; só entrelinha 1,5 (sem espaço extra entre parágrafos)
-    doc.setFont("times", "normal");
-    if (lines.length > 0) {
-      doc.text(lines[0]!, marginLeft + indent, y);
-      y += lineH;
-      if (lines.length > 1) {
-        doc.text(lines.slice(1), marginLeft, y);
-        y += (lines.length - 1) * lineH;
+    if (b.tipo === "fechamento") {
+      const limpo = textoSemMarkdown(b.texto);
+      doc.setFont("times", "normal");
+      doc.setFontSize(FORMATACAO_FORENSE.tamanhoPt);
+      const lines = doc.splitTextToSize(limpo, maxWidth);
+      novaPaginaSePreciso(lines.length * lineH);
+      for (const line of lines) {
+        doc.text(line, pageW / 2, y, { align: "center" });
+        y += lineH;
       }
+      continue;
     }
+
+    if (b.tipo === "secao-titulo") {
+      y += lineH;
+      novaPaginaSePreciso(lineH);
+      y = desenharParagrafoRuns(doc, b.texto, {
+        x: marginLeft,
+        y,
+        maxWidth,
+        lineH,
+        fontSize: FORMATACAO_FORENSE.tamanhoPt,
+        firstLineIndentMm: 0,
+        forceBold: true,
+      });
+      continue;
+    }
+
+    if (b.tipo === "subtopico") {
+      novaPaginaSePreciso(lineH);
+      y = desenharParagrafoRuns(doc, b.texto, {
+        x: marginLeft,
+        y,
+        maxWidth,
+        lineH,
+        fontSize: FORMATACAO_FORENSE.tamanhoPt,
+        firstLineIndentMm: indent,
+        forceBold: true,
+      });
+      continue;
+    }
+
+    if (b.tipo === "citacao-juris") {
+      const larguraJuris = maxWidth - indentJuris;
+      novaPaginaSePreciso(lineHCitacao * 2);
+      y = desenharParagrafoRuns(doc, b.texto, {
+        x: marginLeft + indentJuris,
+        y,
+        maxWidth: larguraJuris,
+        lineH: lineHCitacao,
+        fontSize: FORMATACAO_FORENSE.tamanhoCitacaoPt,
+        firstLineIndentMm: 0,
+      });
+      continue;
+    }
+
+    if (b.tipo === "prova-item") {
+      novaPaginaSePreciso(lineH);
+      y = desenharParagrafoRuns(doc, b.texto, {
+        x: marginLeft + 8,
+        y,
+        maxWidth: maxWidth - 8,
+        lineH,
+        fontSize: FORMATACAO_FORENSE.tamanhoPt,
+        firstLineIndentMm: 0,
+      });
+      continue;
+    }
+
+    // Corpo justificado (aprox. via wrap) + recuo 1ª linha 2 cm
+    novaPaginaSePreciso(lineH);
+    y = desenharParagrafoRuns(doc, b.texto, {
+      x: marginLeft,
+      y,
+      maxWidth,
+      lineH,
+      fontSize: FORMATACAO_FORENSE.tamanhoPt,
+      firstLineIndentMm: indent,
+    });
   }
 
   return doc;
@@ -207,7 +258,6 @@ export async function baixarPecaPdf(
   nomeArquivo = "peca-facto.pdf"
 ): Promise<Blob> {
   const blob = await gerarPecaPdfBlob(pecaTexto);
-  // Mantém compatibilidade: quem quiser só o blob usa gerarPecaPdfBlob.
   void nomeArquivo;
   return blob;
 }
