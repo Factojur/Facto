@@ -174,6 +174,12 @@ export default async function AdminPage({
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Link
+              href="/admin/uso-pecas"
+              className="rounded-lg border border-white/15 px-3 py-2 text-sm font-medium text-stone-300 transition hover:border-facto-gold/50 hover:text-white"
+            >
+              Uso de peças
+            </Link>
+            <Link
               href="/admin/convites"
               className="rounded-lg border border-white/15 px-3 py-2 text-sm font-medium text-stone-300 transition hover:border-facto-gold/50 hover:text-white"
             >

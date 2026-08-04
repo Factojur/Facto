@@ -11,6 +11,7 @@ import { EMAIL_ADMIN } from "@/lib/admin-auth";
 const LINKS_ADMIN = [
   { label: "Aceites (Termos)", href: "/admin/aceites", icon: "☑️" },
   { label: "Financeiro", href: "/admin", icon: "📊" },
+  { label: "Uso de peças", href: "/admin/uso-pecas", icon: "📄" },
   { label: "Convites", href: "/admin/convites", icon: "✉️" },
   { label: "Log de e-mails", href: "/admin/emails", icon: "📡" },
   { label: "Base de Conhecimento", href: "/admin/conhecimento", icon: "📚" },
