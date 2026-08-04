@@ -58,7 +58,14 @@ function ehNomeAcao(t: string): boolean {
 }
 
 function ehLista(t: string): boolean {
-  return /^([a-z]\)|- |\d+\.\d*)\s+/i.test(t);
+  return /^(?:\*\*)?([a-z]\)|- |\d+\.\d*)\s+/i.test(t);
+}
+
+function ehSubtituloNegrito(t: string): boolean {
+  return (
+    /^(?:\*\*)?[a-z]\)\s+/i.test(t.trim()) &&
+    t.replace(/\*\*/g, "").trim().length < 120
+  );
 }
 
 async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
@@ -170,7 +177,7 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
 
     if (lista) {
       y += 1.5;
-      doc.setFont("times", "normal");
+      doc.setFont("times", ehSubtituloNegrito(p) ? "bold" : "normal");
       doc.text(lines, marginLeft + 8, y);
       y += lines.length * lineH + 1.8;
       continue;

@@ -7,8 +7,8 @@
 
 import {
   MARCADOR_ESPACO_1,
+  MARCADOR_ESPACO_2,
   MARCADOR_ESPACO_6,
-  MARCADOR_ESPACO_ENDEREÇAMENTO,
   parseMarcadorEspaco,
 } from "@/lib/formatacao-forense";
 import {
@@ -49,7 +49,11 @@ function ehTituloSecao(t: string): boolean {
 }
 
 function ehNomeAcaoStandalone(t: string): boolean {
-  const limpo = t.replace(/\s+/g, " ").trim();
+  const limpo = t
+    .replace(/^\*\*/, "")
+    .replace(/\*\*$/, "")
+    .replace(/\s+/g, " ")
+    .trim();
   if (limpo.length < 8 || limpo.length > 160) return false;
   if (ehTituloSecao(limpo) || ehLinhaEnderecamento(limpo)) return false;
   const maiusculas =
@@ -69,6 +73,80 @@ function ehInicioQualificacao(t: string): boolean {
 
 function ehInicioQualificacaoReu(t: string): boolean {
   return /^\s*em face de\b/i.test(t);
+}
+
+/** Remove "PETIÇÃO INICIAL —" do nome da ação (a peça já é a petição). */
+function limparPrefixoPeticaoInicialNoNome(texto: string): string {
+  return texto
+    .split("\n")
+    .map((linha) => {
+      const t = linha.trim();
+      if (!ehNomeAcaoStandalone(t) && !PADRAO_NOME_ACAO.test(t)) return linha;
+      const limpo = t
+        .replace(/^PETI[CÇ][AÃ]O\s+INICIAL\s*[—–\-:]?\s*/i, "")
+        .trim();
+      return limpo || linha;
+    })
+    .join("\n");
+}
+
+/**
+ * Separa "II - DO DIREITO a) …" e "a) Título Corpo…" em linhas distintas.
+ */
+function separarTitulosESubtopicos(texto: string): string {
+  const linhas = texto.replace(/\r\n/g, "\n").split("\n");
+  const out: string[] = [];
+
+  for (const raw of linhas) {
+    let linha = raw.trim();
+    if (!linha) {
+      out.push("");
+      continue;
+    }
+
+    // II - DO DIREITO a) Da tese…
+    const coladoRomano =
+      /^([IVXLCDM]+)\s*[-—–.]\s+(DO DIREITO)\s+([a-z]\))\s+(.+)$/i.exec(linha);
+    if (coladoRomano) {
+      out.push(
+        `${coladoRomano[1]!.toUpperCase()} - ${coladoRomano[2]!.toUpperCase()}`
+      );
+      linha = `${coladoRomano[3]} ${coladoRomano[4]}`.trim();
+    }
+
+    // a) Título. Corpo…  OU  a) Da tese A presente…
+    const sub = /^([a-z]\))\s+(.+)$/i.exec(linha);
+    if (sub) {
+      const letra = sub[1]!.toLowerCase();
+      const resto = sub[2]!
+        .replace(/^\*\*/, "")
+        .replace(/\*\*$/, "")
+        .trim();
+      const splitPonto = /^(.{8,90}?)\.\s+([A-ZÁÀÂÃÉÊÍÓÔÕÚÜÇ].+)$/u.exec(resto);
+      if (splitPonto) {
+        out.push(`${letra} ${splitPonto[1]!.trim()}.`);
+        out.push(splitPonto[2]!.trim());
+        continue;
+      }
+      const splitTitulo =
+        /^(Da|Do|Dos|Das)\s+(.{3,70}?)(?=\s+(A|O|Os|As|Ante|Presente|Trata|Imp[oõ]e|Resta|No|Na|Nos|Nas|Em|Com|Sob|Diante|Ora|Assim|Outrossim|Destarte|In|Há|Ha)\s)/iu.exec(
+          resto
+        );
+      if (splitTitulo && resto.length > (splitTitulo[0]?.length ?? 0) + 20) {
+        const titulo = `${splitTitulo[1]} ${splitTitulo[2]}`.trim();
+        const corpo = resto.slice(titulo.length).trim();
+        out.push(`${letra} ${titulo}`);
+        if (corpo) out.push(corpo);
+        continue;
+      }
+      out.push(`${letra} ${resto}`);
+      continue;
+    }
+
+    out.push(linha);
+  }
+
+  return out.join("\n");
 }
 
 /**
@@ -98,7 +176,23 @@ export function removerTituloAcaoAposEnderecamento(texto: string): string {
     }
 
     if (ehMarcadorEspaco(raw)) {
-      saida.push(raw.trim().startsWith("[[ESPACO") ? raw.trim() : MARCADOR_ESPACO_6);
+      saida.push(
+        raw.trim().startsWith("[[ESPACO") ? raw.trim() : MARCADOR_ESPACO_6
+      );
+      continue;
+    }
+
+    // Marcador colado com texto (ex.: "[[ESPACO_1_LINHA]] em face de…")
+    const marcadorColado = /^(\[\[ESPACO[^\]]+\]\])\s+(.+)$/i.exec(raw);
+    if (marcadorColado) {
+      saida.push(marcadorColado[1]!);
+      const resto = marcadorColado[2]!.trim();
+      if (resto) {
+        if (!entrouQualificacao && ehInicioQualificacao(resto)) {
+          entrouQualificacao = true;
+        }
+        saida.push(resto);
+      }
       continue;
     }
 
@@ -139,22 +233,21 @@ export function removerTituloAcaoAposEnderecamento(texto: string): string {
 /**
  * Normaliza títulos e aplica espaçamento rígido:
  * - \\n entre parágrafos do mesmo tópico/subtópico
- * - \\n\\n só antes de tópico romano, subtópico a)/b)/c), nome da ação ou "em face de"
+ * - \\n\\n só antes de tópico romano, subtópico a)/b)/c), nome da ação
  */
 function aplicarEspacamentoRigido(texto: string): string {
   let t = texto.replace(/\r\n/g, "\n").trim();
 
   t = t.replace(/^#{1,6}\s+/gm, "");
 
-  // Normaliza "I — DOS FATOS" / "I. DOS FATOS" → "I - DOS FATOS"
   t = t.replace(
     /^([IVXLCDM]+)\s*[.\-–—:]\s+/gim,
     (_m, romanos: string) => `${String(romanos).toUpperCase()} - `
   );
 
-  // Une "I -" sozinho + resto na linha seguinte
+  // Une "I -" sozinho + resto na linha seguinte (mas NÃO se o resto for a)/b))
   t = t.replace(
-    /^([IVXLCDM]+ -)\n+(.+)$/gim,
+    /^([IVXLCDM]+ -)\n+((?![a-z]\))\S.+)$/gim,
     (_m, titulo: string, resto: string) => `${titulo} ${resto}`
   );
 
@@ -177,7 +270,6 @@ function aplicarEspacamentoRigido(texto: string): string {
       ehTopicoPrincipal(linha) ||
       ehSubtopico(linha) ||
       ehNomeAcaoStandalone(linha);
-    // "em face de" NÃO recebe só \\n\\n — o marcador de 6 quebras é inserido depois.
 
     saida.push(precisaEspacoDuplo ? `\n${linha}` : linha);
   }
@@ -315,15 +407,62 @@ function normalizarLinhaOab(texto: string): string {
   );
 }
 
-/** Fecha a peça no formato rígido de assinatura FACTO. */
+/**
+ * Fecha a peça no formato rígido:
+ * Nestes termos, / pede deferimento. / (2 linhas) / data / (2 linhas) / assinatura
+ */
 function normalizarFechamentoAssinatura(texto: string): string {
-  return texto
+  let t = texto
     .replace(/^Termos em que,?\s*$/gim, "Nestes termos,")
     .replace(/^Pede e espera deferimento\.?\s*$/gim, "pede deferimento.")
     .replace(/^Pede deferimento\.?\s*$/gim, "pede deferimento.")
     .replace(/^Nome:\s*/gim, "")
     .replace(/^OAB:\s*(?=OAB\/)/gim, "")
     .replace(/^OAB:\s*([A-Za-z]{2})\s*[-/]?\s*/gim, "OAB/$1 ");
+
+  t = t.replace(
+    /^(Nestes termos,)\s+(pede deferimento\.?)\s*$/gim,
+    `$1\n$2`
+  );
+
+  const linhas = t.split("\n");
+  const saida: string[] = [];
+  let viuPede = false;
+
+  for (let i = 0; i < linhas.length; i++) {
+    const l = linhas[i]!;
+    const trim = l.trim();
+
+    if (/^pede deferimento\.?$/i.test(trim)) {
+      saida.push("pede deferimento.");
+      while (
+        i + 1 < linhas.length &&
+        (!linhas[i + 1]!.trim() || ehMarcadorEspaco(linhas[i + 1]!))
+      ) {
+        i++;
+      }
+      saida.push(MARCADOR_ESPACO_2);
+      viuPede = true;
+      continue;
+    }
+
+    if (viuPede && /^[A-Za-zÀ-ÿ' .]+\/\s*[A-Z]{2},\s+\d/i.test(trim)) {
+      saida.push(trim);
+      while (
+        i + 1 < linhas.length &&
+        (!linhas[i + 1]!.trim() || ehMarcadorEspaco(linhas[i + 1]!))
+      ) {
+        i++;
+      }
+      saida.push(MARCADOR_ESPACO_2);
+      viuPede = false;
+      continue;
+    }
+
+    saida.push(l);
+  }
+
+  return saida.join("\n");
 }
 
 /** Detecta fundamentação genérica típica do template antigo de reserva. */
@@ -360,10 +499,27 @@ function normalizarSecaoFatos(texto: string): string {
   );
 }
 
+/** Garante negrito Markdown só no título a)/b)/c) (não no corpo). */
+function negritarSubtitulosDireito(texto: string): string {
+  return texto
+    .split("\n")
+    .map((l) => {
+      const t = l.trim();
+      const m = /^(?:\*\*)?([a-z]\))\s+(.+?)(?:\*\*)?$/i.exec(t);
+      if (!m) return l;
+      const corpo = m[2]!.replace(/^\*\*/, "").replace(/\*\*$/, "").trim();
+      if (corpo.length > 120) return l;
+      return `**${m[1]!.toLowerCase()} ${corpo}**`;
+    })
+    .join("\n");
+}
+
 /** Pipeline completo aplicado à saída da IA antes de HTML/PDF/Word. */
 export function normalizarPecaGerada(texto: string): string {
   let t = removerSeparadoresMarkdown(texto);
   t = juntarQuebrasDeLinhaSuaves(t);
+  t = separarTitulosESubtopicos(t);
+  t = limparPrefixoPeticaoInicialNoNome(t);
   t = aplicarEspacamentoRigido(t);
   t = removerTituloAcaoAposEnderecamento(t);
   t = deduplicarLinhasConsecutivas(t);
@@ -371,9 +527,9 @@ export function normalizarPecaGerada(texto: string): string {
   t = inserirEspacoAposNomeAcao(t);
   t = normalizarSecaoFatos(t);
   t = normalizarParagrafosDoDireito(t);
+  t = negritarSubtitulosDireito(t);
   t = normalizarLinhaOab(t);
   t = normalizarFechamentoAssinatura(t);
-  // Segunda passagem: a IA às vezes reinsere --- em títulos/tópicos
   t = removerSeparadoresMarkdown(t);
   return t.trim();
 }

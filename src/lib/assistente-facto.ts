@@ -33,7 +33,8 @@ function contemAlgum(texto: string, termos: string[]): boolean {
 /**
  * Normaliza texto livre / saída da IA para o padrão forense do JEC.
  * Ex.: "inexigibilidade de débito" →
- * "Petição Inicial — Ação de Inexigibilidade de Débito (JEC)"
+ * "Ação de Inexigibilidade de Débito (JEC)"
+ * (sem prefixo "Petição Inicial —" — a peça já é a petição).
  */
 export function formatarNomeAcaoForense(bruto: string): string {
   let t = bruto
@@ -47,19 +48,20 @@ export function formatarNomeAcaoForense(bruto: string): string {
   // Remove (JEC) para reaplicar no fim
   t = t.replace(/\s*\(JEC\)\s*$/i, "").trim();
 
-  const lower = t.toLowerCase();
-  const jaTemClasse =
-    /^(petição inicial|peticao inicial|execução|execucao|embargos|recurso|contestação|contestacao|pedido de|impugnação|impugnacao|agravo|mandado)/i.test(
-      t
-    );
+  // Nunca exibir "PETIÇÃO INICIAL —" no nome da ação
+  t = t
+    .replace(/^peti[cç][aã]o\s+inicial\s*[—–-]?\s*/i, "")
+    .trim();
 
-  if (!jaTemClasse) {
-    if (/^a[cç][aã]o\b/i.test(t)) {
-      t = `Petição Inicial — ${t}`;
-    } else if (/^(declara[cç][aã]o|obrigação|obrigacao|indeniza|cobran|rescis|revis|anula|despeito|despejo|consigna)/i.test(t)) {
-      t = `Petição Inicial — Ação de ${t.replace(/^a[cç][aã]o\s+de\s+/i, "")}`;
-    } else if (!/peti[cç][aã]o/i.test(lower)) {
-      t = `Petição Inicial — Ação de ${t.replace(/^de\s+/i, "")}`;
+  if (!/^a[cç][aã]o\b/i.test(t) &&
+    !/^(execução|execucao|embargos|recurso|contestação|contestacao|pedido de|impugnação|impugnacao|agravo|mandado)/i.test(
+      t
+    )
+  ) {
+    if (/^(declara[cç][aã]o|obrigação|obrigacao|indeniza|cobran|rescis|revis|anula|despejo|consigna)/i.test(t)) {
+      t = `Ação de ${t.replace(/^a[cç][aã]o\s+de\s+/i, "")}`;
+    } else {
+      t = `Ação de ${t.replace(/^de\s+/i, "")}`;
     }
   }
 
@@ -149,7 +151,7 @@ export function analisarCaseAssistente(input: {
   const fatos = input.fatos.toLowerCase();
 
   let tipoAcao =
-    "Petição Inicial — Ação de Indenização por Danos Materiais e Morais (JEC)";
+    "Ação de Indenização por Danos Materiais e Morais (JEC)";
   let motivoAcao =
     "Os fatos narrados indicam lesão a direito patrimonial ou extrapatrimonial, "
     + "compatível com pedido indenizatório no Juizado Especial Cível.";
@@ -178,8 +180,7 @@ export function analisarCaseAssistente(input: {
       "locador",
     ])
   ) {
-    tipoAcao =
-      "Petição Inicial — Ação de Despejo para Fim de Locação (JEC)";
+    tipoAcao = "Ação de Despejo para Fim de Locação (JEC)";
     motivoAcao =
       "A narrativa envolve relação locatícia, sugerindo ação de despejo para fim de locação.";
   } else if (
@@ -196,7 +197,7 @@ export function analisarCaseAssistente(input: {
     ])
   ) {
     tipoAcao =
-      "Petição Inicial — Ação Declaratória de Inexistência / Inexigibilidade de Débito (JEC)";
+      "Ação Declaratória de Inexistência / Inexigibilidade de Débito (JEC)";
     motivoAcao =
       "Os fatos apontam cobrança ou apontamento indevido, cabendo declaração de inexigibilidade/inexistência do débito.";
   } else if (
@@ -210,7 +211,7 @@ export function analisarCaseAssistente(input: {
       "saldo devedor",
     ])
   ) {
-    tipoAcao = "Petição Inicial — Ação de Cobrança (JEC)";
+    tipoAcao = "Ação de Cobrança (JEC)";
     motivoAcao =
       "Os fatos descrevem inadimplemento ou débito líquido, indicando ação de cobrança.";
   } else if (
@@ -223,7 +224,7 @@ export function analisarCaseAssistente(input: {
       "substituir",
     ])
   ) {
-    tipoAcao = "Petição Inicial — Ação de Obrigação de Fazer (JEC)";
+    tipoAcao = "Ação de Obrigação de Fazer (JEC)";
     motivoAcao =
       "O caso envolve prestação específica a ser cumprida, compatível com obrigação de fazer.";
   }

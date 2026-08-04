@@ -1,6 +1,6 @@
 /**
  * Link de nuvem (Drive etc.) + lista de anexos na peça JEC.
- * Menção breve em DOS FATOS; tópico completo em PROVAS E ANEXOS (antes dos pedidos).
+ * Menção breve em DOS FATOS; tópico DAS PROVAS entre Direito e Valor da causa.
  */
 
 export function normalizarLinkNuvem(link: string | null | undefined): string | null {
@@ -74,8 +74,8 @@ function romanoSeguinte(atual: string): string {
 }
 
 /**
- * Injeta menção em DOS FATOS e tópico PROVAS E ANEXOS antes dos pedidos.
- * Idempotente se o link já estiver no texto.
+ * Injeta menção em DOS FATOS e tópico PROVAS E ANEXOS
+ * entre DO DIREITO e DO VALOR DA CAUSA (ou antes dos pedidos).
  */
 export function injetarProvasELinkNuvem(
   peca: string,
@@ -94,7 +94,6 @@ export function injetarProvasELinkNuvem(
 
   let texto = peca.replace(/\r\n/g, "\n");
 
-  // Menção breve ao final de DOS FATOS (antes de II - DO DIREITO)
   if (link && !texto.includes(link)) {
     const mencao = montarMencaoFatosLinkNuvem(link);
     if (!/acesso digital em ambiente de nuvem/i.test(texto)) {
@@ -107,7 +106,7 @@ export function injetarProvasELinkNuvem(
 
   // Remove tópico PROVAS antigo se reprocessar
   texto = texto.replace(
-    /\n+[IVXLCDM]+\s*[-—–.]\s*DAS PROVAS E ANEXOS\n[\s\S]*?(?=\n+[IVXLCDM]+\s*[-—–.]\s*DOS PEDIDOS)/i,
+    /\n+[IVXLCDM]+\s*[-—–.]\s*DAS PROVAS E ANEXOS\n[\s\S]*?(?=\n+[IVXLCDM]+\s*[-—–.]\s*(?:DO VALOR|DOS PEDIDOS))/i,
     "\n"
   );
 
@@ -117,7 +116,32 @@ export function injetarProvasELinkNuvem(
     midias,
   }).join("\n");
 
-  if (/\n[IVXLCDM]+\s*[-—–.]\s*DOS PEDIDOS/i.test(texto)) {
+  // Preferência: antes do VALOR DA CAUSA
+  if (/\n[IVXLCDM]+\s*[-—–.]\s*DO VALOR DA CAUSA/i.test(texto)) {
+    texto = texto.replace(
+      /\n([IVXLCDM]+)\s*[-—–.]\s*DO VALOR DA CAUSA/i,
+      (_m, romValor: string) => {
+        const romProvas = String(romValor).toUpperCase();
+        const romVal = romanoSeguinte(romProvas);
+        return `\n${romProvas} - DAS PROVAS E ANEXOS\n${corpo}\n\n${romVal} - DO VALOR DA CAUSA`;
+      }
+    );
+    // Renumera PEDIDOS se ainda estiver com o mesmo romano do valor antigo
+    texto = texto.replace(
+      /\n([IVXLCDM]+)\s*[-—–.]\s*DOS PEDIDOS/i,
+      (_m, romPed: string) => {
+        const atual = String(romPed).toUpperCase();
+        // Se ficou igual ao valor (IV típico), avança
+        const mValor = texto.match(
+          /\n([IVXLCDM]+)\s*[-—–.]\s*DO VALOR DA CAUSA/i
+        );
+        const romValorAtual = mValor?.[1]?.toUpperCase() ?? "IV";
+        const romPedNovo =
+          atual === romValorAtual ? romanoSeguinte(romValorAtual) : atual;
+        return `\n${romPedNovo} - DOS PEDIDOS`;
+      }
+    );
+  } else if (/\n[IVXLCDM]+\s*[-—–.]\s*DOS PEDIDOS/i.test(texto)) {
     texto = texto.replace(
       /\n([IVXLCDM]+)\s*[-—–.]\s*DOS PEDIDOS/i,
       (_m, romPedidos: string) => {
@@ -127,7 +151,10 @@ export function injetarProvasELinkNuvem(
       }
     );
   } else {
-    texto = texto.replace(/\n(Nestes termos,|Termos em que,)/i, `\nIII - DAS PROVAS E ANEXOS\n${corpo}\n\n$1`);
+    texto = texto.replace(
+      /\n(Nestes termos,|Termos em que,)/i,
+      `\nIII - DAS PROVAS E ANEXOS\n${corpo}\n\n$1`
+    );
   }
 
   return texto;

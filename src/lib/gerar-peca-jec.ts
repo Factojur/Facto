@@ -14,6 +14,7 @@ import {
 import {
   calcularResumoValorCausa,
   formatarCentavos,
+  inferirResumoValorCausaDosFatos,
   type CategoriaValorId,
   type ItemValor,
   type ResumoValorCausa,
@@ -324,9 +325,13 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
   // Texto curto na qualificação: "OAB/SP 147099"
   const oabQualificacao = oabAssinatura;
 
-  const valorCausaResumo = input.valoresCausa
+  const valorDoFormulario = input.valoresCausa
     ? calcularResumoValorCausa(input.valoresCausa)
     : undefined;
+  const valorCausaResumo =
+    valorDoFormulario && valorDoFormulario.totalCentavos > 0
+      ? valorDoFormulario
+      : inferirResumoValorCausaDosFatos(input.fatos) ?? undefined;
 
   const enderecamento = formatarEnderecamentoPadrao({
     comarca: input.comarca ?? { cidade: "", uf: "" },
@@ -395,9 +400,9 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     "",
     "Nestes termos,",
     "pede deferimento.",
-    "",
+    MARCADOR_ESPACO_2,
     `${localFechamento(input.comarca)}, ${formatarDataPorExtenso(new Date())}.`,
-    "",
+    MARCADOR_ESPACO_2,
     autor,
     "Advogado",
     oabAssinatura,
@@ -411,7 +416,7 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     }),
     formatarQualificacaoReus(input.reus ?? [])
   );
-  const peca = aplicarFormatacaoTextoJuridico(pecaComProvas, input.fatos);
+  const peca = aplicarFormatacaoTextoJuridico(pecaComProvas);
   const { pecaHtml } = gerarDocumentoTimbrado(
     peca,
     input.escritorio?.usarTimbre ? input.escritorio : undefined

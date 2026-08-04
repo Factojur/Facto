@@ -56,8 +56,12 @@ export function montarFundamentosDireitoJec(opcoes: {
       "O prejuízo patrimonial correspondente aos valores indevidamente transferidos ou não restituídos deve ser integralmente reparado, com correção monetária e juros legais. Paralelamente, a angústia, a vulnerabilidade e o abalo à dignidade decorrentes da fraude e da inércia na solução administrativa ultrapassam o mero aborrecimento, autorizando a condenação em danos morais em quantum proporcional às circunstâncias do caso concreto (art. 6º, VI, do CDC e art. 186 do Código Civil)."
     );
     addSub(
+      "Da inversão do ônus da prova",
+      "Por se tratar de relação de consumo e diante da hipossuficiência técnica do autor frente à instituição financeira — detentora dos logs, sistemas de autenticação e trilhas das operações —, impõe-se a inversão do ônus da prova, nos termos do art. 6º, VIII, do CDC e, subsidiariamente, do art. 373, §1º, do CPC, a fim de que a requerida demonstre a inexistência de falha na prestação do serviço e a regularidade das operações impugnadas."
+    );
+    addSub(
       "Da legislação de proteção de dados",
-      "A exposição e o uso indevido de dados pessoais e bancários do consumidor igualmente encontram respaldo na Lei nº 13.709/2018 (LGPD), notadamente nos deveres de segurança e de prevenção (arts. 6º, VII, e 46), reforçando o dever de indenizar pelos danos decorrentes da falha na guarda das informações."
+      "A exposição e o uso indevido de dados pessoais e bancários do consumidor igualmente encontram respaldo na Lei nº 13.709/2018 (LGPD), notadamente nos deveres de segurança e de prevenção (arts. 6º, VII, e 46), reforçando o dever de indenizar pelos danos decorrentes da falha na guarda das informações. In casu, o conhecimento prévio, pelos fraudadores, de dados cadastrais e saldos tipicamente sob guarda da instituição reforça o nexo entre a falha de segurança e o dano experimentado pelo autor."
     );
   } else if (tipo.includes("cobrança") || tipo.includes("cobranca")) {
     addSub(

@@ -23,7 +23,7 @@ import { geminiConfigurado } from "@/lib/ia/gemini-client";
 import { consumirUmaPeca, verificarSaldoCota } from "@/lib/cota-pecas-server";
 import { formatarOabAssinatura } from "@/lib/formatar-oab";
 import { gerarDocumentoTimbrado } from "@/lib/formatacao-juridica";
-import { calcularResumoValorCausa } from "@/lib/valores-causa";
+import { calcularResumoValorCausa, inferirResumoValorCausaDosFatos } from "@/lib/valores-causa";
 import {
   mensagemBloqueioTetoLeigo,
   ultrapassaTetoJec,
@@ -391,9 +391,19 @@ async function postGerarPeca(request: Request) {
     return debitarEResponder(semIa);
   }
 
-  const valorCausaResumo = body.valoresCausa
-    ? calcularResumoValorCausa(body.valoresCausa)
-    : scaffold.valorCausaResumo;
+  const valorCausaResumo = (() => {
+    if (body.valoresCausa) {
+      const calc = calcularResumoValorCausa(body.valoresCausa);
+      if (calc.totalCentavos > 0) return calc;
+    }
+    if (scaffold.valorCausaResumo && scaffold.valorCausaResumo.totalCentavos > 0) {
+      return scaffold.valorCausaResumo;
+    }
+    return (
+      inferirResumoValorCausaDosFatos(body.fatos) ??
+      scaffold.valorCausaResumo
+    );
+  })();
 
   const enderecamento = formatarEnderecamentoPadrao({
     comarca: body.comarca ?? { cidade: "", uf: "" },

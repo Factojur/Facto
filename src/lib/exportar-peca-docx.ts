@@ -207,7 +207,7 @@ function linhaParaParagrafo(
     });
   }
 
-  if (/^[a-z]\) /.test(t)) {
+  if (/^(?:\*\*)?[a-z]\)\s+/i.test(t)) {
     return new Paragraph({
       alignment: AlignmentType.LEFT,
       indent: { firstLine: RECUO_PARAGRAFO },

@@ -17,7 +17,7 @@ AÇÃO DE INDENIZAÇÃO POR DANOS MATERIAIS E MORAIS
 
 JOÃO DA SILVA, brasileiro, solteiro, comerciante, inscrito no CPF sob nº 000.000.000-00, vem, respeitosamente, à presença de Vossa Excelência, propor a presente
 
-AÇÃO DE INDENIZAÇÃO POR DANOS MATERIAIS E MORAIS
+PETIÇÃO INICIAL — AÇÃO DECLARATÓRIA DE INEXISTÊNCIA DE DÉBITO C/C DANOS MORAIS (JEC)
 
 em face de BANCO EXEMPLO S.A., pelos fatos e fundamentos jurídicos a seguir expostos.
 
@@ -26,8 +26,9 @@ O autor foi vítima de golpe mediante falsa central telefônica. Em 10 de janeir
 Os valores foram transferidos via PIX sem o consentimento válido do consumidor. A instituição financeira não bloqueou a tempo as operações atípicas.
 O prejuízo patrimonial e o abalo moral decorrente da fraude e da inércia administrativa ultrapassam o mero aborrecimento.
 
-II - DO DIREITO
+II - DO DIREITO a) Da competência do Juizado Especial Cível
 Há plausibilidade do direito invocado e necessidade de intervenção do Poder Judiciário para restabelecer a situação jurídica ofendida, privilegiando a oralidade, simplicidade, informalidade, economia processual e celeridade.
+b) Da relação de consumo A relação estabelecida entre as partes atrai o CDC.
 
 III - DOS PEDIDOS
 Ante o exposto, requer:
@@ -54,6 +55,30 @@ assert(/I - DOS FATOS/.test(normalizada), "título DOS FATOS normalizado");
 assert(
   (normalizada.match(/\n/g)?.length ?? 0) > 10,
   "peça com múltiplas linhas após normalização"
+);
+assert(
+  !/PETI[CÇ][AÃ]O\s+INICIAL/i.test(normalizada),
+  "remove PETIÇÃO INICIAL do nome da ação"
+);
+assert(
+  !/\[\[ESPACO_/i.test(normalizada.split("\n").find((l) => /em face/i.test(l)) ?? ""),
+  "marcador não cola em 'em face de'"
+);
+assert(
+  /^II - DO DIREITO\s*$/m.test(normalizada),
+  "II - DO DIREITO sozinho na linha"
+);
+assert(
+  !/^II - DO DIREITO\s+a\)/m.test(normalizada),
+  "subtítulo a) não cola no DO DIREITO"
+);
+assert(
+  /Nestes termos,\npede deferimento\./.test(normalizada),
+  "fechamento em duas linhas"
+);
+assert(
+  /pede deferimento\.\n\[\[ESPACO_2_LINHAS\]\]/.test(normalizada),
+  "2 linhas após pede deferimento"
 );
 assert(
   pecaTemFundamentacaoGenerica(normalizada),

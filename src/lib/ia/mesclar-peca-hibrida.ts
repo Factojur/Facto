@@ -66,22 +66,36 @@ export function substituirSecaoDoDireito(
   ].join("\n");
 }
 
-/** Garante III - DO VALOR DA CAUSA com texto determinístico, se ausente. */
+/** Garante DO VALOR DA CAUSA com texto determinístico (após provas, antes dos pedidos). */
 export function garantirSecaoValorCausa(
   peca: string,
   blocoValor: string
 ): string {
-  if (/DO VALOR DA CAUSA/i.test(peca)) return peca;
+  if (/DO VALOR DA CAUSA/i.test(peca)) {
+    // Substitui placeholder se houver valor real
+    if (
+      /R\$\s*\[VALOR DA CAUSA\]/i.test(peca) &&
+      blocoValor.trim() &&
+      !/R\$\s*\[VALOR DA CAUSA\]/i.test(blocoValor)
+    ) {
+      return peca.replace(
+        /Dá-se à causa o valor de R\$ \[VALOR DA CAUSA\][^\n]*/i,
+        blocoValor.trim()
+      );
+    }
+    return peca;
+  }
   const valor = blocoValor.trim();
   if (!valor) return peca;
 
   const secao = `III - DO VALOR DA CAUSA\n${valor}`;
   const texto = peca.replace(/\r\n/g, "\n");
 
+  // Após DAS PROVAS → antes dos PEDIDOS
   if (/\n[IVXLCDM]+\s*[-—–.]\s*DAS PROVAS/i.test(texto)) {
     return texto.replace(
-      /\n([IVXLCDM]+)\s*[-—–.]\s*DAS PROVAS/i,
-      `\n${secao}\n\n$1 - DAS PROVAS`
+      /(\n[IVXLCDM]+\s*[-—–.]\s*DAS PROVAS[^\n]*\n[\s\S]*?)(?=\n+[IVXLCDM]+\s*[-—–.]\s*DOS PEDIDOS)/i,
+      `$1\n\n${secao}\n`
     );
   }
   if (/\n[IVXLCDM]+\s*[-—–.]\s*DOS PEDIDOS/i.test(texto)) {

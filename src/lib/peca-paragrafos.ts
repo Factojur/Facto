@@ -19,9 +19,25 @@ function pareceContinuacao(linha: string): boolean {
   return /^[a-záàâãéêíóôõúüç"'«(-\d]/.test(t);
 }
 
+function ehLinhaEstruturalPeca(linha: string): boolean {
+  const t = linha.trim();
+  if (!t) return false;
+  if (/^\[\[ESPACO[_0-9A-Z|À-Ü\s.-]+\]\]$/i.test(t)) return true;
+  if (/^([IVXLCDM]+)\s*[-—–.]\s+\S/i.test(t)) return true;
+  if (/^[a-z]\)\s+\S/i.test(t)) return true;
+  if (/^(Nestes termos|Termos em que),?\s*$/i.test(t)) return true;
+  if (/^(pede deferimento|Pede deferimento|Pede e espera deferimento)\.?\s*$/i.test(t)) {
+    return true;
+  }
+  if (/^em face de\b/i.test(t)) return true;
+  if (/^OAB\//i.test(t) || /^Advogado$/i.test(t)) return true;
+  return false;
+}
+
 /**
  * Junta linhas quebradas no meio da frase (quebra visual de editor)
  * e preserva parágrafo em linha em branco.
+ * Nunca cola marcadores de espaçamento, tópicos, "em face de" ou fechamento.
  */
 export function juntarQuebrasDeLinhaSuaves(texto: string): string {
   const linhas = texto.replace(/\r\n/g, "\n").split("\n");
@@ -35,6 +51,21 @@ export function juntarQuebrasDeLinhaSuaves(texto: string): string {
         paragrafos.push(atual);
         atual = "";
       }
+      continue;
+    }
+
+    if (ehLinhaEstruturalPeca(linha)) {
+      if (atual) {
+        paragrafos.push(atual);
+        atual = "";
+      }
+      paragrafos.push(linha);
+      continue;
+    }
+
+    if (atual && ehLinhaEstruturalPeca(atual)) {
+      paragrafos.push(atual);
+      atual = linha;
       continue;
     }
 

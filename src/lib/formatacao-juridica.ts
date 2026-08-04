@@ -6,13 +6,11 @@ import {
 } from "./formatacao-forense";
 import { normalizarTextoFatos } from "./peca-paragrafos";
 
-/** Aplica regras de espaçamento entre seções da peça. */
-export function aplicarFormatacaoTextoJuridico(pecaBruta: string, fatos: string): string {
-  const fatosFormatados = normalizarTextoFatos(fatos);
-
+/** Aplica normalização de parágrafos na seção DOS FATOS já presente na peça. */
+export function aplicarFormatacaoTextoJuridico(pecaBruta: string): string {
   return pecaBruta.replace(
-    /I\s*[-—–]\s*DOS FATOS\n+[\s\S]*?(?=\n+II\s*[-—–]\s*DO DIREITO)/i,
-    `I - DOS FATOS\n${fatosFormatados}`
+    /I\s*[-—–]\s*DOS FATOS\n+([\s\S]*?)(?=\n+II\s*[-—–]\s*DO DIREITO)/i,
+    (_m, corpo: string) => `I - DOS FATOS\n${normalizarTextoFatos(String(corpo))}`
   );
 }
 
@@ -65,7 +63,7 @@ function blocoParaHtml(bloco: string): string {
   const paragrafos = dividirBlocosPeca(bloco);
 
   const titulosSecao = /^([IVXLCDM]+)\s*[-—–]\s+/i;
-  const subtopico = /^([a-z]\)|\d+\.\d*|\([a-z]\))\s+/i;
+  const subtopico = /^(?:\*\*)?([a-z]\)|\d+\.\d*|\([a-z]\))\s+/i;
   const enderecamento =
     /^EXCELENTÍSSIMO|^DA COMARCA|^JU[IÍ]ZO\s+DA|^EXCELENTISSIMO/i;
   const inicioFechamento =

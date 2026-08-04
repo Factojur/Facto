@@ -223,3 +223,137 @@ export function valorPorExtenso(centavos: number): string {
   if (partesCentavos) return partesCentavos;
   return "zero reais";
 }
+
+const RE_MOEDA =
+  /R\$\s*([\d.]+,\d{2}|\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2}|\d+)/gi;
+
+function contextoAoRedor(texto: string, inicio: number, fim: number): string {
+  return texto.slice(Math.max(0, inicio - 80), Math.min(texto.length, fim + 80));
+}
+
+/**
+ * Infere valor da causa a partir do relato quando o formulário não preencheu.
+ * Heurística: danos materiais + danos morais; ou "valor da causa"; sem inventar.
+ */
+export function inferirResumoValorCausaDosFatos(
+  fatos: string
+): ResumoValorCausa | null {
+  const texto = fatos.replace(/\s+/g, " ").trim();
+  if (!texto) return null;
+
+  let materiais = 0;
+  let morais = 0;
+  let valorCausaExplicito = 0;
+
+  let m: RegExpExecArray | null;
+  RE_MOEDA.lastIndex = 0;
+  while ((m = RE_MOEDA.exec(texto)) !== null) {
+    const centavos = centavosDeTexto(m[1] ?? "");
+    if (centavos <= 0) continue;
+    const ini = m.index;
+    const fim = m.index + m[0].length;
+    const perto = texto.slice(Math.max(0, ini - 40), Math.min(texto.length, fim + 50)).toLowerCase();
+    const ctx = contextoAoRedor(texto, ini, fim).toLowerCase();
+
+    if (/valor\s+da\s+causa|d[aá]-se\s+[aà]\s+causa|al[cç]ada/.test(perto) ||
+        /valor\s+da\s+causa|d[aá]-se\s+[aà]\s+causa/.test(ctx)) {
+      valorCausaExplicito = Math.max(valorCausaExplicito, centavos);
+      continue;
+    }
+
+    const moralPerto = /dano\s*moral|danos\s*morais/.test(perto);
+    const materialPerto =
+      /dano\s*material|danos\s*materiais|restitui[cç][aã]o|preju[ií]zo|totalizando|montante/.test(
+        perto
+      );
+
+    if (moralPerto && !materialPerto) {
+      morais = Math.max(morais, centavos);
+      continue;
+    }
+    if (materialPerto && !moralPerto) {
+      materiais = Math.max(materiais, centavos);
+      continue;
+    }
+    if (moralPerto && materialPerto) {
+      // Ambíguo no mesmo trecho: o maior tipicamente é material se >= 5k e houver outro valor
+      if (centavos >= 500_000) materiais = Math.max(materiais, centavos);
+      else morais = Math.max(morais, centavos);
+      continue;
+    }
+
+    if (/dano\s*moral|danos\s*morais/.test(ctx)) {
+      morais = Math.max(morais, centavos);
+      continue;
+    }
+    if (
+      /dano\s*material|danos\s*materiais|restitui|preju[ií]zo|montante|totalizando/.test(
+        ctx
+      ) &&
+      (centavos >= 300_000 || /total|montante|soma|restitui|preju[ií]zo/.test(ctx))
+    ) {
+      materiais = Math.max(materiais, centavos);
+    }
+  }
+
+  let total = 0;
+  const categorias: ResumoValorCausa["categorias"] = [];
+
+  if (valorCausaExplicito > 0 && materiais === 0 && morais === 0) {
+    total = valorCausaExplicito;
+    categorias.push({
+      id: "danosMateriais",
+      label: "Danos Materiais e/ou Restituições",
+      itens: [{ descricao: "Valor da causa (inferido do relato)", centavos: total }],
+      subtotalCentavos: total,
+    });
+    categorias.push({
+      id: "danosMorais",
+      label: "Danos Morais",
+      itens: [],
+      subtotalCentavos: 0,
+    });
+  } else {
+    if (materiais > 0) {
+      categorias.push({
+        id: "danosMateriais",
+        label: "Danos Materiais e/ou Restituições",
+        itens: [{ descricao: "Valor inferido do relato", centavos: materiais }],
+        subtotalCentavos: materiais,
+      });
+      total += materiais;
+    } else {
+      categorias.push({
+        id: "danosMateriais",
+        label: "Danos Materiais e/ou Restituições",
+        itens: [],
+        subtotalCentavos: 0,
+      });
+    }
+    if (morais > 0) {
+      categorias.push({
+        id: "danosMorais",
+        label: "Danos Morais",
+        itens: [{ descricao: "Valor inferido do relato", centavos: morais }],
+        subtotalCentavos: morais,
+      });
+      total += morais;
+    } else {
+      categorias.push({
+        id: "danosMorais",
+        label: "Danos Morais",
+        itens: [],
+        subtotalCentavos: 0,
+      });
+    }
+  }
+
+  if (total <= 0) return null;
+
+  return {
+    categorias,
+    totalCentavos: total,
+    totalFormatado: formatarCentavos(total),
+    totalPorExtenso: valorPorExtenso(total),
+  };
+}
