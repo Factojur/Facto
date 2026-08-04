@@ -189,12 +189,7 @@ function montarMensagemCancelamento(
     return `Cancelamento concluído. Não haverá renovação. Seu acesso permanece até ${ate}.`;
   }
 
-  if (mp.estorno?.sucesso) {
-    return "Cancelamento concluído dentro do prazo de 7 dias (CDC). O valor foi estornado no Mercado Pago e o acesso foi encerrado.";
-  }
-
-  return (
-    mp.estorno?.aviso ??
-    "Cancelamento concluído dentro do prazo de 7 dias (CDC). O acesso foi encerrado; o estorno precisa ser concluído pelo suporte."
-  );
+  // Mensagem ao cliente: prazo suave (cartão/Pix). Detalhe técnico do estorno
+  // fica no e-mail interno financeiro@ e no campo `aviso` da API.
+  return "Cancelamento concluído dentro do prazo de 7 dias. O acesso foi encerrado; o estorno deve ser creditado em até 30 dias, conforme o meio de pagamento.";
 }

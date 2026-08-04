@@ -206,8 +206,9 @@ export function AssinaturaPainel() {
               Confirmar cancelamento
             </h3>
             <p className="mt-3 text-sm leading-relaxed text-slate-600">
-              Se você está dentro dos 7 dias de teste, o cancelamento estorna o
-              valor automaticamente. Se já passou de 7 dias, sua assinatura
+              Se você está dentro dos 7 dias, o cancelamento encerra o acesso e
+              solicita o estorno (pode levar até 30 dias para aparecer na
+              fatura). Se já passou de 7 dias, sua assinatura
               continuará ativa até o fim do ciclo atual e não será renovada.
             </p>
             <p className="mt-3 text-sm font-medium text-slate-700">

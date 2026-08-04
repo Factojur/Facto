@@ -66,9 +66,10 @@ function htmlCliente(opcoes: {
   const ano = new Date().getFullYear();
   let corpo: string;
   if (opcoes.dentroPrazoCdc) {
-    corpo = opcoes.estornoSucesso
-      ? "Seu cancelamento foi concluído dentro do prazo de 7 dias (CDC). A cobrança recorrente foi encerrada, o valor foi estornado no Mercado Pago e o acesso ao FACTO foi finalizado."
-      : "Seu cancelamento foi concluído dentro do prazo de 7 dias (CDC). A cobrança recorrente foi encerrada e o acesso ao FACTO foi finalizado. Se o estorno ainda não aparecer na fatura, nossa equipe financeira acompanha a conclusão.";
+    // Mesmo com estorno OK na API, cartão/Pix podem levar dias para refletir.
+    // Mensagem única e suave; o alerta "verificar estorno" fica só no e-mail interno.
+    corpo =
+      "Seu cancelamento foi concluído dentro do prazo de 7 dias. A cobrança recorrente foi encerrada e o acesso ao FACTO foi finalizado. O estorno do valor pago será creditado em até <strong style=\"color:#e7e5e4;\">30 dias</strong>, conforme o prazo do seu meio de pagamento.";
   } else {
     const ate = formatarDataPt(opcoes.acessoValidoAte);
     corpo =
