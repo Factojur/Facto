@@ -281,9 +281,7 @@ export function JurisCasoSection({
         Jurisprudência e súmulas do caso (opcional)
       </h2>
       <p className="mb-4 text-sm text-slate-500">
-        Anexe acórdãos, súmulas ou decisões favoráveis ao caso. A IA lê a
-        ementa/voto, cita no padrão forense e encaixa em DOS FATOS ou DO
-        DIREITO — sem inventar número de processo fora do que você enviar.
+        Acórdãos, súmulas ou decisões do caso (texto ou arquivo).
       </p>
 
       <label className="flex items-start gap-2 text-sm text-slate-700">

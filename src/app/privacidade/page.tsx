@@ -80,8 +80,7 @@ export default function PrivacidadePage() {
           4. Inteligência artificial e conteúdo jurídico
         </h2>
         <p>
-          Textos e documentos enviados podem ser processados por modelos de IA
-          (ex.: Gemini) para redigir peças e análises. O conteúdo gerado é
+          Textos e documentos enviados podem ser processados por modelos de inteligência artificial para redigir peças e análises. O conteúdo gerado é
           auxiliar: a responsabilidade pelo protocolo e pela conferência
           jurídica permanece com o advogado/usuário. Não utilize o FACTO para
           dados desnecessários ao caso.

@@ -4,7 +4,7 @@ import {
   aplicarFormatacaoTextoJuridico,
   gerarDocumentoTimbrado,
 } from "@/lib/formatacao-juridica";
-import { formatarEnderecamentoJec, type ComarcaInfo } from "@/lib/endereco-comarca";
+import { formatarEnderecamentoJec, extrairCidadeUfDoForo, type ComarcaInfo } from "@/lib/endereco-comarca";
 import {
   calcularResumoValorCausa,
   formatarCentavos,
@@ -97,7 +97,16 @@ export type GerarPecaJecOutput = {
 function localFechamento(comarca?: ComarcaInfo): string {
   const cidade = comarca?.cidade?.trim();
   const uf = comarca?.uf?.trim();
-  return cidade && uf ? `${cidade}/${uf.toUpperCase()}` : "[Cidade/UF]";
+  if (cidade && uf) return `${cidade}/${uf.toUpperCase()}`;
+
+  if (comarca?.foro?.trim()) {
+    const extraido = extrairCidadeUfDoForo(comarca.foro);
+    if (extraido.cidade && extraido.uf) {
+      return `${extraido.cidade}/${extraido.uf}`;
+    }
+  }
+
+  return "[Cidade/UF]";
 }
 
 

@@ -118,10 +118,8 @@ export function EscritorioConfigPanel({ value, onChange }: Props) {
             Timbre do Escritório
           </h2>
           <p className="mt-1 text-xs leading-relaxed text-slate-500">
-            Opcional. Suba cabeçalho, rodapé e/ou marca d&apos;água — separadamente,
-            só o que você quiser usar — para gerar a peça já timbrada, conforme
-            padrão forense (Times New Roman 12, margens ABNT, texto justificado
-            e recuo de parágrafo).
+            Opcional. Cabeçalho, rodapé e/ou marca d&apos;água para a peça
+            timbrada.
           </p>
         </div>
         <label className="flex shrink-0 items-center gap-2 text-sm text-slate-700">

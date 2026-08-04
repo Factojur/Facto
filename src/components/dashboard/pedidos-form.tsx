@@ -43,8 +43,7 @@ export function PedidosSection({
         Pedidos (opcional)
       </h2>
       <p className="mb-4 text-sm text-slate-500">
-        Liste o que você quer que o Juizado determine. Ajuda a IA a estruturar o
-        pedido de forma objetiva.
+        O que o Juizado deve determinar.
       </p>
       <ul className="space-y-2">
         {value.map((p, idx) => (

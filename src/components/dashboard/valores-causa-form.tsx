@@ -9,7 +9,6 @@ import {
   type ItemValor,
 } from "@/lib/valores-causa";
 import {
-  formatarTetoJec,
   mensagemAlertaTetoJec,
   ultrapassaTetoJec,
 } from "@/lib/jec-teto";
@@ -60,9 +59,7 @@ export function ValoresCausaSection({
         Valores da Causa
       </h2>
       <p className="mb-4 text-sm text-slate-500">
-        Lance os itens de cada categoria com a descrição e o valor. A soma é
-        calculada aqui, com exatidão — a IA não recalcula nem altera esses
-        números na peça final.
+        Descrição e valor de cada item. A soma entra na peça sem alteração.
       </p>
 
       <div className="space-y-5">
@@ -136,8 +133,7 @@ export function ValoresCausaSection({
       </div>
       {resumo.totalCentavos > 0 && (
         <p className="mt-1.5 text-xs text-slate-500">
-          Por extenso: {resumo.totalPorExtenso}. Teto aproximado JEC (pessoa
-          física): {formatarTetoJec()}.
+          Por extenso: {resumo.totalPorExtenso}.
         </p>
       )}
       {ultrapassaTetoJec(resumo.totalCentavos) && (

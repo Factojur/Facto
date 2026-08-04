@@ -13,16 +13,14 @@ export function montarChecklistJec(opcoes: {
   tipoSelecionado: string;
   fatos: string;
   reusCount: number;
-  comarcaCidade: string;
-  comarcaUf: string;
+  comarcaForo: string;
   temValor: boolean;
   modoAssistentePendenteConfirmacao: boolean;
 }): ItemChecklistJec[] {
   const fatosOk = opcoes.fatos.trim().length >= 40;
   const tipoOk = Boolean(opcoes.tipoSelecionado.trim());
   const reusOk = opcoes.reusCount > 0;
-  const comarcaOk =
-    Boolean(opcoes.comarcaCidade.trim()) && Boolean(opcoes.comarcaUf.trim());
+  const comarcaOk = opcoes.comarcaForo.trim().length >= 12;
 
   return [
     {
@@ -45,7 +43,7 @@ export function montarChecklistJec(opcoes: {
     },
     {
       id: "comarca",
-      label: "Comarca (cidade e UF)",
+      label: "Foro / Juizado (endereçamento)",
       ok: comarcaOk,
       bloqueante: false,
     },

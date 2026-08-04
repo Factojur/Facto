@@ -37,6 +37,7 @@ import { PecaDocumentoView } from "@/components/dashboard/peca-documento";
 import {
   ComarcaSection,
   comarcaVazia,
+  normalizarComarcaValue,
   type ComarcaValue,
 } from "@/components/dashboard/comarca-form";
 import {
@@ -58,19 +59,19 @@ import type { ReuValue } from "@/lib/reu-types";
 import type { JurisCasoPayload } from "@/lib/juris-caso-types";
 
 const NAV_SECOES = [
-  { id: "secao-dados", label: "Dados" },
+  { id: "secao-acao", label: "Ação" },
   { id: "secao-comarca", label: "Comarca" },
-  { id: "secao-valores", label: "Valores" },
-  { id: "secao-fatos", label: "Fatos" },
-  { id: "secao-pedidos", label: "Pedidos" },
-  { id: "secao-fundamentos", label: "Fundamentos" },
-  { id: "secao-documentos", label: "Documentos" },
+  { id: "secao-autor", label: "Dados do Autor" },
   { id: "secao-reus", label: "Réus" },
+  { id: "secao-fatos", label: "Fatos" },
+  { id: "secao-fundamentos", label: "Fundamentos" },
   { id: "secao-provas", label: "Provas" },
+  { id: "secao-valores", label: "Valores" },
+  { id: "secao-pedidos", label: "Pedidos" },
   { id: "secao-gerar", label: "Gerar" },
 ] as const;
 
-const LOADING_STAGES = ["Triagem estratégica…", "Redação da peça…"];
+const LOADING_STAGES = ["Analisando o caso…", "Redigindo a peça…"];
 
 function getFileNames(input: HTMLInputElement | null): string[] {
   if (!input?.files?.length) return [];
@@ -126,7 +127,7 @@ function DocsSugeridosChecklist({ tipoAcao }: { tipoAcao: string }) {
   return (
     <div className="mt-4 rounded-lg border border-dashed border-slate-200 bg-slate-50/80 p-4">
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        Checklist sugerido (orientação — não bloqueia gerar)
+        Checklist sugerido
       </p>
       <ul className="mt-2 space-y-2">
         {docs.map((doc) => (
@@ -223,7 +224,7 @@ function StickyExportBar({
     <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
       <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-center gap-2 sm:justify-between">
         <p className="hidden text-xs text-slate-500 sm:block">
-          Exportações rápidas — Word pode incluir timbre; PDF e cópia = texto limpo.
+          Word com timbre · PDF e cópia em texto limpo
         </p>
         <div className="flex flex-wrap gap-2">
           <button
@@ -291,17 +292,13 @@ function PecasResultado({
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="mb-2 inline-flex rounded-md border border-amber-400 bg-amber-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-amber-900">
-            MINUTA — revise antes de protocolar
+            Minuta — revise antes de protocolar
           </div>
           <h2 className="text-xl font-semibold text-slate-800">
-            Peça gerada com sucesso
+            Peça gerada
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            Revise o texto antes de protocolar. Campos entre colchetes devem ser
-            completados.
-            {resultado.geradoPorIA && resultado.modeloIA
-              ? ` Redigida por IA (${resultado.modeloIA}).`
-              : ""}
+            Complete os campos entre colchetes, se houver, antes de protocolar.
           </p>
         </div>
         <button
@@ -321,16 +318,14 @@ function PecasResultado({
       )}
       {!resultado.geradoPorIA && !resultado.avisoIA && (
         <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Esta peça não foi redigida pela IA (template de reserva). A seção DO
-          DIREITO tende a ficar genérica — gere novamente com a IA ativa.
+          Peça de reserva (fundamentação genérica). Gere novamente para obter a
+          redação completa.
         </div>
       )}
 
       {resultado.analiseEstrategica && (
         <section className="rounded-lg border border-stone-300 bg-stone-50 p-5 shadow-sm">
-          <h3 className="font-semibold text-stone-800">
-            Análise estratégica (Chain of Thought)
-          </h3>
+          <h3 className="font-semibold text-stone-800">Análise estratégica</h3>
           {resultado.analiseEstrategica.nomeAcao && (
             <p className="mt-2 text-sm text-stone-700">
               <strong>Ação qualificada:</strong>{" "}
@@ -361,12 +356,11 @@ function PecasResultado({
       {jurisSemLastro.length > 0 && (
         <section className="rounded-lg border border-red-200 bg-red-50 p-4">
           <h3 className="text-sm font-semibold text-red-800">
-            Jurisprudência sem lastro na base — conferir antes de protocolar
+            Jurisprudência a conferir
           </h3>
           <p className="mt-1 text-xs text-red-700">
-            Estes trechos aparecem na peça, mas não foram encontrados no
-            material injetado (base de conhecimento ou jurisprudência anexada ao
-            caso). Possível invenção da IA.
+            Trechos na peça sem correspondência no material anexado ou na base
+            do caso.
           </p>
           <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-red-800">
             {jurisSemLastro.map((c) => (
@@ -476,8 +470,7 @@ function PecasResultado({
             {resultado.valorCausaResumo.totalPorExtenso})
           </p>
           <p className="mt-1 text-xs text-stone-500">
-            Esse valor foi somado exatamente pelo sistema, item a item — a IA
-            não recalcula nem altera esse número na peça.
+            Soma fixa do formulário — não é alterada na redação.
           </p>
         </section>
       )}
@@ -593,8 +586,7 @@ export function JecForm() {
     tipoSelecionado,
     fatos,
     reusCount: reus.length,
-    comarcaCidade: comarca.cidade,
-    comarcaUf: comarca.uf,
+    comarcaForo: comarca.foro ?? "",
     temValor: resumoValores.totalCentavos > 0,
     modoAssistentePendenteConfirmacao,
   });
@@ -680,7 +672,7 @@ export function JecForm() {
     setFatos(p.fatos ?? "");
     setTipoSelecionado(p.tipoSelecionado ?? "");
     setTutelaUrgencia(Boolean(p.tutelaUrgencia));
-    setComarca(p.comarca ?? comarcaVazia());
+    setComarca(normalizarComarcaValue(p.comarca));
     setValoresCausa(p.valoresCausa ?? valoresCausaVazio());
     setUsaLeiMunicipal(Boolean(p.usaLeiMunicipal));
     setLeiMunicipalTexto(p.leiMunicipalTexto ?? "");
@@ -704,7 +696,7 @@ export function JecForm() {
     setNotaAssistente(false);
     setRascunhoAtivoId(r.id);
     setMsgRascunho(
-      "Rascunho restaurado. Anexos de arquivo (provas, PDFs) precisam ser reenviados."
+      "Rascunho restaurado. Reenvie os anexos, se necessário."
     );
     setResultado(null);
   }
@@ -756,9 +748,7 @@ export function JecForm() {
       );
       setRascunhoAtivoId(salvo.id);
       setRascunhos(listarRascunhosJec());
-      setMsgRascunho(
-        "Salvo neste navegador. Você pode sair e continuar depois — anexos de arquivo não entram no rascunho."
-      );
+      setMsgRascunho("Salvo neste navegador.");
     } catch {
       setMsgRascunho(
         "Não foi possível salvar (armazenamento do navegador cheio ou bloqueado)."
@@ -877,12 +867,18 @@ export function JecForm() {
       reus,
       jurisDoCaso: jurisDoCaso.length > 0 ? jurisDoCaso : null,
       escritorio,
-      comarca: {
-        cep: comarca.cep,
-        cidade: comarca.cidade,
-        uf: comarca.uf,
-        numeroJuizado: comarca.numeroJuizado || undefined,
-      },
+      comarca: (() => {
+        const foro = comarca.foro.trim();
+        // cidade/UF só para fechamento/OAB — o cabeçalho usa o texto do foro.
+        const legadoCidade = comarca.cidade?.trim() ?? "";
+        const legadoUf = comarca.uf?.trim() ?? "";
+        return {
+          foro,
+          cidade: legadoCidade || undefined,
+          uf: legadoUf || undefined,
+          numeroJuizado: comarca.numeroJuizado || undefined,
+        };
+      })(),
       valoresCausa,
       leiMunicipal,
     };
@@ -938,15 +934,8 @@ export function JecForm() {
             Geração de Peça — Juizado Especial Cível
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Peças fundamentadas na Lei nº 9.099/95. A geração usa{" "}
-            <strong className="font-medium text-slate-700">
-              2 agentes Gemini
-            </strong>{" "}
-            (triagem estratégica + redação). A classificação do{" "}
-            <strong className="font-medium text-slate-700">
-              Assistente Facto
-            </strong>{" "}
-            é local, no navegador — sem chamada extra à IA.
+            Peças para o Juizado Especial Cível (Lei nº 9.099/95). Revise sempre
+            antes de protocolar.
           </p>
         </header>
 
@@ -972,11 +961,11 @@ export function JecForm() {
         )}
 
         <section
-          id="secao-dados"
+          id="secao-acao"
           className="scroll-mt-24 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
         >
           <h2 className="mb-4 text-lg font-semibold text-slate-800">
-            Dados da Ação
+            Ação
           </h2>
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="sm:col-span-2 sm:max-w-lg">
@@ -1002,9 +991,7 @@ export function JecForm() {
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
               >
                 <option value="">Selecione o tipo de ação</option>
-                <option value={ASSISTENTE_FACTO}>
-                  Assistente Facto (sugestão local)
-                </option>
+                <option value={ASSISTENTE_FACTO}>Assistente Facto</option>
                 {TIPOS_ACAO_JEC.map((grupo) => (
                   <optgroup key={grupo.label} label={grupo.label}>
                     {grupo.opcoes.map((tipo) => (
@@ -1018,24 +1005,15 @@ export function JecForm() {
 
               {notaAssistente && !isAssistente && (
                 <p className="mt-2 text-xs text-stone-600">
-                  Tipo sugerido pelo Assistente Facto (regras locais) — confira
-                  antes de gerar.
+                  Tipo sugerido pelo Assistente Facto — confira antes de gerar.
                 </p>
               )}
 
               {isAssistente && (
                 <div className="mt-4 space-y-3 rounded-lg border border-stone-200 bg-stone-50/80 p-4">
-                  <p className="text-xs leading-relaxed text-slate-600">
-                    A sugestão de ação usa{" "}
-                    <strong className="font-medium text-stone-800">
-                      regras locais e palavras-chave
-                    </strong>{" "}
-                    nos fatos — não há terceira chamada ao Gemini. Ao gerar, a
-                    peça passa pelos{" "}
-                    <strong className="font-medium text-stone-800">
-                      2 agentes Gemini
-                    </strong>{" "}
-                    (triagem + redação).
+                  <p className="text-xs text-slate-600">
+                    Sugere o tipo de ação com base nos fatos. Confirme antes de
+                    gerar a peça.
                   </p>
 
                   {!decisaoSugerida ? (
@@ -1112,208 +1090,16 @@ export function JecForm() {
 
         <ComarcaSection value={comarca} onChange={setComarca} />
 
-        <div id="secao-valores" className="scroll-mt-24">
-          <ValoresCausaSection value={valoresCausa} onChange={setValoresCausa} />
-        </div>
-
         <section
-          id="secao-fatos"
-          className="scroll-mt-24 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
-        >
-          <h2 className="mb-4 text-lg font-semibold text-slate-800">Fatos</h2>
-          <div>
-            <label
-              htmlFor="fatos"
-              className="mb-1.5 block text-sm font-medium text-slate-700"
-            >
-              Descrição dos fatos
-            </label>
-            <textarea
-              id="fatos"
-              name="fatos"
-              required
-              rows={10}
-              value={fatos}
-              onChange={(e) => setFatos(e.target.value)}
-              placeholder={placeholderFatosPorTipo(tipoSelecionado)}
-              className="w-full resize-y rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-800 placeholder-slate-400 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
-            />
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={handleSalvarAteAqui}
-                className="rounded-lg border border-stone-600 bg-white px-4 py-2 text-sm font-medium text-stone-800 transition hover:bg-stone-50"
-              >
-                Salvar até aqui
-              </button>
-              <span className="text-xs text-slate-500">
-                Guarda o texto e os dados do formulário neste navegador (não os
-                arquivos anexados).
-              </span>
-            </div>
-            {msgRascunho && (
-              <p className="mt-2 text-sm text-stone-600">{msgRascunho}</p>
-            )}
-            {rascunhos.length > 0 && (
-              <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50/80 p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Rascunhos salvos
-                </p>
-                <ul className="mt-2 space-y-2">
-                  {rascunhos.map((r) => (
-                    <li
-                      key={r.id}
-                      className={`flex flex-wrap items-start justify-between gap-2 rounded-md border px-3 py-2 text-sm ${
-                        rascunhoAtivoId === r.id
-                          ? "border-stone-400 bg-white"
-                          : "border-slate-200 bg-white"
-                      }`}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-slate-800">{r.titulo}</p>
-                        <p className="text-xs text-slate-500">
-                          {new Date(r.atualizadoEm).toLocaleString("pt-BR")}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleRestaurarRascunho(r)}
-                          className="rounded border border-slate-200 px-2.5 py-1 text-xs font-medium text-stone-700 hover:bg-slate-50"
-                        >
-                          Continuar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleExcluirRascunho(r.id)}
-                          className="rounded border border-red-200 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
-                        >
-                          Excluir
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        </section>
-
-        <PedidosSection value={pedidos} onChange={setPedidos} />
-
-        <section
-          id="secao-fundamentos"
-          className="scroll-mt-24 space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
-        >
-          <div>
-            <h2 className="text-lg font-semibold text-slate-800">
-              Fundamentos do caso
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Lei municipal e jurisprudência anexadas aqui são{" "}
-              <strong className="font-medium text-slate-700">
-                analisadas pela IA
-              </strong>{" "}
-              (texto colado ou arquivo enviado).
-            </p>
-          </div>
-
-          <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-4">
-            <h3 className="mb-1 text-base font-semibold text-slate-800">
-              Lei municipal (opcional)
-            </h3>
-            <p className="mb-4 text-sm text-slate-500">
-              Use quando a ação depender de lei, decreto ou código do município.
-              A IA analisa o texto/arquivo enviado aqui — não inventa norma
-              municipal.
-            </p>
-            <label className="flex items-start gap-2 text-sm text-slate-700">
-              <input
-                type="checkbox"
-                checked={usaLeiMunicipal}
-                onChange={(e) => {
-                  setUsaLeiMunicipal(e.target.checked);
-                  if (!e.target.checked) {
-                    setLeiMunicipalTexto("");
-                    setLeiMunicipalTitulo("");
-                  }
-                }}
-                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
-              />
-              <span>
-                Este caso depende de norma municipal — anexar arquivo ou colar
-                texto
-              </span>
-            </label>
-            {usaLeiMunicipal && (
-              <div className="mt-4 space-y-4">
-                <div>
-                  <label
-                    htmlFor="leiMunicipalTitulo"
-                    className="mb-1.5 block text-sm font-medium text-slate-700"
-                  >
-                    Nome / identificação da norma (opcional)
-                  </label>
-                  <input
-                    id="leiMunicipalTitulo"
-                    type="text"
-                    value={leiMunicipalTitulo}
-                    onChange={(e) => setLeiMunicipalTitulo(e.target.value)}
-                    placeholder="Ex.: Lei Municipal nº 123/2020 — Código de Posturas"
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
-                  />
-                </div>
-                <FileField
-                  id="leiMunicipal"
-                  label="Arquivo da lei / decreto (PDF ou Word)"
-                  accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                />
-                <div>
-                  <label
-                    htmlFor="leiMunicipalTexto"
-                    className="mb-1.5 block text-sm font-medium text-slate-700"
-                  >
-                    Ou cole o texto da norma
-                  </label>
-                  <textarea
-                    id="leiMunicipalTexto"
-                    rows={8}
-                    value={leiMunicipalTexto}
-                    onChange={(e) => setLeiMunicipalTexto(e.target.value)}
-                    placeholder="Cole aqui os artigos pertinentes da lei ou decreto municipal..."
-                    className="w-full resize-y rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-800 placeholder-slate-400 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
-                  />
-                  <p className="mt-1.5 text-xs text-slate-500">
-                    Se preencher o texto e também anexar arquivo, o{" "}
-                    <strong className="font-medium">texto colado tem prioridade</strong>.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-4">
-            <JurisCasoSection value={jurisCaso} onChange={setJurisCaso} />
-          </div>
-        </section>
-
-        <section
-          id="secao-documentos"
+          id="secao-autor"
           className="scroll-mt-24 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
         >
           <h2 className="mb-1 text-lg font-semibold text-slate-800">
-            Documentos pessoais
+            Dados do Autor
           </h2>
           <p className="mb-4 text-sm text-slate-500">
-            Apenas os{" "}
-            <strong className="font-medium text-slate-700">
-              nomes dos arquivos
-            </strong>{" "}
-            entram na checklist da peça — a IA{" "}
-            <strong className="font-medium text-slate-700">
-              não lê o conteúdo
-            </strong>{" "}
-            destes uploads.
+            Anexe identidade, CPF, residência e procuração. Nome e OAB na peça
+            vêm do Perfil.
           </p>
 
           <div className="space-y-5">
@@ -1376,6 +1162,177 @@ export function JecForm() {
         </div>
 
         <section
+          id="secao-fatos"
+          className="scroll-mt-24 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+        >
+          <h2 className="mb-4 text-lg font-semibold text-slate-800">Fatos</h2>
+          <div>
+            <label
+              htmlFor="fatos"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
+            >
+              Descrição dos fatos
+            </label>
+            <textarea
+              id="fatos"
+              name="fatos"
+              required
+              rows={10}
+              value={fatos}
+              onChange={(e) => setFatos(e.target.value)}
+              placeholder={placeholderFatosPorTipo(tipoSelecionado)}
+              className="w-full resize-y rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-800 placeholder-slate-400 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
+            />
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSalvarAteAqui}
+                className="rounded-lg border border-stone-600 bg-white px-4 py-2 text-sm font-medium text-stone-800 transition hover:bg-stone-50"
+              >
+                Salvar até aqui
+              </button>
+              <span className="text-xs text-slate-500">
+                Salva neste navegador (sem anexos).
+              </span>
+            </div>
+            {msgRascunho && (
+              <p className="mt-2 text-sm text-stone-600">{msgRascunho}</p>
+            )}
+            {rascunhos.length > 0 && (
+              <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50/80 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Rascunhos salvos
+                </p>
+                <ul className="mt-2 space-y-2">
+                  {rascunhos.map((r) => (
+                    <li
+                      key={r.id}
+                      className={`flex flex-wrap items-start justify-between gap-2 rounded-md border px-3 py-2 text-sm ${
+                        rascunhoAtivoId === r.id
+                          ? "border-stone-400 bg-white"
+                          : "border-slate-200 bg-white"
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-slate-800">{r.titulo}</p>
+                        <p className="text-xs text-slate-500">
+                          {new Date(r.atualizadoEm).toLocaleString("pt-BR")}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleRestaurarRascunho(r)}
+                          className="rounded border border-slate-200 px-2.5 py-1 text-xs font-medium text-stone-700 hover:bg-slate-50"
+                        >
+                          Continuar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleExcluirRascunho(r.id)}
+                          className="rounded border border-red-200 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section
+          id="secao-fundamentos"
+          className="scroll-mt-24 space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+        >
+          <div>
+            <h2 className="text-lg font-semibold text-slate-800">
+              Fundamentos do caso
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Anexe lei municipal ou jurisprudência do caso (texto ou arquivo).
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-4">
+            <h3 className="mb-1 text-base font-semibold text-slate-800">
+              Lei municipal (opcional)
+            </h3>
+            <p className="mb-4 text-sm text-slate-500">
+              Quando a ação depender de norma do município.
+            </p>
+            <label className="flex items-start gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={usaLeiMunicipal}
+                onChange={(e) => {
+                  setUsaLeiMunicipal(e.target.checked);
+                  if (!e.target.checked) {
+                    setLeiMunicipalTexto("");
+                    setLeiMunicipalTitulo("");
+                  }
+                }}
+                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
+              />
+              <span>
+                Este caso depende de norma municipal — anexar arquivo ou colar
+                texto
+              </span>
+            </label>
+            {usaLeiMunicipal && (
+              <div className="mt-4 space-y-4">
+                <div>
+                  <label
+                    htmlFor="leiMunicipalTitulo"
+                    className="mb-1.5 block text-sm font-medium text-slate-700"
+                  >
+                    Nome / identificação da norma (opcional)
+                  </label>
+                  <input
+                    id="leiMunicipalTitulo"
+                    type="text"
+                    value={leiMunicipalTitulo}
+                    onChange={(e) => setLeiMunicipalTitulo(e.target.value)}
+                    placeholder="Ex.: Lei Municipal nº 123/2020 — Código de Posturas"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
+                  />
+                </div>
+                <FileField
+                  id="leiMunicipal"
+                  label="Arquivo da lei / decreto (PDF ou Word)"
+                  accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                />
+                <div>
+                  <label
+                    htmlFor="leiMunicipalTexto"
+                    className="mb-1.5 block text-sm font-medium text-slate-700"
+                  >
+                    Ou cole o texto da norma
+                  </label>
+                  <textarea
+                    id="leiMunicipalTexto"
+                    rows={8}
+                    value={leiMunicipalTexto}
+                    onChange={(e) => setLeiMunicipalTexto(e.target.value)}
+                    placeholder="Cole aqui os artigos pertinentes da lei ou decreto municipal..."
+                    className="w-full resize-y rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-800 placeholder-slate-400 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
+                  />
+                  <p className="mt-1.5 text-xs text-slate-500">
+                    Se houver texto e arquivo, prevalece o texto colado.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-4">
+            <JurisCasoSection value={jurisCaso} onChange={setJurisCaso} />
+          </div>
+        </section>
+
+        <section
           id="secao-provas"
           className="scroll-mt-24 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
         >
@@ -1383,15 +1340,7 @@ export function JecForm() {
             Provas e mídias
           </h2>
           <p className="mb-4 text-sm text-slate-500">
-            Apenas os{" "}
-            <strong className="font-medium text-slate-700">
-              nomes dos arquivos
-            </strong>{" "}
-            entram na checklist da peça — a IA{" "}
-            <strong className="font-medium text-slate-700">
-              não lê o conteúdo
-            </strong>{" "}
-            destes uploads. O link de nuvem é colado por você.
+            Anexe provas e, se quiser, o link da pasta na nuvem.
           </p>
 
           <div className="space-y-5">
@@ -1450,6 +1399,12 @@ export function JecForm() {
           </div>
         </section>
 
+        <div id="secao-valores" className="scroll-mt-24">
+          <ValoresCausaSection value={valoresCausa} onChange={setValoresCausa} />
+        </div>
+
+        <PedidosSection value={pedidos} onChange={setPedidos} />
+
         <section
           id="secao-gerar"
           className="scroll-mt-24 space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
@@ -1471,12 +1426,11 @@ export function JecForm() {
                   Usar timbre do escritório na peça
                 </span>
                 <span className="mt-1 block text-xs text-slate-500">
-                  Cabeçalho, rodapé e marca d&apos;água vêm do Perfil.{" "}
                   <Link
                     href="/dashboard/perfil"
                     className="font-medium text-stone-700 underline hover:text-stone-900"
                   >
-                    Configurar timbre no Perfil
+                    Configurar no Perfil
                   </Link>
                 </span>
               </span>
@@ -1524,9 +1478,7 @@ export function JecForm() {
             >
               {loading
                 ? LOADING_STAGES[loadingStage]
-                : isAssistente
-                  ? "Confirmar ação e gerar peça"
-                  : "Analisar provas e gerar peça"}
+                : "Gerar peça"}
             </button>
           </div>
         </section>
@@ -1538,14 +1490,9 @@ export function JecForm() {
           className="scroll-mt-24 border-t border-slate-200 pt-8"
         >
           <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            <strong>Minuta para revisão.</strong> Esta peça não é protocolada
-            automaticamente — confira dados, valores e fundamentos antes de
-            peticionar.
+            Minuta para revisão — confira dados, valores e fundamentos antes de
+            protocolar.
           </div>
-          <p className="mb-4 text-sm text-slate-500">
-            O formulário acima permanece preenchido. Edite os fatos e gere de
-            novo quando quiser — PDF e Word abrem em nova aba.
-          </p>
           <PecasResultado
             resultado={resultado}
             escritorio={escritorio}

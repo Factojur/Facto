@@ -5,11 +5,37 @@
  */
 
 export type ComarcaInfo = {
+  /** Texto livre do foro (preferencial para o cabeçalho). */
+  foro?: string;
   cep?: string;
-  cidade: string;
-  uf: string;
+  cidade?: string;
+  uf?: string;
   numeroJuizado?: string;
 };
+
+/**
+ * Tenta extrair município/UF do texto do foro (ex.: "... de Campinas/SP",
+ * "... de Campinas - SP") para fechamento e OAB.
+ */
+export function extrairCidadeUfDoForo(foro: string): {
+  cidade: string;
+  uf: string;
+} {
+  const t = foro.trim();
+  if (!t) return { cidade: "", uf: "" };
+
+  const m =
+    t.match(
+      /(?:de|da comarca de)\s+([A-Za-zÀ-ÿ'.\s]+?)\s*[-–/]\s*([A-Za-z]{2})\s*$/i
+    ) ??
+    t.match(/([A-Za-zÀ-ÿ'.\s]+?)\s*[-–/]\s*([A-Za-z]{2})\s*$/i);
+
+  if (!m) return { cidade: "", uf: "" };
+  const cidade = m[1]!.replace(/\s+/g, " ").trim();
+  const uf = m[2]!.trim().toUpperCase();
+  if (!ufValida(uf) || cidade.length < 2) return { cidade: "", uf: "" };
+  return { cidade, uf };
+}
 
 type ViaCepResposta = {
   cep: string;
@@ -61,12 +87,21 @@ export function ufValida(uf: string): boolean {
 }
 
 /**
- * Monta o cabeçalho de endereçamento exato da peça do JEC, a partir dos
- * dados de comarca já validados. Nunca deixa a IA reescrever esse trecho.
+ * Monta o cabeçalho de endereçamento exato da peça do JEC.
+ * Preferência: texto livre do foro. Fallback: cidade/UF estruturados.
+ * Nunca deixa a IA reescrever esse trecho.
  */
 export function formatarEnderecamentoJec(info: ComarcaInfo): string {
-  const cidade = info.cidade.trim();
-  const uf = info.uf.trim().toUpperCase();
+  const foro = info.foro?.trim();
+  if (foro) {
+    return [
+      "EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO",
+      foro.toUpperCase(),
+    ].join("\n");
+  }
+
+  const cidade = (info.cidade ?? "").trim();
+  const uf = (info.uf ?? "").trim().toUpperCase();
 
   if (!cidade || !uf) {
     return [

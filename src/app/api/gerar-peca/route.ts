@@ -6,7 +6,7 @@ import {
   type GerarPecaJecInput,
   type GerarPecaJecOutput,
 } from "@/lib/gerar-peca-jec";
-import { ufValida, formatarEnderecamentoJec } from "@/lib/endereco-comarca";
+import { ufValida, formatarEnderecamentoJec, extrairCidadeUfDoForo } from "@/lib/endereco-comarca";
 import {
   buscarConhecimentoRelacionado,
   extrairTextoDeArquivo,
@@ -217,7 +217,13 @@ export async function POST(request: Request) {
     );
   }
 
-  if (body.comarca?.uf && !ufValida(body.comarca.uf)) {
+  const ufComarca =
+    body.comarca?.uf?.trim() ||
+    (body.comarca?.foro
+      ? extrairCidadeUfDoForo(body.comarca.foro).uf
+      : "");
+
+  if (ufComarca && !ufValida(ufComarca)) {
     return NextResponse.json(
       { error: "UF da comarca inválida." },
       { status: 400 }
@@ -254,7 +260,7 @@ export async function POST(request: Request) {
   );
 
   const oabBruta = user.user_metadata?.oab_numero as string | undefined;
-  const oabFormatada = formatarOabAssinatura(oabBruta, body.comarca?.uf);
+  const oabFormatada = formatarOabAssinatura(oabBruta, ufComarca || undefined);
 
   const scaffold = gerarPecaJec({
     ...body,
@@ -284,7 +290,7 @@ export async function POST(request: Request) {
         : null,
       jurisDoCasoUtilizada: jurisMeta,
       avisoIA:
-        "GEMINI_API_KEY não configurada — peça gerada pelo modelo determinístico (fundamentação genérica). Configure a chave na Vercel para redação completa.",
+        "A redação completa está indisponível no momento. Foi gerada uma peça de reserva com fundamentação genérica — gere novamente em instantes.",
     };
     return NextResponse.json(semIa);
   }
@@ -296,8 +302,12 @@ export async function POST(request: Request) {
   const enderecamento = formatarEnderecamentoJec(
     body.comarca ?? { cidade: "", uf: "" }
   );
-  const cidade = body.comarca?.cidade?.trim();
-  const uf = body.comarca?.uf?.trim();
+  const extraidoForo = body.comarca?.foro
+    ? extrairCidadeUfDoForo(body.comarca.foro)
+    : { cidade: "", uf: "" };
+  const cidade =
+    body.comarca?.cidade?.trim() || extraidoForo.cidade || undefined;
+  const uf = body.comarca?.uf?.trim() || extraidoForo.uf || undefined;
   const localFechamento =
     cidade && uf ? `${cidade}/${uf.toUpperCase()}` : undefined;
 
@@ -339,7 +349,7 @@ export async function POST(request: Request) {
         : null,
       jurisDoCasoUtilizada: jurisMeta,
       avisoIA:
-        `A IA não concluiu a redação (${ia.erro}). Foi usada a peça de reserva com fundamentação GENÉRICA — não protocolar assim. Clique em gerar novamente; se persistir, confira GEMINI_API_KEY e o tempo de resposta na Vercel.`,
+        "A redação não foi concluída. Foi usada uma peça de reserva com fundamentação genérica — não protocolar assim. Gere novamente.",
     };
     return NextResponse.json(fallback);
   }
@@ -363,7 +373,7 @@ export async function POST(request: Request) {
         : null,
       jurisDoCasoUtilizada: jurisMeta,
       avisoIA:
-        "A IA devolveu fundamentação genérica (rejeitada). Gere novamente para obter DO DIREITO específico do caso com subtópicos a), b), c)...",
+        "A fundamentação veio genérica demais e foi rejeitada. Gere novamente para obter o DO DIREITO específico do caso.",
     } satisfies GerarPecaJecOutput);
   }
 
