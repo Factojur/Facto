@@ -57,6 +57,8 @@ import {
 } from "@/components/dashboard/juris-caso-form";
 import type { ReuValue } from "@/lib/reu-types";
 import type { JurisCasoPayload } from "@/lib/juris-caso-types";
+import type { ResumoCota } from "@/lib/cota-pecas";
+import { PacotesExtrasPainel } from "@/components/dashboard/pacotes-extras-painel";
 
 const NAV_SECOES = [
   { id: "secao-acao", label: "Ação" },
@@ -573,9 +575,27 @@ export function JecForm() {
   const [rascunhos, setRascunhos] = useState<JecRascunhoSalvo[]>([]);
   const [rascunhoAtivoId, setRascunhoAtivoId] = useState<string | null>(null);
   const [msgRascunho, setMsgRascunho] = useState<string | null>(null);
+  const [cota, setCota] = useState<ResumoCota | null>(null);
 
   const isAssistente = tipoSelecionado === ASSISTENTE_FACTO;
   const modoAssistentePendenteConfirmacao = isAssistente;
+
+  useEffect(() => {
+    let cancelado = false;
+    async function carregarCota() {
+      try {
+        const res = await fetch("/api/cota");
+        const data = await res.json();
+        if (!cancelado && res.ok && data.cota) setCota(data.cota);
+      } catch {
+        /* silencioso — UI de cota é auxiliar */
+      }
+    }
+    void carregarCota();
+    return () => {
+      cancelado = true;
+    };
+  }, []);
 
   const resumoValores = useMemo(
     () => calcularResumoValorCausa(valoresCausa),
@@ -893,11 +913,20 @@ export function JecForm() {
       const data = await response.json();
 
       if (!response.ok) {
+        if (data.codigo === "COTA_ESGOTADA" && data.cota) {
+          setCota(data.cota);
+          window.setTimeout(() => {
+            document
+              .getElementById("pacotes-extras-jec")
+              ?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 50);
+        }
         setError(data.error ?? "Erro ao gerar a peça.");
         setLoading(false);
         return;
       }
 
+      if (data.cota) setCota(data.cota);
       setResultado(data);
       window.setTimeout(() => {
         document
@@ -937,7 +966,27 @@ export function JecForm() {
             Peças para o Juizado Especial Cível (Lei nº 9.099/95). Revise sempre
             antes de protocolar.
           </p>
+          {cota?.trackingAtivo && cota.usoLabel && !cota.esgotada && (
+            <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  (cota.percentualUsado ?? 0) >= 85
+                    ? "bg-amber-500"
+                    : "bg-emerald-500"
+                }`}
+              />
+              {cota.usoLabel}
+            </p>
+          )}
         </header>
+
+        {(cota?.esgotada || (cota?.percentualUsado ?? 0) >= 85) && (
+          <PacotesExtrasPainel
+            id="pacotes-extras-jec"
+            variante="banner"
+            cota={cota}
+          />
+        )}
 
         <nav
           aria-label="Seções do formulário"
@@ -1470,15 +1519,29 @@ export function JecForm() {
             </ul>
           </div>
 
-          <div className="flex justify-end pt-2">
+          <div className="flex flex-col items-end gap-2 pt-2">
+            {cota?.esgotada && (
+              <p className="text-sm text-amber-800">
+                Cota esgotada —{" "}
+                <a
+                  href="#pacotes-extras-jec"
+                  className="font-semibold underline"
+                >
+                  contrate um pacote extra
+                </a>{" "}
+                para continuar.
+              </p>
+            )}
             <button
               type="submit"
-              disabled={loading || !podeGerar}
+              disabled={loading || !podeGerar || Boolean(cota?.esgotada)}
               className="rounded-lg bg-stone-700 px-8 py-3.5 text-base font-semibold text-amber-50 shadow-sm transition hover:bg-stone-600 disabled:opacity-60"
             >
               {loading
                 ? LOADING_STAGES[loadingStage]
-                : "Gerar peça"}
+                : cota?.esgotada
+                  ? "Cota esgotada"
+                  : "Gerar peça"}
             </button>
           </div>
         </section>

@@ -3,34 +3,46 @@
  * Usa fetch puro (sem SDK) — funciona com chave Standard (AIza) e Auth key (AQ.).
  * Usado no sandbox (/admin/teste-ia) e na geração real (/api/gerar-peca).
  *
- * Workflow agentic: Etapa 1 (triagem) usa modelos Flash; Etapa 2 (redação)
- * tenta Pro e cai para Flash de maior qualidade se o Pro estiver
- * descontinuado ou fora do free tier.
+ * Workflow agentic:
+ * - Etapa 1 (triagem): Flash-Lite — barato e suficiente para tese/estratégia
+ * - Etapa 2 (redação): 2.5 Flash como padrão (custo/qualidade)
+ * Override opcional: GEMINI_MODELO_REDACAO=gemini-2.5-pro
  */
 
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
 /** Cadeia Etapa 1 — Paralegal / triagem (rápido e barato). */
 export const MODELOS_TRIAGEM = [
-  "gemini-1.5-flash",
-  "gemini-flash-lite-latest",
+  "gemini-2.5-flash-lite",
   "gemini-3.5-flash-lite",
+  "gemini-flash-lite-latest",
+  "gemini-2.0-flash",
 ] as const;
 
 /**
- * Cadeia Etapa 2 — Redator sênior (qualidade).
- * 1.5-pro costuma estar descontinuado / fora do free tier; por isso
- * seguimos com Flash “cheio” e, por fim, Lite.
+ * Cadeia Etapa 2 — Redator (qualidade com custo controlado).
+ * Flash primeiro; Pro só se GEMINI_MODELO_REDACAO apontar para ele.
  */
-export const MODELOS_REDACAO = [
-  "gemini-1.5-pro",
-  "gemini-2.0-flash",
+export const MODELOS_REDACAO_PADRAO = [
+  "gemini-2.5-flash",
+  "gemini-3.5-flash",
   "gemini-flash-latest",
-  "gemini-flash-lite-latest",
+  "gemini-2.0-flash",
   "gemini-3.5-flash-lite",
 ] as const;
 
-const MODELO_PADRAO = MODELOS_TRIAGEM[1];
+export function modelosRedacao(): readonly string[] {
+  const preferido = process.env.GEMINI_MODELO_REDACAO?.trim();
+  if (preferido) {
+    return [preferido, ...MODELOS_REDACAO_PADRAO.filter((m) => m !== preferido)];
+  }
+  return MODELOS_REDACAO_PADRAO;
+}
+
+/** @deprecated Preferir modelosRedacao() */
+export const MODELOS_REDACAO = MODELOS_REDACAO_PADRAO;
+
+const MODELO_PADRAO = MODELOS_TRIAGEM[0];
 const MODELO_FALLBACK = "gemini-3.5-flash-lite";
 
 export type ResultadoGeminiSucesso = {
@@ -133,7 +145,7 @@ async function chamarGemini(params: {
 /**
  * Chama a Gemini API com system + user prompt.
  * Se `modelos` for passado, tenta cada um em ordem até um responder
- * (útil quando aliases 1.5 estão descontinuados).
+ * (útil quando aliases estão descontinuados).
  */
 export async function gerarTextoComGemini(params: {
   systemPrompt: string;

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FactoLogo } from "@/components/brand/facto-logo";
 import { JusticaWatermark } from "@/components/dashboard/justica-watermark";
 import { MetodosPagamento } from "@/components/landing/metodos-pagamento";
+import { PLANO_ANUAL, PLANO_MENSAL } from "@/lib/planos-facto";
 
 const LINK_MENSAL = "https://mpago.la/2jsFX7w";
 const LINK_ANUAL = "https://mpago.la/26yzsZT";
@@ -263,19 +264,18 @@ export function LandingPage() {
                   Flexibilidade total, mês a mês.
                 </p>
                 <div className="mt-6 flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-white">R$ 49,90</span>
-                  <span className="text-stone-500">/mês</span>
+                  <span className="text-4xl font-bold text-white">
+                    {PLANO_MENSAL.rotuloPreco}
+                  </span>
+                  <span className="text-stone-500">{PLANO_MENSAL.rotuloPeriodo}</span>
                 </div>
                 <ul className="mt-6 space-y-3 text-sm text-stone-400">
-                  <li className="flex items-center gap-2">
-                    <span className="text-facto-gold">✓</span> Acesso completo ao FACTO
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="text-facto-gold">✓</span> Peças jurídicas ilimitadas
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="text-facto-gold">✓</span> Cancele quando quiser
-                  </li>
+                  {PLANO_MENSAL.beneficios.map((b) => (
+                    <li key={b} className="flex items-start gap-2">
+                      <span className="mt-0.5 shrink-0 text-facto-gold">✓</span>
+                      <span>{b}</span>
+                    </li>
+                  ))}
                 </ul>
                 <div className="mt-8">
                   <BotaoAssinar href={LINK_MENSAL}>Assinar mensal</BotaoAssinar>
@@ -289,25 +289,25 @@ export function LandingPage() {
                 </span>
                 <h3 className="text-lg font-semibold text-white">Plano Anual</h3>
                 <p className="mt-1 text-sm text-stone-400">
-                  Equivalente a R$ 39,90/mês.
+                  Equivalente a {PLANO_ANUAL.rotuloEquivalenteMensal}/mês.
                 </p>
                 <div className="mt-6 flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-white">R$ 478,80</span>
-                  <span className="text-stone-400">/ano</span>
+                  <span className="text-4xl font-bold text-white">
+                    {PLANO_ANUAL.rotuloPreco}
+                  </span>
+                  <span className="text-stone-400">{PLANO_ANUAL.rotuloPeriodo}</span>
                 </div>
                 <p className="mt-1 text-sm font-medium text-facto-gold">
-                  Economize R$ 120,00 por ano
+                  {PLANO_ANUAL.descontoPercentual}% de desconto — economize{" "}
+                  {PLANO_ANUAL.rotuloEconomia} por ano
                 </p>
                 <ul className="mt-6 space-y-3 text-sm text-stone-300">
-                  <li className="flex items-center gap-2">
-                    <span className="text-facto-gold">✓</span> Acesso completo ao FACTO
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="text-facto-gold">✓</span> Peças jurídicas ilimitadas
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="text-facto-gold">✓</span> Melhor preço por mês
-                  </li>
+                  {PLANO_ANUAL.beneficios.map((b) => (
+                    <li key={b} className="flex items-start gap-2">
+                      <span className="mt-0.5 shrink-0 text-facto-gold">✓</span>
+                      <span>{b}</span>
+                    </li>
+                  ))}
                 </ul>
                 <div className="mt-8">
                   <BotaoAssinar href={LINK_ANUAL} variante="primario">
@@ -318,8 +318,9 @@ export function LandingPage() {
             </div>
 
             <p className="mt-8 text-center text-xs text-stone-600">
-              Pagamento processado com segurança pelo Mercado Pago. Após a
-              confirmação, seu acesso é liberado automaticamente.
+              Cotas mensais renovam a cada ciclo. Se precisar de mais gerações,
+              pacotes extras (+50 ou +100) ficam disponíveis na sua conta após o
+              login. Pagamento processado com segurança pelo Mercado Pago.
             </p>
 
             <MetodosPagamento />

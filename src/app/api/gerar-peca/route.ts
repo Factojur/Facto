@@ -18,7 +18,9 @@ import {
   normalizarPecaGerada,
   pecaTemFundamentacaoGenerica,
 } from "@/lib/ia/normalizar-peca-gerada";
+import { mesclarFatosIaComDireitoReserva, garantirSecaoValorCausa } from "@/lib/ia/mesclar-peca-hibrida";
 import { geminiConfigurado } from "@/lib/ia/gemini-client";
+import { consumirUmaPeca, verificarSaldoCota } from "@/lib/cota-pecas-server";
 import { formatarOabAssinatura } from "@/lib/formatar-oab";
 import { gerarDocumentoTimbrado } from "@/lib/formatacao-juridica";
 import { calcularResumoValorCausa } from "@/lib/valores-causa";
@@ -36,7 +38,7 @@ import {
 } from "@/lib/juris-caso-types";
 
 /**
- * Workflow agentic: 2 chamadas Gemini (triagem Flash + redação Pro/Flash).
+ * Workflow agentic: 2 chamadas Gemini (triagem Flash-Lite + redação Flash).
  * 60s = teto típico do plano Hobby na Vercel; em Pro pode subir se precisar.
  */
 export const maxDuration = 60;
@@ -203,6 +205,36 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
+  const email = user.email?.trim();
+  if (!email) {
+    return NextResponse.json(
+      { error: "Conta sem e-mail — não é possível validar a cota." },
+      { status: 400 }
+    );
+  }
+
+  const saldo = await verificarSaldoCota({
+    userId: user.id,
+    email,
+  });
+  if (!saldo.ok) {
+    return NextResponse.json(
+      {
+        error:
+          "Cota mensal de peças esgotada. Contrate um pacote extra em Perfil → Assinatura ou no banner desta página.",
+        cota: saldo.cota,
+        codigo: "COTA_ESGOTADA",
+      },
+      { status: 402 }
+    );
+  }
+
+  const debitarEResponder = async (payload: Record<string, unknown>, status = 200) => {
+    const consumo = await consumirUmaPeca({ userId: user.id, email });
+    const cota = consumo.ok ? consumo.cota : "cota" in consumo ? consumo.cota : undefined;
+    return NextResponse.json({ ...payload, cota }, { status });
+  };
+
   let body: GerarPecaBody;
   try {
     body = (await request.json()) as GerarPecaBody;
@@ -292,7 +324,7 @@ export async function POST(request: Request) {
       avisoIA:
         "A redação completa por IA está indisponível no momento. Foi gerada uma peça de reserva com estrutura forense e fundamentação-modelo — revise antes de protocolar e tente gerar novamente em instantes.",
     };
-    return NextResponse.json(semIa);
+    return debitarEResponder(semIa);
   }
 
   const valorCausaResumo = body.valoresCausa
@@ -351,33 +383,51 @@ export async function POST(request: Request) {
       avisoIA:
         "A redação por IA não foi concluída. Foi usada uma peça de reserva com estrutura forense — revise e não protocolar assim. Gere novamente.",
     };
-    return NextResponse.json(fallback);
+    return debitarEResponder(fallback);
   }
 
   const pecaBrutaIa = normalizarPecaGerada(ia.textoGerado);
 
   if (pecaTemFundamentacaoGenerica(pecaBrutaIa)) {
-    const fallbackNorm = finalizarTextoPeca(scaffold.peca, body);
+    const blocoValor = montarSecaoValorCausa(valorCausaResumo).join("\n");
+    const hibrida = mesclarFatosIaComDireitoReserva({
+      pecaIa: pecaBrutaIa,
+      tipoAcao: tipoResolvido,
+      fatos: body.fatos,
+      tutelaUrgencia: tutelaResolvida,
+      trechosBase: baseConhecimento.map((item) => ({
+        titulo: item.titulo,
+        categoria: item.categoria,
+        texto: item.texto,
+      })),
+      blocoValorCausa: blocoValor,
+    });
+    const peca = finalizarTextoPeca(hibrida, body);
     const { pecaHtml } = gerarDocumentoTimbrado(
-      fallbackNorm,
+      peca,
       body.escritorio?.usarTimbre ? body.escritorio : undefined
     );
-    return NextResponse.json({
+    return debitarEResponder({
       ...scaffold,
-      peca: fallbackNorm,
+      peca,
       pecaHtml,
-      geradoPorIA: false,
+      timbrado: Boolean(body.escritorio?.usarTimbre),
+      geradoPorIA: true,
       modeloIA: ia.modelo,
       leiMunicipalUtilizada: leiMunicipal
         ? { nome: leiMunicipal.nome }
         : null,
       jurisDoCasoUtilizada: jurisMeta,
       avisoIA:
-        "A fundamentação veio genérica demais e foi rejeitada. Gere novamente para obter o DO DIREITO específico do caso.",
-    } satisfies GerarPecaJecOutput);
+        "O DO DIREITO da IA veio genérico demais; os fatos reescritos pela IA foram mantidos e a fundamentação foi reforçada com o modelo forense FACTO. Revise antes de protocolar.",
+    });
   }
 
-  const peca = finalizarTextoPeca(pecaBrutaIa, body);
+  const pecaComValor = garantirSecaoValorCausa(
+    pecaBrutaIa,
+    montarSecaoValorCausa(valorCausaResumo).join("\n")
+  );
+  const peca = finalizarTextoPeca(pecaComValor, body);
   const { pecaHtml } = gerarDocumentoTimbrado(
     peca,
     body.escritorio?.usarTimbre ? body.escritorio : undefined
@@ -409,5 +459,5 @@ export async function POST(request: Request) {
       : null,
   };
 
-  return NextResponse.json(resultado);
+  return debitarEResponder(resultado);
 }

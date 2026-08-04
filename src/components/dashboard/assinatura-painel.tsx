@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import type { AssinaturaResumoUI } from "@/lib/assinatura-format";
+import type { ResumoCota } from "@/lib/cota-pecas";
+import { PacotesExtrasPainel } from "@/components/dashboard/pacotes-extras-painel";
 
 function badgeClasses(status: AssinaturaResumoUI["status"]): string {
   switch (status) {
@@ -22,6 +24,7 @@ function badgeClasses(status: AssinaturaResumoUI["status"]): string {
  */
 export function AssinaturaPainel() {
   const [assinatura, setAssinatura] = useState<AssinaturaResumoUI | null>(null);
+  const [cota, setCota] = useState<ResumoCota | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erroLoad, setErroLoad] = useState<string | null>(null);
   const [modalAberto, setModalAberto] = useState(false);
@@ -33,14 +36,19 @@ export function AssinaturaPainel() {
     setCarregando(true);
     setErroLoad(null);
     try {
-      const res = await fetch("/api/assinatura");
-      const data = await res.json();
-      if (!res.ok) {
-        setErroLoad(data.error ?? "Falha ao carregar assinatura.");
+      const [resAss, resCota] = await Promise.all([
+        fetch("/api/assinatura"),
+        fetch("/api/cota"),
+      ]);
+      const dataAss = await resAss.json();
+      const dataCota = await resCota.json().catch(() => ({}));
+      if (!resAss.ok) {
+        setErroLoad(dataAss.error ?? "Falha ao carregar assinatura.");
         setAssinatura(null);
       } else {
-        setAssinatura(data.assinatura ?? null);
+        setAssinatura(dataAss.assinatura ?? null);
       }
+      if (resCota.ok && dataCota.cota) setCota(dataCota.cota);
     } catch {
       setErroLoad("Falha de rede ao carregar assinatura.");
       setAssinatura(null);
@@ -170,6 +178,8 @@ export function AssinaturaPainel() {
                 Cancelar assinatura
               </button>
             </div>
+
+            <PacotesExtrasPainel cota={cota} />
           </>
         )}
 

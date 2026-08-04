@@ -11,6 +11,7 @@ import {
   juntarQuebrasDeLinhaSuaves,
   normalizarTextoFatos,
 } from "@/lib/peca-paragrafos";
+import { normalizarParagrafosDoDireito } from "@/lib/ia/mesclar-peca-hibrida";
 
 const PADRAO_NOME_ACAO =
   /^(?:PETI[CÇ][AÃ]O\s+INICIAL\s*[—–-]?\s*)?(?:A[CÇ][AÃ]O\s+DE\s+|EXECU[CÇ][AÃ]O\s+|EMBARGOS\s+|RECURSO\s+)/i;
@@ -366,6 +367,7 @@ export function normalizarPecaGerada(texto: string): string {
   t = inserirEspacoAposEnderecamento(t);
   t = inserirEspacoAposNomeAcao(t);
   t = normalizarSecaoFatos(t);
+  t = normalizarParagrafosDoDireito(t);
   t = normalizarLinhaOab(t);
   t = normalizarFechamentoAssinatura(t);
   // Segunda passagem: a IA às vezes reinsere --- em títulos/tópicos

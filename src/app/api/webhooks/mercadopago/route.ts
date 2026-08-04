@@ -14,10 +14,11 @@ import {
   normalizarTopicoWebhook,
 } from "@/lib/mercadopago/pos-compra";
 import { dentroPrazoArrependimentoCdc } from "@/lib/assinatura-format";
+import { PRECO_CHEQUE_ANUAL, PRECO_CHEQUE_MENSAL } from "@/lib/planos-facto";
 
 const MP_API = "https://api.mercadopago.com";
-const VALOR_MENSAL = 49.9;
-const VALOR_ANUAL = 478.8;
+const VALOR_MENSAL = PRECO_CHEQUE_MENSAL;
+const VALOR_ANUAL = PRECO_CHEQUE_ANUAL;
 const DIA_EM_MS = 24 * 60 * 60 * 1000;
 const DURACAO_CICLO_DIAS: Record<"mensal" | "anual", number> = {
   mensal: 30,

@@ -17,7 +17,7 @@ import {
 import {
   gerarTextoComGemini,
   geminiConfigurado,
-  MODELOS_REDACAO,
+  modelosRedacao,
   MODELOS_TRIAGEM,
 } from "@/lib/ia/gemini-client";
 import {
@@ -372,8 +372,8 @@ export async function gerarPecaComIA(params: {
       casoReal,
       estrategiaJuridica,
     }),
-    modelos: MODELOS_REDACAO,
-    temperature: 0.4,
+    modelos: modelosRedacao(),
+    temperature: 0.35,
     maxOutputTokens: 8192,
   });
 
