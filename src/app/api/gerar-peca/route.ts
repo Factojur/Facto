@@ -24,6 +24,11 @@ import { consumirUmaPeca, verificarSaldoCota } from "@/lib/cota-pecas-server";
 import { formatarOabAssinatura } from "@/lib/formatar-oab";
 import { gerarDocumentoTimbrado } from "@/lib/formatacao-juridica";
 import { calcularResumoValorCausa } from "@/lib/valores-causa";
+import {
+  mensagemBloqueioTetoLeigo,
+  ultrapassaTetoJec,
+} from "@/lib/jec-teto";
+import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
 import { injetarProvasELinkNuvem } from "@/lib/provas-anexos";
 import {
   formatarQualificacaoReus,
@@ -247,6 +252,32 @@ export async function POST(request: Request) {
       { error: "Tipo de ação e fatos são obrigatórios." },
       { status: 400 }
     );
+  }
+
+  // Teto JEC para leigos (sem OAB): 20 SM — contas de acesso livre não sofrem o bloqueio
+  if (!isEmailAcessoLivre(email)) {
+    let tipoUsuario =
+      (user.user_metadata?.tipo_usuario as string | undefined) ?? "advogado";
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("tipo_usuario")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profile?.tipo_usuario) {
+      tipoUsuario = profile.tipo_usuario;
+    }
+    if (tipoUsuario === "leigo" && body.valoresCausa) {
+      const resumoTeto = calcularResumoValorCausa(body.valoresCausa);
+      if (ultrapassaTetoJec(resumoTeto.totalCentavos, false)) {
+        return NextResponse.json(
+          {
+            error: mensagemBloqueioTetoLeigo(resumoTeto.totalCentavos),
+            codigo: "TETO_JEC_LEIGO",
+          },
+          { status: 403 }
+        );
+      }
+    }
   }
 
   const ufComarca =

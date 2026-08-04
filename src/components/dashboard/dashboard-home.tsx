@@ -73,12 +73,14 @@ function AreaPortalCard({
   onToggleFavorito,
   index,
   liberadaNoPlano = true,
+  rotuloBloqueio = "Upgrade de plano",
 }: {
   area: AreaAtuacao;
   favorito: boolean;
   onToggleFavorito: () => void;
   index: number;
   liberadaNoPlano?: boolean;
+  rotuloBloqueio?: string;
 }) {
   const tema = getAreaTema(area.id);
   const disponivel = area.available && area.href && liberadaNoPlano;
@@ -124,7 +126,7 @@ function AreaPortalCard({
         )}
         {area.available && !liberadaNoPlano && (
           <span className="mb-2 inline-block rounded-full bg-amber-400/20 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200">
-            Upgrade de plano
+            {rotuloBloqueio}
           </span>
         )}
         <h3 className="text-xl font-bold text-white">{area.title}</h3>
@@ -237,12 +239,14 @@ export function DashboardHome({
   favoritosIniciais,
   leigo = false,
   plano = null,
+  acessoLivre = false,
 }: {
   nome: string;
   userId: string;
   favoritosIniciais: string[];
   leigo?: boolean;
   plano?: PlanoId | null;
+  acessoLivre?: boolean;
 }) {
   const primeiroNome = nome.split(" ")[0];
   const [favoritos, setFavoritos] = useState(favoritosIniciais);
@@ -290,20 +294,23 @@ export function DashboardHome({
     .map((id) => getAreaById(id))
     .filter((a): a is AreaAtuacao => Boolean(a));
 
+  const gateAreas = {
+    plano,
+    tipoUsuario: leigo ? "leigo" : "advogado",
+    acessoLivre,
+  } as const;
+
   const areasVisiveis = useMemo(() => {
-    const tipo = leigo ? "leigo" : "advogado";
     if (filtro === "favoritas") {
       return AREAS_ATUACAO.filter((a) => favoritos.includes(a.id));
     }
     if (filtro === "disponiveis") {
       return AREAS_ATUACAO.filter(
-        (a) =>
-          a.available &&
-          areaEstaLiberada(a.id, { plano, tipoUsuario: tipo })
+        (a) => a.available && areaEstaLiberada(a.id, gateAreas)
       );
     }
     return AREAS_ATUACAO;
-  }, [filtro, favoritos, plano, leigo]);
+  }, [filtro, favoritos, plano, leigo, acessoLivre]);
 
   const areaJec = getAreaById("jec");
 
@@ -355,10 +362,10 @@ export function DashboardHome({
               </p>
             )}
             <p className="mt-4 max-w-xl text-sm leading-relaxed text-stone-400">
-              Seu cadastro foi feito sem OAB, por isso seu acesso ao FACTO é
-              dedicado ao Juizado Especial Cível — causas de até 20 salários
-              mínimos, conforme o art. 9º da Lei nº 9.099/95. As demais áreas
-              do FACTO são exclusivas para advogados cadastrados com OAB.
+              Seu cadastro foi feito sem OAB, por isso o FACTO libera o Juizado
+              Especial Cível para causas de até 20 salários mínimos nacionais
+              (Lei nº 9.099/95). Valores acima desse teto e as demais áreas
+              (ainda &quot;em breve&quot;) exigem verificação da OAB.
             </p>
             <Link
               href={areaJec.href!}
@@ -391,10 +398,7 @@ export function DashboardHome({
                       key={area.id}
                       area={area}
                       onRemover={() => toggleFavorito(area.id)}
-                      liberadaNoPlano={areaEstaLiberada(area.id, {
-                        plano,
-                        tipoUsuario: leigo ? "leigo" : "advogado",
-                      })}
+                      liberadaNoPlano={areaEstaLiberada(area.id, gateAreas)}
                     />
                   ))}
                 </div>
@@ -444,10 +448,14 @@ export function DashboardHome({
                       favorito={favoritos.includes(area.id)}
                       onToggleFavorito={() => toggleFavorito(area.id)}
                       index={i}
-                      liberadaNoPlano={areaEstaLiberada(area.id, {
-                        plano,
-                        tipoUsuario: leigo ? "leigo" : "advogado",
-                      })}
+                      liberadaNoPlano={areaEstaLiberada(area.id, gateAreas)}
+                      rotuloBloqueio={
+                        leigo && !acessoLivre
+                          ? "Requer OAB"
+                          : !plano && !acessoLivre
+                            ? "Contrate um plano"
+                            : "Upgrade de plano"
+                      }
                     />
                   ))}
                 </div>

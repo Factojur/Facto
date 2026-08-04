@@ -1,16 +1,18 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
 
 /**
  * Verifica se o e-mail tem acesso liberado ao FACTO com base no histórico de
- * assinaturas. Quem nunca teve nenhuma assinatura registrada (conta admin,
- * contas de teste, cadastros via convite avulso) continua liberado — o
- * bloqueio só entra em ação para quem já teve uma assinatura registrada e
+ * assinaturas. Contas de acesso livre (admin/teste) passam sempre. Quem nunca
+ * teve nenhuma assinatura registrada (convites avulsos) continua liberado —
+ * o bloqueio só entra em ação para quem já teve uma assinatura registrada e
  * ela expirou ou foi cancelada.
  */
 export async function acessoAssinaturaLiberado(
   email: string | null | undefined
 ): Promise<boolean> {
   if (!email) return true;
+  if (isEmailAcessoLivre(email)) return true;
 
   try {
     const admin = createAdminClient();

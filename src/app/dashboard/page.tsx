@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { filtrarFavoritosValidos } from "@/lib/areas-atuacao";
 import { DashboardHome } from "@/components/dashboard/dashboard-home";
 import type { PlanoId } from "@/lib/planos-facto";
+import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -18,6 +19,7 @@ export default async function DashboardPage() {
   let tipoUsuario =
     (user?.user_metadata?.tipo_usuario as string | undefined) ?? "advogado";
   let plano: PlanoId | null = null;
+  const acessoLivre = isEmailAcessoLivre(user?.email);
 
   if (user) {
     const { data: profile } = await supabase
@@ -77,8 +79,9 @@ export default async function DashboardPage() {
       nome={nome}
       userId={user!.id}
       favoritosIniciais={favoritos}
-      leigo={tipoUsuario === "leigo"}
+      leigo={tipoUsuario === "leigo" && !acessoLivre}
       plano={plano}
+      acessoLivre={acessoLivre}
     />
   );
 }

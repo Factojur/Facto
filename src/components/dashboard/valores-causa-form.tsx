@@ -22,9 +22,12 @@ export function valoresCausaVazio(): ValoresPorCategoria {
 export function ValoresCausaSection({
   value,
   onChange,
+  comAdvogado = true,
 }: {
   value: ValoresPorCategoria;
   onChange: (v: ValoresPorCategoria) => void;
+  /** false = leigo (teto 20 SM, aviso bloqueante); true = OAB (teto 40 SM, aviso). */
+  comAdvogado?: boolean;
 }) {
   const resumo = calcularResumoValorCausa(value);
 
@@ -136,9 +139,16 @@ export function ValoresCausaSection({
           Por extenso: {resumo.totalPorExtenso}.
         </p>
       )}
-      {ultrapassaTetoJec(resumo.totalCentavos) && (
-        <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-          {mensagemAlertaTetoJec(resumo.totalCentavos)}
+      {ultrapassaTetoJec(resumo.totalCentavos, comAdvogado) && (
+        <p
+          className={`mt-2 rounded-lg border px-3 py-2 text-xs ${
+            comAdvogado
+              ? "border-amber-200 bg-amber-50 text-amber-900"
+              : "border-red-200 bg-red-50 text-red-900"
+          }`}
+          role="alert"
+        >
+          {mensagemAlertaTetoJec(resumo.totalCentavos, comAdvogado)}
         </p>
       )}
     </section>

@@ -6,6 +6,7 @@ import {
   type PlanoCota,
   type ResumoCota,
 } from "@/lib/cota-pecas";
+import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
 
 type Admin = ReturnType<typeof createAdminClient>;
 
@@ -43,6 +44,17 @@ export async function obterResumoCotaUsuario(opcoes: {
   const admin = createAdminClient();
   const ciclo = cicloAtualSaoPaulo();
   const plano = await planoDoEmail(admin, opcoes.email);
+
+  // Admin / contas de teste: ilimitado, sem consumir cota
+  if (isEmailAcessoLivre(opcoes.email)) {
+    return montarResumoCota({
+      plano,
+      usadas: 0,
+      extras: 0,
+      ciclo,
+      trackingAtivo: false,
+    });
+  }
 
   try {
     const { data, error } = await admin

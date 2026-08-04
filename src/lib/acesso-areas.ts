@@ -1,10 +1,14 @@
 /**
  * Quais áreas o usuário pode usar, conforme plano + tipo (advogado/leigo).
  *
- * - Plano JEC: só Juizado Especial Cível
- * - Plano Completo (mensal/anual):
- *   - advogado: todas as áreas liberadas no produto
- *   - leigo: só JEC (mesmo com cota elevada)
+ * - Qualquer plano ativo (JEC, Completo, Anual): Juizado Especial Cível liberado
+ * - Plano JEC: só JEC
+ * - Plano Completo (mensal/anual) + advogado (OAB): todas as áreas disponíveis
+ * - Plano Completo + leigo (sem OAB): só JEC; demais áreas exigem verificação OAB
+ * - Sem plano: nenhuma área (exceto contas de acesso livre)
+ *
+ * O teto de 20 SM para leigos no JEC é validado na geração da peça (jec-teto),
+ * não neste gate de área.
  */
 
 import type { PlanoId } from "@/lib/planos-facto";
@@ -14,14 +18,18 @@ export type TipoUsuario = "advogado" | "leigo" | string | null | undefined;
 export function areasPermitidas(opcoes: {
   plano: PlanoId | null;
   tipoUsuario?: TipoUsuario;
+  acessoLivre?: boolean;
 }): Set<string> | "todas" | "nenhuma" {
+  if (opcoes.acessoLivre) return "todas";
+
   if (!opcoes.plano) return "nenhuma";
 
+  // Todo plano pago inclui JEC; o plano JEC fica restrito a essa área.
   if (opcoes.plano === "jec") {
     return new Set(["jec"]);
   }
 
-  // mensal / anual
+  // mensal / anual — demais áreas (quando deixarem de ser "em breve") exigem OAB
   if (opcoes.tipoUsuario === "leigo") {
     return new Set(["jec"]);
   }
@@ -31,7 +39,11 @@ export function areasPermitidas(opcoes: {
 
 export function areaEstaLiberada(
   areaId: string,
-  opcoes: { plano: PlanoId | null; tipoUsuario?: TipoUsuario }
+  opcoes: {
+    plano: PlanoId | null;
+    tipoUsuario?: TipoUsuario;
+    acessoLivre?: boolean;
+  }
 ): boolean {
   const liberadas = areasPermitidas(opcoes);
   if (liberadas === "todas") return true;

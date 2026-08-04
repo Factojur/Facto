@@ -35,7 +35,7 @@ export const PLANO_MENSAL = {
     "Base de conhecimento e jurisprudência do seu escritório",
     "Timbre e dados do perfil na peça",
     "Pacotes extras de peças quando a cota acabar",
-    "Leigos: acesso ao JEC com a mesma cota elevada",
+    "Leigos (sem OAB): JEC até 20 salários mínimos; demais áreas com OAB",
     "Cancele quando quiser — sem fidelidade",
   ],
 };

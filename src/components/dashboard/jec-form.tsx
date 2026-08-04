@@ -27,6 +27,10 @@ import { montarChecklistJec, podeGerarPeca } from "@/lib/jec-checklist";
 import { placeholderFatosPorTipo } from "@/lib/jec-placeholders";
 import { docsSugeridosPorTipo } from "@/lib/jec-docs-checklist";
 import { calcularResumoValorCausa } from "@/lib/valores-causa";
+import {
+  mensagemBloqueioTetoLeigo,
+  ultrapassaTetoJec,
+} from "@/lib/jec-teto";
 import { gerarPecaDocxBlob } from "@/lib/exportar-peca-docx";
 import { gerarPecaPdfBlob } from "@/lib/exportar-peca-pdf";
 import {
@@ -547,7 +551,7 @@ function estadoInicialFormulario() {
   };
 }
 
-export function JecForm() {
+export function JecForm({ leigo = false }: { leigo?: boolean }) {
   const [loading, setLoading] = useState(false);
   const [loadingStage, setLoadingStage] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -602,6 +606,10 @@ export function JecForm() {
     [valoresCausa]
   );
 
+  const comAdvogado = !leigo;
+  const bloqueadoTetoLeigo =
+    leigo && ultrapassaTetoJec(resumoValores.totalCentavos, false);
+
   const checklistItens = montarChecklistJec({
     tipoSelecionado,
     fatos,
@@ -611,7 +619,7 @@ export function JecForm() {
     modoAssistentePendenteConfirmacao,
   });
 
-  const podeGerar = podeGerarPeca(checklistItens);
+  const podeGerar = podeGerarPeca(checklistItens) && !bloqueadoTetoLeigo;
 
   useEffect(() => {
     setEscritorio(carregarEscritorioConfig());
@@ -802,6 +810,11 @@ export function JecForm() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!podeGerar) return;
+
+    if (leigo && ultrapassaTetoJec(resumoValores.totalCentavos, false)) {
+      setError(mensagemBloqueioTetoLeigo(resumoValores.totalCentavos));
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -1449,7 +1462,11 @@ export function JecForm() {
         </section>
 
         <div id="secao-valores" className="scroll-mt-24">
-          <ValoresCausaSection value={valoresCausa} onChange={setValoresCausa} />
+          <ValoresCausaSection
+            value={valoresCausa}
+            onChange={setValoresCausa}
+            comAdvogado={comAdvogado}
+          />
         </div>
 
         <PedidosSection value={pedidos} onChange={setPedidos} />
@@ -1520,6 +1537,11 @@ export function JecForm() {
           </div>
 
           <div className="flex flex-col items-end gap-2 pt-2">
+            {bloqueadoTetoLeigo && (
+              <p className="max-w-md text-right text-sm text-red-800">
+                {mensagemBloqueioTetoLeigo(resumoValores.totalCentavos)}
+              </p>
+            )}
             {cota?.esgotada && (
               <p className="text-sm text-amber-800">
                 Cota esgotada —{" "}
@@ -1534,14 +1556,21 @@ export function JecForm() {
             )}
             <button
               type="submit"
-              disabled={loading || !podeGerar || Boolean(cota?.esgotada)}
+              disabled={
+                loading ||
+                !podeGerar ||
+                Boolean(cota?.esgotada) ||
+                bloqueadoTetoLeigo
+              }
               className="rounded-lg bg-stone-700 px-8 py-3.5 text-base font-semibold text-amber-50 shadow-sm transition hover:bg-stone-600 disabled:opacity-60"
             >
               {loading
                 ? LOADING_STAGES[loadingStage]
                 : cota?.esgotada
                   ? "Cota esgotada"
-                  : "Gerar peça"}
+                  : bloqueadoTetoLeigo
+                    ? "Valor acima do teto (20 SM)"
+                    : "Gerar peça"}
             </button>
           </div>
         </section>

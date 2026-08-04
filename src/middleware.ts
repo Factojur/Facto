@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { limparFotoDeMetadata } from "@/lib/perfil-merge";
 import { acessoAssinaturaLiberado } from "@/lib/acesso-assinatura";
 import { EMAIL_ADMIN } from "@/lib/admin-auth";
+import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
 
 const COOKIE_SESSAO = "facto_sessao";
 
@@ -87,9 +88,9 @@ export async function middleware(request: NextRequest) {
 
     // Corta o acesso de quem cancelou a assinatura (fora do prazo de
     // arrependimento do CDC, o acesso já foi liberado até o fim do ciclo
-    // pago) ou não renovou no vencimento. Contas sem nenhuma assinatura
-    // registrada (admin, testes, convites avulsos) não são afetadas.
-    if (user.email !== EMAIL_ADMIN) {
+    // pago) ou não renovou no vencimento. Contas de acesso livre (admin/
+    // teste) e quem nunca teve assinatura registrada não são afetados.
+    if (!isEmailAcessoLivre(user.email)) {
       const liberado = await acessoAssinaturaLiberado(user.email);
       if (!liberado) {
         await supabase.auth.signOut();
