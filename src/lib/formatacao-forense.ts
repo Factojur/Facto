@@ -4,6 +4,7 @@
  * - Margens: superior/esquerda 3 cm; inferior/direita 2 cm
  * - Fonte: Times New Roman 12 pt, preto
  * - Entrelinhas: 1,5
+ * - Entre parágrafos do corpo: sem espaço adicional (só a entrelinha 1,5)
  * - Corpo justificado; recuo de 1ª linha ≈ 2 cm
  * - Após endereçamento: 6 linhas (Processo nº na 4ª, se houver)
  * - Após autor: 1 linha → nome da ação → 1 linha → réu → 2 linhas → seções

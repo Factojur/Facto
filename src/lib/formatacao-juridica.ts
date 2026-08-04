@@ -223,19 +223,23 @@ export function gerarDocumentoTimbrado(
       font-weight: bold;
       text-indent: 0;
       text-transform: uppercase;
-      margin: 0.15rem 0;
+      margin: 0;
     }
     .documento-juridico .secao-titulo {
       font-weight: bold;
       text-align: left;
       text-indent: 0;
-      margin: 1.1em 0 0.55em;
+      /* Apenas respiro antes do tópico romano — sem “parágrafo duplo” */
+      margin: 1.5em 0 0;
+      padding: 0;
     }
     .documento-juridico p,
     .documento-juridico .paragrafo {
       text-align: justify;
       text-indent: 2cm;
-      margin: 0 0 0.65em;
+      /* Entrelinha 1,5 já define o ritmo; sem margin extra entre parágrafos */
+      margin: 0;
+      padding: 0;
       white-space: normal;
     }
     .documento-juridico .secao-titulo,
@@ -255,7 +259,8 @@ export function gerarDocumentoTimbrado(
       font-weight: bold;
       text-align: left;
       text-indent: 2cm;
-      margin: 0.55em 0 0.35em;
+      margin: 0;
+      padding: 0;
     }
     .documento-juridico em {
       font-style: italic;
@@ -263,12 +268,13 @@ export function gerarDocumentoTimbrado(
     .documento-juridico .prova-item {
       text-align: justify;
       text-indent: 0;
-      margin: 0.45em 0 0.45em 1cm;
+      margin: 0;
+      padding-left: 1cm;
     }
     .documento-juridico .fechamento {
       text-align: center;
       text-indent: 0;
-      margin: 0.35rem 0 4px;
+      margin: 0;
     }
     .documento-juridico .documento-conteudo {
       position: relative;
@@ -334,6 +340,12 @@ export function gerarDocumentoTimbrado(
     @media print {
       body { margin: 0; }
       .no-print { display: none !important; }
+      /* Evita margem dupla: @page já aplica 3/2 cm */
+      .documento-juridico {
+        padding: 0;
+        max-width: none;
+        margin: 0;
+      }
     }
   `;
 

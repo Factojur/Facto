@@ -164,26 +164,25 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
         doc.text(line, pageW / 2, y, { align: "center" });
         y += lineH;
       }
-      y += 0.8;
       continue;
     }
 
     if (titulo) {
-      y += 3.5;
+      // Um entrelinha antes do tópico romano; sem gap extra após
+      y += lineH;
       doc.text(lines, marginLeft, y);
-      y += lines.length * lineH + 2.2;
+      y += lines.length * lineH;
       continue;
     }
 
     if (lista) {
-      y += 1.5;
       doc.setFont("times", ehSubtituloNegrito(p) ? "bold" : "normal");
       doc.text(lines, marginLeft + 8, y);
-      y += lines.length * lineH + 1.8;
+      y += lines.length * lineH;
       continue;
     }
 
-    // Corpo: first-line indent; espaço entre parágrafos
+    // Corpo: recuo 1ª linha; só entrelinha 1,5 (sem espaço extra entre parágrafos)
     doc.setFont("times", "normal");
     if (lines.length > 0) {
       doc.text(lines[0]!, marginLeft + indent, y);
@@ -193,7 +192,6 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
         y += (lines.length - 1) * lineH;
       }
     }
-    y += 2.8;
   }
 
   return doc;
