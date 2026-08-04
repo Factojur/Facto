@@ -80,8 +80,7 @@ export function SuporteForm() {
 
       {sucesso && (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          Mensagem enviada. Você também pode falar conosco pelo WhatsApp na
-          tela de elaboração de peças.
+          Mensagem enviada. Responderemos no e-mail da sua conta.
         </div>
       )}
 
