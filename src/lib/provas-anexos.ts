@@ -66,12 +66,11 @@ export function montarCorpoProvasAnexos(opcoes: {
   return linhas;
 }
 
-function tituloProvas(temTutela: boolean): string {
-  return temTutela ? "IV - DAS PROVAS E ANEXOS" : "III - DAS PROVAS E ANEXOS";
-}
-
-function tituloPedidos(temTutela: boolean): string {
-  return temTutela ? "V - DOS PEDIDOS" : "IV - DOS PEDIDOS";
+function romanoSeguinte(atual: string): string {
+  const order = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
+  const idx = order.indexOf(atual.toUpperCase());
+  if (idx < 0) return "IV";
+  return order[Math.min(idx + 1, order.length - 1)]!;
 }
 
 /**
@@ -94,7 +93,6 @@ export function injetarProvasELinkNuvem(
   }
 
   let texto = peca.replace(/\r\n/g, "\n");
-  const temTutela = /III\s*[-—–.]\s*DA TUTELA DE URG[EÊ]NCIA/i.test(texto);
 
   // Menção breve ao final de DOS FATOS (antes de II - DO DIREITO)
   if (link && !texto.includes(link)) {
@@ -113,24 +111,23 @@ export function injetarProvasELinkNuvem(
     "\n"
   );
 
-  const bloco = [
-    "",
-    tituloProvas(temTutela),
-    ...montarCorpoProvasAnexos({ linkNuvem: link, provas, midias }),
-    "",
-  ].join("\n");
+  const corpo = montarCorpoProvasAnexos({
+    linkNuvem: link,
+    provas,
+    midias,
+  }).join("\n");
 
   if (/\n[IVXLCDM]+\s*[-—–.]\s*DOS PEDIDOS/i.test(texto)) {
     texto = texto.replace(
       /\n([IVXLCDM]+)\s*[-—–.]\s*DOS PEDIDOS/i,
-      `${bloco}${tituloPedidos(temTutela)}`
+      (_m, romPedidos: string) => {
+        const romProvas = String(romPedidos).toUpperCase();
+        const romPed = romanoSeguinte(romProvas);
+        return `\n${romProvas} - DAS PROVAS E ANEXOS\n${corpo}\n\n${romPed} - DOS PEDIDOS`;
+      }
     );
   } else {
-    // Fallback: antes do fechamento
-    texto = texto.replace(
-      /\n(Termos em que,)/i,
-      `${bloco}$1`
-    );
+    texto = texto.replace(/\n(Termos em que,)/i, `\nIII - DAS PROVAS E ANEXOS\n${corpo}\n\n$1`);
   }
 
   return texto;

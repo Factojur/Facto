@@ -28,6 +28,8 @@ import {
   injetarQualificacaoReus,
   type ReuValue,
 } from "@/lib/reu-types";
+import { normalizarTextoFatos } from "@/lib/peca-paragrafos";
+import { montarFundamentosDireitoJec } from "@/lib/peca-do-direito-jec";
 
 export type GerarPecaJecInput = {
   tipoAcao: string;
@@ -135,52 +137,85 @@ function extrairPedidos(
   tutelaUrgencia: boolean,
   resumo?: ResumoValorCausa
 ): string {
-  const pedidos = [
-    "a) A citação do(a) requerido(a) para, querendo, apresentar contestação, sob pena de revelia;",
-    "b) A procedência total dos pedidos formulados na presente demanda;",
-    "c) A condenação do(a) requerido(a) ao pagamento das custas processuais e honorários advocatícios, na forma da Lei nº 9.099/95.",
-  ];
-
-  if (tipoAcao.toLowerCase().includes("indenização")) {
-    const materiaisCentavos = subtotalDaCategoria(resumo, "danosMateriais");
-    const moraisCentavos = subtotalDaCategoria(resumo, "danosMorais");
-
-    const partes: string[] = [];
-    if (materiaisCentavos > 0) {
-      partes.push(`danos materiais no valor de ${formatarCentavos(materiaisCentavos)}`);
-    }
-    if (moraisCentavos > 0) {
-      partes.push(`danos morais no valor de ${formatarCentavos(moraisCentavos)}`);
-    }
-
-    pedidos.splice(
-      1,
-      0,
-      partes.length > 0
-        ? `b) A condenação do(a) requerido(a) ao pagamento de ${partes.join(", ")}, totalizando ${formatarCentavos(materiaisCentavos + moraisCentavos)};`
-        : "b) A condenação do(a) requerido(a) ao pagamento de indenização por danos materiais e morais, em valor a ser arbitrado por Vossa Excelência;"
-    );
-  } else if (tipoAcao.toLowerCase().includes("cobrança")) {
-    pedidos.splice(
-      1,
-      0,
-      "b) A condenação do(a) requerido(a) ao pagamento do débito descrito nos fatos, devidamente atualizado;"
-    );
-  } else if (tipoAcao.toLowerCase().includes("obrigação de fazer")) {
-    pedidos.splice(
-      1,
-      0,
-      "b) A condenação do(a) requerido(a) na obrigação de fazer consistente no cumprimento da prestação descrita nos fatos, no prazo a ser fixado por Vossa Excelência;"
-    );
-  }
+  const itens: string[] = [];
 
   if (tutelaUrgencia) {
-    pedidos.unshift(
-      "a) A concessão de TUTELA DE URGÊNCIA, inaudita altera pars, para assegurar a efetividade do provimento final, diante da probabilidade do direito e do perigo de dano;"
+    itens.push(
+      "A concessão de tutela de urgência, *inaudita altera pars*, para assegurar a efetividade do provimento final, diante da probabilidade do direito e do perigo de dano;"
     );
   }
 
-  return pedidos.join("\n");
+  itens.push(
+    "A citação do(a) requerido(a) para, querendo, apresentar contestação no prazo legal, sob pena de revelia e confissão quanto à matéria de fato;"
+  );
+
+  const tipo = tipoAcao.toLowerCase();
+  if (tipo.includes("indenização") || tipo.includes("indenizacao")) {
+    const materiaisCentavos = subtotalDaCategoria(resumo, "danosMateriais");
+    const moraisCentavos = subtotalDaCategoria(resumo, "danosMorais");
+    const partes: string[] = [];
+    if (materiaisCentavos > 0) {
+      partes.push(
+        `danos materiais no valor de ${formatarCentavos(materiaisCentavos)}`
+      );
+    }
+    if (moraisCentavos > 0) {
+      partes.push(
+        `danos morais no valor de ${formatarCentavos(moraisCentavos)}`
+      );
+    }
+    itens.push(
+      partes.length > 0
+        ? `A condenação do(a) requerido(a) ao pagamento de ${partes.join(" e ")}, totalizando ${formatarCentavos(materiaisCentavos + moraisCentavos)}, com correção monetária e juros legais;`
+        : "A condenação do(a) requerido(a) ao pagamento de indenização por danos materiais e morais, em valor a ser arbitrado por Vossa Excelência, com correção monetária e juros legais;"
+    );
+  } else if (tipo.includes("cobrança") || tipo.includes("cobranca")) {
+    itens.push(
+      "A condenação do(a) requerido(a) ao pagamento do débito descrito nos fatos, devidamente atualizado com correção monetária e juros de mora;"
+    );
+  } else if (tipo.includes("obrigação") || tipo.includes("obrigacao")) {
+    itens.push(
+      "A condenação do(a) requerido(a) na obrigação de fazer consistente no cumprimento da prestação descrita nos fatos, no prazo a ser fixado por Vossa Excelência, sob pena de multa diária;"
+    );
+  } else if (
+    tipo.includes("inexigibilidade") ||
+    tipo.includes("inexistência") ||
+    tipo.includes("inexistencia") ||
+    tipo.includes("declaratória") ||
+    tipo.includes("declaratoria")
+  ) {
+    itens.push(
+      "A declaração de inexistência e/ou inexigibilidade do(s) débito(s) impugnado(s), com as anotações e baixas cadastrais cabíveis;"
+    );
+    const materiaisCentavos = subtotalDaCategoria(resumo, "danosMateriais");
+    const moraisCentavos = subtotalDaCategoria(resumo, "danosMorais");
+    if (materiaisCentavos + moraisCentavos > 0) {
+      const partes: string[] = [];
+      if (materiaisCentavos > 0) {
+        partes.push(
+          `danos materiais de ${formatarCentavos(materiaisCentavos)}`
+        );
+      }
+      if (moraisCentavos > 0) {
+        partes.push(`danos morais de ${formatarCentavos(moraisCentavos)}`);
+      }
+      itens.push(
+        `A condenação do(a) requerido(a) ao pagamento de ${partes.join(" e ")}, com correção monetária e juros legais;`
+      );
+    }
+  } else {
+    itens.push(
+      "A procedência total dos pedidos formulados na presente demanda, com a condenação do(a) requerido(a) nas obrigações e valores descritos nos fatos e fundamentos;"
+    );
+  }
+
+  itens.push(
+    "A condenação do(a) requerido(a) ao pagamento das custas processuais e honorários advocatícios, na forma da Lei nº 9.099/95 e legislação processual pertinente."
+  );
+
+  return itens
+    .map((texto, i) => `${String.fromCharCode(97 + i)}) ${texto}`)
+    .join("\n");
 }
 
 /**
@@ -196,9 +231,7 @@ export function montarSecaoValorCausa(resumo?: ResumoValorCausa): string[] {
   }
 
   const linhas: string[] = [
-    `Dá-se à causa o valor de ${resumo.totalFormatado} (${resumo.totalPorExtenso}), `
-      + "para fins de alçada e competência, assim discriminado:",
-    "",
+    `Dá-se à causa o valor de ${resumo.totalFormatado} (${resumo.totalPorExtenso}), para fins de alçada e competência, assim discriminado:`,
   ];
 
   for (const categoria of resumo.categorias) {
@@ -207,11 +240,14 @@ export function montarSecaoValorCausa(resumo?: ResumoValorCausa): string[] {
     categoria.itens.forEach((item) => {
       linhas.push(`- ${item.descricao}: ${formatarCentavos(item.centavos)}`);
     });
-    linhas.push(`Subtotal ${categoria.label}: ${formatarCentavos(categoria.subtotalCentavos)}`);
-    linhas.push("");
+    linhas.push(
+      `Subtotal ${categoria.label}: ${formatarCentavos(categoria.subtotalCentavos)}`
+    );
   }
 
-  linhas.push(`TOTAL DA CAUSA: ${resumo.totalFormatado} (${resumo.totalPorExtenso}).`);
+  linhas.push(
+    `TOTAL DA CAUSA: ${resumo.totalFormatado} (${resumo.totalPorExtenso}).`
+  );
 
   return linhas;
 }
@@ -281,10 +317,9 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     `Áudios e vídeos (${input.midias.length}): ${listarArquivos(input.midias)}`,
     `Link de nuvem: ${linkNuvem ?? "não informado"}`,
     "",
-    `Total de arquivos para análise: ${totalProvas}`,
+    `Total de arquivos informados: ${totalProvas}`,
     "",
-    "Observação: A análise aprofundada do conteúdo dos arquivos será integrada com IA na próxima fase. "
-      + "Nesta versão, a peça foi estruturada com base nos fatos narrados e na documentação listada."
+    "Observação: esta análise estrutural lista os insumos do formulário. A minuta abaixo deve ser revisada integralmente antes do protocolo."
   );
 
   const analise = analisePartes.join("\n");
@@ -309,13 +344,35 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     formatarQualificacaoReus(input.reus ?? []) ??
     "[NOME COMPLETO DO(A) RÉU(RÉ)], [qualificação completa do(a) réu(ré)]";
 
+  const fatosNormalizados = normalizarTextoFatos(input.fatos);
+  const fundamentos = montarFundamentosDireitoJec({
+    tipoAcao,
+    fatos: input.fatos,
+    tutelaUrgencia,
+    trechosBase: itensConhecimento.map((item) => ({
+      titulo: item.titulo,
+      categoria: item.categoria,
+      texto: item.texto,
+    })),
+  });
+
+  // Numeração romana das seções (provas podem ser injetadas depois).
+  let secao = 2; // I = fatos já fixo; fundamentos = II
+  const proximaSecao = () => {
+    secao += 1;
+    const mapa = ["I", "II", "III", "IV", "V", "VI", "VII"];
+    return mapa[secao - 1] ?? String(secao);
+  };
+
+  // fundamentos já inclui "II - DO DIREITO"
+  const romValor = proximaSecao();
+  const romPedidos = proximaSecao();
+
   const pecaBruta = [
     ...enderecamento.split("\n"),
     "",
     MARCADOR_ESPACO_ENDEREÇAMENTO,
     "",
-    // Nome da ação aparece uma única vez — entre as qualificações, nunca
-    // logo abaixo do endereçamento.
     `[NOME COMPLETO DO(A) AUTOR(A)], [nacionalidade], [estado civil], [profissão], inscrito(a) no CPF sob nº [CPF], `
       + "portador(a) do RG nº [RG], residente e domiciliado(a) na [endereço completo], "
       + "endereço eletrônico [e-mail], por seu advogado que esta subscreve "
@@ -329,37 +386,15 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     `em face de ${qualificacaoReus}, pelos fatos e fundamentos jurídicos a seguir expostos.`,
     "",
     "I - DOS FATOS",
-    input.fatos.trim(),
+    ...fatosNormalizados.split("\n").filter(Boolean),
     "",
-    "II - DO DIREITO",
-    "A presente demanda tramita perante o Juizado Especial Cível, nos termos da Lei nº 9.099/95, "
-      + "sendo a via adequada para causas de menor complexidade e valor, privilegiando a oralidade, "
-      + "simplicidade, informalidade, economia processual e celeridade.",
-    "Os fatos narrados demonstram a plausibilidade do direito invocado e a necessidade de "
-      + "intervenção do Poder Judiciário para restabelecer a situação jurídica violada.",
-    ...(tutelaUrgencia
-      ? [
-          "",
-          "III - DA TUTELA DE URGÊNCIA",
-          "Presentes os requisitos do art. 300 do CPC — probabilidade do direito e perigo de dano "
-            + "ou risco ao resultado útil do processo — autorizando a concessão de tutela de urgência.",
-        ]
-      : []),
-    ...(itensConhecimento.length > 0
-      ? [
-          "Aplicam-se ao caso, em especial, os seguintes dispositivos legais e entendimentos "
-            + "jurisprudenciais cadastrados na base de conhecimento do escritório:",
-          ...itensConhecimento.flatMap((item) => [
-            `${item.categoria.toUpperCase()} — ${item.titulo}`,
-            item.texto.trim(),
-          ]),
-        ]
-      : []),
+    ...fundamentos,
     "",
+    `${romValor} - DO VALOR DA CAUSA`,
     ...montarSecaoValorCausa(valorCausaResumo),
     "",
-    tutelaUrgencia ? "IV - DOS PEDIDOS" : "III - DOS PEDIDOS",
-    "Ante o exposto, requer:",
+    `${romPedidos} - DOS PEDIDOS`,
+    "Ante o exposto, requer a Vossa Excelência:",
     extrairPedidos(tipoAcao, tutelaUrgencia, valorCausaResumo),
     "",
     "Termos em que,",

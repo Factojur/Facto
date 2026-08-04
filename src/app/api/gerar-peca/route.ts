@@ -290,7 +290,7 @@ export async function POST(request: Request) {
         : null,
       jurisDoCasoUtilizada: jurisMeta,
       avisoIA:
-        "A redação completa está indisponível no momento. Foi gerada uma peça de reserva com fundamentação genérica — gere novamente em instantes.",
+        "A redação completa por IA está indisponível no momento. Foi gerada uma peça de reserva com estrutura forense e fundamentação-modelo — revise antes de protocolar e tente gerar novamente em instantes.",
     };
     return NextResponse.json(semIa);
   }
@@ -349,7 +349,7 @@ export async function POST(request: Request) {
         : null,
       jurisDoCasoUtilizada: jurisMeta,
       avisoIA:
-        "A redação não foi concluída. Foi usada uma peça de reserva com fundamentação genérica — não protocolar assim. Gere novamente.",
+        "A redação por IA não foi concluída. Foi usada uma peça de reserva com estrutura forense — revise e não protocolar assim. Gere novamente.",
     };
     return NextResponse.json(fallback);
   }

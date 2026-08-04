@@ -7,6 +7,10 @@
  */
 
 import { MARCADOR_ESPACO_ENDEREÇAMENTO } from "@/lib/formatacao-forense";
+import {
+  juntarQuebrasDeLinhaSuaves,
+  normalizarTextoFatos,
+} from "@/lib/peca-paragrafos";
 
 const PADRAO_NOME_ACAO =
   /^(?:PETI[CÇ][AÃ]O\s+INICIAL\s*[—–-]?\s*)?(?:A[CÇ][AÃ]O\s+DE\s+|EXECU[CÇ][AÃ]O\s+|EMBARGOS\s+|RECURSO\s+)/i;
@@ -318,13 +322,17 @@ function normalizarFechamentoAssinatura(texto: string): string {
     .replace(/^OAB:\s*([A-Za-z]{2})\s*[-/]?\s*/gim, "OAB/$1 ");
 }
 
-/** Detecta fundamentação genérica típica do template de reserva. */
+/** Detecta fundamentação genérica típica do template antigo de reserva. */
 export function pecaTemFundamentacaoGenerica(texto: string): boolean {
   return (
     /plausibilidade do direito invocado/i.test(texto) ||
     /necessidade de\s+interven[cç][aã]o do Poder Judici[aá]rio para restabelecer/i.test(
       texto
-    )
+    ) ||
+    (/privilegiando a oralidade/i.test(texto) &&
+      /simplicidade, informalidade, economia processual/i.test(texto) &&
+      !/art\.\s*14 do CDC/i.test(texto) &&
+      !/S[uú]mula\s*479/i.test(texto))
   );
 }
 
@@ -337,14 +345,27 @@ function removerSeparadoresMarkdown(texto: string): string {
     .replace(/^_{3,}$/gm, "");
 }
 
+/** Reaplica divisão retórica só em DOS FATOS (1 linha = 1 parágrafo). */
+function normalizarSecaoFatos(texto: string): string {
+  return texto.replace(
+    /I\s*[-—–]\s*DOS FATOS\n+[\s\S]*?(?=\n+II\s*[-—–]\s*DO DIREITO)/i,
+    (match) => {
+      const corpo = match.replace(/^I\s*[-—–]\s*DOS FATOS\n+/i, "");
+      return `I - DOS FATOS\n${normalizarTextoFatos(corpo)}`;
+    }
+  );
+}
+
 /** Pipeline completo aplicado à saída da IA antes de HTML/PDF/Word. */
 export function normalizarPecaGerada(texto: string): string {
   let t = removerSeparadoresMarkdown(texto);
+  t = juntarQuebrasDeLinhaSuaves(t);
   t = aplicarEspacamentoRigido(t);
   t = removerTituloAcaoAposEnderecamento(t);
   t = deduplicarLinhasConsecutivas(t);
   t = inserirEspacoAposEnderecamento(t);
   t = inserirEspacoAposNomeAcao(t);
+  t = normalizarSecaoFatos(t);
   t = normalizarLinhaOab(t);
   t = normalizarFechamentoAssinatura(t);
   // Segunda passagem: a IA às vezes reinsere --- em títulos/tópicos

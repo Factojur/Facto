@@ -146,7 +146,7 @@ function linhaParaParagrafo(
   if (/^[IVXLCDM]+\s*[-—–]/i.test(t)) {
     return new Paragraph({
       alignment: AlignmentType.JUSTIFIED,
-      spacing: { before: 160, after: 40, line: ESPACO_LINHA },
+      spacing: { before: 200, after: 80, line: ESPACO_LINHA },
       children: runsDeMarkdown(t, true),
     });
   }
@@ -179,7 +179,7 @@ function linhaParaParagrafo(
     return new Paragraph({
       alignment: AlignmentType.JUSTIFIED,
       indent: { left: 567 },
-      spacing: { before: 160, after: 40, line: ESPACO_LINHA },
+      spacing: { before: 80, after: 80, line: ESPACO_LINHA },
       children: runsDeMarkdown(t),
     });
   }
@@ -187,7 +187,7 @@ function linhaParaParagrafo(
   return new Paragraph({
     alignment: AlignmentType.JUSTIFIED,
     indent: { firstLine: RECUO_PARAGRAFO },
-    spacing: { after: 40, line: ESPACO_LINHA },
+    spacing: { after: 120, line: ESPACO_LINHA },
     children: runsDeMarkdown(t),
   });
 }

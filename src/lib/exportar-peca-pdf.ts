@@ -145,21 +145,21 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
     }
 
     if (titulo) {
-      y += 2;
+      y += 3.5;
       doc.text(lines, marginLeft, y);
-      y += lines.length * lineH + 1;
+      y += lines.length * lineH + 2.2;
       continue;
     }
 
     if (lista) {
-      y += 2;
+      y += 1.5;
       doc.setFont("times", "normal");
       doc.text(lines, marginLeft + 8, y);
-      y += lines.length * lineH + 1;
+      y += lines.length * lineH + 1.8;
       continue;
     }
 
-    // Corpo: justificado aproximado via largura total (jsPDF sem justify nativo)
+    // Corpo: first-line indent; espaço entre parágrafos
     doc.setFont("times", "normal");
     if (lines.length > 0) {
       doc.text(lines[0]!, marginLeft + indent, y);
@@ -169,8 +169,7 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
         y += (lines.length - 1) * lineH;
       }
     }
-    // Quase 0 entre parágrafos do mesmo tópico (~4px)
-    y += 1;
+    y += 2.8;
   }
 
   return doc;

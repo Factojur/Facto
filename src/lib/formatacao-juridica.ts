@@ -4,20 +4,11 @@ import {
   dividirBlocosPeca,
   ehMarcadorEspacoEnderecamento,
 } from "./formatacao-forense";
-
-/** Formata parágrafos dos fatos (linha sob linha, sem linha em branco interna). */
-function formatarParagrafos(texto: string): string {
-  return texto
-    .trim()
-    .split(/\n+/)
-    .map((p) => p.trim().replace(/\s+/g, " "))
-    .filter(Boolean)
-    .join("\n");
-}
+import { normalizarTextoFatos } from "./peca-paragrafos";
 
 /** Aplica regras de espaçamento entre seções da peça. */
 export function aplicarFormatacaoTextoJuridico(pecaBruta: string, fatos: string): string {
-  const fatosFormatados = formatarParagrafos(fatos);
+  const fatosFormatados = normalizarTextoFatos(fatos);
 
   return pecaBruta.replace(
     /I\s*[-—–]\s*DOS FATOS\n+[\s\S]*?(?=\n+II\s*[-—–]\s*DO DIREITO)/i,
@@ -257,13 +248,13 @@ export function gerarDocumentoTimbrado(
       font-weight: bold;
       text-align: justify;
       text-indent: 0;
-      margin: 0.6em 0 0.15em;
+      margin: 1.1em 0 0.55em;
     }
     .documento-juridico p,
     .documento-juridico .paragrafo {
       text-align: justify;
       text-indent: 2cm;
-      margin: 0 0 4px;
+      margin: 0 0 0.65em;
       white-space: normal;
     }
     .documento-juridico .secao-titulo,
@@ -286,7 +277,7 @@ export function gerarDocumentoTimbrado(
     .documento-juridico .prova-item,
     .documento-juridico .pedido {
       text-align: justify;
-      margin: 0.5em 0 4px 1cm;
+      margin: 0.45em 0 0.45em 1cm;
     }
     .documento-juridico .fechamento {
       text-align: center;
