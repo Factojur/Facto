@@ -26,7 +26,9 @@ async function planoDoEmail(admin: Admin, email: string): Promise<PlanoCota> {
   const ativo =
     data.status === "authorized" && (ate === null || ate > agora);
   if (!ativo) return null;
-  if (data.plano === "anual" || data.plano === "mensal") return data.plano;
+  if (data.plano === "anual" || data.plano === "mensal" || data.plano === "jec") {
+    return data.plano;
+  }
   return null;
 }
 

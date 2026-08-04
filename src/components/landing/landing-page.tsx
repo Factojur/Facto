@@ -2,10 +2,18 @@ import Link from "next/link";
 import { FactoLogo } from "@/components/brand/facto-logo";
 import { JusticaWatermark } from "@/components/dashboard/justica-watermark";
 import { MetodosPagamento } from "@/components/landing/metodos-pagamento";
-import { PLANO_ANUAL, PLANO_MENSAL } from "@/lib/planos-facto";
+import { PLANO_ANUAL, PLANO_JEC, PLANO_MENSAL } from "@/lib/planos-facto";
 
-const LINK_MENSAL = "https://mpago.la/2jsFX7w";
-const LINK_ANUAL = "https://mpago.la/26yzsZT";
+/** Links de assinatura Mercado Pago (preapproval). */
+const LINK_JEC =
+  (process.env.NEXT_PUBLIC_MP_LINK_JEC ?? "").trim() ||
+  "https://mpago.la/1Mqkzgm";
+const LINK_MENSAL =
+  (process.env.NEXT_PUBLIC_MP_LINK_MENSAL ?? "").trim() ||
+  "https://mpago.la/2jsFX7w";
+const LINK_ANUAL =
+  (process.env.NEXT_PUBLIC_MP_LINK_ANUAL ?? "").trim() ||
+  "https://mpago.la/26yzsZT";
 
 function IconeRelogio({ className }: { className?: string }) {
   return (
@@ -256,12 +264,41 @@ export function LandingPage() {
               </p>
             </div>
 
-            <div className="mt-14 grid gap-6 md:grid-cols-2">
-              {/* Mensal */}
+            <div className="mt-14 grid gap-6 lg:grid-cols-3">
+              {/* JEC */}
               <div className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-8">
-                <h3 className="text-lg font-semibold text-white">Plano Mensal</h3>
+                <h3 className="text-lg font-semibold text-white">
+                  {PLANO_JEC.rotulo}
+                </h3>
                 <p className="mt-1 text-sm text-stone-500">
-                  Flexibilidade total, mês a mês.
+                  Só Juizado Especial Cível — preço acessível.
+                </p>
+                <div className="mt-6 flex items-baseline gap-1">
+                  <span className="text-4xl font-bold text-white">
+                    {PLANO_JEC.rotuloPreco}
+                  </span>
+                  <span className="text-stone-500">{PLANO_JEC.rotuloPeriodo}</span>
+                </div>
+                <ul className="mt-6 space-y-3 text-sm text-stone-400">
+                  {PLANO_JEC.beneficios.map((b) => (
+                    <li key={b} className="flex items-start gap-2">
+                      <span className="mt-0.5 shrink-0 text-facto-gold">✓</span>
+                      <span>{b}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-8">
+                  <BotaoAssinar href={LINK_JEC}>Assinar JEC</BotaoAssinar>
+                </div>
+              </div>
+
+              {/* Completo mensal */}
+              <div className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-8">
+                <h3 className="text-lg font-semibold text-white">
+                  {PLANO_MENSAL.rotulo}
+                </h3>
+                <p className="mt-1 text-sm text-stone-500">
+                  Todas as áreas · flexibilidade mês a mês.
                 </p>
                 <div className="mt-6 flex items-baseline gap-1">
                   <span className="text-4xl font-bold text-white">
@@ -278,16 +315,18 @@ export function LandingPage() {
                   ))}
                 </ul>
                 <div className="mt-8">
-                  <BotaoAssinar href={LINK_MENSAL}>Assinar mensal</BotaoAssinar>
+                  <BotaoAssinar href={LINK_MENSAL}>Assinar completo</BotaoAssinar>
                 </div>
               </div>
 
               {/* Anual */}
-              <div className="relative flex flex-col rounded-2xl border border-facto-gold/50 bg-gradient-to-br from-facto-gold/[0.14] via-white/[0.04] to-transparent p-8 shadow-xl shadow-facto-gold/10 md:scale-[1.03]">
+              <div className="relative flex flex-col rounded-2xl border border-facto-gold/50 bg-gradient-to-br from-facto-gold/[0.14] via-white/[0.04] to-transparent p-8 shadow-xl shadow-facto-gold/10 lg:scale-[1.02]">
                 <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-facto-gold px-4 py-1 text-xs font-bold uppercase tracking-wide text-facto-dark">
                   Melhor custo-benefício
                 </span>
-                <h3 className="text-lg font-semibold text-white">Plano Anual</h3>
+                <h3 className="text-lg font-semibold text-white">
+                  {PLANO_ANUAL.rotulo}
+                </h3>
                 <p className="mt-1 text-sm text-stone-400">
                   Equivalente a {PLANO_ANUAL.rotuloEquivalenteMensal}/mês.
                 </p>

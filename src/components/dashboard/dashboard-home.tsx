@@ -15,6 +15,8 @@ import {
 import { AreaIllustration } from "@/components/dashboard/area-illustration";
 import { AssistenteFactoDestaque } from "@/components/dashboard/assistente-facto-destaque";
 import { FluxoFactoSection } from "@/components/dashboard/fluxo-facto-section";
+import { areaEstaLiberada } from "@/lib/acesso-areas";
+import type { PlanoId } from "@/lib/planos-facto";
 import { JusticaWatermark } from "@/components/dashboard/justica-watermark";
 
 type Filtro = "todas" | "favoritas" | "disponiveis";
@@ -70,14 +72,16 @@ function AreaPortalCard({
   favorito,
   onToggleFavorito,
   index,
+  liberadaNoPlano = true,
 }: {
   area: AreaAtuacao;
   favorito: boolean;
   onToggleFavorito: () => void;
   index: number;
+  liberadaNoPlano?: boolean;
 }) {
   const tema = getAreaTema(area.id);
-  const disponivel = area.available && area.href;
+  const disponivel = area.available && area.href && liberadaNoPlano;
 
   const cardInner = (
     <>
@@ -116,6 +120,11 @@ function AreaPortalCard({
         {!area.available && (
           <span className="mb-2 inline-block rounded-full bg-white/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white/70">
             Em breve
+          </span>
+        )}
+        {area.available && !liberadaNoPlano && (
+          <span className="mb-2 inline-block rounded-full bg-amber-400/20 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200">
+            Upgrade de plano
           </span>
         )}
         <h3 className="text-xl font-bold text-white">{area.title}</h3>
@@ -172,9 +181,11 @@ function AreaPortalCard({
 function FavoritoRapido({
   area,
   onRemover,
+  liberadaNoPlano = true,
 }: {
   area: AreaAtuacao;
   onRemover: () => void;
+  liberadaNoPlano?: boolean;
 }) {
   const tema = getAreaTema(area.id);
   const inner = (
@@ -209,7 +220,7 @@ function FavoritoRapido({
   const cls =
     "flex min-w-[240px] shrink-0 items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur-sm transition hover:border-facto-gold/40 hover:bg-white/10";
 
-  if (area.available && area.href) {
+  if (area.available && area.href && liberadaNoPlano) {
     return (
       <Link href={area.href} className={cls}>
         {inner}
@@ -225,11 +236,13 @@ export function DashboardHome({
   userId,
   favoritosIniciais,
   leigo = false,
+  plano = null,
 }: {
   nome: string;
   userId: string;
   favoritosIniciais: string[];
   leigo?: boolean;
+  plano?: PlanoId | null;
 }) {
   const primeiroNome = nome.split(" ")[0];
   const [favoritos, setFavoritos] = useState(favoritosIniciais);
@@ -278,14 +291,19 @@ export function DashboardHome({
     .filter((a): a is AreaAtuacao => Boolean(a));
 
   const areasVisiveis = useMemo(() => {
+    const tipo = leigo ? "leigo" : "advogado";
     if (filtro === "favoritas") {
       return AREAS_ATUACAO.filter((a) => favoritos.includes(a.id));
     }
     if (filtro === "disponiveis") {
-      return AREAS_ATUACAO.filter((a) => a.available);
+      return AREAS_ATUACAO.filter(
+        (a) =>
+          a.available &&
+          areaEstaLiberada(a.id, { plano, tipoUsuario: tipo })
+      );
     }
     return AREAS_ATUACAO;
-  }, [filtro, favoritos]);
+  }, [filtro, favoritos, plano, leigo]);
 
   const areaJec = getAreaById("jec");
 
@@ -373,6 +391,10 @@ export function DashboardHome({
                       key={area.id}
                       area={area}
                       onRemover={() => toggleFavorito(area.id)}
+                      liberadaNoPlano={areaEstaLiberada(area.id, {
+                        plano,
+                        tipoUsuario: leigo ? "leigo" : "advogado",
+                      })}
                     />
                   ))}
                 </div>
@@ -422,6 +444,10 @@ export function DashboardHome({
                       favorito={favoritos.includes(area.id)}
                       onToggleFavorito={() => toggleFavorito(area.id)}
                       index={i}
+                      liberadaNoPlano={areaEstaLiberada(area.id, {
+                        plano,
+                        tipoUsuario: leigo ? "leigo" : "advogado",
+                      })}
                     />
                   ))}
                 </div>

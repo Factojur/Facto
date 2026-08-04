@@ -14,13 +14,21 @@ import {
   normalizarTopicoWebhook,
 } from "@/lib/mercadopago/pos-compra";
 import { dentroPrazoArrependimentoCdc } from "@/lib/assinatura-format";
-import { PRECO_CHEQUE_ANUAL, PRECO_CHEQUE_MENSAL } from "@/lib/planos-facto";
+import {
+  PRECO_CHEQUE_ANUAL,
+  PRECO_CHEQUE_JEC,
+  PRECO_CHEQUE_MENSAL,
+  planoPorValor,
+} from "@/lib/planos-facto";
+import { processarPagamentoPacoteExtra } from "@/lib/mercadopago/pacotes-extras";
 
 const MP_API = "https://api.mercadopago.com";
 const VALOR_MENSAL = PRECO_CHEQUE_MENSAL;
 const VALOR_ANUAL = PRECO_CHEQUE_ANUAL;
+const VALOR_JEC = PRECO_CHEQUE_JEC;
 const DIA_EM_MS = 24 * 60 * 60 * 1000;
-const DURACAO_CICLO_DIAS: Record<"mensal" | "anual", number> = {
+const DURACAO_CICLO_DIAS: Record<"jec" | "mensal" | "anual", number> = {
+  jec: 30,
   mensal: 30,
   anual: 365,
 };
@@ -66,14 +74,19 @@ function inferirPlano(
   valor: number | null,
   frequencyType: string | undefined,
   frequency: number | undefined
-): "mensal" | "anual" | null {
+): "jec" | "mensal" | "anual" | null {
   if (frequencyType === "months" && frequency === 12) return "anual";
-  if (frequencyType === "months" && frequency === 1) return "mensal";
-  if (typeof valor === "number") {
-    if (Math.abs(valor - VALOR_ANUAL) < 1) return "anual";
-    if (Math.abs(valor - VALOR_MENSAL) < 1) return "mensal";
+  if (frequencyType === "months" && frequency === 1) {
+    // Mensal JEC vs Completo: distingue pelo valor
+    const porValor = planoPorValor(valor);
+    if (porValor === "jec" || porValor === "mensal") return porValor;
+    if (typeof valor === "number") {
+      if (Math.abs(valor - VALOR_JEC) < 1) return "jec";
+      if (Math.abs(valor - VALOR_MENSAL) < 1) return "mensal";
+    }
+    return "mensal";
   }
-  return null;
+  return planoPorValor(valor);
 }
 
 async function chamarApiMercadoPago(caminho: string) {
@@ -277,7 +290,8 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
     }
 
     if (assinaturaId && cobrancaAprovada) {
-      const plano = (assinatura?.plano as "mensal" | "anual" | null) ?? "mensal";
+      const plano =
+        (assinatura?.plano as "jec" | "mensal" | "anual" | null) ?? "mensal";
       const dataPagamento = invoice.debit_date
         ? new Date(invoice.debit_date)
         : new Date();
@@ -397,6 +411,57 @@ async function processarPayment(admin: AdminClient, id: string) {
       : typeof payment.transaction_amount === "string"
         ? parseFloat(payment.transaction_amount)
         : null;
+
+  const externalReference =
+    typeof payment.external_reference === "string"
+      ? payment.external_reference
+      : null;
+  const metadata =
+    payment.metadata && typeof payment.metadata === "object"
+      ? (payment.metadata as Record<string, unknown>)
+      : null;
+
+  // Compra avulsa (+50 / +100) — não gera convite de assinatura.
+  const extra = await processarPagamentoPacoteExtra({
+    mpPaymentId: String(id),
+    email,
+    valor,
+    externalReference,
+    metadata,
+  });
+  if (extra.ok) {
+    console.info("[webhook mercadopago] pacote extra creditado", {
+      email,
+      mpPaymentId: String(id),
+      pacoteId: extra.pacoteId,
+      pecas: extra.pecas,
+      jaProcessado: extra.jaProcessado ?? false,
+    });
+    if (!extra.jaProcessado) {
+      const { enviarEmailsFinanceiroPacoteExtra } = await import(
+        "@/lib/email/pacote-extra"
+      );
+      const { pacoteExtraPorId } = await import("@/lib/planos-facto");
+      const pacote = pacoteExtraPorId(extra.pacoteId);
+      await enviarEmailsFinanceiroPacoteExtra({
+        emailCliente: email,
+        valor,
+        mpPaymentId: String(id),
+        pecas: extra.pecas,
+        pacoteRotulo: pacote?.rotulo ?? extra.pacoteId,
+      });
+    }
+    return;
+  }
+  // Tentativa de pacote extra que falhou (ex.: e-mail diferente da conta) —
+  // não cair no fluxo de convite de assinatura.
+  if (extra.motivo !== "nao_e_pacote_extra") {
+    console.error(
+      "[webhook mercadopago] pacote extra não creditado",
+      { id, email, valor, motivo: extra.motivo }
+    );
+    return;
+  }
 
   console.info("[webhook mercadopago] pós-compra via payment", {
     email,

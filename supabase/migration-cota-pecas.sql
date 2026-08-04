@@ -4,7 +4,8 @@
 -- Usado por:
 -- - GET /api/cota
 -- - POST /api/gerar-peca (consome 1 crédito)
--- - webhook MP de pacotes extras (creditar extras) — próximo passo
+-- - webhook MP de pacotes extras (creditar extras) — ver migration-pagamentos-extras.sql
+-- - POST /api/pacotes-extras/checkout (Checkout Pro avulso)
 
 create table if not exists public.cota_pecas_ciclo (
   id uuid primary key default gen_random_uuid(),

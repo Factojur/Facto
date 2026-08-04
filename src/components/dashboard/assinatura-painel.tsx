@@ -58,6 +58,14 @@ export function AssinaturaPainel() {
 
   useEffect(() => {
     void carregar();
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("extra") === "ok") {
+        // Pós-checkout do pacote extra: atualiza cota após alguns segundos
+        const t = window.setTimeout(() => void carregar(), 2500);
+        return () => window.clearTimeout(t);
+      }
+    }
   }, []);
 
   function abrirModal() {
@@ -157,6 +165,45 @@ export function AssinaturaPainel() {
                 </dd>
               </div>
             </dl>
+
+            {cota?.trackingAtivo && (
+              <div
+                id="uso-pecas"
+                className="mt-4 rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-4"
+              >
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Uso de peças neste mês
+                </p>
+                <p className="mt-1 text-base font-semibold text-slate-900">
+                  {cota.usoLabel}
+                </p>
+                {cota.percentualUsado != null && (
+                  <div className="mt-3">
+                    <div className="mb-1 flex justify-between text-xs text-slate-500">
+                      <span>
+                        {cota.restante ?? 0} restante
+                        {cota.extras > 0 ? ` · +${cota.extras} extras` : ""}
+                      </span>
+                      <span className="tabular-nums">
+                        {cota.percentualUsado}%
+                      </span>
+                    </div>
+                    <div className="h-2.5 overflow-hidden rounded-full bg-slate-200/90">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          cota.percentualUsado >= 100
+                            ? "bg-red-500"
+                            : cota.percentualUsado >= 85
+                              ? "bg-amber-500"
+                              : "bg-emerald-500"
+                        }`}
+                        style={{ width: `${cota.percentualUsado}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {assinatura.mensagemAcesso && (
               <p className="mt-4 text-sm text-slate-600">

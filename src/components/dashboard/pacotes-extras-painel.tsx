@@ -1,6 +1,7 @@
 "use client";
 
-import { PACOTES_EXTRA } from "@/lib/planos-facto";
+import { useState } from "react";
+import { PACOTES_EXTRA, type PacoteExtraId } from "@/lib/planos-facto";
 import type { ResumoCota } from "@/lib/cota-pecas";
 
 type Props = {
@@ -39,10 +40,44 @@ function CardPacote({
   pacote: (typeof PACOTES_EXTRA)[number];
   destaque?: boolean;
 }) {
-  const temLink = Boolean(pacote.linkMp?.trim());
-  const porPeca = (pacote.preco / pacote.pecas)
-    .toFixed(2)
-    .replace(".", ",");
+  const [loading, setLoading] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const porPeca = (pacote.preco / pacote.pecas).toFixed(2).replace(".", ",");
+  const linkEstatico = pacote.linkMp?.trim() || null;
+
+  async function contratar() {
+    setErro(null);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/pacotes-extras/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pacoteId: pacote.id as PacoteExtraId }),
+      });
+      const data = (await res.json()) as {
+        initPoint?: string;
+        error?: string;
+      };
+      if (res.ok && data.initPoint) {
+        window.location.href = data.initPoint;
+        return;
+      }
+      // Fallback: link estático do painel MP (se configurado)
+      if (linkEstatico) {
+        window.open(linkEstatico, "_blank", "noopener,noreferrer");
+        return;
+      }
+      setErro(data.error ?? "Não foi possível abrir o checkout.");
+    } catch {
+      if (linkEstatico) {
+        window.open(linkEstatico, "_blank", "noopener,noreferrer");
+        return;
+      }
+      setErro("Falha de rede ao abrir o checkout.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div
@@ -72,28 +107,22 @@ function CardPacote({
         </span>
       </div>
       <p className="mt-0.5 text-xs text-slate-500">≈ R$ {porPeca} por peça</p>
-      {temLink ? (
-        <a
-          href={pacote.linkMp}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`mt-5 inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold transition ${
-            destaque
-              ? "bg-gradient-to-r from-amber-600 to-yellow-600 text-white shadow-md shadow-amber-900/20 hover:from-amber-500 hover:to-yellow-500"
-              : "bg-slate-900 text-white hover:bg-slate-800"
-          }`}
-        >
-          Contratar {pacote.rotulo}
-        </a>
-      ) : (
-        <button
-          type="button"
-          disabled
-          className="mt-5 cursor-not-allowed rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-400"
-          title="Link de pagamento em configuração no Mercado Pago"
-        >
-          Em breve — checkout MP
-        </button>
+      <button
+        type="button"
+        onClick={() => void contratar()}
+        disabled={loading}
+        className={`mt-5 inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold transition disabled:cursor-wait disabled:opacity-70 ${
+          destaque
+            ? "bg-gradient-to-r from-amber-600 to-yellow-600 text-white shadow-md shadow-amber-900/20 hover:from-amber-500 hover:to-yellow-500"
+            : "bg-slate-900 text-white hover:bg-slate-800"
+        }`}
+      >
+        {loading ? "Abrindo Mercado Pago…" : `Contratar ${pacote.rotulo}`}
+      </button>
+      {erro && (
+        <p className="mt-2 text-xs leading-snug text-red-600" role="alert">
+          {erro}
+        </p>
       )}
     </div>
   );
@@ -101,6 +130,7 @@ function CardPacote({
 
 /**
  * Contratação de pacotes extras — Perfil e banner do JEC.
+ * Pagamento único (Checkout Pro), não assinatura.
  */
 export function PacotesExtrasPainel({
   cota = null,
@@ -127,7 +157,11 @@ export function PacotesExtrasPainel({
           />
           <div className="relative">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-700">
-              {esgotada ? "Cota esgotada" : quase ? "Cota quase no fim" : "Peças extras"}
+              {esgotada
+                ? "Cota esgotada"
+                : quase
+                  ? "Cota quase no fim"
+                  : "Peças extras"}
             </p>
             <h3 className="mt-1 text-lg font-bold text-slate-900 sm:text-xl">
               {esgotada
@@ -178,7 +212,7 @@ export function PacotesExtrasPainel({
             </h3>
             <p className="mt-1 text-sm text-slate-600">
               +50 por R$ 39,90 ou +100 por R$ 79,90. Créditos válidos no ciclo
-              atual.
+              atual (compra avulsa, sem renovação).
             </p>
           </div>
           {esgotada && (
@@ -197,8 +231,9 @@ export function PacotesExtrasPainel({
       </div>
 
       <p className="border-t border-slate-100 px-5 py-3 text-xs leading-relaxed text-slate-500">
-        Pagamento seguro via Mercado Pago. Os créditos extras não acumulam para
-        o próximo ciclo.
+        Pagamento único e seguro via Mercado Pago (não é assinatura). Os
+        créditos extras não acumulam para o próximo ciclo. Use o mesmo e-mail
+        da sua conta FACTO no checkout.
       </p>
     </div>
   );

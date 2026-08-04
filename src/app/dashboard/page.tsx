@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { filtrarFavoritosValidos } from "@/lib/areas-atuacao";
 import { DashboardHome } from "@/components/dashboard/dashboard-home";
+import type { PlanoId } from "@/lib/planos-facto";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -15,6 +17,7 @@ export default async function DashboardPage() {
   let favoritos: string[] = [];
   let tipoUsuario =
     (user?.user_metadata?.tipo_usuario as string | undefined) ?? "advogado";
+  let plano: PlanoId | null = null;
 
   if (user) {
     const { data: profile } = await supabase
@@ -37,6 +40,36 @@ export default async function DashboardPage() {
         favoritos = filtrarFavoritosValidos(meta);
       }
     }
+
+    try {
+      const admin = createAdminClient();
+      const email = user.email?.trim().toLowerCase();
+      if (email) {
+        const { data: ass } = await admin
+          .from("assinaturas")
+          .select("plano, status, acesso_valido_ate")
+          .ilike("email", email)
+          .order("criado_em", { ascending: false })
+          .limit(5);
+        const agora = Date.now();
+        const ativa = (ass ?? []).find((a) => {
+          const ate = a.acesso_valido_ate
+            ? new Date(a.acesso_valido_ate).getTime()
+            : null;
+          if (a.status === "authorized" && ate === null) return true;
+          return ate !== null && ate > agora;
+        });
+        if (
+          ativa?.plano === "jec" ||
+          ativa?.plano === "mensal" ||
+          ativa?.plano === "anual"
+        ) {
+          plano = ativa.plano;
+        }
+      }
+    } catch {
+      /* sem assinaturas / admin */
+    }
   }
 
   return (
@@ -45,6 +78,7 @@ export default async function DashboardPage() {
       userId={user!.id}
       favoritosIniciais={favoritos}
       leigo={tipoUsuario === "leigo"}
+      plano={plano}
     />
   );
 }
