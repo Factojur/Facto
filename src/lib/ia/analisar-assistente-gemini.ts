@@ -1,53 +1,20 @@
 /**
- * Assistente Facto via Gemini — escolhe tipo de ação + cúmulos (tutela/danos).
+ * Assistente Facto via Gemini — nomeia a ação forense livremente
+ * (com grounding Google Search quando disponível).
  */
 
-import { analisarCaseAssistente, type DecisaoAssistente, montarTituloAcaoCompleto } from "@/lib/assistente-facto";
+import {
+  analisarCaseAssistente,
+  formatarNomeAcaoForense,
+  montarTituloAcaoCompleto,
+  type DecisaoAssistente,
+} from "@/lib/assistente-facto";
 import {
   gerarTextoComGemini,
   geminiConfigurado,
+  modelosRedacao,
   MODELOS_TRIAGEM,
 } from "@/lib/ia/gemini-client";
-import { TIPOS_ACAO_JEC } from "@/lib/tipos-acao-jec";
-
-export function listarTiposAcaoJecFlat(): string[] {
-  return TIPOS_ACAO_JEC.flatMap((g) => [...g.opcoes]);
-}
-
-function normalizarParaMatch(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-}
-
-/** Encaixa a resposta da IA em um item exato do catálogo. */
-export function casarTipoAcaoNoCatalogo(
-  candidato: string,
-  catalogo: string[] = listarTiposAcaoJecFlat()
-): string | null {
-  const bruto = candidato.trim();
-  if (!bruto) return null;
-
-  const exato = catalogo.find((t) => t === bruto);
-  if (exato) return exato;
-
-  const alvo = normalizarParaMatch(bruto);
-  let melhor: { tipo: string; score: number } | null = null;
-
-  for (const tipo of catalogo) {
-    const n = normalizarParaMatch(tipo);
-    if (n === alvo) return tipo;
-    if (n.includes(alvo) || alvo.includes(n)) {
-      const score = Math.min(n.length, alvo.length) / Math.max(n.length, alvo.length);
-      if (!melhor || score > melhor.score) melhor = { tipo, score };
-    }
-  }
-
-  return melhor && melhor.score >= 0.45 ? melhor.tipo : null;
-}
 
 function extrairJsonObjeto(texto: string): Record<string, unknown> | null {
   const limpo = texto
@@ -90,35 +57,41 @@ function boolField(v: unknown, fallback = false): boolean {
   return fallback;
 }
 
-function montarSystemPromptClassificacao(catalogo: string[]): string {
-  return [
-    "Você é o Assistente Facto, paralegal especialista em Juizado Especial Cível (Lei 9.099/95).",
-    "Analise os FATOS do caso e escolha a ação processual cabível.",
-    "",
-    "REGRAS:",
-    "- Escolha EXATAMENTE um item da lista TIPOS_CATALOGO (copie a string integral).",
-    "- Indique se cabem cúmulos: danos morais, danos materiais e/ou tutela de urgência (art. 300 CPC).",
-    "- Golpe/fraude/PIX/cartão/falsa central → em geral indenização ou inexigibilidade + danos; NÃO execução de título.",
-    "- Cobrança indevida / negativação de dívida não reconhecida → preferir Declaratória de Inexistência/Inexigibilidade.",
-    "- Tutela de urgência só se houver urgência real (corte de serviço, bloqueio, risco iminente etc.).",
-    "- Justificativa objetiva em português (2 a 4 frases), sem inventar fatos.",
-    "",
-    "Responda SOMENTE com JSON válido (sem markdown), neste formato:",
-    '{',
-    '  "tipoAcao": "<string exata do catálogo>",',
-    '  "tutelaUrgencia": true|false,',
-    '  "danosMorais": true|false,',
-    '  "danosMateriais": true|false,',
-    '  "justificativa": "<texto>"',
-    "}",
-    "",
-    "TIPOS_CATALOGO:",
-    ...catalogo.map((t) => `- ${t}`),
-  ].join("\n");
-}
+const SYSTEM_CLASSIFICACAO = [
+  "Você é o Assistente Facto, paralegal especialista em Juizado Especial Cível brasileiro (Lei 9.099/95).",
+  "Analise os FATOS e NOMEIE a ação processual cabível no padrão forense.",
+  "",
+  "REGRAS DE NOMENCLATURA:",
+  '- Use o formato: "Petição Inicial — Ação de [NOME] c/c [Cúmulos] (JEC)" quando couber petição inicial.',
+  "- Exemplos válidos:",
+  '  • "Petição Inicial — Ação Declaratória de Inexistência / Inexigibilidade de Débito c/c Danos Morais (JEC)"',
+  '  • "Petição Inicial — Ação de Indenização por Danos Materiais e Morais (JEC)"',
+  '  • "Petição Inicial — Ação de Obrigação de Fazer c/c Danos Morais e Tutela de Urgência (JEC)"',
+  '  • "Execução de Título Extrajudicial (JEC)"',
+  "- NÃO escolha de uma lista fechada: invente o nome técnico correto e usual na praxe forense brasileira.",
+  "- Se tiver busca/Google disponível, confira nomenclatura usual de petições no JEC/CDC compatível com os fatos.",
+  "- Golpe/fraude/PIX/cartão/falsa central → indenização ou inexigibilidade + danos; NÃO execução de título.",
+  "- Tutela de urgência só com urgência real (corte, bloqueio, risco iminente).",
+  "- Justificativa objetiva em português (2 a 4 frases), sem inventar fatos.",
+  "",
+  "Responda SOMENTE com JSON válido (sem markdown), neste formato:",
+  "{",
+  '  "tipoAcao": "<nome forense completo da ação>",',
+  '  "tutelaUrgencia": true|false,',
+  '  "danosMorais": true|false,',
+  '  "danosMateriais": true|false,',
+  '  "justificativa": "<texto>"',
+  "}",
+].join("\n");
+
+/** Modelos com melhor suporte a Google Search grounding. */
+const MODELOS_ASSISTENTE_BUSCA = [
+  ...modelosRedacao().slice(0, 2),
+  ...MODELOS_TRIAGEM,
+] as const;
 
 /**
- * Classifica o caso com Gemini; se falhar, usa regras locais.
+ * Classifica o caso com Gemini (+ busca quando possível); se falhar, usa regras locais.
  */
 export async function analisarCaseComGemini(input: {
   fatos: string;
@@ -134,32 +107,20 @@ export async function analisarCaseComGemini(input: {
     return fallback();
   }
 
-  const catalogo = listarTiposAcaoJecFlat();
-  // Catálogo completo no prompt fica grande; prioriza petições iniciais (mais usadas)
-  const catalogoPrompt = catalogo.filter(
-    (t) =>
-      t.startsWith("Petição Inicial") ||
-      t.startsWith("Execução") ||
-      t.startsWith("Embargos") ||
-      t.startsWith("Contestação") ||
-      t.startsWith("Recurso Inominado") ||
-      t.startsWith("Pedido de")
-  );
-
   const res = await gerarTextoComGemini({
-    systemPrompt: montarSystemPromptClassificacao(
-      catalogoPrompt.length > 0 ? catalogoPrompt : catalogo
-    ),
+    systemPrompt: SYSTEM_CLASSIFICACAO,
     userPrompt: [
       "<FATOS_DO_CASO>",
       fatos.slice(0, 12_000),
       "</FATOS_DO_CASO>",
       "",
-      "Classifique a ação cabível no JEC conforme as regras.",
+      "Com base nos fatos (e em busca geral sobre nomenclatura forense no JEC, se disponível),",
+      "nomeie a ação cabível e indique cúmulos.",
     ].join("\n"),
-    modelos: MODELOS_TRIAGEM,
-    temperature: 0.2,
+    modelos: MODELOS_ASSISTENTE_BUSCA,
+    temperature: 0.25,
     maxOutputTokens: 1024,
+    usarBuscaGoogle: true,
   });
 
   if (!res.ok) {
@@ -175,7 +136,7 @@ export async function analisarCaseComGemini(input: {
 
   const tipoBruto = String(json.tipoAcao ?? json.tipo_acao ?? "").trim();
   const tipoAcao =
-    casarTipoAcaoNoCatalogo(tipoBruto, catalogo) ?? fallback().tipoAcao;
+    formatarNomeAcaoForense(tipoBruto) || fallback().tipoAcao;
 
   const tutelaUrgencia = boolField(json.tutelaUrgencia ?? json.tutela_urgencia);
   const danosMorais = boolField(json.danosMorais ?? json.danos_morais);

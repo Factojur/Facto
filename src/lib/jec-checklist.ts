@@ -15,12 +15,14 @@ export function montarChecklistJec(opcoes: {
   reusCount: number;
   comarcaForo: string;
   temValor: boolean;
-  /** true enquanto o Assistente ainda não definiu o tipo de ação. */
+  /** true enquanto o tipo de ação ainda não foi definido. */
   assistentePendente?: boolean;
 }): ItemChecklistJec[] {
   const fatosOk = opcoes.fatos.trim().length >= 40;
   const tipoOk =
-    Boolean(opcoes.tipoSelecionado.trim()) && !opcoes.assistentePendente;
+    Boolean(opcoes.tipoSelecionado.trim()) &&
+    opcoes.tipoSelecionado !== "assistente-facto" &&
+    !opcoes.assistentePendente;
   const reusOk = opcoes.reusCount > 0;
   const comarcaOk = opcoes.comarcaForo.trim().length >= 12;
 
@@ -28,7 +30,7 @@ export function montarChecklistJec(opcoes: {
     {
       id: "tipo",
       label: opcoes.assistentePendente
-        ? "Assistente Facto: analisar os fatos e definir a ação"
+        ? "Definir o tipo de ação (Assistente ou texto livre)"
         : "Tipo de ação definido",
       ok: tipoOk,
       bloqueante: true,

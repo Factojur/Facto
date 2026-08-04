@@ -1,5 +1,7 @@
 /**
  * Assistente Facto — classificação da ação cabível (regras locais + Gemini).
+ * O nome da ação é livre (não há catálogo fixo): a IA ou o usuário definem,
+ * e formatamos no padrão forense para a peça.
  */
 
 export const ASSISTENTE_FACTO = "assistente-facto";
@@ -11,48 +13,92 @@ export type CumulosAcao = {
 };
 
 export type DecisaoAssistente = {
-  /** Tipo do catálogo JEC (sem cúmulo montado). */
+  /** Nome da ação (já no padrão forense, com ou sem c/c). */
   tipoAcao: string;
   tutelaUrgencia: boolean;
   danosMorais: boolean;
   danosMateriais: boolean;
   justificativa: string;
-  /** Título forense com c/c, pronto para a peça. */
+  /** Título forense com cúmulos, pronto para a peça. */
   tituloCompleto: string;
   fonte: "gemini" | "regras";
 };
 
-const ACAO_COBRANCA = "Petição Inicial — Ação de Cobrança (JEC)";
-const ACAO_INDENIZACAO =
-  "Petição Inicial — Ação de Indenização por Danos Materiais e Morais (JEC)";
-const ACAO_INEXIGIBILIDADE =
-  "Petição Inicial — Ação Declaratória de Inexistência / Inexigibilidade de Débito (JEC)";
-const ACAO_OBRIGACAO_FAZER =
-  "Petição Inicial — Ação de Obrigação de Fazer (JEC)";
-const ACAO_DESPEJO =
-  "Petição Inicial — Ação de Despejo para Fim de Locação (JEC)";
-const ACAO_EXECUCAO = "Execução de Título Extrajudicial (JEC)";
+export type ModoDefinicaoAcao = "assistente" | "livre";
 
 function contemAlgum(texto: string, termos: string[]): boolean {
   return termos.some((t) => texto.includes(t));
 }
 
 /**
+ * Normaliza texto livre / saída da IA para o padrão forense do JEC.
+ * Ex.: "inexigibilidade de débito" →
+ * "Petição Inicial — Ação de Inexigibilidade de Débito (JEC)"
+ */
+export function formatarNomeAcaoForense(bruto: string): string {
+  let t = bruto
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/[–—-]+/g, "—")
+    .replace(/\s*—\s*/g, " — ");
+
+  if (!t || t === ASSISTENTE_FACTO) return "";
+
+  // Remove (JEC) para reaplicar no fim
+  t = t.replace(/\s*\(JEC\)\s*$/i, "").trim();
+
+  const lower = t.toLowerCase();
+  const jaTemClasse =
+    /^(petição inicial|peticao inicial|execução|execucao|embargos|recurso|contestação|contestacao|pedido de|impugnação|impugnacao|agravo|mandado)/i.test(
+      t
+    );
+
+  if (!jaTemClasse) {
+    if (/^a[cç][aã]o\b/i.test(t)) {
+      t = `Petição Inicial — ${t}`;
+    } else if (/^(declara[cç][aã]o|obrigação|obrigacao|indeniza|cobran|rescis|revis|anula|despeito|despejo|consigna)/i.test(t)) {
+      t = `Petição Inicial — Ação de ${t.replace(/^a[cç][aã]o\s+de\s+/i, "")}`;
+    } else if (!/peti[cç][aã]o/i.test(lower)) {
+      t = `Petição Inicial — Ação de ${t.replace(/^de\s+/i, "")}`;
+    }
+  }
+
+  // Capitalização leve das palavras principais (mantém c/c minúsculo)
+  t = t
+    .split(" ")
+    .map((palavra, i) => {
+      const p = palavra.trim();
+      if (!p) return p;
+      if (/^c\/c$/i.test(p)) return "c/c";
+      if (/^(de|da|do|das|dos|e|ou|para|com|sem|em|na|no|nas|nos)$/i.test(p) && i > 0) {
+        return p.toLowerCase();
+      }
+      if (p === p.toUpperCase() && p.length > 3 && /[A-ZÁÉÍÓÚ]/.test(p)) {
+        // Já veio em CAIXA ALTA — title-case parcial
+        return p.charAt(0) + p.slice(1).toLowerCase();
+      }
+      return p.charAt(0).toUpperCase() + p.slice(1);
+    })
+    .join(" ")
+    .replace(/\bC\/c\b/g, "c/c")
+    .replace(/\bJec\b/g, "JEC");
+
+  return `${t} (JEC)`;
+}
+
+/**
  * Monta o nome da ação com cumulações (c/c), no padrão forense.
- * Ex.: "… Inexigibilidade do Débito c/c Danos Morais, Danos Materiais e Tutela de Urgência (JEC)"
  */
 export function montarTituloAcaoCompleto(
   tipoBase: string,
   cumulos: CumulosAcao
 ): string {
-  const baseBruta = tipoBase.trim();
-  if (!baseBruta || baseBruta === ASSISTENTE_FACTO) return baseBruta;
+  const formatado = formatarNomeAcaoForense(tipoBase);
+  if (!formatado) return "";
 
-  const temJec = /\(JEC\)\s*$/i.test(baseBruta);
-  let nucleo = baseBruta.replace(/\s*\(JEC\)\s*$/i, "").trim();
-
-  const partes: string[] = [];
+  let nucleo = formatado.replace(/\s*\(JEC\)\s*$/i, "").trim();
   const nucleoLower = nucleo.toLowerCase();
+  const partes: string[] = [];
 
   if (
     cumulos.danosMorais &&
@@ -66,9 +112,7 @@ export function montarTituloAcaoCompleto(
     cumulos.danosMateriais &&
     !nucleoLower.includes("danos materiais") &&
     !nucleoLower.includes("indenização por danos materiais e morais") &&
-    !nucleoLower.includes("indenizacao por danos materiais e morais") &&
-    !nucleoLower.includes("restituição") &&
-    !nucleoLower.includes("restituicao")
+    !nucleoLower.includes("indenizacao por danos materiais e morais")
   ) {
     partes.push("Danos Materiais");
   }
@@ -76,13 +120,8 @@ export function montarTituloAcaoCompleto(
     partes.push("Tutela de Urgência");
   }
 
-  if (partes.length === 0) {
-    return temJec || baseBruta.toUpperCase().includes("JEC")
-      ? baseBruta
-      : `${nucleo} (JEC)`;
-  }
+  if (partes.length === 0) return `${nucleo} (JEC)`;
 
-  // Se já houver c/c no núcleo, acrescenta só o que falta após o existente
   if (/\bc\/c\b/i.test(nucleo)) {
     nucleo = `${nucleo}, ${partes.join(", ")}`;
   } else {
@@ -109,7 +148,8 @@ export function analisarCaseAssistente(input: {
 }): DecisaoAssistente {
   const fatos = input.fatos.toLowerCase();
 
-  let tipoAcao = ACAO_INDENIZACAO;
+  let tipoAcao =
+    "Petição Inicial — Ação de Indenização por Danos Materiais e Morais (JEC)";
   let motivoAcao =
     "Os fatos narrados indicam lesão a direito patrimonial ou extrapatrimonial, "
     + "compatível com pedido indenizatório no Juizado Especial Cível.";
@@ -125,7 +165,7 @@ export function analisarCaseAssistente(input: {
     ]) &&
     !contemAlgum(fatos, ["golpe", "fraude", "pix", "clonag"])
   ) {
-    tipoAcao = ACAO_EXECUCAO;
+    tipoAcao = "Execução de Título Extrajudicial (JEC)";
     motivoAcao =
       "Há indícios de título executivo extrajudicial, enquadrando-se em execução no JEC.";
   } else if (
@@ -136,11 +176,10 @@ export function analisarCaseAssistente(input: {
       "aluguel",
       "inquilino",
       "locador",
-      "imóvel locado",
-      "imovel locado",
     ])
   ) {
-    tipoAcao = ACAO_DESPEJO;
+    tipoAcao =
+      "Petição Inicial — Ação de Despejo para Fim de Locação (JEC)";
     motivoAcao =
       "A narrativa envolve relação locatícia, sugerindo ação de despejo para fim de locação.";
   } else if (
@@ -148,35 +187,30 @@ export function analisarCaseAssistente(input: {
       "inexigib",
       "inexistência de débito",
       "inexistencia de debito",
-      "dívida que não reconhece",
-      "divida que nao reconhece",
       "cobrança indevida",
       "cobranca indevida",
       "negativação indevida",
       "negativacao indevida",
-      "nome sujo indevido",
       "spc",
       "serasa",
     ])
   ) {
-    tipoAcao = ACAO_INEXIGIBILIDADE;
+    tipoAcao =
+      "Petição Inicial — Ação Declaratória de Inexistência / Inexigibilidade de Débito (JEC)";
     motivoAcao =
       "Os fatos apontam cobrança ou apontamento indevido, cabendo declaração de inexigibilidade/inexistência do débito.";
   } else if (
     contemAlgum(fatos, [
       "cobrança",
       "cobranca",
-      "débito",
-      "debito",
       "inadimpl",
       "não pagou",
       "nao pagou",
       "devedor",
-      "valor devido",
       "saldo devedor",
     ])
   ) {
-    tipoAcao = ACAO_COBRANCA;
+    tipoAcao = "Petição Inicial — Ação de Cobrança (JEC)";
     motivoAcao =
       "Os fatos descrevem inadimplemento ou débito líquido, indicando ação de cobrança.";
   } else if (
@@ -187,28 +221,11 @@ export function analisarCaseAssistente(input: {
       "reparar",
       "consertar",
       "substituir",
-      "cumprir",
-      "prestação",
-      "prestacao",
     ])
   ) {
-    tipoAcao = ACAO_OBRIGACAO_FAZER;
+    tipoAcao = "Petição Inicial — Ação de Obrigação de Fazer (JEC)";
     motivoAcao =
       "O caso envolve prestação específica a ser cumprida, compatível com obrigação de fazer.";
-  } else if (
-    contemAlgum(fatos, [
-      "dano moral",
-      "constrangimento",
-      "ofensa",
-      "humilhação",
-      "humilhacao",
-      "indenização",
-      "indenizacao",
-    ])
-  ) {
-    tipoAcao = ACAO_INDENIZACAO;
-    motivoAcao =
-      "Há relato de abalo moral ou material, recomendando ação indenizatória.";
   }
 
   const tutelaUrgencia = contemAlgum(fatos, [
@@ -220,18 +237,12 @@ export function analisarCaseAssistente(input: {
     "iminente",
     "risco",
     "perigo",
-    "immediatez",
-    "imediato",
     "bloqueio",
     "corte",
     "interrupção",
     "interrupcao",
-    "saúde",
-    "saude",
     "emergência",
     "emergencia",
-    "inadmissível aguardar",
-    "inadmissivel aguardar",
   ]);
 
   const danosMorais = contemAlgum(fatos, [
@@ -242,8 +253,6 @@ export function analisarCaseAssistente(input: {
     "humilhacao",
     "abalo",
     "ofensa",
-    "angústia",
-    "angustia",
     "negativ",
     "spc",
     "serasa",
@@ -260,62 +269,38 @@ export function analisarCaseAssistente(input: {
     "restituição",
     "restituicao",
     "valor pago",
-    "quantia",
   ]);
-
-  // Se o tipo já é indenização conjunta, marca ambos
-  if (tipoAcao === ACAO_INDENIZACAO) {
-    // mantém flags detectadas; se nenhuma, assume ambos típicos da ação
-    if (!danosMorais && !danosMateriais) {
-      // default da ação
-    }
-  }
 
   const cumulos: CumulosAcao = {
     danosMorais:
       danosMorais ||
-      tipoAcao === ACAO_INDENIZACAO ||
-      tipoAcao === ACAO_INEXIGIBILIDADE,
+      tipoAcao.toLowerCase().includes("inexigib") ||
+      tipoAcao.toLowerCase().includes("indeniza"),
     danosMateriais:
-      danosMateriais ||
-      tipoAcao === ACAO_INDENIZACAO ||
-      (tipoAcao === ACAO_INEXIGIBILIDADE && danosMateriais),
+      danosMateriais || tipoAcao.toLowerCase().includes("materiais e morais"),
     tutelaUrgencia,
   };
 
-  // Inexigibilidade: danos morais costumam caber; materiais só se narrados
-  if (tipoAcao === ACAO_INEXIGIBILIDADE) {
+  if (tipoAcao.toLowerCase().includes("inexigib")) {
     cumulos.danosMorais = danosMorais || true;
     cumulos.danosMateriais = danosMateriais;
   }
 
-  const motivoTutela = tutelaUrgencia
-    ? "Identificados indícios de perigo de dano ou risco ao resultado útil do processo (art. 300, CPC)."
-    : "Não foram identificados elementos suficientes que exijam medida urgente inaudita altera pars.";
-
+  const tipoFormatado = formatarNomeAcaoForense(tipoAcao);
   const justificativa = [
     motivoAcao,
-    motivoTutela,
-    cumulos.danosMorais || cumulos.danosMateriais
-      ? `Cúmulos sugeridos: ${[
-          cumulos.danosMorais ? "danos morais" : null,
-          cumulos.danosMateriais ? "danos materiais" : null,
-          cumulos.tutelaUrgencia ? "tutela de urgência" : null,
-        ]
-          .filter(Boolean)
-          .join(", ")}.`
-      : null,
-  ]
-    .filter(Boolean)
-    .join(" ");
+    tutelaUrgencia
+      ? "Identificados indícios de urgência (art. 300, CPC)."
+      : "Sem elementos claros de tutela de urgência.",
+  ].join(" ");
 
   return {
-    tipoAcao,
+    tipoAcao: tipoFormatado,
     tutelaUrgencia: cumulos.tutelaUrgencia,
     danosMorais: cumulos.danosMorais,
     danosMateriais: cumulos.danosMateriais,
     justificativa,
-    tituloCompleto: montarTituloAcaoCompleto(tipoAcao, cumulos),
+    tituloCompleto: montarTituloAcaoCompleto(tipoFormatado, cumulos),
     fonte: "regras",
   };
 }

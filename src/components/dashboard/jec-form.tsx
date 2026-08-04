@@ -6,8 +6,10 @@ import type { GerarPecaJecOutput } from "@/lib/gerar-peca-jec";
 import {
   ASSISTENTE_FACTO,
   analisarCaseAssistente,
+  formatarNomeAcaoForense,
   montarTituloAcaoCompleto,
   type DecisaoAssistente,
+  type ModoDefinicaoAcao,
 } from "@/lib/assistente-facto";
 import {
   escritorioConfigVazio,
@@ -54,7 +56,6 @@ import {
   PedidosSection,
   type PedidoItem,
 } from "@/components/dashboard/pedidos-form";
-import { TIPOS_ACAO_JEC } from "@/lib/tipos-acao-jec";
 import { ReusSection } from "@/components/dashboard/reus-form";
 import {
   JurisCasoSection,
@@ -533,7 +534,8 @@ function PecasResultado({
 
 function estadoInicialFormulario() {
   return {
-    tipoSelecionado: ASSISTENTE_FACTO,
+    modoAcao: "assistente" as ModoDefinicaoAcao,
+    tipoAcaoTexto: "",
     fatos: "",
     tutelaUrgencia: false,
     cumuloDanosMorais: false,
@@ -559,7 +561,8 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
   const [loadingStage, setLoadingStage] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<GerarPecaJecOutput | null>(null);
-  const [tipoSelecionado, setTipoSelecionado] = useState(ASSISTENTE_FACTO);
+  const [modoAcao, setModoAcao] = useState<ModoDefinicaoAcao>("assistente");
+  const [tipoAcaoTexto, setTipoAcaoTexto] = useState("");
   const [fatos, setFatos] = useState("");
   const [tutelaUrgencia, setTutelaUrgencia] = useState(false);
   const [cumuloDanosMorais, setCumuloDanosMorais] = useState(false);
@@ -590,8 +593,10 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
   const [msgRascunho, setMsgRascunho] = useState<string | null>(null);
   const [cota, setCota] = useState<ResumoCota | null>(null);
 
-  const isAssistente = tipoSelecionado === ASSISTENTE_FACTO;
-  const assistentePendente = isAssistente;
+  const isAssistente = modoAcao === "assistente";
+  const assistentePendente =
+    isAssistente && tipoAcaoTexto.trim().length < 8;
+  const tipoAcaoDefinido = formatarNomeAcaoForense(tipoAcaoTexto);
 
   useEffect(() => {
     let cancelado = false;
@@ -620,27 +625,28 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
     leigo && ultrapassaTetoJec(resumoValores.totalCentavos, false);
 
   const tituloAcaoCompleto = useMemo(() => {
-    if (isAssistente) return "";
-    return montarTituloAcaoCompleto(tipoSelecionado, {
+    if (!tipoAcaoDefinido) return "";
+    return montarTituloAcaoCompleto(tipoAcaoDefinido, {
       danosMorais: cumuloDanosMorais,
       danosMateriais: cumuloDanosMateriais,
       tutelaUrgencia,
     });
   }, [
-    isAssistente,
-    tipoSelecionado,
+    tipoAcaoDefinido,
     cumuloDanosMorais,
     cumuloDanosMateriais,
     tutelaUrgencia,
   ]);
 
   const checklistItens = montarChecklistJec({
-    tipoSelecionado,
+    tipoSelecionado: tipoAcaoDefinido || (assistentePendente ? ASSISTENTE_FACTO : ""),
     fatos,
     reusCount: reus.length,
     comarcaForo: comarca.foro ?? "",
     temValor: resumoValores.totalCentavos > 0,
-    assistentePendente,
+    assistentePendente:
+      assistentePendente ||
+      (modoAcao === "livre" && tipoAcaoTexto.trim().length < 8),
   });
 
   const podeGerar = podeGerarPeca(checklistItens) && !bloqueadoTetoLeigo;
@@ -669,7 +675,8 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
   }
 
   function aplicarDecisaoAssistente(decisao: DecisaoAssistente) {
-    setTipoSelecionado(decisao.tipoAcao);
+    setModoAcao("assistente");
+    setTipoAcaoTexto(decisao.tituloCompleto || decisao.tipoAcao);
     setTutelaUrgencia(decisao.tutelaUrgencia);
     setCumuloDanosMorais(decisao.danosMorais);
     setCumuloDanosMateriais(decisao.danosMateriais);
@@ -746,7 +753,8 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
       return;
     }
     const ini = estadoInicialFormulario();
-    setTipoSelecionado(ini.tipoSelecionado);
+    setModoAcao(ini.modoAcao);
+    setTipoAcaoTexto(ini.tipoAcaoTexto);
     setFatos(ini.fatos);
     setTutelaUrgencia(ini.tutelaUrgencia);
     setCumuloDanosMorais(ini.cumuloDanosMorais);
@@ -775,7 +783,14 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
   function aplicarRascunho(r: JecRascunhoSalvo) {
     const p = r.payload;
     setFatos(p.fatos ?? "");
-    setTipoSelecionado(p.tipoSelecionado ?? "");
+    const tipoSalvo = (p.tipoSelecionado ?? "").trim();
+    if (!tipoSalvo || tipoSalvo === ASSISTENTE_FACTO) {
+      setModoAcao("assistente");
+      setTipoAcaoTexto("");
+    } else {
+      setModoAcao("livre");
+      setTipoAcaoTexto(tipoSalvo);
+    }
     setTutelaUrgencia(Boolean(p.tutelaUrgencia));
     setComarca(normalizarComarcaValue(p.comarca));
     setValoresCausa(p.valoresCausa ?? valoresCausaVazio());
@@ -839,7 +854,7 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
       const salvo = salvarRascunhoJec(
         payloadLeveParaRascunho({
           fatos,
-          tipoSelecionado,
+          tipoSelecionado: tituloAcaoCompleto || tipoAcaoTexto || ASSISTENTE_FACTO,
           tutelaUrgencia,
           comarca,
           valoresCausa,
@@ -902,11 +917,12 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
     const form = e.currentTarget;
     const formData = new FormData(form);
 
-    const tipoAcaoRaw = String(formData.get("tipoAcao"));
-    const modoAssistente = tipoAcaoRaw === ASSISTENTE_FACTO;
-    if (modoAssistente) {
+    const tipoAcaoRaw = tituloAcaoCompleto || formatarNomeAcaoForense(tipoAcaoTexto);
+    if (!tipoAcaoRaw || tipoAcaoRaw === ASSISTENTE_FACTO) {
       setError(
-        "Peça ao Assistente Facto para analisar os fatos e definir a ação, ou escolha o tipo manualmente."
+        modoAcao === "assistente"
+          ? "Peça ao Assistente Facto para analisar os fatos e nomear a ação, ou informe o tipo livremente."
+          : "Informe o tipo de ação antes de gerar a peça."
       );
       setLoading(false);
       return;
@@ -1143,138 +1159,178 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
         >
           <h2 className="mb-1 text-lg font-semibold text-slate-800">Ação</h2>
           <p className="mb-4 text-sm text-slate-500">
-            O Assistente Facto analisa os fatos com IA e define a ação cabível,
-            cúmulos (c/c) e se cabe tutela. Você pode ajustar tudo depois.
+            Use o Assistente Facto para nomear a ação com IA (e busca geral), ou
+            digite livremente o tipo que entende cabível. Na peça, o nome sai no
+            padrão forense.
           </p>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div className="sm:col-span-2 sm:max-w-2xl">
-              <label
-                htmlFor="tipoAcao"
-                className="mb-1.5 block text-sm font-medium text-slate-700"
-              >
-                Tipo de Ação
-              </label>
-              <select
-                id="tipoAcao"
-                name="tipoAcao"
-                required
-                value={tipoSelecionado}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setTipoSelecionado(v);
-                  if (v === ASSISTENTE_FACTO) {
+
+          <div className="space-y-4 sm:max-w-2xl">
+            <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
+              <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm has-[:checked]:border-stone-500 has-[:checked]:bg-stone-50">
+                <input
+                  type="radio"
+                  name="modoAcao"
+                  checked={modoAcao === "assistente"}
+                  onChange={() => {
+                    setModoAcao("assistente");
                     setNotaAssistente(false);
                     setJustificativaAssistente(null);
                     setDecisaoSugerida(null);
-                  } else {
+                    setTipoAcaoTexto("");
+                  }}
+                  className="mt-0.5 h-4 w-4 border-slate-300 text-stone-700 focus:ring-stone-500"
+                />
+                <span>
+                  <span className="font-medium text-slate-800">
+                    Assistente FACTO (IA)
+                  </span>
+                  <span className="mt-0.5 block text-xs text-slate-500">
+                    Interpreta os fatos, busca nomenclatura usual e nomeia a
+                    ação.
+                  </span>
+                </span>
+              </label>
+              <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm has-[:checked]:border-stone-500 has-[:checked]:bg-stone-50">
+                <input
+                  type="radio"
+                  name="modoAcao"
+                  checked={modoAcao === "livre"}
+                  onChange={() => {
+                    setModoAcao("livre");
                     setNotaAssistente(false);
-                  }
-                }}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
-              >
-                <option value={ASSISTENTE_FACTO}>
-                  Assistente Facto (IA — recomendado)
-                </option>
-                {TIPOS_ACAO_JEC.map((grupo) => (
-                  <optgroup key={grupo.label} label={grupo.label}>
-                    {grupo.opcoes.map((tipo) => (
-                      <option key={tipo} value={tipo}>
-                        {tipo}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
+                    setJustificativaAssistente(null);
+                    setDecisaoSugerida(null);
+                  }}
+                  className="mt-0.5 h-4 w-4 border-slate-300 text-stone-700 focus:ring-stone-500"
+                />
+                <span>
+                  <span className="font-medium text-slate-800">
+                    Informar tipo de ação
+                  </span>
+                  <span className="mt-0.5 block text-xs text-slate-500">
+                    Você escreve livremente o nome da ação.
+                  </span>
+                </span>
+              </label>
+            </div>
 
-              {isAssistente && (
-                <div className="mt-4 space-y-3 rounded-lg border border-stone-200 bg-stone-50/80 p-4">
-                  <p className="text-sm text-slate-600">
-                    Preencha a seção <strong>Fatos</strong> e clique em analisar.
-                    A IA aplica a ação e os cúmulos automaticamente — sem etapa
-                    de confirmação.
+            <input
+              type="hidden"
+              name="tipoAcao"
+              value={tituloAcaoCompleto || ASSISTENTE_FACTO}
+            />
+
+            {modoAcao === "assistente" && !tipoAcaoTexto.trim() && (
+              <div className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/80 p-4">
+                <p className="text-sm text-slate-600">
+                  Preencha a seção <strong>Fatos</strong> e clique em analisar.
+                  A IA aplica a ação e os cúmulos automaticamente.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void handleAnalisarAssistente()}
+                  disabled={analisandoAssistente}
+                  className="rounded-lg bg-stone-700 px-4 py-2 text-sm font-medium text-amber-50 hover:bg-stone-600 disabled:opacity-60"
+                >
+                  {analisandoAssistente
+                    ? "Analisando com IA…"
+                    : "Analisar fatos com Assistente Facto"}
+                </button>
+              </div>
+            )}
+
+            {(modoAcao === "livre" || tipoAcaoTexto.trim().length > 0) && (
+              <div className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/80 p-4">
+                {notaAssistente && justificativaAssistente && (
+                  <p className="text-xs leading-relaxed text-stone-600">
+                    <span className="font-semibold text-stone-800">
+                      Assistente Facto
+                      {decisaoSugerida?.fonte === "gemini"
+                        ? " (IA)"
+                        : " (análise local)"}
+                      :{" "}
+                    </span>
+                    {justificativaAssistente}
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => void handleAnalisarAssistente()}
-                    disabled={analisandoAssistente}
-                    className="rounded-lg bg-stone-700 px-4 py-2 text-sm font-medium text-amber-50 hover:bg-stone-600 disabled:opacity-60"
+                )}
+
+                <div>
+                  <label
+                    htmlFor="tipoAcaoLivre"
+                    className="mb-1.5 block text-sm font-medium text-slate-700"
                   >
-                    {analisandoAssistente
-                      ? "Analisando com IA…"
-                      : "Analisar fatos com Assistente Facto"}
-                  </button>
+                    {modoAcao === "assistente"
+                      ? "Nome da ação (editável)"
+                      : "Tipo de ação"}
+                  </label>
+                  <textarea
+                    id="tipoAcaoLivre"
+                    rows={2}
+                    value={tipoAcaoTexto}
+                    onChange={(e) => {
+                      setTipoAcaoTexto(e.target.value);
+                      if (modoAcao === "assistente") {
+                        setNotaAssistente(false);
+                      }
+                    }}
+                    placeholder="Ex.: Ação Declaratória de Inexistência / Inexigibilidade de Débito"
+                    className="w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
+                  />
                 </div>
-              )}
 
-              {!isAssistente && (
-                <div className="mt-4 space-y-3 rounded-lg border border-stone-200 bg-stone-50/80 p-4">
-                  {notaAssistente && justificativaAssistente && (
-                    <p className="text-xs leading-relaxed text-stone-600">
-                      <span className="font-semibold text-stone-800">
-                        Assistente Facto
-                        {decisaoSugerida?.fonte === "gemini"
-                          ? " (IA)"
-                          : " (análise local)"}
-                        :{" "}
-                      </span>
-                      {justificativaAssistente}
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Cumular (c/c)
+                </p>
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={cumuloDanosMorais}
+                      onChange={(e) => setCumuloDanosMorais(e.target.checked)}
+                      className="h-4 w-4 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
+                    />
+                    Danos Morais
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={cumuloDanosMateriais}
+                      onChange={(e) =>
+                        setCumuloDanosMateriais(e.target.checked)
+                      }
+                      className="h-4 w-4 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
+                    />
+                    Danos Materiais
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                      id="tutelaUrgencia"
+                      name="tutelaUrgencia"
+                      type="checkbox"
+                      checked={tutelaUrgencia}
+                      onChange={(e) => setTutelaUrgencia(e.target.checked)}
+                      className="h-4 w-4 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
+                    />
+                    Tutela de Urgência
+                  </label>
+                </div>
+
+                {tituloAcaoCompleto && (
+                  <div className="rounded-md border border-amber-200/80 bg-amber-50/80 px-3 py-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-800/80">
+                      Título forense na peça
                     </p>
-                  )}
-
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Cumular (c/c)
-                  </p>
-                  <div className="flex flex-col gap-2">
-                    <label className="flex items-center gap-2 text-sm text-slate-700">
-                      <input
-                        type="checkbox"
-                        checked={cumuloDanosMorais}
-                        onChange={(e) =>
-                          setCumuloDanosMorais(e.target.checked)
-                        }
-                        className="h-4 w-4 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
-                      />
-                      Danos Morais
-                    </label>
-                    <label className="flex items-center gap-2 text-sm text-slate-700">
-                      <input
-                        type="checkbox"
-                        checked={cumuloDanosMateriais}
-                        onChange={(e) =>
-                          setCumuloDanosMateriais(e.target.checked)
-                        }
-                        className="h-4 w-4 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
-                      />
-                      Danos Materiais
-                    </label>
-                    <label className="flex items-center gap-2 text-sm text-slate-700">
-                      <input
-                        id="tutelaUrgencia"
-                        name="tutelaUrgencia"
-                        type="checkbox"
-                        checked={tutelaUrgencia}
-                        onChange={(e) => setTutelaUrgencia(e.target.checked)}
-                        className="h-4 w-4 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
-                      />
-                      Tutela de Urgência
-                    </label>
+                    <p className="mt-1 text-sm font-medium uppercase leading-snug tracking-wide text-stone-800">
+                      {tituloAcaoCompleto}
+                    </p>
                   </div>
+                )}
 
-                  {tituloAcaoCompleto && (
-                    <div className="rounded-md border border-amber-200/80 bg-amber-50/80 px-3 py-2">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-800/80">
-                        Título na peça
-                      </p>
-                      <p className="mt-1 text-sm font-medium leading-snug text-stone-800">
-                        {tituloAcaoCompleto}
-                      </p>
-                    </div>
-                  )}
-
+                {modoAcao === "assistente" && (
                   <button
                     type="button"
                     onClick={() => {
-                      setTipoSelecionado(ASSISTENTE_FACTO);
+                      setTipoAcaoTexto("");
                       setNotaAssistente(false);
                       setJustificativaAssistente(null);
                       setDecisaoSugerida(null);
@@ -1283,9 +1339,9 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
                   >
                     Analisar de novo com o Assistente
                   </button>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
         </section>
 
@@ -1355,7 +1411,7 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
             </div>
           </div>
 
-          <DocsSugeridosChecklist tipoAcao={tipoSelecionado} />
+          <DocsSugeridosChecklist tipoAcao={tipoAcaoDefinido || tipoAcaoTexto} />
         </section>
 
         <div id="secao-reus" className="scroll-mt-24">
@@ -1381,7 +1437,9 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
               rows={10}
               value={fatos}
               onChange={(e) => setFatos(e.target.value)}
-              placeholder={placeholderFatosPorTipo(tipoSelecionado)}
+              placeholder={placeholderFatosPorTipo(
+                tipoAcaoDefinido || tipoAcaoTexto || ASSISTENTE_FACTO
+              )}
               className="w-full resize-y rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-800 placeholder-slate-400 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
             />
             <div className="mt-3 flex flex-wrap items-center gap-2">

@@ -81,7 +81,30 @@ async function chamarGemini(params: {
   apiKey: string;
   temperature?: number;
   maxOutputTokens?: number;
+  /** Grounding com Google Search (Assistente Facto / nomenclatura). */
+  usarBuscaGoogle?: boolean;
 }): Promise<ResultadoGemini> {
+  const corpo: Record<string, unknown> = {
+    systemInstruction: {
+      parts: [{ text: params.systemPrompt }],
+    },
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: params.userPrompt }],
+      },
+    ],
+    generationConfig: {
+      temperature: params.temperature ?? 0.4,
+      maxOutputTokens: params.maxOutputTokens ?? 8192,
+    },
+  };
+
+  if (params.usarBuscaGoogle) {
+    // Gemini API (v1beta) — grounding com busca Google
+    corpo.tools = [{ google_search: {} }];
+  }
+
   const resposta = await fetch(
     `${GEMINI_API_URL}/${params.modelo}:generateContent`,
     {
@@ -90,21 +113,7 @@ async function chamarGemini(params: {
         "Content-Type": "application/json",
         "x-goog-api-key": params.apiKey,
       },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: params.systemPrompt }],
-        },
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: params.userPrompt }],
-          },
-        ],
-        generationConfig: {
-          temperature: params.temperature ?? 0.4,
-          maxOutputTokens: params.maxOutputTokens ?? 8192,
-        },
-      }),
+      body: JSON.stringify(corpo),
     }
   );
 
@@ -116,6 +125,13 @@ async function chamarGemini(params: {
       `A Gemini API recusou a chamada (status ${resposta.status}).`;
     if (modeloIndisponivel(resposta.status, mensagem)) {
       return { ok: false, erro: `__MODELO_INDISPONIVEL__:${mensagem}` };
+    }
+    // Ferramenta de busca não suportada neste modelo → sinaliza retry sem busca
+    if (
+      params.usarBuscaGoogle &&
+      /google_?search|tool|grounding|not supported|unknown name/i.test(mensagem)
+    ) {
+      return { ok: false, erro: `__BUSCA_INDISPONIVEL__:${mensagem}` };
     }
     return { ok: false, erro: mensagem };
   }
@@ -156,6 +172,8 @@ export async function gerarTextoComGemini(params: {
   modelos?: readonly string[];
   temperature?: number;
   maxOutputTokens?: number;
+  /** Ativa grounding com Google Search (quando o modelo permitir). */
+  usarBuscaGoogle?: boolean;
 }): Promise<ResultadoGemini> {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) {
@@ -172,6 +190,8 @@ export async function gerarTextoComGemini(params: {
           (m, i, arr) => arr.indexOf(m) === i
         );
 
+  let usarBusca = Boolean(params.usarBuscaGoogle);
+
   const opts = {
     systemPrompt: params.systemPrompt,
     userPrompt: params.userPrompt,
@@ -184,9 +204,33 @@ export async function gerarTextoComGemini(params: {
     let ultimoErro = "Nenhum modelo Gemini respondeu.";
 
     for (const modelo of cadeia) {
-      const resultado = await chamarGemini({ ...opts, modelo });
+      const resultado = await chamarGemini({
+        ...opts,
+        modelo,
+        usarBuscaGoogle: usarBusca,
+      });
 
       if (resultado.ok) return resultado;
+
+      if (resultado.erro.startsWith("__BUSCA_INDISPONIVEL__")) {
+        // Desliga busca e tenta de novo a mesma cadeia
+        usarBusca = false;
+        ultimoErro = resultado.erro.replace("__BUSCA_INDISPONIVEL__:", "");
+        const semBusca = await chamarGemini({
+          ...opts,
+          modelo,
+          usarBuscaGoogle: false,
+        });
+        if (semBusca.ok) return semBusca;
+        if (semBusca.erro.startsWith("__MODELO_INDISPONIVEL__")) {
+          ultimoErro = semBusca.erro.replace("__MODELO_INDISPONIVEL__:", "");
+          continue;
+        }
+        return {
+          ok: false,
+          erro: semBusca.erro.replace("__MODELO_INDISPONIVEL__:", ""),
+        };
+      }
 
       if (resultado.erro.startsWith("__MODELO_INDISPONIVEL__")) {
         ultimoErro = resultado.erro.replace("__MODELO_INDISPONIVEL__:", "");
