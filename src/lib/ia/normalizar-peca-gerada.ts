@@ -505,7 +505,7 @@ function normalizarLinhaOab(texto: string): string {
 
 /**
  * Fecha a peça no formato rígido:
- * Nestes termos, / pede deferimento. / (2 linhas) / data / (2 linhas) / assinatura
+ * Nestes termos, / pede deferimento. / (2 linhas) / data / (1 linha) / assinatura
  */
 function normalizarFechamentoAssinatura(texto: string): string {
   let t = texto
@@ -542,7 +542,13 @@ function normalizarFechamentoAssinatura(texto: string): string {
       continue;
     }
 
-    if (viuPede && /^[A-Za-zÀ-ÿ' .]+\/\s*[A-Z]{2},\s+\d/i.test(trim)) {
+    const ehLinhaData =
+      /^[A-Za-zÀ-ÿ'\[\] .]+(?:\/|\s*-\s*)[A-Z]{2},?\s+\d/i.test(trim) ||
+      /\bde\s+(?:janeiro|fevereiro|mar[cç]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\s+de\s+\d{4}\.?$/i.test(
+        trim
+      );
+
+    if (viuPede && ehLinhaData) {
       saida.push(trim);
       while (
         i + 1 < linhas.length &&
@@ -550,7 +556,8 @@ function normalizarFechamentoAssinatura(texto: string): string {
       ) {
         i++;
       }
-      saida.push(MARCADOR_ESPACO_2);
+      // 1 linha em branco entre data e nome do advogado
+      saida.push(MARCADOR_ESPACO_1);
       viuPede = false;
       continue;
     }
@@ -629,6 +636,46 @@ function limparCorpoSubtitulo(corpo: string): string {
   return c.trim();
 }
 
+
+/**
+ * Em DAS PROVAS E ANEXOS: a)/b)/c) → 1)/2)/3) (peso normal via tipografia).
+ * Não altera DOS PEDIDOS nem DO DIREITO.
+ */
+function numerarItensDasProvas(texto: string): string {
+  const linhas = texto.split("\n");
+  let emProvas = false;
+  let n = 0;
+
+  return linhas
+    .map((l) => {
+      const t = l.trim();
+      if (/^[IVXLCDM]+\s*[-—–.]\s+DAS PROVAS\b/i.test(t)) {
+        emProvas = true;
+        n = 0;
+        return l;
+      }
+      if (/^[IVXLCDM]+\s*[-—–.]\s+\S/i.test(t)) {
+        emProvas = false;
+        return l;
+      }
+      if (/^(Nestes termos|Termos em que)/i.test(t)) {
+        emProvas = false;
+        return l;
+      }
+      if (!emProvas) return l;
+
+      const mLetra = /^(?:\*{1,2})?([a-z]\))\s+(.+)$/i.exec(t);
+      const mNum = /^(?:\*{1,2})?(\d+\))\s+(.+)$/i.exec(t);
+      if (!mLetra && !mNum) return l;
+
+      const corpo = limparCorpoSubtitulo((mLetra ?? mNum)![2]!);
+      if (corpo.length > 200) return l;
+      n += 1;
+      return `${n}) ${corpo}`;
+    })
+    .join("\n");
+}
+
 function negritarSubtitulosDireito(texto: string): string {
   return texto
     .split("\n")
@@ -659,6 +706,7 @@ export function normalizarPecaGerada(texto: string): string {
   t = inserirEspacoAposEnderecamento(t);
   t = inserirEspacoAntesNomeAcao(t);
   t = inserirEspacoAposNomeAcao(t);
+  t = numerarItensDasProvas(t);
   t = inserirEspacoEntreSubtopicos(t);
   t = normalizarSecaoFatos(t);
   t = normalizarParagrafosDoDireito(t);

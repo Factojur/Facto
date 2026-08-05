@@ -110,6 +110,45 @@ assert(
   !/^\*{1,2}/.test(linhaC.trim()),
   "subtítulo sem * ou ** envolvendo a linha inteira"
 );
+
+const provasNum = normalizarPecaGerada(`III - DAS PROVAS E ANEXOS
+O Autor instrui a presente exordial com os seguintes documentos essenciais:
+a) Documentos pessoais do Autor (RG, CPF e comprovante de residência);
+b) Comprovante de quitação integral do débito emitido junto à operadora;
+c) Comprovante do extrato de negativação nos cadastros de proteção ao crédito (SPC/Serasa).
+
+IV - DO VALOR DA CAUSA
+Dá-se à causa o valor de R$ 1.000,00.`);
+assert(
+  /DAS PROVAS E ANEXOS[\s\S]*?\n1\)\s+Documentos pessoais/i.test(provasNum),
+  "DAS PROVAS: a) vira 1)"
+);
+assert(
+  /DAS PROVAS E ANEXOS[\s\S]*?\n2\)\s+Comprovante de quita/i.test(provasNum),
+  "DAS PROVAS: b) vira 2)"
+);
+assert(
+  /DAS PROVAS E ANEXOS[\s\S]*?\n3\)\s+Comprovante do extrato/i.test(provasNum),
+  "DAS PROVAS: c) vira 3)"
+);
+assert(
+  !/DAS PROVAS E ANEXOS[\s\S]*?\n[a-c]\)/i.test(provasNum),
+  "DAS PROVAS sem itens a)/b)/c)"
+);
+
+const fechamentoEspaco = normalizarPecaGerada(`Nestes termos,
+pede deferimento.
+
+São Paulo/SP, 5 de agosto de 2026.
+Maria Silva
+Advogado
+OAB/SP 147099`);
+assert(
+  /São Paulo\/SP, 5 de agosto de 2026\.\n\[\[ESPACO_1_LINHA\]\]\nMaria Silva/i.test(
+    fechamentoEspaco
+  ),
+  "1 linha em branco entre data e nome do advogado"
+);
 assert(
   pecaTemFundamentacaoGenerica(normalizada),
   "fixture detectada como fundamentação genérica"

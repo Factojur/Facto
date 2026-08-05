@@ -4,7 +4,8 @@
  * Alinhamentos:
  * - centralizado + negrito: endereçamento, nome da ação
  * - centralizado: fechamento (Nestes termos, data, assinatura)
- * - esquerda + negrito: tópicos romanos e subtítulos a)/b)/c)
+ * - esquerda + negrito: tópicos romanos e subtítulos a)/b)/c) do DIREITO
+ * - justificado + peso normal: itens a)/b) em DOS PEDIDOS e 1)/2) em DAS PROVAS
  * - justificado + recuo 1ª linha 2 cm: corpo
  * - justificado + recuo esquerdo 4 cm + 10 pt: citação de jurisprudência
  *
@@ -40,6 +41,7 @@ const RE_ENDEREÇAMENTO =
   /^(EXCELENT[IÍ]SSIMO|DA COMARCA|JU[IÍ]ZO\s+DA|EXCELENTISSIMO)/i;
 const RE_SECAO = /^([IVXLCDM]+)\s*[-—–.]\s+\S/i;
 const RE_SUB = /^(?:\*\*)?[a-z]\)\s+\S/i;
+const RE_ITEM_NUM = /^(?:\*\*)?\d+\)\s+\S/;
 const RE_NOME_ACAO =
   /^(?:PETI[CÇ][AÃ]O\s+INICIAL\s*[—–-]?\s*)?(?:A[CÇ][AÃ]O\s+|EXECU[CÇ][AÃ]O\s+|EMBARGOS\s+|RECURSO\s+|CONTESTA)/i;
 const RE_FECHAMENTO =
@@ -126,7 +128,7 @@ export function aplicarItalicoTermosEstrangeiros(texto: string): string {
 
 export function classificarBlocoPeca(
   linha: string,
-  estado: { emFechamento: boolean; emPedidos: boolean }
+  estado: { emFechamento: boolean; emPedidos: boolean; emProvas: boolean }
 ): BlocoPecaClassificado {
   const t = linha.replace(/\s+/g, " ").trim();
   const marcador = parseMarcadorEspaco(t);
@@ -137,6 +139,7 @@ export function classificarBlocoPeca(
   if (RE_FECHAMENTO.test(t)) {
     estado.emFechamento = true;
     estado.emPedidos = false;
+    estado.emProvas = false;
   }
 
   if (ehCitacaoJurisprudencia(t)) {
@@ -145,6 +148,7 @@ export function classificarBlocoPeca(
 
   if (RE_SECAO.test(t)) {
     estado.emPedidos = /DOS PEDIDOS\b/i.test(t);
+    estado.emProvas = /DAS PROVAS\b/i.test(t);
     return { tipo: "secao-titulo", texto: t };
   }
 
@@ -177,15 +181,20 @@ export function classificarBlocoPeca(
     return { tipo: "fechamento", texto: t };
   }
 
+  const limparMarcacaoItem = (s: string) =>
+    s.replace(/^\*\*/, "").replace(/\*\*$/, "").trim();
+
   if (RE_SUB.test(t)) {
-    // Em DOS PEDIDOS: a)/b)/c) em peso normal (não negrito)
-    if (estado.emPedidos) {
-      return {
-        tipo: "item-pedido",
-        texto: t.replace(/^\*\*/, "").replace(/\*\*$/, "").trim(),
-      };
+    // DOS PEDIDOS e DAS PROVAS: peso normal (não negrito)
+    if (estado.emPedidos || estado.emProvas) {
+      return { tipo: "item-pedido", texto: limparMarcacaoItem(t) };
     }
     return { tipo: "subtopico", texto: t };
+  }
+
+  // Em DAS PROVAS: itens numerados 1)/2)/3) também em peso normal
+  if (estado.emProvas && RE_ITEM_NUM.test(t)) {
+    return { tipo: "item-pedido", texto: limparMarcacaoItem(t) };
   }
 
   if (t.startsWith("- ")) {
@@ -202,7 +211,7 @@ export function classificarPeca(texto: string): BlocoPecaClassificado[] {
     .map((l) => l.replace(/\s+/g, " ").trim())
     .filter((l) => l.length > 0);
 
-  const estado = { emFechamento: false, emPedidos: false };
+  const estado = { emFechamento: false, emPedidos: false, emProvas: false };
   return linhas.map((l) => classificarBlocoPeca(l, estado));
 }
 
