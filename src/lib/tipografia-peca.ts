@@ -101,11 +101,17 @@ export function normalizarBlocosJuris(texto: string): string {
   );
 }
 
-/** Italiciza termos latinos comuns ainda sem marcação Markdown. */
+/** Italiciza termos latinos/estrangeiros: *"termo"* (aspas + itálico). */
 export function aplicarItalicoTermosEstrangeiros(texto: string): string {
   let t = texto;
   for (const termo of TERMOS_ITALICO) {
     const escapado = termo.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    // Já entre aspas: "in re ipsa" → *"in re ipsa"* (sem duplicar se já italicizado)
+    const comAspas = new RegExp(`(?<!\\*)"(${escapado})"(?!\\*)`, "gi");
+    t = t.replace(comAspas, (_m, inner: string) => `*"${inner}"*`);
+
+    // Sem aspas: in re ipsa → *"in re ipsa"*
     const re = new RegExp(`\\b(${escapado})\\b`, "gi");
     t = t.replace(re, (m, _g, offset: number, whole: string) => {
       const antes = whole.slice(Math.max(0, offset - 2), offset);

@@ -595,36 +595,53 @@ function normalizarSecaoFatos(texto: string): string {
   );
 }
 
-/** Garante negrito Markdown nos subtítulos a)/b)/c) fora de DOS PEDIDOS. */
-function negritarSubtitulosDireito(texto: string): string {
-  const linhas = texto.split("\n");
-  let emPedidos = false;
+/**
+ * Normaliza subtítulos a)/b)/c) fora de DOS PEDIDOS.
+ * Negrito vem da tipografia (classe subtopico / forceBold), não de ** na linha
+ * inteira — assim *"latim"* no meio do título não quebra o Markdown.
+ */
+function limparCorpoSubtitulo(corpo: string): string {
+  let c = corpo.trim();
 
-  return linhas
+  // **corpo inteiro**
+  if (c.startsWith("**") && c.endsWith("**") && !c.slice(2, -2).includes("**")) {
+    c = c.slice(2, -2).trim();
+  }
+
+  // *corpo inteiro* (IA italicizou o subtítulo) — preserva *"termo"* isolado
+  if (
+    c.startsWith("*") &&
+    c.endsWith("*") &&
+    !c.startsWith("**") &&
+    !/^\*"[^"]+"\*$/.test(c)
+  ) {
+    c = c.slice(1, -1).trim();
+  }
+
+  // Marcadores de fechamento órfãos: ... "termo"** ou ...texto**
+  if (c.endsWith("**") && !c.startsWith("**")) {
+    c = c.slice(0, -2).trim();
+  }
+
+  // Aspas + * órfão sem abertura: "termo"* → "termo" (preserva *"termo"*)
+  c = c.replace(/(^|[^*])"([^"]+)"\*(?!\*)/g, '$1"$2"');
+
+  return c.trim();
+}
+
+function negritarSubtitulosDireito(texto: string): string {
+  return texto
+    .split("\n")
     .map((l) => {
       const t = l.trim();
-      if (/^[IVXLCDM]+\s*[-—–.]\s+DOS PEDIDOS\b/i.test(t)) {
-        emPedidos = true;
-        return l;
-      }
-      if (/^[IVXLCDM]+\s*[-—–.]\s+\S/i.test(t)) {
-        emPedidos = false;
-        return l;
-      }
-      if (/^(Nestes termos|Termos em que)/i.test(t)) {
-        emPedidos = false;
-        return l;
-      }
-
-      const m = /^(?:\*\*)?([a-z]\))\s+(.+?)(?:\*\*)?$/i.exec(t);
+      // Aceita *c)...*, **c)...**, *c)...** etc. da IA
+      const m = /^(?:\*{1,2})?([a-z]\))\s+(.+)$/i.exec(t);
       if (!m) return l;
-      const corpo = m[2]!.replace(/^\*\*/, "").replace(/\*\*$/, "").trim();
+      const corpo = limparCorpoSubtitulo(m[2]!);
       if (corpo.length > 120) return l;
 
-      if (emPedidos) {
-        return `${m[1]!.toLowerCase()} ${corpo}`;
-      }
-      return `**${m[1]!.toLowerCase()} ${corpo}**`;
+      // Sem ** na linha: negrito via tipografia; itálico só em *"termo"*
+      return `${m[1]!.toLowerCase()} ${corpo}`;
     })
     .join("\n");
 }

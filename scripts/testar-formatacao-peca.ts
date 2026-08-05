@@ -69,7 +69,7 @@ assert(
   "II - DO DIREITO sozinho na linha"
 );
 assert(
-  !/^II - DO DIREITO\s+a\)/m.test(normalizada),
+  !/^II - DO DIREITO[ \t]+a\)/m.test(normalizada),
   "subtítulo a) não cola no DO DIREITO"
 );
 assert(
@@ -86,14 +86,29 @@ assert(
   "linha em branco após propor a presente"
 );
 assert(
-  /\[\[ESPACO_1_LINHA\]\]\n\*\*b\)/i.test(normalizada) ||
-    /\[\[ESPACO_1_LINHA\]\]\nb\)/i.test(normalizada),
+  /\[\[ESPACO_1_LINHA\]\]\nb\)/i.test(normalizada),
   "linha em branco entre subtítulos do direito"
 );
 assert(
   /DOS PEDIDOS[\s\S]*?\na\)\s+A citação/i.test(normalizada) &&
     !/DOS PEDIDOS[\s\S]*?\n\*\*a\)/i.test(normalizada),
   "itens de DOS PEDIDOS sem negrito"
+);
+
+const subtituloLatim = normalizarPecaGerada(
+  `*c) Do dano moral "in re ipsa" e do dever de indenizar**`
+);
+const linhaC =
+  subtituloLatim.split("\n").find((l) => /^c\)\s/i.test(l.trim())) ?? "";
+assert(
+  /^c\) Do dano moral \*"in re ipsa"\* e do dever de indenizar$/i.test(
+    linhaC.trim()
+  ),
+  'subtítulo: negrito via tipografia; só "in re ipsa" em *"…"*'
+);
+assert(
+  !/^\*{1,2}/.test(linhaC.trim()),
+  "subtítulo sem * ou ** envolvendo a linha inteira"
 );
 assert(
   pecaTemFundamentacaoGenerica(normalizada),
