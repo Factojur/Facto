@@ -81,6 +81,21 @@ assert(
   "2 linhas após pede deferimento"
 );
 assert(
+  /propor a presente\n\[\[ESPACO_1_LINHA\]\]\n/i.test(normalizada) ||
+    /propor a presente\.?\n\[\[ESPACO_1_LINHA\]\]/i.test(normalizada),
+  "linha em branco após propor a presente"
+);
+assert(
+  /\[\[ESPACO_1_LINHA\]\]\n\*\*b\)/i.test(normalizada) ||
+    /\[\[ESPACO_1_LINHA\]\]\nb\)/i.test(normalizada),
+  "linha em branco entre subtítulos do direito"
+);
+assert(
+  /DOS PEDIDOS[\s\S]*?\na\)\s+A citação/i.test(normalizada) &&
+    !/DOS PEDIDOS[\s\S]*?\n\*\*a\)/i.test(normalizada),
+  "itens de DOS PEDIDOS sem negrito"
+);
+assert(
   pecaTemFundamentacaoGenerica(normalizada),
   "fixture detectada como fundamentação genérica"
 );

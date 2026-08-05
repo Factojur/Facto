@@ -199,6 +199,15 @@ function blocoParaParagrafo(
     });
   }
 
+  if (tipo === "item-pedido") {
+    return new Paragraph({
+      alignment: AlignmentType.JUSTIFIED,
+      indent: { firstLine: RECUO_PARAGRAFO },
+      spacing: { before: 0, after: 0, line: ESPACO_LINHA },
+      children: runsDeMarkdown(texto, { forcarNegrito: false }),
+    });
+  }
+
   if (tipo === "citacao-juris") {
     return new Paragraph({
       alignment: AlignmentType.JUSTIFIED,

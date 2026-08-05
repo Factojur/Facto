@@ -76,6 +76,8 @@ function blocoParaHtml(bloco: string): string {
           return `<p class="fechamento">${html}</p>`;
         case "subtopico":
           return `<p class="subtopico">${html}</p>`;
+        case "item-pedido":
+          return `<p class="item-pedido">${html}</p>`;
         case "citacao-juris":
           return `<p class="citacao-juris">${html}</p>`;
         case "prova-item":
@@ -226,6 +228,13 @@ export function gerarDocumentoTimbrado(
     .documento-juridico .subtopico {
       font-weight: bold;
       text-align: left;
+      text-indent: 2cm;
+      margin: 0;
+      padding: 0;
+    }
+    .documento-juridico .item-pedido {
+      font-weight: normal;
+      text-align: justify;
       text-indent: 2cm;
       margin: 0;
       padding: 0;

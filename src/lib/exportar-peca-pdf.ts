@@ -206,6 +206,20 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
       continue;
     }
 
+    if (b.tipo === "item-pedido") {
+      novaPaginaSePreciso(lineH);
+      y = desenharParagrafoRuns(doc, b.texto, {
+        x: marginLeft,
+        y,
+        maxWidth,
+        lineH,
+        fontSize: FORMATACAO_FORENSE.tamanhoPt,
+        firstLineIndentMm: indent,
+        forceBold: false,
+      });
+      continue;
+    }
+
     if (b.tipo === "citacao-juris") {
       const larguraJuris = maxWidth - indentJuris;
       novaPaginaSePreciso(lineHCitacao * 2);

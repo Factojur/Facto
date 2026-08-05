@@ -119,6 +119,8 @@ function separarTitulosESubtopicos(texto: string): string {
     }
 
     // a) Título. Corpo…  OU  a) Da tese A presente…
+    // Remove * soltos que a IA cola no início (*c) …*)
+    linha = linha.replace(/^\*+/, "").replace(/\*+$/, "").trim();
     const sub = /^([a-z]\))\s+(.+)$/i.exec(linha);
     if (sub) {
       const letra = sub[1]!.toLowerCase();
@@ -402,6 +404,96 @@ export function inserirEspacoAposNomeAcao(texto: string): string {
   return saida.join("\n");
 }
 
+/**
+ * Garante 1 linha (marcador) entre "propor a presente" e o nome da ação.
+ */
+export function inserirEspacoAntesNomeAcao(texto: string): string {
+  const linhas = texto.split("\n");
+  const saida: string[] = [];
+
+  for (let i = 0; i < linhas.length; i++) {
+    const b = linhas[i]!;
+    saida.push(b);
+
+    if (!/\bpropor a presente\.?\s*$/i.test(b.trim())) {
+      continue;
+    }
+
+    let j = i + 1;
+    while (
+      j < linhas.length &&
+      (!linhas[j]!.trim() || ehMarcadorEspaco(linhas[j]!))
+    ) {
+      j++;
+    }
+
+    const proximo = linhas[j];
+    if (proximo && ehNomeAcaoStandalone(proximo.trim())) {
+      saida.push(MARCADOR_ESPACO_1);
+      while (
+        i + 1 < linhas.length &&
+        (!linhas[i + 1]!.trim() || ehMarcadorEspaco(linhas[i + 1]!))
+      ) {
+        i++;
+      }
+    }
+  }
+
+  return saida.join("\n");
+}
+
+/**
+ * Garante 1 linha em branco entre o fim de um subtítulo a)/b)/c) e o próximo
+ * (não entre o título romano e o primeiro subtítulo).
+ */
+export function inserirEspacoEntreSubtopicos(texto: string): string {
+  const linhas = texto.split("\n");
+  const saida: string[] = [];
+  let aposTituloRomano = false;
+
+  for (let i = 0; i < linhas.length; i++) {
+    const raw = linhas[i]!;
+    const t = raw.trim();
+
+    if (!t) {
+      saida.push(raw);
+      continue;
+    }
+
+    if (ehTopicoPrincipal(t)) {
+      saida.push(raw);
+      aposTituloRomano = true;
+      continue;
+    }
+
+    if (ehSubtopico(t)) {
+      if (!aposTituloRomano) {
+        while (
+          saida.length > 0 &&
+          (!saida[saida.length - 1]!.trim() ||
+            ehMarcadorEspaco(saida[saida.length - 1]!))
+        ) {
+          saida.pop();
+        }
+        saida.push(MARCADOR_ESPACO_1);
+      }
+      saida.push(raw);
+      aposTituloRomano = false;
+      continue;
+    }
+
+    if (ehMarcadorEspaco(t)) {
+      saida.push(raw);
+      continue;
+    }
+
+    aposTituloRomano = false;
+    saida.push(raw);
+  }
+
+  return saida.join("\n");
+}
+
 /** Normaliza "OAB/SP123456" → "OAB/SP 147099". */
 function normalizarLinhaOab(texto: string): string {
   return texto.replace(
@@ -503,16 +595,35 @@ function normalizarSecaoFatos(texto: string): string {
   );
 }
 
-/** Garante negrito Markdown só no título a)/b)/c) (não no corpo). */
+/** Garante negrito Markdown nos subtítulos a)/b)/c) fora de DOS PEDIDOS. */
 function negritarSubtitulosDireito(texto: string): string {
-  return texto
-    .split("\n")
+  const linhas = texto.split("\n");
+  let emPedidos = false;
+
+  return linhas
     .map((l) => {
       const t = l.trim();
+      if (/^[IVXLCDM]+\s*[-—–.]\s+DOS PEDIDOS\b/i.test(t)) {
+        emPedidos = true;
+        return l;
+      }
+      if (/^[IVXLCDM]+\s*[-—–.]\s+\S/i.test(t)) {
+        emPedidos = false;
+        return l;
+      }
+      if (/^(Nestes termos|Termos em que)/i.test(t)) {
+        emPedidos = false;
+        return l;
+      }
+
       const m = /^(?:\*\*)?([a-z]\))\s+(.+?)(?:\*\*)?$/i.exec(t);
       if (!m) return l;
       const corpo = m[2]!.replace(/^\*\*/, "").replace(/\*\*$/, "").trim();
       if (corpo.length > 120) return l;
+
+      if (emPedidos) {
+        return `${m[1]!.toLowerCase()} ${corpo}`;
+      }
       return `**${m[1]!.toLowerCase()} ${corpo}**`;
     })
     .join("\n");
@@ -529,7 +640,9 @@ export function normalizarPecaGerada(texto: string): string {
   t = removerTituloAcaoAposEnderecamento(t);
   t = deduplicarLinhasConsecutivas(t);
   t = inserirEspacoAposEnderecamento(t);
+  t = inserirEspacoAntesNomeAcao(t);
   t = inserirEspacoAposNomeAcao(t);
+  t = inserirEspacoEntreSubtopicos(t);
   t = normalizarSecaoFatos(t);
   t = normalizarParagrafosDoDireito(t);
   t = negritarSubtitulosDireito(t);
