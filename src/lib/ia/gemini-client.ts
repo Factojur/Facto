@@ -5,8 +5,11 @@
  *
  * Workflow agentic:
  * - Etapa 1 (triagem): Flash-Lite — barato e suficiente para tese/estratégia
- * - Etapa 2 (redação): 2.5 Flash como padrão (custo/qualidade)
+ * - Etapa 2 (redação): Flash como padrão (custo/qualidade)
  * Override opcional: GEMINI_MODELO_REDACAO=gemini-2.5-pro
+ *
+ * Sobre carga (503 / "high demand"): tenta o próximo modelo da cadeia
+ * com pequeno backoff — não aborta na primeira falha transitória.
  */
 
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";
@@ -14,21 +17,24 @@ const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 /** Cadeia Etapa 1 — Paralegal / triagem (rápido e barato). */
 export const MODELOS_TRIAGEM = [
   "gemini-2.5-flash-lite",
-  "gemini-3.5-flash-lite",
+  "gemini-2.0-flash-lite",
   "gemini-flash-lite-latest",
+  "gemini-2.5-flash",
   "gemini-2.0-flash",
+  "gemini-flash-latest",
 ] as const;
 
 /**
  * Cadeia Etapa 2 — Redator (qualidade com custo controlado).
- * Flash primeiro; Pro só se GEMINI_MODELO_REDACAO apontar para ele.
+ * Flash primeiro; Lite como escape de sobrecarga; Pro só via env.
  */
 export const MODELOS_REDACAO_PADRAO = [
   "gemini-2.5-flash",
-  "gemini-3.5-flash",
   "gemini-flash-latest",
   "gemini-2.0-flash",
-  "gemini-3.5-flash-lite",
+  "gemini-2.5-flash-lite",
+  "gemini-2.0-flash-lite",
+  "gemini-flash-lite-latest",
 ] as const;
 
 export function modelosRedacao(): readonly string[] {
@@ -43,7 +49,7 @@ export function modelosRedacao(): readonly string[] {
 export const MODELOS_REDACAO = MODELOS_REDACAO_PADRAO;
 
 const MODELO_PADRAO = MODELOS_TRIAGEM[0];
-const MODELO_FALLBACK = "gemini-3.5-flash-lite";
+const MODELO_FALLBACK = "gemini-2.5-flash-lite";
 
 export type ResultadoGeminiSucesso = {
   ok: true;
@@ -74,6 +80,40 @@ function modeloIndisponivel(status: number, mensagem: string): boolean {
   );
 }
 
+/** 503 / sobrecarga / spike — vale tentar outro modelo ou retry. */
+function modeloSobrecarregado(status: number, mensagem: string): boolean {
+  if (status === 503 || status === 429) return true;
+  const n = mensagem.toLowerCase();
+  return (
+    n.includes("high demand") ||
+    n.includes("overloaded") ||
+    n.includes("unavailable") ||
+    n.includes("try again later") ||
+    n.includes("resource_exhausted") ||
+    n.includes("resource exhausted") ||
+    n.includes("temporarily") ||
+    n.includes("rate limit") ||
+    n.includes("quota exceeded") ||
+    n.includes("too many requests")
+  );
+}
+
+/** Auth / chave inválida — não adianta trocar de modelo. */
+function erroAutenticacao(status: number, mensagem: string): boolean {
+  if (status === 401 || status === 403) return true;
+  const n = mensagem.toLowerCase();
+  return (
+    n.includes("api key not valid") ||
+    n.includes("invalid api key") ||
+    n.includes("permission denied") ||
+    n.includes("consumer_invalid")
+  );
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function chamarGemini(params: {
   systemPrompt: string;
   userPrompt: string;
@@ -101,7 +141,6 @@ async function chamarGemini(params: {
   };
 
   if (params.usarBuscaGoogle) {
-    // Gemini API (v1beta) — grounding com busca Google
     corpo.tools = [{ google_search: {} }];
   }
 
@@ -123,10 +162,16 @@ async function chamarGemini(params: {
     const mensagem =
       dados?.error?.message ??
       `A Gemini API recusou a chamada (status ${resposta.status}).`;
+
+    if (erroAutenticacao(resposta.status, mensagem)) {
+      return { ok: false, erro: `__AUTH__:${mensagem}` };
+    }
     if (modeloIndisponivel(resposta.status, mensagem)) {
       return { ok: false, erro: `__MODELO_INDISPONIVEL__:${mensagem}` };
     }
-    // Ferramenta de busca não suportada neste modelo → sinaliza retry sem busca
+    if (modeloSobrecarregado(resposta.status, mensagem)) {
+      return { ok: false, erro: `__SOBRECARGA__:${mensagem}` };
+    }
     if (
       params.usarBuscaGoogle &&
       /google_?search|tool|grounding|not supported|unknown name/i.test(mensagem)
@@ -152,16 +197,32 @@ async function chamarGemini(params: {
     .trim();
 
   if (!texto) {
+    // Às vezes a API devolve 200 sem texto sob pressão — trata como transitório
+    const finish = String(candidato?.finishReason ?? "");
+    if (/OTHER|UNEXPECTED|RECITATION/i.test(finish) || !candidato) {
+      return {
+        ok: false,
+        erro: `__SOBRECARGA__:Resposta vazia (${finish || "sem candidato"}).`,
+      };
+    }
     return { ok: false, erro: "A IA não retornou nenhum texto." };
   }
 
   return { ok: true, texto, modelo: params.modelo };
 }
 
+function limparPrefixoErro(erro: string): string {
+  return erro
+    .replace(/^__AUTH__:/, "")
+    .replace(/^__MODELO_INDISPONIVEL__:/, "")
+    .replace(/^__SOBRECARGA__:/, "")
+    .replace(/^__BUSCA_INDISPONIVEL__:/, "");
+}
+
 /**
  * Chama a Gemini API com system + user prompt.
- * Se `modelos` for passado, tenta cada um em ordem até um responder
- * (útil quando aliases estão descontinuados).
+ * Se `modelos` for passado, tenta cada um em ordem até um responder.
+ * Sobrecarga / 503 / high demand → próximo modelo (+ 1 retry curto).
  */
 export async function gerarTextoComGemini(params: {
   systemPrompt: string;
@@ -202,49 +263,92 @@ export async function gerarTextoComGemini(params: {
 
   try {
     let ultimoErro = "Nenhum modelo Gemini respondeu.";
+    const errosPorModelo: string[] = [];
 
-    for (const modelo of cadeia) {
-      const resultado = await chamarGemini({
-        ...opts,
-        modelo,
-        usarBuscaGoogle: usarBusca,
-      });
+    for (let i = 0; i < cadeia.length; i++) {
+      const modelo = cadeia[i]!;
+      const tentativas = 2; // 1ª + 1 retry em sobrecarga no mesmo modelo
 
-      if (resultado.ok) return resultado;
-
-      if (resultado.erro.startsWith("__BUSCA_INDISPONIVEL__")) {
-        // Desliga busca e tenta de novo a mesma cadeia
-        usarBusca = false;
-        ultimoErro = resultado.erro.replace("__BUSCA_INDISPONIVEL__:", "");
-        const semBusca = await chamarGemini({
+      for (let tentativa = 1; tentativa <= tentativas; tentativa++) {
+        const resultado = await chamarGemini({
           ...opts,
           modelo,
-          usarBuscaGoogle: false,
+          usarBuscaGoogle: usarBusca,
         });
-        if (semBusca.ok) return semBusca;
-        if (semBusca.erro.startsWith("__MODELO_INDISPONIVEL__")) {
-          ultimoErro = semBusca.erro.replace("__MODELO_INDISPONIVEL__:", "");
-          continue;
+
+        if (resultado.ok) return resultado;
+
+        if (resultado.erro.startsWith("__AUTH__")) {
+          return {
+            ok: false,
+            erro:
+              limparPrefixoErro(resultado.erro) +
+              " Verifique a GEMINI_API_KEY.",
+          };
         }
-        return {
-          ok: false,
-          erro: semBusca.erro.replace("__MODELO_INDISPONIVEL__:", ""),
-        };
+
+        if (resultado.erro.startsWith("__BUSCA_INDISPONIVEL__")) {
+          usarBusca = false;
+          ultimoErro = limparPrefixoErro(resultado.erro);
+          const semBusca = await chamarGemini({
+            ...opts,
+            modelo,
+            usarBuscaGoogle: false,
+          });
+          if (semBusca.ok) return semBusca;
+          if (semBusca.erro.startsWith("__SOBRECARGA__")) {
+            errosPorModelo.push(`${modelo}: sobrecarga`);
+            ultimoErro = limparPrefixoErro(semBusca.erro);
+            if (tentativa < tentativas) {
+              await sleep(800 * tentativa);
+              continue;
+            }
+            break; // próximo modelo
+          }
+          if (semBusca.erro.startsWith("__MODELO_INDISPONIVEL__")) {
+            ultimoErro = limparPrefixoErro(semBusca.erro);
+            break;
+          }
+          return { ok: false, erro: limparPrefixoErro(semBusca.erro) };
+        }
+
+        if (resultado.erro.startsWith("__MODELO_INDISPONIVEL__")) {
+          ultimoErro = limparPrefixoErro(resultado.erro);
+          errosPorModelo.push(`${modelo}: indisponível`);
+          break; // próximo modelo
+        }
+
+        if (resultado.erro.startsWith("__SOBRECARGA__")) {
+          ultimoErro = limparPrefixoErro(resultado.erro);
+          errosPorModelo.push(`${modelo}: alta demanda`);
+          if (tentativa < tentativas) {
+            await sleep(700 * tentativa + Math.floor(Math.random() * 400));
+            continue;
+          }
+          break; // próximo modelo da cadeia
+        }
+
+        // Erro duro (safety etc.)
+        return { ok: false, erro: limparPrefixoErro(resultado.erro) };
       }
 
-      if (resultado.erro.startsWith("__MODELO_INDISPONIVEL__")) {
-        ultimoErro = resultado.erro.replace("__MODELO_INDISPONIVEL__:", "");
-        continue;
+      // Pequena pausa antes do próximo modelo sob pressão
+      if (i < cadeia.length - 1) {
+        await sleep(350);
       }
-
-      // Erro “duro” (quota, auth, safety): não insiste na cadeia.
-      return {
-        ok: false,
-        erro: resultado.erro.replace("__MODELO_INDISPONIVEL__:", ""),
-      };
     }
 
-    return { ok: false, erro: ultimoErro };
+    const detalhe =
+      errosPorModelo.length > 0
+        ? ` Tentativas: ${errosPorModelo.join("; ")}.`
+        : "";
+    return {
+      ok: false,
+      erro:
+        `Todos os modelos Gemini estão temporariamente sobrecarregados. ` +
+        `Aguarde ~1 minuto e tente novamente.${detalhe} ` +
+        `(último: ${ultimoErro})`,
+    };
   } catch (erro) {
     return {
       ok: false,

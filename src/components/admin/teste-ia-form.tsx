@@ -96,6 +96,13 @@ export function TesteIaForm() {
         {erro && (
           <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-300">
             {erro}
+            {/sobrecarreg|high demand|try again later|503/i.test(erro) && (
+              <p className="mt-2 text-red-200/80">
+                Dica: a camada gratuita do Gemini oscila em horários de pico. O sistema
+                já tenta outros modelos automaticamente — se persistir, aguarde 1–2 minutos
+                e clique em gerar de novo.
+              </p>
+            )}
           </div>
         )}
 
