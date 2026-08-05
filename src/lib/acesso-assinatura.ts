@@ -16,10 +16,11 @@ export async function acessoAssinaturaLiberado(
 
   try {
     const admin = createAdminClient();
+    const emailNorm = email.trim().toLowerCase();
     const { data, error } = await admin
       .from("assinaturas")
       .select("status, acesso_valido_ate")
-      .eq("email", email)
+      .ilike("email", emailNorm)
       .order("criado_em", { ascending: false });
 
     if (error || !data || data.length === 0) return true;
@@ -30,6 +31,11 @@ export async function acessoAssinaturaLiberado(
       const acessoValidoAte = assinatura.acesso_valido_ate
         ? new Date(assinatura.acesso_valido_ate).getTime()
         : null;
+
+      // Cancelada sem janela de acesso restante: nao libera.
+      if (assinatura.status === "canceled") {
+        return acessoValidoAte !== null && acessoValidoAte > agora;
+      }
 
       // Assinatura ativa mas ainda sem nenhum ciclo confirmado (ex.: primeira
       // cobrança processando) — não bloqueia por segurança.

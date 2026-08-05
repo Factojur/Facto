@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buscarPagamentoInicialAprovado } from "@/lib/mercadopago/client";
 import { garantirConviteEEmailsPosCompra } from "@/lib/mercadopago/pos-compra";
+import { sincronizarPreapprovalsRecentesDoMp } from "@/lib/mercadopago/sincronizar-assinatura";
 
 /**
- * Cron (Vercel): a cada 5 min, garante e-mails pós-compra para assinaturas
+ * Cron (Vercel): a cada 5 min, sincroniza MP→DB e garante e-mails pós-compra para assinaturas
  * autorizadas recentes — rede de segurança se o webhook do MP falhar/atrasar.
  *
  * Auth: Authorization Bearer CRON_SECRET (Vercel injeta automaticamente)
@@ -28,6 +29,15 @@ export async function GET(request: Request) {
   }
 
   const admin = createAdminClient();
+
+  // 1) Puxa do MP assinaturas authorized/canceladas que o webhook pode ter perdido
+  let syncMp: Awaited<ReturnType<typeof sincronizarPreapprovalsRecentesDoMp>> = [];
+  try {
+    syncMp = await sincronizarPreapprovalsRecentesDoMp(admin);
+  } catch (erro) {
+    console.error("[cron sincronizar-compras] sync MP", erro);
+  }
+
   const desde = new Date();
   desde.setDate(desde.getDate() - 14);
 
@@ -135,6 +145,8 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     ok: true,
+    syncMp: syncMp.length,
+    syncMpDetalhe: syncMp,
     analisadas: (assinaturas ?? []).length,
     resultados,
   });

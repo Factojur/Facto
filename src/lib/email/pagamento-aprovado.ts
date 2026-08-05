@@ -3,6 +3,7 @@ import {
   emailJaEnviadoParaPagamento,
   registrarEmailEvento,
 } from "@/lib/email/eventos";
+import { planoPorValor, PLANO_ANUAL, PLANO_JEC, PLANO_MENSAL } from "@/lib/planos-facto";
 
 const REMETENTE_FINANCEIRO =
   "FACTO Financeiro <financeiro@factoia.com.br>";
@@ -14,6 +15,16 @@ function formatarValor(valor: number | null | undefined): string {
     style: "currency",
     currency: "BRL",
   });
+}
+
+function rotuloPlanoPorValor(valor: number | null | undefined): string {
+  const id = planoPorValor(
+    typeof valor === "number" && !Number.isNaN(valor) ? valor : null
+  );
+  if (id === "jec") return PLANO_JEC.rotulo;
+  if (id === "mensal") return PLANO_MENSAL.rotulo;
+  if (id === "anual") return PLANO_ANUAL.rotulo;
+  return "—";
 }
 
 function escaparHtml(texto: string): string {
@@ -37,6 +48,7 @@ function htmlAvisoInterno(opcoes: {
       <h1 style="margin:12px 0 0;font-size:18px;">Nova compra aprovada</h1>
       <p style="margin:16px 0 8px;font-size:14px;line-height:1.5;">
         <strong>Cliente:</strong> ${escaparHtml(opcoes.emailCliente)}<br />
+        <strong>Plano:</strong> ${escaparHtml(rotuloPlanoPorValor(opcoes.valor))}<br />
         <strong>Valor:</strong> ${escaparHtml(formatarValor(opcoes.valor))}<br />
         <strong>ID Mercado Pago:</strong> ${escaparHtml(opcoes.mpPaymentId)}
       </p>

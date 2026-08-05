@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/sincronizar-compras",
-      "schedule": "0 12 * * *"
+      "schedule": "*/5 * * * *"
     }
   ]
 }

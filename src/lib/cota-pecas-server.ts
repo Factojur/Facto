@@ -18,7 +18,7 @@ async function planoDoEmail(admin: Admin, email: string): Promise<PlanoCota> {
   const { data } = await admin
     .from("assinaturas")
     .select("plano, status, acesso_valido_ate")
-    .eq("email", email)
+    .ilike("email", email)
     .order("criado_em", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -29,7 +29,8 @@ async function planoDoEmail(admin: Admin, email: string): Promise<PlanoCota> {
     ? new Date(data.acesso_valido_ate).getTime()
     : null;
   const ativo =
-    data.status === "authorized" && (ate === null || ate > agora);
+    (data.status === "authorized" && (ate === null || ate > agora)) ||
+    (data.status === "canceled" && ate !== null && ate > agora);
   if (!ativo) return null;
   if (data.plano === "anual" || data.plano === "mensal" || data.plano === "jec") {
     return data.plano;

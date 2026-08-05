@@ -32,6 +32,8 @@ type AssinaturaRow = {
   email: string | null;
   plano: string | null;
   status: string | null;
+  criado_em?: string | null;
+  acesso_valido_ate?: string | null;
 };
 
 type ClienteUso = {
@@ -101,7 +103,7 @@ export default async function AdminUsoPecasPage({
       admin.from("cota_pecas_ciclo").select("user_id, ciclo, usadas, extras"),
       admin
         .from("assinaturas")
-        .select("email, plano, status, criado_em")
+        .select("email, plano, status, criado_em, acesso_valido_ate")
         .order("criado_em", { ascending: false }),
     ]);
 
@@ -113,12 +115,19 @@ export default async function AdminUsoPecasPage({
     const assinaturas = (assinaturasResp.data ?? []) as AssinaturaRow[];
 
     const planoPorEmail = new Map<string, string>();
+    const agora = Date.now();
     for (const a of assinaturas) {
       const em = a.email?.trim().toLowerCase();
       if (!em || planoPorEmail.has(em)) continue;
-      if (a.status === "authorized" && a.plano) {
+      const ate = a.acesso_valido_ate
+        ? new Date(a.acesso_valido_ate).getTime()
+        : null;
+      const ativo =
+        (a.status === "authorized" && (ate === null || ate > agora)) ||
+        (a.status === "canceled" && ate !== null && ate > agora);
+      if (ativo && a.plano) {
         planoPorEmail.set(em, a.plano);
-      } else if (a.plano && !planoPorEmail.has(em)) {
+      } else if (a.plano) {
         planoPorEmail.set(em, `${a.plano} (${a.status ?? "—"})`);
       }
     }

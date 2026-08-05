@@ -125,7 +125,8 @@ export function montarUpdateCancelamentoCliente(
       status: "canceled",
       data_cancelamento: agora,
       motivo_encerramento: "arrependimento_cdc",
-      acesso_valido_ate: agora,
+      // 1s no passado para o middleware negar acesso imediatamente
+      acesso_valido_ate: new Date(Date.now() - 1000).toISOString(),
       atualizado_em: agora,
     };
   }

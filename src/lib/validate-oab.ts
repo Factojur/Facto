@@ -19,7 +19,8 @@ const INVALID_MOCK_OAB = "123456";
 /**
  * Validação mock da OAB antes do cadastro no Supabase.
  * Aceita UF+número (ex.: SP147099); compara só os dígitos.
- * Substituir por integração real com API da OAB no futuro.
+ * MOCK temporário: ainda NÃO valida OAB+CPF+nome em base oficial.
+ * A autenticação real (OAB vinculada ao CPF/nome) será implementada depois.
  */
 export function validateOabMock(input: {
   email: string;

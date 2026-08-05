@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isAdminEmail } from "@/lib/admin-auth";
 import { buscarPagamentoInicialAprovado } from "@/lib/mercadopago/client";
 import { garantirConviteEEmailsPosCompra } from "@/lib/mercadopago/pos-compra";
+import { sincronizarAssinaturaPorEmail } from "@/lib/mercadopago/sincronizar-assinatura";
 
 /**
  * POST /api/admin/emails/reenviar-compra
@@ -40,9 +41,12 @@ export async function POST(request: Request) {
   try {
     const admin = createAdminClient();
 
+    // Garante assinatura local puxando do MP se o webhook nao criou a linha
+    const sync = await sincronizarAssinaturaPorEmail(admin, email);
+
     const { data: assinatura, error } = await admin
       .from("assinaturas")
-      .select("id, mp_preapproval_id, email, valor, status")
+      .select("id, mp_preapproval_id, email, valor, status, plano")
       .ilike("email", email)
       .order("criado_em", { ascending: false })
       .limit(1)
@@ -50,18 +54,23 @@ export async function POST(request: Request) {
 
     if (error) throw error;
 
-    let mpPaymentId: string | null = null;
-    let valor: number | null = null;
-    let emailEnvio = email;
+    let mpPaymentId: string | null = sync?.mpPaymentId ?? null;
+    let valor: number | null = sync?.valor ?? null;
+    let emailEnvio = sync?.email || email;
 
     if (assinatura?.mp_preapproval_id) {
       emailEnvio = (assinatura.email as string | null)?.trim() || email;
-      valor =
+      const valorAss =
         typeof assinatura.valor === "number"
           ? assinatura.valor
           : typeof assinatura.valor === "string"
             ? parseFloat(assinatura.valor)
             : null;
+      if (typeof valorAss === "number" && !Number.isNaN(valorAss)) {
+        valor = valorAss;
+      } else if (valor == null) {
+        valor = null;
+      }
 
       const { data: pagLocal } = await admin
         .from("pagamentos")
@@ -98,9 +107,19 @@ export async function POST(request: Request) {
         .limit(1)
         .maybeSingle();
 
-      mpPaymentId =
-        (convite?.mp_payment_id as string | null) ??
-        `manual:${email}:${Date.now()}`;
+      if (!mpPaymentId) {
+        mpPaymentId =
+          (convite?.mp_payment_id as string | null) ??
+          `manual:${email}:${Date.now()}`;
+      }
+    }
+
+    if (valor == null && assinatura?.valor != null) {
+      valor =
+        typeof assinatura.valor === "number"
+          ? assinatura.valor
+          : parseFloat(String(assinatura.valor));
+      if (Number.isNaN(valor)) valor = null;
     }
 
     const resultado = await garantirConviteEEmailsPosCompra(admin, {

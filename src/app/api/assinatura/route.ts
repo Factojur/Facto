@@ -23,7 +23,7 @@ export async function GET() {
       .select(
         "id, mp_preapproval_id, email, plano, status, data_inicio, acesso_valido_ate, motivo_encerramento, data_cancelamento"
       )
-      .eq("email", user.email)
+      .ilike("email", user.email)
       .order("criado_em", { ascending: false })
       .limit(1)
       .maybeSingle();

@@ -21,6 +21,7 @@ import {
   planoPorValor,
 } from "@/lib/planos-facto";
 import { processarPagamentoPacoteExtra } from "@/lib/mercadopago/pacotes-extras";
+import { sincronizarAssinaturaPorEmail } from "@/lib/mercadopago/sincronizar-assinatura";
 
 const MP_API = "https://api.mercadopago.com";
 const VALOR_MENSAL = PRECO_CHEQUE_MENSAL;
@@ -183,7 +184,7 @@ async function processarPreapproval(admin: AdminClient, id: string) {
       if (dentroPrazoCdc) {
         dados.motivo_encerramento =
           existente?.motivo_encerramento ?? "arrependimento_cdc";
-        dados.acesso_valido_ate = new Date().toISOString();
+        dados.acesso_valido_ate = new Date(Date.now() - 1000).toISOString();
       } else if (!existente?.motivo_encerramento) {
         dados.motivo_encerramento = "cancelado_pelo_cliente";
       }
@@ -314,11 +315,27 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
         statusPagamento === "refunded" ||
         statusPagamento === "charged_back")
     ) {
+      const corteImediato =
+        statusPagamento === "refunded" ||
+        statusPagamento === "charged_back" ||
+        statusPagamento === "cancelled" ||
+        statusPagamento === "canceled";
       await admin
         .from("assinaturas")
-        .update({ motivo_encerramento: "pagamento_recusado" })
-        .eq("id", assinaturaId)
-        .is("motivo_encerramento", null);
+        .update({
+          motivo_encerramento:
+            statusPagamento === "refunded" || statusPagamento === "charged_back"
+              ? "arrependimento_cdc"
+              : "pagamento_recusado",
+          ...(corteImediato
+            ? {
+                status: "canceled",
+                acesso_valido_ate: new Date(Date.now() - 1000).toISOString(),
+                data_cancelamento: new Date().toISOString(),
+              }
+            : {}),
+        })
+        .eq("id", assinaturaId);
     }
   }
 
@@ -461,6 +478,13 @@ async function processarPayment(admin: AdminClient, id: string) {
       { id, email, valor, motivo: extra.motivo }
     );
     return;
+  }
+
+  // Tenta materializar assinatura local se o tópico preapproval nao chegou
+  try {
+    await sincronizarAssinaturaPorEmail(admin, email);
+  } catch (erro) {
+    console.warn("[webhook mercadopago] sync assinatura via payment", erro);
   }
 
   console.info("[webhook mercadopago] pós-compra via payment", {
