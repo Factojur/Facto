@@ -77,8 +77,12 @@ assert(
   "fechamento em duas linhas"
 );
 assert(
-  /pede deferimento\.\n\[\[ESPACO_2_LINHAS\]\]/.test(normalizada),
-  "2 linhas após pede deferimento"
+  /pede deferimento\.\n\[\[ESPACO_1_LINHA\]\]/.test(normalizada),
+  "1 linha após pede deferimento"
+);
+assert(
+  /\[\[ESPACO_1_LINHA\]\]\nNestes termos,/i.test(normalizada),
+  "1 linha em branco antes de Nestes termos"
 );
 assert(
   /propor a presente\n\[\[ESPACO_1_LINHA\]\]\n/i.test(normalizada) ||
@@ -136,7 +140,9 @@ assert(
   "DAS PROVAS sem itens a)/b)/c)"
 );
 
-const fechamentoEspaco = normalizarPecaGerada(`Nestes termos,
+const fechamentoEspaco = normalizarPecaGerada(`c) A procedência dos pedidos.
+
+Nestes termos,
 pede deferimento.
 
 São Paulo/SP, 5 de agosto de 2026.
@@ -144,10 +150,50 @@ Maria Silva
 Advogado
 OAB/SP 147099`);
 assert(
-  /São Paulo\/SP, 5 de agosto de 2026\.\n\[\[ESPACO_1_LINHA\]\]\nMaria Silva/i.test(
+  /procedência dos pedidos\.\n\[\[ESPACO_1_LINHA\]\]\nNestes termos,/i.test(
     fechamentoEspaco
   ),
-  "1 linha em branco entre data e nome do advogado"
+  "1 linha em branco entre último pedido e Nestes termos"
+);
+assert(
+  /pede deferimento\.\n\[\[ESPACO_1_LINHA\]\]\nSão Paulo\/SP/i.test(
+    fechamentoEspaco
+  ),
+  "1 linha em branco entre pede deferimento e data"
+);
+assert(
+  /São Paulo\/SP, 5 de agosto de 2026\.\n\[\[ESPACO_1_LINHA\]\]\nMaria Silva\nOAB\/SP 147099/i.test(
+    fechamentoEspaco
+  ),
+  "1 linha entre data e nome; OAB na linha seguinte sem Advogado"
+);
+assert(
+  !/^Advogado$/im.test(fechamentoEspaco),
+  "remove linha isolada Advogado no fechamento"
+);
+
+const italicoCorpo = normalizarPecaGerada(
+  `O dano moral in re ipsa prescinde de prova do abalo. Configuram-se o fumus boni iuris e o "periculum in mora". Houve phishing e ausência de compliance.`
+);
+assert(
+  /\*"in re ipsa"\*/i.test(italicoCorpo),
+  "itálico: in re ipsa no corpo"
+);
+assert(
+  /\*"fumus boni iuris"\*/i.test(italicoCorpo),
+  "itálico: fumus boni iuris no corpo"
+);
+assert(
+  /\*"periculum in mora"\*/i.test(italicoCorpo),
+  "itálico: periculum já entre aspas"
+);
+assert(
+  /\*"phishing"\*/i.test(italicoCorpo) && /\*"compliance"\*/i.test(italicoCorpo),
+  "itálico: termos em inglês no corpo"
+);
+assert(
+  (italicoCorpo.match(/\*"in re ipsa"\*/gi) || []).length === 1,
+  "não duplica marcação de itálico"
 );
 assert(
   pecaTemFundamentacaoGenerica(normalizada),

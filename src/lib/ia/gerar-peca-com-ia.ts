@@ -244,7 +244,6 @@ function montarUserPromptRedacao(params: {
     `${cidadeUf}, ${dataExtenso}.`,
     "",
     nomeAdv,
-    "Advogado",
     linhaOab
   );
 

@@ -400,11 +400,10 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     "",
     "Nestes termos,",
     "pede deferimento.",
-    MARCADOR_ESPACO_2,
+    MARCADOR_ESPACO_1,
     `${localFechamento(input.comarca)}, ${formatarDataPorExtenso(new Date())}.`,
-    MARCADOR_ESPACO_2,
+    MARCADOR_ESPACO_1,
     autor,
-    "Advogado",
     oabAssinatura,
   ].join("\n");
 

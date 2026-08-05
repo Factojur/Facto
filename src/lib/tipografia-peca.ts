@@ -48,30 +48,193 @@ const RE_FECHAMENTO =
   /^(Nestes termos|Termos em que|Pede e espera deferimento|Pede deferimento|pede deferimento)/i;
 const RE_JURIS_MARCA = /^\[\[JURIS\]\]\s*([\s\S]*?)(?:\s*\[\[\/JURIS\]\])?\s*$/i;
 
-/** Termos latinos / estrangeiros frequentes a italicizar se a IA esquecer. */
+/** Termos latinos / estrangeiros a italicizar em qualquer trecho da peça. */
 const TERMOS_ITALICO = [
+  // Locuções latinas (mais longas primeiro — ordem aplicada em runtime)
+  "exceptio non adimpleti contractus",
+  "venire contra factum proprium",
+  "inaudita altera pars",
+  "pacta sunt servanda",
+  "rebus sic stantibus",
   "fumus boni iuris",
   "periculum in mora",
+  "non bis in idem",
+  "culpa in contrahendo",
+  "culpa in vigilando",
+  "culpa in eligendo",
+  "error in procedendo",
+  "error in judicando",
+  "quantum debeatur",
+  "quantum meruit",
+  "damnum emergens",
+  "lucrum cessans",
+  "solutio indebiti",
+  "modus operandi",
+  "mutatis mutandis",
+  "obiter dictum",
+  "ratio decidendi",
+  "stare decisis",
+  "habeas corpus",
+  "habeas data",
   "in re ipsa",
   "data venia",
   "ex officio",
-  "habeas corpus",
-  "modus operandi",
-  "in casu",
-  "a priori",
-  "a posteriori",
-  "mutatis mutandis",
+  "ex professo",
+  "ex positis",
   "ipso facto",
+  "ipso iure",
+  "ipso jure",
   "sine qua non",
   "ultra petita",
   "extra petita",
+  "citra petita",
   "bis in idem",
   "res judicata",
-  "pacta sunt servanda",
+  "res nullius",
   "onus probandi",
-  "quantum debeatur",
-  "inaudita altera pars",
+  "onus provisandi",
+  "prima facie",
+  "stricto sensu",
+  "lato sensu",
+  "sensu stricto",
+  "sensu lato",
+  "sui generis",
+  "status quo",
+  "erga omnes",
+  "inter partes",
+  "in limine",
+  "in personam",
+  "in rem",
+  "in casu",
+  "in fine",
+  "in totum",
+  "ad cautelam",
+  "ad judicia",
+  "ad hoc",
+  "ad absurdum",
+  "a priori",
+  "a posteriori",
+  "de facto",
+  "de jure",
+  "de iure",
+  "ex nunc",
+  "ex tunc",
+  "ex vi",
+  "pro bono",
+  "pro rata",
+  "pro labore",
+  "bona fide",
+  "bona fides",
+  "mala fide",
+  "contra legem",
+  "secundum legem",
+  "praeter legem",
+  "vacatio legis",
+  "locus standi",
+  "animus nocendi",
+  "ictu oculi",
+  "per se",
+  "ab initio",
+  "in limine litis",
+  "lis pendens",
+  "res litigiosa",
+  "dies a quo",
+  "dies ad quem",
+  "nulla poena sine lege",
+  "nullum crimen sine lege",
+  "nemo tenetur se detegere",
+  "pacta tertiis nec nocent nec prosunt",
+  // Inglês jurídico / técnico (evitar loanwords já naturalizados: site, link, e-mail…)
+  "due diligence",
+  "leading case",
+  "leading cases",
+  "joint venture",
+  "know-how",
+  "know how",
+  "compliance",
+  "phishing",
+  "spoofing",
+  "malware",
+  "ransomware",
+  "deepfake",
+  "cyberbullying",
+  "bullying",
+  "stalking",
+  "gaslighting",
+  "fake news",
+  "goodwill",
+  "disclaimer",
+  "benchmark",
+  "turnover",
+  "leasing",
+  "factoring",
+  "overruling",
+  "distinguishing",
+  "framework",
+  "streaming",
 ];
+
+function escaparRegexTermo(termo: string): string {
+  return termo.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Termos ordenados do mais longo ao mais curto (evita match parcial). */
+function termosItalicoOrdenados(): string[] {
+  return [...TERMOS_ITALICO].sort((a, b) => b.length - a.length);
+}
+
+/**
+ * Aspas curtas com morfologia latina típica (ex.: "culpa in vigilando")
+ * que ainda não estejam em *"…"*.
+ */
+function italicizarAspasComAparenciaLatina(texto: string): string {
+  return texto.replace(/(?<!\*)"([^"\n]{2,80})"(?!\*)/g, (m, inner: string) => {
+    const palavras = inner.trim().split(/\s+/);
+    if (palavras.length === 0 || palavras.length > 8) return m;
+    // Não italicizar citações legais em português
+    if (
+      /\b(art\.?|arts\.?|par[aá]grafo|inciso|al[ií]nea|s[uú]mula|lei|c[oó]digo|cdc|cpc|cf|cc)\b/i.test(
+        inner
+      )
+    ) {
+      return m;
+    }
+    const latinas = palavras.filter((p) =>
+      /^(?:(?:in|ex|ad|de|pro|per|sine|ultra|extra|inter|erga|non|bis|res|ius|lex|quod|quia|et|vel|nec|sed|cum|sub|ob|ab|contra|secundum|praeter|nulla|nullum|nemo|dies|lis|ictu|animus|modus|status|ratio|bona|mala|culpa|error|quantum|damnum|lucrum|pacta|habeas|data|venia|ipso|stricto|lato|sui|prima|facie)(?:que)?|[a-z]*(?:um|us|ae|is|em|am|orum|arum|ibus|iter|atio|iones))$/i.test(
+        p.replace(/[.,;:!?]$/, "")
+      )
+    );
+    if (latinas.length >= Math.ceil(palavras.length * 0.6)) {
+      return `*"${inner}"*`;
+    }
+    return m;
+  });
+}
+
+/** Italiciza termos latinos/estrangeiros em qualquer parte: *"termo"*. */
+export function aplicarItalicoTermosEstrangeiros(texto: string): string {
+  let t = texto;
+  for (const termo of termosItalicoOrdenados()) {
+    const escapado = escaparRegexTermo(termo);
+
+    // Já entre aspas: "in re ipsa" → *"in re ipsa"*
+    const comAspas = new RegExp(`(?<!\\*)"(${escapado})"(?!\\*)`, "gi");
+    t = t.replace(comAspas, (_m, inner: string) => `*"${inner}"*`);
+
+    // Sem aspas: in re ipsa → *"in re ipsa"*
+    const re = new RegExp(`\\b(${escapado})\\b`, "gi");
+    t = t.replace(re, (m, _g, offset: number, whole: string) => {
+      const antes = whole.slice(Math.max(0, offset - 2), offset);
+      const depois = whole.slice(offset + m.length, offset + m.length + 2);
+      if (antes.includes("*") || depois.startsWith("*")) return m;
+      if (antes.endsWith('"') || depois.startsWith('"')) return m;
+      return `*"${m}"*`;
+    });
+  }
+
+  t = italicizarAspasComAparenciaLatina(t);
+  return t;
+}
 
 export function limparMarcadorJuris(texto: string): string {
   return texto
@@ -101,29 +264,6 @@ export function normalizarBlocosJuris(texto: string): string {
     (_m, corpo: string) =>
       `[[JURIS]]${String(corpo).replace(/\s+/g, " ").trim()}[[/JURIS]]`
   );
-}
-
-/** Italiciza termos latinos/estrangeiros: *"termo"* (aspas + itálico). */
-export function aplicarItalicoTermosEstrangeiros(texto: string): string {
-  let t = texto;
-  for (const termo of TERMOS_ITALICO) {
-    const escapado = termo.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-    // Já entre aspas: "in re ipsa" → *"in re ipsa"* (sem duplicar se já italicizado)
-    const comAspas = new RegExp(`(?<!\\*)"(${escapado})"(?!\\*)`, "gi");
-    t = t.replace(comAspas, (_m, inner: string) => `*"${inner}"*`);
-
-    // Sem aspas: in re ipsa → *"in re ipsa"*
-    const re = new RegExp(`\\b(${escapado})\\b`, "gi");
-    t = t.replace(re, (m, _g, offset: number, whole: string) => {
-      const antes = whole.slice(Math.max(0, offset - 2), offset);
-      const depois = whole.slice(offset + m.length, offset + m.length + 2);
-      if (antes.includes("*") || depois.startsWith("*")) return m;
-      if (antes.endsWith('"') || depois.startsWith('"')) return m;
-      return `*"${m}"*`;
-    });
-  }
-  return t;
 }
 
 export function classificarBlocoPeca(

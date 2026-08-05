@@ -505,7 +505,7 @@ function normalizarLinhaOab(texto: string): string {
 
 /**
  * Fecha a peça no formato rígido:
- * Nestes termos, / pede deferimento. / (2 linhas) / data / (1 linha) / assinatura
+ * (1 linha) Nestes termos, / pede deferimento. / (1 linha) / data / (1 linha) / nome / OAB
  */
 function normalizarFechamentoAssinatura(texto: string): string {
   let t = texto
@@ -514,7 +514,7 @@ function normalizarFechamentoAssinatura(texto: string): string {
     .replace(/^Pede deferimento\.?\s*$/gim, "pede deferimento.")
     .replace(/^Nome:\s*/gim, "")
     .replace(/^OAB:\s*(?=OAB\/)/gim, "")
-    .replace(/^OAB:\s*([A-Za-z]{2})\s*[-/]?\s*/gim, "OAB/$1 ");
+    .replace(/^OAB:\s*([A-Za-z]{2})\s*[-/]?\s*/gim, "OAB/$1 ")
 
   t = t.replace(
     /^(Nestes termos,)\s+(pede deferimento\.?)\s*$/gim,
@@ -529,6 +529,29 @@ function normalizarFechamentoAssinatura(texto: string): string {
     const l = linhas[i]!;
     const trim = l.trim();
 
+    if (!trim) {
+      saida.push(l);
+      continue;
+    }
+
+    // Sem linha isolada "Advogado" entre nome e OAB
+    if (/^Advogado$/i.test(trim)) {
+      continue;
+    }
+
+    if (/^Nestes termos,?$/i.test(trim)) {
+      while (
+        saida.length > 0 &&
+        (!saida[saida.length - 1]!.trim() ||
+          ehMarcadorEspaco(saida[saida.length - 1]!))
+      ) {
+        saida.pop();
+      }
+      saida.push(MARCADOR_ESPACO_1);
+      saida.push("Nestes termos,");
+      continue;
+    }
+
     if (/^pede deferimento\.?$/i.test(trim)) {
       saida.push("pede deferimento.");
       while (
@@ -537,7 +560,7 @@ function normalizarFechamentoAssinatura(texto: string): string {
       ) {
         i++;
       }
-      saida.push(MARCADOR_ESPACO_2);
+      saida.push(MARCADOR_ESPACO_1);
       viuPede = true;
       continue;
     }
@@ -556,7 +579,6 @@ function normalizarFechamentoAssinatura(texto: string): string {
       ) {
         i++;
       }
-      // 1 linha em branco entre data e nome do advogado
       saida.push(MARCADOR_ESPACO_1);
       viuPede = false;
       continue;
