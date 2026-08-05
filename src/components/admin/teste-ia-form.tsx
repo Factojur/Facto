@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PecaDocumentoView } from "@/components/dashboard/peca-documento";
 
 type Citacao = {
   trecho: string;
@@ -10,6 +11,7 @@ type Citacao = {
 
 type Resultado = {
   textoGerado: string;
+  pecaHtml: string;
   modelo: string;
   contextoUtilizado: { titulo: string; categoria: string }[];
   citacoes: Citacao[];
@@ -27,6 +29,7 @@ export function TesteIaForm() {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [resultado, setResultado] = useState<Resultado | null>(null);
+  const [mostrarTextoBruto, setMostrarTextoBruto] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -43,7 +46,10 @@ export function TesteIaForm() {
       const resposta = await fetch("/api/admin/teste-ia", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tipoAcao: tipoAcao.trim(), fatosFicticios: fatosFicticios.trim() }),
+        body: JSON.stringify({
+          tipoAcao: tipoAcao.trim(),
+          fatosFicticios: fatosFicticios.trim(),
+        }),
       });
       const dados = await resposta.json();
 
@@ -53,6 +59,7 @@ export function TesteIaForm() {
       }
 
       setResultado(dados as Resultado);
+      setMostrarTextoBruto(false);
     } catch {
       setErro("Falha na comunicação com o servidor. Tente novamente.");
     } finally {
@@ -88,9 +95,8 @@ export function TesteIaForm() {
       >
         <h2 className="text-lg font-semibold text-white">Gerar peça completa (teste)</h2>
         <p className="mt-1 text-sm text-stone-500">
-          O Assistente Facto redige a peça inteira (endereçamento, qualificação, fatos, direito,
-          provas e pedidos), com estrutura livre. Ele recebe apenas o tipo de ação, os fatos abaixo
-          e os itens da base de conhecimento relacionados ao tema — nada mais.
+          O Assistente Facto redige a peça inteira e o resultado é exibido com a mesma tipografia
+          forense do dashboard (Times 12, margens 3/2 cm, negrito/itálico, PDF/Word).
         </p>
 
         {erro && (
@@ -146,15 +152,44 @@ export function TesteIaForm() {
       {resultado && (
         <div className="space-y-4">
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
-            <div className="flex items-center justify-between gap-4">
-              <h3 className="text-sm font-semibold text-white">Texto gerado</h3>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-white">
+                  Prévia forense (igual à peça do dashboard)
+                </h3>
+                <p className="mt-0.5 text-xs text-stone-500">
+                  Tipografia FACTO aplicada — use PDF/Word para validar margens e tipografia.
+                </p>
+              </div>
               <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-xs text-stone-400">
                 modelo: {resultado.modelo}
               </span>
             </div>
-            <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-stone-300">
-              {resultado.textoGerado}
-            </p>
+
+            <div className="mt-4 overflow-x-auto rounded-lg border border-stone-200 bg-stone-100 p-2 sm:p-4">
+              <PecaDocumentoView
+                peca={resultado.textoGerado}
+                pecaHtml={resultado.pecaHtml}
+                onCopiarTexto={() => {
+                  void navigator.clipboard.writeText(resultado.textoGerado);
+                }}
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setMostrarTextoBruto((v) => !v)}
+              className="mt-3 text-xs text-stone-500 underline-offset-2 hover:text-stone-300 hover:underline"
+            >
+              {mostrarTextoBruto
+                ? "Ocultar texto normalizado (plano)"
+                : "Ver texto normalizado (plano)"}
+            </button>
+            {mostrarTextoBruto && (
+              <pre className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap rounded-lg border border-white/10 bg-black/30 p-3 text-xs leading-relaxed text-stone-400">
+                {resultado.textoGerado}
+              </pre>
+            )}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -170,7 +205,8 @@ export function TesteIaForm() {
                 <ul className="mt-2 space-y-1.5 text-sm text-stone-400">
                   {resultado.contextoUtilizado.map((item, i) => (
                     <li key={i}>
-                      <span className="text-facto-gold">{item.categoria}</span> — {item.titulo}
+                      <span className="text-facto-gold">{item.categoria}</span> —{" "}
+                      {item.titulo}
                     </li>
                   ))}
                 </ul>
