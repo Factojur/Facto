@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { FactoLogo } from "@/components/brand/facto-logo";
 import { isAdminEmail } from "@/lib/admin-auth";
 import { ReenviarCompraEmailForm } from "@/components/admin/reenviar-compra-email-form";
+import { SincronizarComprasButton } from "@/components/admin/sincronizar-compras-button";
 
 export default async function AdminEmailsPage() {
   const supabase = await createClient();
@@ -102,6 +103,8 @@ export default async function AdminEmailsPage() {
           <strong className="text-facto-gold">{falhas}</strong>.
         </p>
 
+        <SincronizarComprasButton />
+
         <ReenviarCompraEmailForm emailInicial="nathalia.gomes1@gmail.com" />
 
         <div className="mt-6 rounded-xl border border-amber-500/25 bg-amber-500/5 p-4 text-sm text-amber-100/90">
@@ -113,8 +116,9 @@ export default async function AdminEmailsPage() {
               Webhook MP → e-mails na hora (financeiro@ + noreply@).
             </li>
             <li>
-              Rede de segurança: cron a cada 5 min varre assinaturas
-              autorizadas e dispara o que faltou (sem ação manual).
+              Rede de segurança: cron diário na Vercel (Hobby) + botão
+              &quot;Sincronizar MP agora&quot; abaixo. O caminho principal
+              continua sendo o webhook do Mercado Pago.
             </li>
             <li>
               IDs <code className="text-amber-50">123456</code> /{" "}
