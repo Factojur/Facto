@@ -3,7 +3,14 @@ import {
   emailJaEnviadoParaPagamento,
   registrarEmailEvento,
 } from "@/lib/email/eventos";
-import { planoPorValor, PLANO_ANUAL, PLANO_JEC, PLANO_MENSAL } from "@/lib/planos-facto";
+import {
+  planoPorValor,
+  PLANO_ANUAL,
+  PLANO_JEC,
+  PLANO_MENSAL,
+  PLANO_PRO,
+  PLANO_PRO_ANUAL,
+} from "@/lib/planos-facto";
 
 const REMETENTE_FINANCEIRO =
   "FACTO Financeiro <financeiro@factoia.com.br>";
@@ -23,7 +30,9 @@ function rotuloPlanoPorValor(valor: number | null | undefined): string {
   );
   if (id === "jec") return PLANO_JEC.rotulo;
   if (id === "mensal") return PLANO_MENSAL.rotulo;
+  if (id === "pro") return PLANO_PRO.rotulo;
   if (id === "anual") return PLANO_ANUAL.rotulo;
+  if (id === "pro_anual") return PLANO_PRO_ANUAL.rotulo;
   return "—";
 }
 

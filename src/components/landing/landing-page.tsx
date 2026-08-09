@@ -1,8 +1,15 @@
 import Link from "next/link";
 import { FactoLogo } from "@/components/brand/facto-logo";
-import { JusticaWatermark } from "@/components/dashboard/justica-watermark";
+import { LandingHeroAtmosphere } from "@/components/landing/landing-hero-atmosphere";
+import { LandingHeroWatermark } from "@/components/landing/landing-hero-watermark";
 import { MetodosPagamento } from "@/components/landing/metodos-pagamento";
-import { PLANO_ANUAL, PLANO_JEC, PLANO_MENSAL } from "@/lib/planos-facto";
+import {
+  PLANO_ANUAL,
+  PLANO_JEC,
+  PLANO_MENSAL,
+  PLANO_PRO,
+  PLANO_PRO_ANUAL,
+} from "@/lib/planos-facto";
 
 /** Links de assinatura Mercado Pago (preapproval). */
 const LINK_JEC =
@@ -11,6 +18,12 @@ const LINK_JEC =
 const LINK_MENSAL =
   (process.env.NEXT_PUBLIC_MP_LINK_MENSAL ?? "").trim() ||
   "https://mpago.la/2jsFX7w";
+const LINK_PRO =
+  (process.env.NEXT_PUBLIC_MP_LINK_PRO ?? "").trim() ||
+  "https://mpago.la/18Pihyh";
+const LINK_PRO_ANUAL =
+  (process.env.NEXT_PUBLIC_MP_LINK_PRO_ANUAL ?? "").trim() ||
+  "https://mpago.la/1xZjpYJ";
 const LINK_ANUAL =
   (process.env.NEXT_PUBLIC_MP_LINK_ANUAL ?? "").trim() ||
   "https://mpago.la/26yzsZT";
@@ -61,9 +74,9 @@ const BENEFICIOS = [
   },
   {
     icone: IconeBalanca,
-    titulo: "Jurisprudência sempre atualizada",
+    titulo: "Fundamentos com lastro",
     texto:
-      "A IA já traz entendimentos e precedentes recentes aplicados ao seu caso, sem você precisar garimpar tribunais.",
+      "Súmulas do STF e do STJ da base curada entram na peça. Sem inventar acórdão: o que a IA cita está lastreado no material do FACTO.",
   },
   {
     icone: IconeDocumento,
@@ -82,18 +95,21 @@ const BENEFICIOS = [
 const PASSOS = [
   {
     passo: "01",
-    titulo: "Descreva o caso",
-    texto: "Partes, fatos, pedidos e provas em um formulário guiado — sem começar do zero.",
+    titulo: "Descreva o caso em minutos",
+    texto:
+      "Partes, fatos, pedidos e provas no formulário guiado. Você organiza o essencial — sem minuta em branco e sem perder a manhã montando estrutura.",
   },
   {
     passo: "02",
-    titulo: "O FACTO redige",
-    texto: "A Inteligência Artificial estrutura fundamentos e redige a peça com rigor jurídico.",
+    titulo: "A equipe FACTO redige com lastro",
+    texto:
+      "Analista, Pesquisa e Redator estruturam a peça: fundamentos cruzam súmulas da base curada e a minuta sai em padrão forense — pronta para a sua revisão.",
   },
   {
     passo: "03",
-    titulo: "Revise e protocole",
-    texto: "Baixe em Word ou PDF, formatado e pronto para protocolar no seu processo.",
+    titulo: "Revise, baixe e protocole",
+    texto:
+      "Exporte em Word ou PDF, ajuste o que for do caso concreto e protocole. O FACTO acelera a redação; a caneta final continua sendo sua.",
   },
 ] as const;
 
@@ -156,9 +172,10 @@ export function LandingPage() {
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(144,139,106,0.18),transparent_60%)]"
             aria-hidden
           />
-          <JusticaWatermark className="pointer-events-none absolute bottom-0 right-0 z-0 h-[min(48vh,460px)] w-[min(48vh,460px)] translate-x-[10%] translate-y-[15%] opacity-[0.16] md:opacity-[0.22]" />
+          <LandingHeroAtmosphere />
+          <LandingHeroWatermark />
 
-          <div className="relative mx-auto max-w-3xl text-center">
+          <div className="relative z-10 mx-auto max-w-3xl text-center">
             <FactoLogo variant="stacked" size="sm" className="mx-auto" />
             <span className="mt-6 inline-flex items-center rounded-full border border-facto-gold/30 bg-facto-gold/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] text-facto-gold">
               Inteligência Jurídica
@@ -168,8 +185,8 @@ export function LandingPage() {
               <span className="text-facto-gold">redige suas peças jurídicas</span>
             </h1>
             <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-stone-400">
-              O FACTO economiza horas da sua rotina, traz jurisprudência
-              atualizada e entrega peças com formatação impecável — prontas
+              O FACTO economiza horas da sua rotina, fundamenta com súmulas da
+              base curada e entrega peças com formatação impecável — prontas
               para protocolar.
             </p>
 
@@ -229,8 +246,12 @@ export function LandingPage() {
                 Como funciona
               </p>
               <h2 className="mt-3 text-3xl font-bold text-white md:text-4xl">
-                Do caso à peça pronta em 3 passos
+                Do caso à minuta — rápido, lastreado e sob o seu controle
               </h2>
+              <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-stone-500 md:text-base">
+                Três passos pensados para a bancada: menos tempo na estrutura,
+                mais segurança na fundamentação, você na revisão.
+              </p>
             </div>
 
             <div className="mt-12 grid gap-8 md:grid-cols-3">
@@ -251,27 +272,32 @@ export function LandingPage() {
 
         {/* Preços */}
         <section id="precos" className="relative px-6 py-20 md:px-10">
-          <div className="mx-auto max-w-4xl">
+          <div className="mx-auto max-w-6xl">
             <div className="mx-auto max-w-2xl text-center">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-facto-gold">
                 Planos
               </p>
               <h2 className="mt-3 text-3xl font-bold text-white md:text-4xl">
-                Escolha como quer assinar
+                Escolha o ritmo da sua bancada
               </h2>
               <p className="mt-4 text-stone-400">
-                Cancele quando quiser. Sem contrato de fidelidade.
+                Cotas claras, equipe FACTO e base curada em todos os planos.
+                Cancele quando quiser — sem fidelidade.
               </p>
             </div>
 
-            <div className="mt-14 grid gap-6 lg:grid-cols-3">
+            <div className="mt-14 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
               {/* JEC */}
               <div className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-8">
-                <h3 className="text-lg font-semibold text-white">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-facto-gold/80">
+                  Entrada · foco JEC
+                </p>
+                <h3 className="mt-2 text-lg font-semibold text-white">
                   {PLANO_JEC.rotulo}
                 </h3>
                 <p className="mt-1 text-sm text-stone-500">
-                  Só Juizado Especial Cível — preço acessível.
+                  Para quem vive o Juizado: 40 minutas/mês com lastro e
+                  formatação forense.
                 </p>
                 <div className="mt-6 flex items-baseline gap-1">
                   <span className="text-4xl font-bold text-white">
@@ -279,7 +305,10 @@ export function LandingPage() {
                   </span>
                   <span className="text-stone-500">{PLANO_JEC.rotuloPeriodo}</span>
                 </div>
-                <ul className="mt-6 space-y-3 text-sm text-stone-400">
+                <p className="mt-1 text-xs text-stone-600">
+                  ~R$ {(PLANO_JEC.preco / PLANO_JEC.pecasPorMes).toFixed(2).replace(".", ",")} por peça na cota
+                </p>
+                <ul className="mt-6 flex-1 space-y-3 text-sm text-stone-400">
                   {PLANO_JEC.beneficios.map((b) => (
                     <li key={b} className="flex items-start gap-2">
                       <span className="mt-0.5 shrink-0 text-facto-gold">✓</span>
@@ -288,17 +317,20 @@ export function LandingPage() {
                   ))}
                 </ul>
                 <div className="mt-8">
-                  <BotaoAssinar href={LINK_JEC}>Assinar JEC</BotaoAssinar>
+                  <BotaoAssinar href={LINK_JEC}>Começar no JEC</BotaoAssinar>
                 </div>
               </div>
 
               {/* Completo mensal */}
               <div className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-8">
-                <h3 className="text-lg font-semibold text-white">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-facto-gold/80">
+                  Mais escolhido
+                </p>
+                <h3 className="mt-2 text-lg font-semibold text-white">
                   {PLANO_MENSAL.rotulo}
                 </h3>
                 <p className="mt-1 text-sm text-stone-500">
-                  Todas as áreas · flexibilidade mês a mês.
+                  Todas as áreas · 100 minutas/mês · ~{PLANO_MENSAL.custoPorPecaAprox}/peça.
                 </p>
                 <div className="mt-6 flex items-baseline gap-1">
                   <span className="text-4xl font-bold text-white">
@@ -306,7 +338,10 @@ export function LandingPage() {
                   </span>
                   <span className="text-stone-500">{PLANO_MENSAL.rotuloPeriodo}</span>
                 </div>
-                <ul className="mt-6 space-y-3 text-sm text-stone-400">
+                <p className="mt-1 text-xs text-stone-600">
+                  Equipe completa + base curada de súmulas
+                </p>
+                <ul className="mt-6 flex-1 space-y-3 text-sm text-stone-400">
                   {PLANO_MENSAL.beneficios.map((b) => (
                     <li key={b} className="flex items-start gap-2">
                       <span className="mt-0.5 shrink-0 text-facto-gold">✓</span>
@@ -315,20 +350,24 @@ export function LandingPage() {
                   ))}
                 </ul>
                 <div className="mt-8">
-                  <BotaoAssinar href={LINK_MENSAL}>Assinar completo</BotaoAssinar>
+                  <BotaoAssinar href={LINK_MENSAL}>Assinar Completo</BotaoAssinar>
                 </div>
               </div>
 
-              {/* Anual */}
-              <div className="relative flex flex-col rounded-2xl border border-facto-gold/50 bg-gradient-to-br from-facto-gold/[0.14] via-white/[0.04] to-transparent p-8 shadow-xl shadow-facto-gold/10 lg:scale-[1.02]">
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-facto-gold px-4 py-1 text-xs font-bold uppercase tracking-wide text-facto-dark">
-                  Melhor custo-benefício
+              {/* Completo Anual */}
+              <div className="relative flex flex-col rounded-2xl border border-facto-gold/40 bg-gradient-to-br from-facto-gold/[0.1] via-white/[0.04] to-transparent p-8">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-facto-gold/90 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-facto-dark">
+                  20% off · melhor custo Completo
                 </span>
-                <h3 className="text-lg font-semibold text-white">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-facto-gold">
+                  Economia anual
+                </p>
+                <h3 className="mt-2 text-lg font-semibold text-white">
                   {PLANO_ANUAL.rotulo}
                 </h3>
                 <p className="mt-1 text-sm text-stone-400">
-                  Equivalente a {PLANO_ANUAL.rotuloEquivalenteMensal}/mês.
+                  Completo o ano todo · 110 minutas/mês ·{" "}
+                  {PLANO_ANUAL.rotuloEquivalenteMensal}/mês.
                 </p>
                 <div className="mt-6 flex items-baseline gap-1">
                   <span className="text-4xl font-bold text-white">
@@ -337,10 +376,9 @@ export function LandingPage() {
                   <span className="text-stone-400">{PLANO_ANUAL.rotuloPeriodo}</span>
                 </div>
                 <p className="mt-1 text-sm font-medium text-facto-gold">
-                  {PLANO_ANUAL.descontoPercentual}% de desconto — economize{" "}
-                  {PLANO_ANUAL.rotuloEconomia} por ano
+                  Economize {PLANO_ANUAL.rotuloEconomia}/ano · +10 peças vs mensal
                 </p>
-                <ul className="mt-6 space-y-3 text-sm text-stone-300">
+                <ul className="mt-6 flex-1 space-y-3 text-sm text-stone-300">
                   {PLANO_ANUAL.beneficios.map((b) => (
                     <li key={b} className="flex items-start gap-2">
                       <span className="mt-0.5 shrink-0 text-facto-gold">✓</span>
@@ -350,16 +388,93 @@ export function LandingPage() {
                 </ul>
                 <div className="mt-8">
                   <BotaoAssinar href={LINK_ANUAL} variante="primario">
-                    Assinar anual
+                    Garantir desconto anual
+                  </BotaoAssinar>
+                </div>
+              </div>
+
+              {/* Pro mensal */}
+              <div className="flex flex-col rounded-2xl border border-amber-500/30 bg-white/[0.03] p-8">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300/80">
+                  Alto volume
+                </p>
+                <h3 className="mt-2 text-lg font-semibold text-white">
+                  {PLANO_PRO.rotulo}
+                </h3>
+                <p className="mt-1 text-sm text-stone-500">
+                  180 minutas/mês com prioridade na fila — para quem não pode
+                  esperar.
+                </p>
+                <div className="mt-6 flex items-baseline gap-1">
+                  <span className="text-4xl font-bold text-white">
+                    {PLANO_PRO.rotuloPreco}
+                  </span>
+                  <span className="text-stone-500">{PLANO_PRO.rotuloPeriodo}</span>
+                </div>
+                <p className="mt-1 text-xs text-stone-600">
+                  ~R$ {(PLANO_PRO.preco / PLANO_PRO.pecasPorMes).toFixed(2).replace(".", ",")} por peça na cota
+                </p>
+                <ul className="mt-6 flex-1 space-y-3 text-sm text-stone-400">
+                  {PLANO_PRO.beneficios.map((b) => (
+                    <li key={b} className="flex items-start gap-2">
+                      <span className="mt-0.5 shrink-0 text-facto-gold">✓</span>
+                      <span>{b}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-8">
+                  <BotaoAssinar href={LINK_PRO}>Assinar Pro</BotaoAssinar>
+                </div>
+              </div>
+
+              {/* Pro Anual */}
+              <div className="relative flex flex-col rounded-2xl border border-amber-400/50 bg-gradient-to-br from-amber-500/[0.12] via-white/[0.04] to-transparent p-8 shadow-xl shadow-amber-500/10 md:col-span-2 xl:col-span-2">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-amber-400 px-4 py-1 text-xs font-bold uppercase tracking-wide text-facto-dark">
+                  Máximo volume · 15% off
+                </span>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300/90">
+                  Escritório em escala
+                </p>
+                <h3 className="mt-2 text-lg font-semibold text-white">
+                  {PLANO_PRO_ANUAL.rotulo}
+                </h3>
+                <p className="mt-1 text-sm text-stone-400">
+                  200 minutas/mês o ano todo ·{" "}
+                  {PLANO_PRO_ANUAL.rotuloEquivalenteMensal}/mês — prioridade e
+                  pesquisa reforçada.
+                </p>
+                <div className="mt-6 flex items-baseline gap-1">
+                  <span className="text-4xl font-bold text-white">
+                    {PLANO_PRO_ANUAL.rotuloPreco}
+                  </span>
+                  <span className="text-stone-400">
+                    {PLANO_PRO_ANUAL.rotuloPeriodo}
+                  </span>
+                </div>
+                <p className="mt-1 text-sm font-medium text-amber-300">
+                  Economize {PLANO_PRO_ANUAL.rotuloEconomia}/ano · +20 peças vs
+                  Pro mensal
+                </p>
+                <ul className="mt-6 grid flex-1 gap-3 text-sm text-stone-300 sm:grid-cols-2">
+                  {PLANO_PRO_ANUAL.beneficios.map((b) => (
+                    <li key={b} className="flex items-start gap-2">
+                      <span className="mt-0.5 shrink-0 text-amber-300">✓</span>
+                      <span>{b}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-8 max-w-sm">
+                  <BotaoAssinar href={LINK_PRO_ANUAL} variante="primario">
+                    Assinar Pro anual
                   </BotaoAssinar>
                 </div>
               </div>
             </div>
 
-            <p className="mt-8 text-center text-xs text-stone-600">
-              Cotas mensais renovam a cada ciclo. Se precisar de mais gerações,
-              pacotes extras (+50 ou +100) ficam disponíveis na sua conta após o
-              login. Pagamento processado com segurança pelo Mercado Pago.
+            <p className="mt-8 text-center text-xs leading-relaxed text-stone-600">
+              Cotas renovam a cada ciclo. Precisou de mais? Pacotes extras (+50
+              ou +100) ficam na conta após o login — sem trocar de plano.
+              Pagamento seguro via Mercado Pago.
             </p>
 
             <MetodosPagamento />

@@ -29,7 +29,7 @@ export function areasPermitidas(opcoes: {
     return new Set(["jec"]);
   }
 
-  // mensal / anual — demais áreas (quando deixarem de ser "em breve") exigem OAB
+  // mensal / pro / anual / pro_anual — demais áreas exigem OAB
   if (opcoes.tipoUsuario === "leigo") {
     return new Set(["jec"]);
   }

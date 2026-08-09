@@ -18,7 +18,10 @@ import {
   PRECO_CHEQUE_ANUAL,
   PRECO_CHEQUE_JEC,
   PRECO_CHEQUE_MENSAL,
+  PRECO_CHEQUE_PRO,
+  PRECO_CHEQUE_PRO_ANUAL,
   planoPorValor,
+  type PlanoId,
 } from "@/lib/planos-facto";
 import { processarPagamentoPacoteExtra } from "@/lib/mercadopago/pacotes-extras";
 import { sincronizarAssinaturaPorEmail } from "@/lib/mercadopago/sincronizar-assinatura";
@@ -27,11 +30,18 @@ const MP_API = "https://api.mercadopago.com";
 const VALOR_MENSAL = PRECO_CHEQUE_MENSAL;
 const VALOR_ANUAL = PRECO_CHEQUE_ANUAL;
 const VALOR_JEC = PRECO_CHEQUE_JEC;
+const VALOR_PRO = PRECO_CHEQUE_PRO;
+const VALOR_PRO_ANUAL = PRECO_CHEQUE_PRO_ANUAL;
 const DIA_EM_MS = 24 * 60 * 60 * 1000;
-const DURACAO_CICLO_DIAS: Record<"jec" | "mensal" | "anual", number> = {
+const DURACAO_CICLO_DIAS: Record<
+  "jec" | "mensal" | "pro" | "anual" | "pro_anual",
+  number
+> = {
   jec: 30,
   mensal: 30,
+  pro: 30,
   anual: 365,
+  pro_anual: 365,
 };
 
 type AdminClient = ReturnType<typeof createAdminClient>;
@@ -75,14 +85,28 @@ function inferirPlano(
   valor: number | null,
   frequencyType: string | undefined,
   frequency: number | undefined
-): "jec" | "mensal" | "anual" | null {
-  if (frequencyType === "months" && frequency === 12) return "anual";
-  if (frequencyType === "months" && frequency === 1) {
-    // Mensal JEC vs Completo: distingue pelo valor
+): PlanoId | null {
+  if (frequencyType === "months" && frequency === 12) {
     const porValor = planoPorValor(valor);
-    if (porValor === "jec" || porValor === "mensal") return porValor;
+    if (porValor === "pro_anual" || porValor === "anual") return porValor;
+    if (typeof valor === "number") {
+      if (Math.abs(valor - VALOR_PRO_ANUAL) < 2) return "pro_anual";
+      if (Math.abs(valor - VALOR_ANUAL) < 2) return "anual";
+    }
+    return "anual";
+  }
+  if (frequencyType === "months" && frequency === 1) {
+    const porValor = planoPorValor(valor);
+    if (
+      porValor === "jec" ||
+      porValor === "mensal" ||
+      porValor === "pro"
+    ) {
+      return porValor;
+    }
     if (typeof valor === "number") {
       if (Math.abs(valor - VALOR_JEC) < 1) return "jec";
+      if (Math.abs(valor - VALOR_PRO) < 1) return "pro";
       if (Math.abs(valor - VALOR_MENSAL) < 1) return "mensal";
     }
     return "mensal";
@@ -292,7 +316,7 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
 
     if (assinaturaId && cobrancaAprovada) {
       const plano =
-        (assinatura?.plano as "jec" | "mensal" | "anual" | null) ?? "mensal";
+        (assinatura?.plano as PlanoId | null) ?? "mensal";
       const dataPagamento = invoice.debit_date
         ? new Date(invoice.debit_date)
         : new Date();

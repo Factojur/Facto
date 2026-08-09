@@ -6,6 +6,8 @@
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { CONHECIMENTO_CURADO_JEC } from "@/lib/conhecimento-curado-jec";
+import { SUMULAS_ATIVAS_CURADAS } from "@/lib/sumulas";
 
 export const CATEGORIAS_CONHECIMENTO = ["Lei", "Súmula", "Jurisprudência"] as const;
 export type CategoriaConhecimento = (typeof CATEGORIAS_CONHECIMENTO)[number];
@@ -33,6 +35,12 @@ export type TrechoConhecimento = {
   categoria: string;
   texto: string;
 };
+
+/** Núcleo curado + lote 01 de súmulas (SV 1–10 STF). */
+const CONHECIMENTO_CURADO: TrechoConhecimento[] = [
+  ...CONHECIMENTO_CURADO_JEC,
+  ...SUMULAS_ATIVAS_CURADAS,
+];
 
 export const TIPOS_ARQUIVO_ACEITOS = {
   "application/pdf": "pdf",
@@ -211,6 +219,27 @@ function pontuarTrecho(trechoNormalizado: string, palavras: string[]): number {
   return pontos;
 }
 
+/** Prioriza súmulas e leis no ranking (Pacote A — base curada). */
+function bonusCategoria(categoria: string): number {
+  const c = normalizar(categoria);
+  if (c.includes("sumula")) return 4;
+  if (c.includes("lei")) return 2;
+  if (c.includes("juris")) return 1;
+  return 0;
+}
+
+function pontuarItemCurado(
+  item: TrechoConhecimento,
+  palavras: string[]
+): number {
+  const base = pontuarTrecho(
+    normalizar(`${item.titulo} ${item.texto}`),
+    palavras
+  );
+  if (base <= 0) return 0;
+  return base + bonusCategoria(item.categoria);
+}
+
 /**
  * Busca na base de conhecimento os trechos relacionados ao tema da ação.
  *
@@ -261,7 +290,9 @@ export async function buscarConhecimentoRelacionado(
     for (const documento of documentos) {
       const trechos = dividirEmTrechos(documento.texto);
       for (const trecho of trechos) {
-        const score = pontuarTrecho(normalizar(trecho), palavras);
+        const score =
+          pontuarTrecho(normalizar(trecho), palavras) +
+          bonusCategoria(documento.categoria);
         if (score > 0) {
           candidatos.push({
             titulo: documento.titulo,
@@ -273,12 +304,38 @@ export async function buscarConhecimentoRelacionado(
       }
     }
 
+    for (const curado of CONHECIMENTO_CURADO) {
+      const score = pontuarItemCurado(curado, palavras);
+      if (score > 0) {
+        candidatos.push({ ...curado, score });
+      }
+    }
+
     candidatos.sort((a, b) => b.score - a.score);
-    return candidatos
-      .slice(0, limite)
-      .map(({ titulo, categoria, texto }) => ({ titulo, categoria, texto }));
+    const vistos = new Set<string>();
+    const unicos: TrechoConhecimento[] = [];
+    for (const c of candidatos) {
+      const k = `${c.categoria}|${c.titulo}|${c.texto.slice(0, 60)}`;
+      if (vistos.has(k)) continue;
+      vistos.add(k);
+      unicos.push({
+        titulo: c.titulo,
+        categoria: c.categoria,
+        texto: c.texto,
+      });
+      if (unicos.length >= limite) break;
+    }
+    return unicos;
   } catch {
-    return [];
+    // Sem banco: ainda devolve o núcleo curado pontuado.
+    return CONHECIMENTO_CURADO.map((item) => ({
+      item,
+      score: pontuarItemCurado(item, palavras),
+    }))
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limite)
+      .map(({ item }) => item);
   }
 }
 

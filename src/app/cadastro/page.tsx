@@ -29,13 +29,19 @@ export default async function CadastroPage({
             e-mail com o link de cadastro assim que o pagamento for aprovado.
           </p>
           <p className="mt-4 text-sm text-stone-500">
-            Já pagou e não recebeu o e-mail? Confira a caixa de spam ou entre
-            em contato com o suporte.
+            Já pagou e não recebeu o e-mail? Confira a caixa de spam ou fale
+            com o suporte — vamos conferir o pagamento e reenviar o convite.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
             <Link
-              href="/#precos"
+              href="/suporte?motivo=cadastro"
               className="rounded-lg bg-facto-gold px-6 py-2.5 text-sm font-semibold text-facto-dark transition hover:bg-[#a39a78]"
+            >
+              Falar com o suporte
+            </Link>
+            <Link
+              href="/#precos"
+              className="rounded-lg border border-white/15 px-6 py-2.5 text-sm font-semibold text-white transition hover:border-facto-gold/50 hover:bg-white/5"
             >
               Ver planos
             </Link>

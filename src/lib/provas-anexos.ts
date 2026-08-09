@@ -97,10 +97,12 @@ export function injetarProvasELinkNuvem(
   if (link && !texto.includes(link)) {
     const mencao = montarMencaoFatosLinkNuvem(link);
     if (!/acesso digital em ambiente de nuvem/i.test(texto)) {
-      texto = texto.replace(
-        /(\nII\s*[-—–.]\s*DO DIREITO)/i,
-        `\n${mencao}\n$1`
-      );
+      // Ancora: próxima seção romana após fatos / preliminares / tempestividade
+      const ancoras =
+        /(\n[IVXLCDM]+\s*[-—–.]\s*(?:DO DIREITO|DO MÉRITO|DAS RAZÕES|DO REFORÇO|DAS MEDIDAS|DO DÉBITO))/i;
+      if (ancoras.test(texto)) {
+        texto = texto.replace(ancoras, `\n${mencao}\n$1`);
+      }
     }
   }
 

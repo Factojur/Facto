@@ -27,10 +27,14 @@ function montarHtmlSuporte(opcoes: {
   emailUsuario: string;
   nomeUsuario: string | null;
   telefoneUsuario: string | null;
+  origemPublica?: boolean;
 }): string {
   const mensagemHtml = escaparHtml(opcoes.mensagem).replace(/\n/g, "<br />");
   const nome = opcoes.nomeUsuario?.trim() || "—";
   const telefone = opcoes.telefoneUsuario?.trim() || "—";
+  const origem = opcoes.origemPublica
+    ? "<p style=\"margin:0 0 12px;padding:8px 12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;color:#9a3412;font-size:13px;\"><strong>Origem:</strong> formulário público (sem cadastro) — priorizar conferência de pagamento/convite.</p>"
+    : "";
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -47,10 +51,11 @@ function montarHtmlSuporte(opcoes: {
             </tr>
             <tr>
               <td style="padding:8px 28px 0;font-size:14px;color:#44403c;line-height:1.5;">
+                ${origem}
                 <p style="margin:0 0 8px;"><strong>Assunto:</strong> ${escaparHtml(opcoes.assunto)}</p>
                 <p style="margin:0 0 8px;"><strong>Nome:</strong> ${escaparHtml(nome)}</p>
                 <p style="margin:0 0 8px;"><strong>E-mail:</strong> ${escaparHtml(opcoes.emailUsuario)}</p>
-                <p style="margin:0 0 16px;"><strong>Telefone:</strong> ${escaparHtml(telefone)}</p>
+                <p style="margin:0 0 16px;"><strong>Telefone / celular:</strong> ${escaparHtml(telefone)}</p>
                 <p style="margin:0 0 8px;"><strong>Mensagem:</strong></p>
                 <div style="padding:14px 16px;background:#fafaf9;border-radius:8px;border:1px solid #e7e5e4;">
                   ${mensagemHtml}
@@ -81,6 +86,7 @@ export async function enviarEmailSuporte(opcoes: {
   nomeUsuario?: string | null;
   telefoneUsuario?: string | null;
   userId?: string | null;
+  origemPublica?: boolean;
 }): Promise<{ id?: string; destino: string }> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const destino = destinoPorAssunto(opcoes.assunto);
@@ -114,6 +120,7 @@ export async function enviarEmailSuporte(opcoes: {
       emailUsuario: opcoes.emailUsuario,
       nomeUsuario: opcoes.nomeUsuario ?? null,
       telefoneUsuario: opcoes.telefoneUsuario ?? null,
+      origemPublica: opcoes.origemPublica,
     }),
   });
 
@@ -125,6 +132,10 @@ export async function enviarEmailSuporte(opcoes: {
       assunto: assuntoMail,
       erro: error.message,
       userId: opcoes.userId,
+      metadados: {
+        emailRemetente: opcoes.emailUsuario,
+        origemPublica: Boolean(opcoes.origemPublica),
+      },
     });
     throw new Error(error.message || "Falha ao enviar e-mail de suporte.");
   }
@@ -135,7 +146,11 @@ export async function enviarEmailSuporte(opcoes: {
     destinatario: destino,
     assunto: assuntoMail,
     userId: opcoes.userId,
-    metadados: { resendId: data?.id ?? null },
+    metadados: {
+      resendId: data?.id ?? null,
+      emailRemetente: opcoes.emailUsuario,
+      origemPublica: Boolean(opcoes.origemPublica),
+    },
   });
 
   return { id: data?.id, destino };

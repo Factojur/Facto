@@ -3,14 +3,16 @@ export const ASSUNTOS_SUPORTE = [
   "Problema Técnico",
   "Sugestão de Melhoria",
   "Financeiro",
+  "Pagamento / Cadastro",
 ] as const;
 
 export type AssuntoSuporte = (typeof ASSUNTOS_SUPORTE)[number];
 
-/** Problema Técnico e Financeiro → suporte@; Dúvida e Sugestão → contato@. */
+/** Problema Técnico, Financeiro e Pagamento/Cadastro → suporte@; Dúvida e Sugestão → contato@. */
 export const DESTINO_POR_ASSUNTO: Record<AssuntoSuporte, string> = {
   "Problema Técnico": "suporte@factoia.com.br",
   Financeiro: "suporte@factoia.com.br",
+  "Pagamento / Cadastro": "suporte@factoia.com.br",
   Dúvida: "contato@factoia.com.br",
   "Sugestão de Melhoria": "contato@factoia.com.br",
 };

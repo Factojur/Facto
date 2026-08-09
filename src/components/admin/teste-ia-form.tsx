@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { PecaDocumentoView } from "@/components/dashboard/peca-documento";
+import { ESPECIES_PECA_JEC, type EspeciePecaJec } from "@/lib/jec-especie-peca";
 
 type Citacao = {
   trecho: string;
@@ -16,6 +17,14 @@ type Resultado = {
   contextoUtilizado: { titulo: string; categoria: string }[];
   citacoes: Citacao[];
   marcadoresNaoEncontrado: number;
+  equipeEtapas?: {
+    id: string;
+    skin: string;
+    titulo: string;
+    status: "ok" | "parcial" | "pulado" | "erro";
+    detalhe?: string;
+    modelo?: string;
+  }[];
 };
 
 const EXEMPLO_FATOS =
@@ -25,6 +34,8 @@ const EXEMPLO_FATOS =
 
 export function TesteIaForm() {
   const [tipoAcao, setTipoAcao] = useState("Indenização por Danos Morais");
+  const [especiePeca, setEspeciePeca] =
+    useState<EspeciePecaJec>("peticao-inicial");
   const [fatosFicticios, setFatosFicticios] = useState(EXEMPLO_FATOS);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -48,6 +59,7 @@ export function TesteIaForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           tipoAcao: tipoAcao.trim(),
+          especiePeca,
           fatosFicticios: fatosFicticios.trim(),
         }),
       });
@@ -113,6 +125,29 @@ export function TesteIaForm() {
         )}
 
         <div className="mt-4">
+          <label
+            htmlFor="testeEspecie"
+            className="mb-1.5 block text-sm font-medium text-stone-300"
+          >
+            Espécie da peça
+          </label>
+          <select
+            id="testeEspecie"
+            value={especiePeca}
+            onChange={(e) =>
+              setEspeciePeca(e.target.value as EspeciePecaJec)
+            }
+            className="w-full rounded-lg border border-white/15 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-facto-gold/60 focus:ring-2 focus:ring-facto-gold/25"
+          >
+            {ESPECIES_PECA_JEC.map((esp) => (
+              <option key={esp.id} value={esp.id}>
+                {esp.rotulo}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="mt-4">
           <label htmlFor="testeTipoAcao" className="mb-1.5 block text-sm font-medium text-stone-300">
             Tipo de ação
           </label>
@@ -151,6 +186,47 @@ export function TesteIaForm() {
 
       {resultado && (
         <div className="space-y-4">
+          {resultado.equipeEtapas && resultado.equipeEtapas.length > 0 && (
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+              <h3 className="text-sm font-semibold text-white">
+                Equipe FACTO nesta geração
+              </h3>
+              <ul className="mt-3 space-y-2">
+                {resultado.equipeEtapas.map((e) => (
+                  <li
+                    key={`${e.id}-${e.titulo}`}
+                    className="flex items-start gap-2 text-sm text-stone-300"
+                  >
+                    <span
+                      className={
+                        e.status === "ok"
+                          ? "mt-0.5 text-emerald-400"
+                          : e.status === "parcial"
+                            ? "mt-0.5 text-amber-400"
+                            : "mt-0.5 text-stone-500"
+                      }
+                    >
+                      {e.status === "ok"
+                        ? "✓"
+                        : e.status === "parcial"
+                          ? "!"
+                          : "·"}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="font-medium text-white">{e.skin}</span>
+                      <span className="text-stone-500"> — {e.titulo}</span>
+                      {e.detalhe ? (
+                        <span className="mt-0.5 block text-xs text-stone-500">
+                          {e.detalhe}
+                        </span>
+                      ) : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>

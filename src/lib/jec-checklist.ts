@@ -13,6 +13,8 @@ export function montarChecklistJec(opcoes: {
   tipoSelecionado: string;
   fatos: string;
   reusCount: number;
+  /** Pelo menos um autor com nome ou CPF mínimos. */
+  autoresCount: number;
   comarcaForo: string;
   temValor: boolean;
   /** true enquanto o tipo de ação ainda não foi definido. */
@@ -24,6 +26,7 @@ export function montarChecklistJec(opcoes: {
     opcoes.tipoSelecionado !== "assistente-facto" &&
     !opcoes.assistentePendente;
   const reusOk = opcoes.reusCount > 0;
+  const autorOk = opcoes.autoresCount > 0;
   const comarcaOk = opcoes.comarcaForo.trim().length >= 12;
 
   return [
@@ -39,6 +42,12 @@ export function montarChecklistJec(opcoes: {
       id: "fatos",
       label: "Narração dos fatos (mín. ~40 caracteres)",
       ok: fatosOk,
+      bloqueante: true,
+    },
+    {
+      id: "autor",
+      label: "Pelo menos um autor qualificado",
+      ok: autorOk,
       bloqueante: true,
     },
     {

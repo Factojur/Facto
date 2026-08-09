@@ -7,6 +7,7 @@ import type { ComarcaValue } from "@/components/dashboard/comarca-form";
 import type { PedidoItem } from "@/components/dashboard/pedidos-form";
 import type { ValoresPorCategoria } from "@/components/dashboard/valores-causa-form";
 import type { ReuValue } from "@/lib/reu-types";
+import type { AutorValue } from "@/lib/autor-types";
 import type { JurisCasoItem } from "@/lib/juris-caso-types";
 
 export const JEC_RASCUNHOS_KEY = "facto:jec-rascunhos-v1";
@@ -15,6 +16,8 @@ export const MAX_RASCUNHOS_JEC = 8;
 export type JecRascunhoPayload = {
   fatos: string;
   tipoSelecionado: string;
+  /** JEC-1 — espécie da peça. */
+  especiePeca?: string;
   tutelaUrgencia: boolean;
   comarca: ComarcaValue;
   valoresCausa: ValoresPorCategoria;
@@ -23,6 +26,10 @@ export type JecRascunhoPayload = {
   leiMunicipalTitulo: string;
   linkNuvem: string;
   reus: ReuValue[];
+  /** Lista de autores (rascunhos antigos podem ter `autor` singular). */
+  autores: AutorValue[];
+  /** @deprecated use autores */
+  autor?: AutorValue | null;
   pedidos: PedidoItem[];
   /** Só texto/metadados — sem base64 de arquivo. */
   jurisCaso: JurisCasoItem[];
@@ -103,6 +110,7 @@ export function excluirRascunhoJec(id: string): void {
 export function payloadLeveParaRascunho(opcoes: {
   fatos: string;
   tipoSelecionado: string;
+  especiePeca?: string;
   tutelaUrgencia: boolean;
   comarca: ComarcaValue;
   valoresCausa: ValoresPorCategoria;
@@ -111,6 +119,9 @@ export function payloadLeveParaRascunho(opcoes: {
   leiMunicipalTitulo: string;
   linkNuvem: string;
   reus: ReuValue[];
+  autores?: AutorValue[];
+  /** @deprecated */
+  autor?: AutorValue | null;
   pedidos?: PedidoItem[];
   jurisCaso: Array<{
     id: string;
@@ -124,6 +135,7 @@ export function payloadLeveParaRascunho(opcoes: {
   return {
     fatos: opcoes.fatos,
     tipoSelecionado: opcoes.tipoSelecionado,
+    especiePeca: opcoes.especiePeca,
     tutelaUrgencia: opcoes.tutelaUrgencia,
     comarca: opcoes.comarca,
     valoresCausa: opcoes.valoresCausa,
@@ -135,6 +147,7 @@ export function payloadLeveParaRascunho(opcoes: {
       ...r,
       // Nome do anexo pode ficar; o arquivo em si não.
     })),
+    autores: opcoes.autores ?? (opcoes.autor ? [opcoes.autor] : []),
     pedidos: opcoes.pedidos ?? [],
     jurisCaso: opcoes.jurisCaso.map((j) => ({
       id: j.id,

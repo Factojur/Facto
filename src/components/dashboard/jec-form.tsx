@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { GerarPecaJecOutput } from "@/lib/gerar-peca-jec";
 import {
@@ -28,7 +29,20 @@ import {
 } from "@/lib/jec-rascunho-storage";
 import { montarChecklistJec, podeGerarPeca } from "@/lib/jec-checklist";
 import { placeholderFatosPorTipo } from "@/lib/jec-placeholders";
-import { docsSugeridosPorTipo } from "@/lib/jec-docs-checklist";
+import { DOCS_CONFERENCIA_PROTOCOLO } from "@/lib/jec-docs-checklist";
+import {
+  ESPECIES_PECA_JEC,
+  inferirEspeciePeca,
+  metaEspecie,
+  normalizarEspeciePeca,
+  type EspeciePecaJec,
+} from "@/lib/jec-especie-peca";
+import type { FaseCasoJec } from "@/lib/jec-caso-types";
+import { metaFase } from "@/lib/jec-caso-types";
+import {
+  obterCasoJec,
+  vincularPecaAoCaso,
+} from "@/lib/jec-casos-storage";
 import { calcularResumoValorCausa } from "@/lib/valores-causa";
 import {
   mensagemBloqueioTetoLeigo,
@@ -57,11 +71,17 @@ import {
   type PedidoItem,
 } from "@/components/dashboard/pedidos-form";
 import { ReusSection } from "@/components/dashboard/reus-form";
+import { AutorSection } from "@/components/dashboard/autor-form";
 import {
   JurisCasoSection,
   type JurisCasoSalvo,
 } from "@/components/dashboard/juris-caso-form";
+import { JurisSugestoesPicker } from "@/components/dashboard/juris-sugestoes-picker";
 import type { ReuValue } from "@/lib/reu-types";
+import {
+  normalizarAutores,
+  type AutorValue,
+} from "@/lib/autor-types";
 import type { JurisCasoPayload } from "@/lib/juris-caso-types";
 import type { ResumoCota } from "@/lib/cota-pecas";
 import { PacotesExtrasPainel } from "@/components/dashboard/pacotes-extras-painel";
@@ -76,10 +96,18 @@ const NAV_SECOES = [
   { id: "secao-provas", label: "Provas" },
   { id: "secao-valores", label: "Valores" },
   { id: "secao-pedidos", label: "Pedidos" },
+  { id: "secao-protocolo", label: "Protocolar" },
   { id: "secao-gerar", label: "Gerar" },
 ] as const;
 
-const LOADING_STAGES = ["Analisando o caso…", "Redigindo a peça…"];
+const LOADING_STAGES = [
+  "Maestro: montando o plano…",
+  "Analista Facto: estudando o caso…",
+  "Pesquisa & súmulas: buscando fundamentos…",
+  "Estrategista: definindo a tese…",
+  "Redator forense: escrevendo a peça…",
+  "Auditor: conferindo citações…",
+];
 
 function getFileNames(input: HTMLInputElement | null): string[] {
   if (!input?.files?.length) return [];
@@ -122,41 +150,31 @@ function FileField({
   );
 }
 
-function DocsSugeridosChecklist({ tipoAcao }: { tipoAcao: string }) {
-  const docs = docsSugeridosPorTipo(tipoAcao);
-  const [marcados, setMarcados] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    setMarcados({});
-  }, [tipoAcao]);
-
-  if (!tipoAcao) return null;
-
+function ProtocoloDocsChecklist() {
   return (
-    <div className="mt-4 rounded-lg border border-dashed border-slate-200 bg-slate-50/80 p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        Checklist sugerido
+    <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <h2 className="text-lg font-semibold text-slate-800">
+        Conferência de documentos
+      </h2>
+      <p className="mt-1 text-sm text-slate-500">
+        Lista orientativa para você conferir antes de protocolar. Não entra na
+        redação da peça e não substitui o edital ou as exigências do juízo /
+        sistema (e-proc, ESAJ, presencial).
       </p>
-      <ul className="mt-2 space-y-2">
-        {docs.map((doc) => (
-          <li key={doc.id} className="flex items-start gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={Boolean(marcados[doc.id])}
-              onChange={(e) =>
-                setMarcados((prev) => ({
-                  ...prev,
-                  [doc.id]: e.target.checked,
-                }))
-              }
-              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
-            />
-            <span className={doc.essencial ? "text-slate-800" : "text-slate-600"}>
-              {doc.label}
-              {!doc.essencial && (
-                <span className="ml-1 text-xs text-slate-400">(opcional)</span>
-              )}
-            </span>
+      <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-950">
+        Cada caso pode precisar de documentos próprios. Confira sempre o que a
+        peça alega e o que a unidade judiciária exige.
+      </p>
+
+      <ul className="mt-4 list-disc space-y-2.5 pl-5">
+        {DOCS_CONFERENCIA_PROTOCOLO.map((doc) => (
+          <li key={doc.id} className="text-sm text-slate-800">
+            {doc.label}
+            {doc.nota ? (
+              <span className="mt-0.5 block text-xs font-normal text-slate-500">
+                {doc.nota}
+              </span>
+            ) : null}
           </li>
         ))}
       </ul>
@@ -323,6 +341,42 @@ function PecasResultado({
           <p className="font-semibold">Atenção — peça incompleta para protocolo</p>
           <p className="mt-1">{resultado.avisoIA}</p>
         </div>
+      )}
+      {resultado.equipeEtapas && resultado.equipeEtapas.length > 0 && (
+        <section className="rounded-lg border border-slate-200 bg-slate-50/80 p-4">
+          <h3 className="mb-2 text-sm font-semibold text-slate-800">
+            Equipe FACTO nesta geração
+          </h3>
+          <ul className="space-y-2">
+            {resultado.equipeEtapas.map((e) => (
+              <li
+                key={`${e.id}-${e.titulo}`}
+                className="flex items-start gap-2 text-sm text-slate-700"
+              >
+                <span
+                  className={
+                    e.status === "ok"
+                      ? "mt-0.5 text-emerald-600"
+                      : e.status === "parcial"
+                        ? "mt-0.5 text-amber-600"
+                        : "mt-0.5 text-slate-400"
+                  }
+                >
+                  {e.status === "ok" ? "✓" : e.status === "parcial" ? "!" : "·"}
+                </span>
+                <span className="min-w-0">
+                  <span className="font-medium text-slate-800">{e.skin}</span>
+                  <span className="text-slate-500"> — {e.titulo}</span>
+                  {e.detalhe ? (
+                    <span className="mt-0.5 block text-xs text-slate-500">
+                      {e.detalhe}
+                    </span>
+                  ) : null}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
       {!resultado.geradoPorIA && !resultado.avisoIA && (
         <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -536,6 +590,8 @@ function estadoInicialFormulario() {
   return {
     modoAcao: "assistente" as ModoDefinicaoAcao,
     tipoAcaoTexto: "",
+    especiePeca: "peticao-inicial" as EspeciePecaJec,
+    especieManual: false,
     fatos: "",
     tutelaUrgencia: false,
     cumuloDanosMorais: false,
@@ -547,22 +603,31 @@ function estadoInicialFormulario() {
     leiMunicipalTitulo: "",
     linkNuvem: "",
     reus: [] as ReuValue[],
+    autores: [] as AutorValue[],
     jurisCaso: [] as JurisCasoSalvo[],
     pedidos: [] as PedidoItem[],
-    mostrarDocsOpcionais: false,
     mostrarMidiasOpcionais: false,
+    pedirJusticaGratuita: false,
+    temMle: false,
     justificativaAssistente: null as string | null,
     notaAssistente: false,
   };
 }
 
 export function JecForm({ leigo = false }: { leigo?: boolean }) {
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [loadingStage, setLoadingStage] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<GerarPecaJecOutput | null>(null);
+  const [casoVinculoId, setCasoVinculoId] = useState<string | null>(null);
+  const [faseVinculo, setFaseVinculo] = useState<FaseCasoJec | null>(null);
+  const [msgCaso, setMsgCaso] = useState<string | null>(null);
   const [modoAcao, setModoAcao] = useState<ModoDefinicaoAcao>("assistente");
   const [tipoAcaoTexto, setTipoAcaoTexto] = useState("");
+  const [especiePeca, setEspeciePeca] =
+    useState<EspeciePecaJec>("peticao-inicial");
+  const [especieManual, setEspecieManual] = useState(false);
   const [fatos, setFatos] = useState("");
   const [tutelaUrgencia, setTutelaUrgencia] = useState(false);
   const [cumuloDanosMorais, setCumuloDanosMorais] = useState(false);
@@ -575,10 +640,12 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
   const [usaLeiMunicipal, setUsaLeiMunicipal] = useState(false);
   const [leiMunicipalTexto, setLeiMunicipalTexto] = useState("");
   const [leiMunicipalTitulo, setLeiMunicipalTitulo] = useState("");
-  const [mostrarDocsOpcionais, setMostrarDocsOpcionais] = useState(false);
   const [mostrarMidiasOpcionais, setMostrarMidiasOpcionais] = useState(false);
+  const [pedirJusticaGratuita, setPedirJusticaGratuita] = useState(false);
+  const [temMle, setTemMle] = useState(false);
   const [linkNuvem, setLinkNuvem] = useState("");
   const [reus, setReus] = useState<ReuValue[]>([]);
+  const [autores, setAutores] = useState<AutorValue[]>([]);
   const [jurisCaso, setJurisCaso] = useState<JurisCasoSalvo[]>([]);
   const [pedidos, setPedidos] = useState<PedidoItem[]>([]);
   const [decisaoSugerida, setDecisaoSugerida] =
@@ -615,6 +682,35 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
     };
   }, []);
 
+  // JEC-2: contexto vindo da linha do tempo do caso
+  useEffect(() => {
+    const casoId = searchParams.get("caso");
+    const fase = searchParams.get("fase") as FaseCasoJec | null;
+    const especieParam = normalizarEspeciePeca(searchParams.get("especie"));
+    const processo = searchParams.get("processo");
+    const foro = searchParams.get("foro");
+    const fatosParam = searchParams.get("fatos");
+
+    if (casoId && obterCasoJec(casoId)) {
+      setCasoVinculoId(casoId);
+      if (fase) setFaseVinculo(fase);
+    }
+    if (especieParam) {
+      setEspeciePeca(especieParam);
+      setEspecieManual(true);
+    }
+    if (processo || foro) {
+      setComarca((c) => ({
+        ...c,
+        numeroProcesso: processo?.trim() || c.numeroProcesso,
+        foro: foro?.trim() || c.foro,
+      }));
+    }
+    if (fatosParam?.trim()) {
+      setFatos((atual) => (atual.trim() ? atual : fatosParam.trim()));
+    }
+  }, [searchParams]);
+
   const resumoValores = useMemo(
     () => calcularResumoValorCausa(valoresCausa),
     [valoresCausa]
@@ -642,6 +738,7 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
     tipoSelecionado: tipoAcaoDefinido || (assistentePendente ? ASSISTENTE_FACTO : ""),
     fatos,
     reusCount: reus.length,
+    autoresCount: autores.length,
     comarcaForo: comarca.foro ?? "",
     temValor: resumoValores.totalCentavos > 0,
     assistentePendente:
@@ -674,9 +771,18 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
     salvarEscritorioConfig(next);
   }
 
+  function sincronizarEspecieDoTipo(texto: string, forcar = false) {
+    if (especieManual && !forcar) return;
+    setEspeciePeca(inferirEspeciePeca(texto, fatos));
+  }
+
   function aplicarDecisaoAssistente(decisao: DecisaoAssistente) {
     setModoAcao("assistente");
-    setTipoAcaoTexto(decisao.tituloCompleto || decisao.tipoAcao);
+    const titulo = decisao.tituloCompleto || decisao.tipoAcao;
+    setTipoAcaoTexto(titulo);
+    if (!especieManual) {
+      setEspeciePeca(inferirEspeciePeca(titulo, fatos));
+    }
     setTutelaUrgencia(decisao.tutelaUrgencia);
     setCumuloDanosMorais(decisao.danosMorais);
     setCumuloDanosMateriais(decisao.danosMateriais);
@@ -755,6 +861,8 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
     const ini = estadoInicialFormulario();
     setModoAcao(ini.modoAcao);
     setTipoAcaoTexto(ini.tipoAcaoTexto);
+    setEspeciePeca(ini.especiePeca);
+    setEspecieManual(ini.especieManual);
     setFatos(ini.fatos);
     setTutelaUrgencia(ini.tutelaUrgencia);
     setCumuloDanosMorais(ini.cumuloDanosMorais);
@@ -766,10 +874,12 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
     setLeiMunicipalTitulo(ini.leiMunicipalTitulo);
     setLinkNuvem(ini.linkNuvem);
     setReus(ini.reus);
+    setAutores(ini.autores);
     setJurisCaso(ini.jurisCaso);
     setPedidos(ini.pedidos);
-    setMostrarDocsOpcionais(ini.mostrarDocsOpcionais);
     setMostrarMidiasOpcionais(ini.mostrarMidiasOpcionais);
+    setPedirJusticaGratuita(ini.pedirJusticaGratuita);
+    setTemMle(ini.temMle);
     setDecisaoSugerida(null);
     setJustificativaAssistente(ini.justificativaAssistente);
     setNotaAssistente(ini.notaAssistente);
@@ -791,6 +901,13 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
       setModoAcao("livre");
       setTipoAcaoTexto(tipoSalvo);
     }
+    const espSalva = inferirEspeciePeca(
+      tipoSalvo,
+      p.fatos,
+      p.especiePeca
+    );
+    setEspeciePeca(espSalva);
+    setEspecieManual(Boolean(p.especiePeca));
     setTutelaUrgencia(Boolean(p.tutelaUrgencia));
     setComarca(normalizarComarcaValue(p.comarca));
     setValoresCausa(p.valoresCausa ?? valoresCausaVazio());
@@ -799,6 +916,13 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
     setLeiMunicipalTitulo(p.leiMunicipalTitulo ?? "");
     setLinkNuvem(p.linkNuvem ?? "");
     setReus(Array.isArray(p.reus) ? p.reus : []);
+    setAutores(
+      normalizarAutores(
+        Array.isArray(p.autores) && p.autores.length
+          ? p.autores
+          : p.autor ?? []
+      )
+    );
     setPedidos(Array.isArray(p.pedidos) ? p.pedidos : []);
     setJurisCaso(
       Array.isArray(p.jurisCaso)
@@ -855,6 +979,7 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
         payloadLeveParaRascunho({
           fatos,
           tipoSelecionado: tituloAcaoCompleto || tipoAcaoTexto || ASSISTENTE_FACTO,
+          especiePeca,
           tutelaUrgencia,
           comarca,
           valoresCausa,
@@ -863,6 +988,7 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
           leiMunicipalTitulo,
           linkNuvem,
           reus,
+          autores,
           pedidos,
           jurisCaso,
         }),
@@ -986,19 +1112,25 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
 
     const payload = {
       tipoAcao,
+      especiePeca,
       tutelaUrgencia,
+      pedirJusticaGratuita,
+      temMle,
       fatos: fatos.trim(),
       pedidosUsuario,
       documentos: {
-        essenciais: getFileNames(
-          form.querySelector<HTMLInputElement>("#documentosEssenciais")
-        ),
-        declaracaoHipossuficiencia: getFileNames(
-          form.querySelector<HTMLInputElement>("#declaracaoHipossuficiencia")
-        ),
-        mandadoLevantamentoEletronico: getFileNames(
-          form.querySelector<HTMLInputElement>("#mandadoLevantamentoEletronico")
-        ),
+        declaracaoHipossuficiencia: pedirJusticaGratuita
+          ? getFileNames(
+              form.querySelector<HTMLInputElement>("#declaracaoHipossuficiencia")
+            )
+          : [],
+        mandadoLevantamentoEletronico: temMle
+          ? getFileNames(
+              form.querySelector<HTMLInputElement>(
+                "#mandadoLevantamentoEletronico"
+              )
+            )
+          : [],
       },
       provas: getFileNames(
         form.querySelector<HTMLInputElement>("#provasEssenciais")
@@ -1007,6 +1139,7 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
       midias: getFileNames(form.querySelector<HTMLInputElement>("#midias")),
       linkNuvem: linkNuvem.trim() || null,
       reus,
+      autores,
       jurisDoCaso: jurisDoCaso.length > 0 ? jurisDoCaso : null,
       escritorio,
       comarca: (() => {
@@ -1069,6 +1202,7 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
 
       if (data.cota) setCota(data.cota);
       setResultado(data as GerarPecaJecOutput);
+      setMsgCaso(null);
       window.setTimeout(() => {
         document
           .getElementById("peca-gerada")
@@ -1133,6 +1267,26 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
           />
         )}
 
+        {casoVinculoId ? (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm">
+            <p className="text-slate-600">
+              Gerando para o caso{" "}
+              <Link
+                href={`/dashboard/jec/casos/${casoVinculoId}`}
+                className="font-medium text-stone-800 underline-offset-2 hover:underline"
+              >
+                {obterCasoJec(casoVinculoId)?.titulo ?? "aberto"}
+              </Link>
+              {faseVinculo ? (
+                <span className="text-slate-500">
+                  {" "}
+                  · fase {metaFase(faseVinculo).rotulo}
+                </span>
+              ) : null}
+            </p>
+          </div>
+        ) : null}
+
         <nav
           aria-label="Seções do formulário"
           className="sticky top-0 z-20 -mx-1 flex gap-1 overflow-x-auto border-b border-slate-200 bg-white/95 px-1 py-2 backdrop-blur"
@@ -1160,12 +1314,42 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
         >
           <h2 className="mb-1 text-lg font-semibold text-slate-800">Ação</h2>
           <p className="mb-4 text-sm text-slate-500">
-            Use o Assistente Facto para nomear a ação com IA (e busca geral), ou
-            digite livremente o tipo que entende cabível. Na peça, o nome sai no
-            padrão forense.
+            Escolha a espécie da peça (estrutura romana), depois nomeie a ação
+            com o Assistente FACTO ou em texto livre.
           </p>
 
           <div className="space-y-4 sm:max-w-2xl">
+            <div>
+              <label
+                htmlFor="especiePeca"
+                className="mb-1.5 block text-sm font-medium text-slate-700"
+              >
+                Espécie da peça
+              </label>
+              <select
+                id="especiePeca"
+                name="especiePeca"
+                value={especiePeca}
+                onChange={(e) => {
+                  setEspeciePeca(e.target.value as EspeciePecaJec);
+                  setEspecieManual(true);
+                }}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-stone-500 focus:outline-none focus:ring-1 focus:ring-stone-500"
+              >
+                {ESPECIES_PECA_JEC.map((esp) => (
+                  <option key={esp.id} value={esp.id}>
+                    {esp.rotulo}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1.5 text-xs text-slate-500">
+                {metaEspecie(especiePeca).descricao}
+                {metaEspecie(especiePeca).exigeProcesso
+                  ? " Informe o nº do processo na Comarca."
+                  : ""}
+              </p>
+            </div>
+
             <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
               <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm has-[:checked]:border-stone-500 has-[:checked]:bg-stone-50">
                 <input
@@ -1269,7 +1453,9 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
                     rows={2}
                     value={tipoAcaoTexto}
                     onChange={(e) => {
-                      setTipoAcaoTexto(e.target.value);
+                      const v = e.target.value;
+                      setTipoAcaoTexto(v);
+                      sincronizarEspecieDoTipo(v);
                       if (modoAcao === "assistente") {
                         setNotaAssistente(false);
                       }
@@ -1348,72 +1534,70 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
 
         <ComarcaSection value={comarca} onChange={setComarca} />
 
-        <section
-          id="secao-autor"
-          className="scroll-mt-24 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
-        >
-          <h2 className="mb-1 text-lg font-semibold text-slate-800">
-            Dados do Autor
-          </h2>
-          <p className="mb-4 text-sm text-slate-500">
-            Anexe identidade, CPF, residência e procuração. Nome e OAB na peça
-            vêm do Perfil.
-          </p>
-
-          <div className="space-y-5">
+        <AutorSection value={autores} onChange={setAutores}>
+          <div className="space-y-4">
             <div>
               <h3 className="mb-1 text-sm font-semibold text-slate-800">
-                Essenciais
+                Pedidos que alteram a peça
               </h3>
-              <FileField
-                id="documentosEssenciais"
-                label="Identidade, CPF, residência e procuração"
-                accept="image/*,.pdf,.doc,.docx"
-                multiple
+              <p className="mb-3 text-xs leading-relaxed text-slate-500">
+                Só estes documentos/pedidos entram na redação (justiça gratuita e
+                MLE). RG, CPF, residência e procuração ficam no checklist de
+                protocolo no final da página.
+              </p>
+            </div>
+
+            <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={pedirJusticaGratuita}
+                onChange={(e) => setPedirJusticaGratuita(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
               />
-            </div>
-
-            <div className="border-t border-slate-100 pt-4">
-              <label className="flex items-start gap-2.5 text-sm text-slate-700">
-                <input
-                  type="checkbox"
-                  checked={mostrarDocsOpcionais}
-                  onChange={(e) => setMostrarDocsOpcionais(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
-                />
-                <span>
-                  <span className="font-medium text-slate-800">
-                    Anexar documentos opcionais
-                  </span>
-                  <span className="mt-0.5 block text-xs font-normal leading-relaxed text-slate-500">
-                    Declaração de hipossuficiência e/ou Mandado de Levantamento
-                    Eletrônico (MLE).
-                  </span>
+              <span>
+                <span className="font-medium text-slate-800">
+                  Pedir justiça gratuita (hipossuficiência)
                 </span>
-              </label>
-              <div
-                className={
-                  mostrarDocsOpcionais
-                    ? "mt-3 grid gap-4 sm:grid-cols-2"
-                    : "hidden"
-                }
-              >
-                <FileField
-                  id="declaracaoHipossuficiencia"
-                  label="Declaração de hipossuficiência"
-                  accept="image/*,.pdf,.doc,.docx"
-                />
-                <FileField
-                  id="mandadoLevantamentoEletronico"
-                  label="Mandado de Levantamento Eletrônico (MLE)"
-                  accept="image/*,.pdf,.doc,.docx"
-                />
-              </div>
-            </div>
-          </div>
+                <span className="mt-0.5 block text-xs text-slate-500">
+                  Inclui subtítulo e pedido de JG na peça.
+                </span>
+              </span>
+            </label>
 
-          <DocsSugeridosChecklist tipoAcao={tipoAcaoDefinido || tipoAcaoTexto} />
-        </section>
+            {pedirJusticaGratuita && (
+              <FileField
+                id="declaracaoHipossuficiencia"
+                label="Anexar declaração de hipossuficiência (opcional — para seu arquivo)"
+                accept="image/*,.pdf,.doc,.docx"
+              />
+            )}
+
+            <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={temMle}
+                onChange={(e) => setTemMle(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
+              />
+              <span>
+                <span className="font-medium text-slate-800">
+                  Há Mandado de Levantamento Eletrônico (MLE)
+                </span>
+                <span className="mt-0.5 block text-xs text-slate-500">
+                  Inclui pedido de expedição/utilização do MLE, quando cabível.
+                </span>
+              </span>
+            </label>
+
+            {temMle && (
+              <FileField
+                id="mandadoLevantamentoEletronico"
+                label="Anexar MLE (opcional — para seu arquivo)"
+                accept="image/*,.pdf,.doc,.docx"
+              />
+            )}
+          </div>
+        </AutorSection>
 
         <div id="secao-reus" className="scroll-mt-24">
           <ReusSection value={reus} onChange={setReus} />
@@ -1599,7 +1783,26 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
             )}
           </div>
 
-          <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-4">
+          <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-4 space-y-4">
+            <JurisSugestoesPicker
+              consulta={[
+                tipoAcaoDefinido || tipoAcaoTexto,
+                fatos,
+              ]
+                .filter(Boolean)
+                .join("\n")
+                .slice(0, 2500)}
+              uploads={jurisCaso}
+              onAplicar={(itens) => {
+                setJurisCaso((prev) => {
+                  const ids = new Set(prev.map((p) => p.titulo.toLowerCase()));
+                  const novos = itens.filter(
+                    (i) => !ids.has(i.titulo.toLowerCase())
+                  );
+                  return [...prev, ...novos].slice(0, 5);
+                });
+              }}
+            />
             <JurisCasoSection value={jurisCaso} onChange={setJurisCaso} />
           </div>
         </section>
@@ -1680,6 +1883,10 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
         </div>
 
         <PedidosSection value={pedidos} onChange={setPedidos} />
+
+        <section id="secao-protocolo" className="scroll-mt-24">
+          <ProtocoloDocsChecklist />
+        </section>
 
         <section
           id="secao-gerar"
@@ -1791,10 +1998,64 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
           id="peca-gerada"
           className="scroll-mt-24 border-t border-slate-200 pt-8"
         >
-          <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            Minuta para revisão — confira dados, valores e fundamentos antes de
-            protocolar.
+          <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-950">
+            <p className="font-medium">Minuta para revisão</p>
+            <p className="mt-1">
+              Confira dados, valores e fundamentos antes de protocolar.{" "}
+              <strong className="font-semibold">
+                Baixe o PDF ou Word agora e salve na sua pasta ou nuvem pessoal
+              </strong>{" "}
+              — por privacidade, o FACTO não armazena a peça nem os dados das
+              partes na conta do cliente. A preservação do arquivo é sua
+              responsabilidade.
+            </p>
           </div>
+
+          {casoVinculoId && (
+            <div className="mb-4 rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-800">
+              <p className="font-medium">Vincular esta peça ao caso?</p>
+              <p className="mt-1 text-xs text-stone-500">
+                Registra o texto na linha do tempo da fase atual do caso.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const fase =
+                      faseVinculo ??
+                      (obterCasoJec(casoVinculoId)?.faseAtual as FaseCasoJec) ??
+                      "inicial";
+                    const atualizado = vincularPecaAoCaso({
+                      casoId: casoVinculoId,
+                      fase,
+                      especiePeca,
+                      tituloPeca:
+                        tituloAcaoCompleto || tipoAcaoTexto || especiePeca,
+                      pecaTexto: resultado.peca,
+                    });
+                    if (atualizado) {
+                      setMsgCaso("Peça vinculada ao caso.");
+                    } else {
+                      setMsgCaso("Não foi possível vincular (caso ausente).");
+                    }
+                  }}
+                  className="rounded-lg bg-stone-700 px-4 py-2 text-sm font-semibold text-amber-50 hover:bg-stone-600"
+                >
+                  Vincular ao caso
+                </button>
+                <Link
+                  href={`/dashboard/jec/casos/${casoVinculoId}`}
+                  className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  Abrir caso
+                </Link>
+              </div>
+              {msgCaso && (
+                <p className="mt-2 text-xs text-emerald-700">{msgCaso}</p>
+              )}
+            </div>
+          )}
+
           <PecasResultado
             resultado={resultado}
             escritorio={escritorio}

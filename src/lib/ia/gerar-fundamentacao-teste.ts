@@ -12,6 +12,7 @@ import {
   rotuloAreaJudiciaria,
 } from "@/lib/endereco-comarca";
 import type { CitacaoVerificada } from "@/lib/ia/verificacao-citacoes";
+import type { EtapaEquipeFacto } from "@/lib/ia/agentes-facto";
 
 export type ResultadoTesteIA =
   | {
@@ -24,6 +25,7 @@ export type ResultadoTesteIA =
       contextoUtilizado: { titulo: string; categoria: string }[];
       citacoes: CitacaoVerificada[];
       marcadoresNaoEncontrado: number;
+      equipeEtapas?: EtapaEquipeFacto[];
     }
   | {
       ok: false;
@@ -33,6 +35,7 @@ export type ResultadoTesteIA =
 export async function gerarPecaTeste(params: {
   tipoAcao: string;
   fatosFicticios: string;
+  especiePeca?: string | null;
 }): Promise<ResultadoTesteIA> {
   const enderecamento = formatarEnderecamentoPadrao({
     comarca: { cidade: "[CIDADE]", uf: "UF" },
@@ -43,6 +46,7 @@ export async function gerarPecaTeste(params: {
   const resultado = await gerarPecaComIA({
     tipoAcao: params.tipoAcao,
     fatos: params.fatosFicticios,
+    especiePeca: params.especiePeca,
     casoReal: false,
     instrucoes: {
       enderecamento,
@@ -67,5 +71,6 @@ export async function gerarPecaTeste(params: {
     contextoUtilizado: resultado.contextoUtilizado,
     citacoes: resultado.citacoes,
     marcadoresNaoEncontrado: resultado.marcadoresNaoEncontrado,
+    equipeEtapas: resultado.equipeEtapas,
   };
 }

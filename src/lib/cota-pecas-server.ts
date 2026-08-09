@@ -32,7 +32,13 @@ async function planoDoEmail(admin: Admin, email: string): Promise<PlanoCota> {
     (data.status === "authorized" && (ate === null || ate > agora)) ||
     (data.status === "canceled" && ate !== null && ate > agora);
   if (!ativo) return null;
-  if (data.plano === "anual" || data.plano === "mensal" || data.plano === "jec") {
+  if (
+    data.plano === "pro_anual" ||
+    data.plano === "anual" ||
+    data.plano === "mensal" ||
+    data.plano === "pro" ||
+    data.plano === "jec"
+  ) {
     return data.plano;
   }
   return null;

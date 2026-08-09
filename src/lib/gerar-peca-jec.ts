@@ -7,7 +7,6 @@ import {
 import {
   formatarEnderecamentoPadrao,
   extrairCidadeUfDoForo,
-  ehPeticaoInicial,
   rotuloAreaJudiciaria,
   type ComarcaInfo,
 } from "@/lib/endereco-comarca";
@@ -39,17 +38,32 @@ import {
   injetarQualificacaoReus,
   type ReuValue,
 } from "@/lib/reu-types";
+import {
+  formatarBlocoQualificacaoAutor,
+  type AutorValue,
+} from "@/lib/autor-types";
 import { normalizarTextoFatos } from "@/lib/peca-paragrafos";
 import { montarFundamentosDireitoJec } from "@/lib/peca-do-direito-jec";
+import {
+  ehPeticaoInicialPorEspecie,
+  inferirEspeciePeca,
+  metaEspecie,
+  paragrafoReservaSecao,
+  secoesNumeradas,
+  tituloRomano,
+  type EspeciePecaJec,
+} from "@/lib/jec-especie-peca";
 
 export type GerarPecaJecInput = {
   tipoAcao: string;
   tutelaUrgencia: boolean;
   fatos: string;
+  /** Espécie da peça (JEC-1). Se omitida, infere do tipoAcao. */
+  especiePeca?: EspeciePecaJec | string | null;
   documentos: {
-    /** Identidade (RG/CNH), CPF, residência e procuração — upload único. */
+    /** @deprecated removido do formulário — identidade/procuração vão no checklist de protocolo */
     essenciais?: string[];
-    /** @deprecated campos antigos mantidos só por compatibilidade */
+    /** @deprecated */
     rg?: string[];
     cpf?: string[];
     cnh?: string[];
@@ -58,6 +72,9 @@ export type GerarPecaJecInput = {
     procuracao?: string[];
     mandadoLevantamentoEletronico?: string[];
   };
+  /** Flags explícitas (preferíveis aos nomes de arquivo). */
+  pedirJusticaGratuita?: boolean;
+  temMle?: boolean;
   provas: string[];
   fotos: string[];
   midias: string[];
@@ -65,6 +82,10 @@ export type GerarPecaJecInput = {
   linkNuvem?: string | null;
   /** Qualificação da(s) parte(s) passiva(s). */
   reus?: ReuValue[];
+  /** Parte(s) autora(s) (PF) — distinta do advogado (autorNome/autorOab). */
+  autores?: AutorValue[];
+  /** @deprecated use autores */
+  autor?: AutorValue | null;
   escritorio?: EscritorioConfig;
   autorNome?: string;
   autorOab?: string;
@@ -97,6 +118,15 @@ export type GerarPecaJecOutput = {
   /** Fontes de juris/súmula anexadas pelo advogado neste caso. */
   jurisDoCasoUtilizada?: { titulo: string }[] | null;
   avisoIA?: string | null;
+  /** Etapas da equipe FACTO (Pacote A). */
+  equipeEtapas?: {
+    id: string;
+    skin: string;
+    titulo: string;
+    status: "ok" | "parcial" | "pulado" | "erro";
+    detalhe?: string;
+    modelo?: string;
+  }[];
   /** Brief da análise Chain of Thought (fase 1). */
   analiseEstrategica?: {
     tesePrincipal?: string;
@@ -146,13 +176,121 @@ function subtotalDaCategoria(
 function extrairPedidos(
   tipoAcao: string,
   tutelaUrgencia: boolean,
-  resumo?: ResumoValorCausa
+  resumo: ResumoValorCausa | undefined,
+  especie: EspeciePecaJec,
+  opcoes?: { pedirJusticaGratuita?: boolean; temMle?: boolean }
 ): string {
+  const pedirJG = Boolean(opcoes?.pedirJusticaGratuita);
+  const temMle = Boolean(opcoes?.temMle);
+
+  if (especie === "contestacao") {
+    const itens = [
+      "O acolhimento das preliminares eventualmente arguidas, com a extinção do processo sem resolução do mérito, se for o caso;",
+      "No mérito, a total improcedência dos pedidos formulados na inicial;",
+      "A condenação da parte autora ao pagamento das custas e honorários, na forma da Lei nº 9.099/95, se cabível.",
+    ];
+    if (pedirJG) {
+      itens.splice(
+        2,
+        0,
+        "A concessão dos benefícios da justiça gratuita, na forma da Lei nº 9.099/95 e da legislação processual pertinente;"
+      );
+    }
+    return itens
+      .map((texto, i) => `${String.fromCharCode(97 + i)}) ${texto}`)
+      .join("\n");
+  }
+
+  if (especie === "embargos") {
+    const itens = [
+      "O conhecimento e o acolhimento dos presentes embargos;",
+      "A declaração de inexigibilidade / a limitação / a extinção da cobrança ou do ato embargado, conforme os fundamentos;",
+      "A condenação da parte adversa nas verbas de sucumbência, na forma da Lei nº 9.099/95, se cabível.",
+    ];
+    if (pedirJG) {
+      itens.splice(
+        2,
+        0,
+        "A concessão dos benefícios da justiça gratuita, na forma da Lei nº 9.099/95 e da legislação processual pertinente;"
+      );
+    }
+    return itens
+      .map((texto, i) => `${String.fromCharCode(97 + i)}) ${texto}`)
+      .join("\n");
+  }
+
+  if (especie === "recurso") {
+    const itens = [
+      "O conhecimento do recurso, por tempestivo e cabível;",
+      "No mérito, a reforma / anulação da decisão recorrida, com o provimento integral dos pedidos recursais;",
+      "A condenação da parte adversa nas verbas de sucumbência, na forma da Lei nº 9.099/95, se cabível.",
+    ];
+    if (pedirJG) {
+      itens.splice(
+        2,
+        0,
+        "A concessão / manutenção dos benefícios da justiça gratuita no âmbito recursal, se cabível;"
+      );
+    }
+    return itens
+      .map((texto, i) => `${String.fromCharCode(97 + i)}) ${texto}`)
+      .join("\n");
+  }
+
+  if (especie === "replica") {
+    const itens = [
+      "O acolhimento da presente réplica, com a rejeição das preliminares e teses defensivas improcedentes;",
+      "A procedência total dos pedidos formulados na inicial;",
+      "A condenação do(a) requerido(a) ao pagamento das custas e honorários, na forma da Lei nº 9.099/95.",
+    ];
+    if (pedirJG) {
+      itens.splice(
+        2,
+        0,
+        "A concessão dos benefícios da justiça gratuita, na forma da Lei nº 9.099/95 e da legislação processual pertinente;"
+      );
+    }
+    return itens
+      .map((texto, i) => `${String.fromCharCode(97 + i)}) ${texto}`)
+      .join("\n");
+  }
+
+  if (especie === "execucao") {
+    const itens = [
+      "A intimação do(a) executado(a) para pagamento do débito no prazo legal;",
+      "Não havendo pagamento espontâneo, a penhora / bloqueio e demais medidas executivas cabíveis;",
+      "A condenação do(a) executado(a) nas verbas de sucumbência, na forma da Lei nº 9.099/95, se cabível.",
+    ];
+    if (temMle) {
+      itens.splice(
+        2,
+        0,
+        "A expedição / utilização do Mandado de Levantamento Eletrônico (MLE) para liberação dos valores depositados, na forma do sistema do juízo;"
+      );
+    }
+    if (pedirJG) {
+      itens.splice(
+        itens.length - 1,
+        0,
+        "A concessão dos benefícios da justiça gratuita, na forma da Lei nº 9.099/95 e da legislação processual pertinente;"
+      );
+    }
+    return itens
+      .map((texto, i) => `${String.fromCharCode(97 + i)}) ${texto}`)
+      .join("\n");
+  }
+
   const itens: string[] = [];
 
   if (tutelaUrgencia) {
     itens.push(
       "A concessão de tutela de urgência, *inaudita altera pars*, para assegurar a efetividade do provimento final, diante da probabilidade do direito e do perigo de dano;"
+    );
+  }
+
+  if (pedirJG) {
+    itens.push(
+      "A concessão dos benefícios da justiça gratuita, com a dispensa do pagamento de custas, taxas e despesas processuais, na forma da Lei nº 9.099/95 e da legislação processual pertinente;"
     );
   }
 
@@ -217,6 +355,12 @@ function extrairPedidos(
   } else {
     itens.push(
       "A procedência total dos pedidos formulados na presente demanda, com a condenação do(a) requerido(a) nas obrigações e valores descritos nos fatos e fundamentos;"
+    );
+  }
+
+  if (temMle) {
+    itens.push(
+      "A expedição / utilização do Mandado de Levantamento Eletrônico (MLE) para liberação dos valores eventualmente depositados, na forma do sistema do juízo;"
     );
   }
 
@@ -296,13 +440,36 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     analisePartes.push(decisaoAssistente.justificativa, "", "---", "");
   }
 
+  const especie = inferirEspeciePeca(
+    tipoAcao,
+    input.fatos,
+    input.especiePeca
+  );
+  const metaEsp = metaEspecie(especie);
+  const ehInicial = ehPeticaoInicialPorEspecie(especie);
+
+  const pedirJusticaGratuita =
+    Boolean(input.pedirJusticaGratuita) ||
+    (input.documentos.declaracaoHipossuficiencia?.length ?? 0) > 0;
+  const temMle =
+    Boolean(input.temMle) ||
+    (input.documentos.mandadoLevantamentoEletronico?.length ?? 0) > 0;
+
+  if (pedirJusticaGratuita) {
+    fundamentoLegal.push(
+      "Justiça gratuita — Lei nº 9.099/95 e legislação processual pertinente"
+    );
+  }
+
   analisePartes.push(
+    `Espécie da peça: ${metaEsp.rotulo}`,
     `Tipo de ação ${decisaoAssistente ? "definido pelo Assistente" : "selecionado"}: ${tipoAcao}`,
     `Competência sugerida: Juizado Especial Cível (Lei 9.099/95)`,
     `Tutela de urgência: ${tutelaUrgencia ? "Sim" : "Não"}`,
+    `Justiça gratuita / hipossuficiência: ${pedirJusticaGratuita ? "Sim" : "Não"}`,
+    `MLE (levantamento eletrônico): ${temMle ? "Sim" : "Não"}`,
     "",
-    "Documentos pessoais recebidos:",
-    `- Essenciais (identidade/CPF/residência/procuração): ${listarArquivos(input.documentos.essenciais)}`,
+    "Documentos que influenciam a peça:",
     `- Declaração de Hipossuficiência: ${listarArquivos(input.documentos.declaracaoHipossuficiencia)}`,
     `- Mandado de Levantamento Eletrônico (MLE): ${listarArquivos(input.documentos.mandadoLevantamentoEletronico)}`,
     "",
@@ -336,7 +503,7 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
   const enderecamento = formatarEnderecamentoPadrao({
     comarca: input.comarca ?? { cidade: "", uf: "" },
     areaJudiciaria: rotuloAreaJudiciaria("jec"),
-    varaEmBranco: ehPeticaoInicial(tipoAcao),
+    varaEmBranco: ehInicial,
   });
 
   const qualificacaoReus =
@@ -344,60 +511,73 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     "[NOME COMPLETO DO(A) RÉU(RÉ)], [qualificação completa do(a) réu(ré)]";
 
   const fatosNormalizados = normalizarTextoFatos(input.fatos);
-  const fundamentos = montarFundamentosDireitoJec({
-    tipoAcao,
-    fatos: input.fatos,
-    tutelaUrgencia,
-    trechosBase: itensConhecimento.map((item) => ({
-      titulo: item.titulo,
-      categoria: item.categoria,
-      texto: item.texto,
-    })),
-  });
+  const fatosLinhas = fatosNormalizados.split("\n").filter(Boolean);
 
-  // Numeração romana das seções (provas podem ser injetadas depois).
-  let secao = 2; // I = fatos já fixo; fundamentos = II
-  const proximaSecao = () => {
-    secao += 1;
-    const mapa = ["I", "II", "III", "IV", "V", "VI", "VII"];
-    return mapa[secao - 1] ?? String(secao);
-  };
+  const secoes = secoesNumeradas(especie, { incluirProvas: false });
+  const corpoSecoes: string[] = [];
 
-  // fundamentos já inclui "II - DO DIREITO"
-  const romValor = proximaSecao();
-  const romPedidos = proximaSecao();
+  for (const { romano, secao } of secoes) {
+    const titulo = tituloRomano(romano, secao.titulo);
+    corpoSecoes.push(titulo);
+
+    if (secao.chave === "fatos" || secao.chave === "historico") {
+      corpoSecoes.push(...(fatosLinhas.length ? fatosLinhas : ["[Narrar os fatos.]"]));
+    } else if (
+      secao.chave === "direito" ||
+      secao.chave === "merito" ||
+      secao.chave === "razoes"
+    ) {
+      // fundamentos incluem o título — usamos o romano correto desta espécie
+      const fundamentos = montarFundamentosDireitoJec({
+        tipoAcao,
+        fatos: input.fatos,
+        tutelaUrgencia,
+        pedirJusticaGratuita,
+        trechosBase: itensConhecimento.map((item) => ({
+          titulo: item.titulo,
+          categoria: item.categoria,
+          texto: item.texto,
+        })),
+        tituloSecao: titulo,
+      });
+      // evita duplicar o título já empurrado
+      corpoSecoes.push(...fundamentos.slice(1));
+    } else if (secao.chave === "valor") {
+      corpoSecoes.push(...montarSecaoValorCausa(valorCausaResumo));
+    } else if (secao.chave === "pedidos") {
+      corpoSecoes.push(
+        "Ante o exposto, requer a Vossa Excelência:",
+        extrairPedidos(tipoAcao, tutelaUrgencia, valorCausaResumo, especie, {
+          pedirJusticaGratuita,
+          temMle,
+        })
+      );
+    } else {
+      corpoSecoes.push(
+        ...paragrafoReservaSecao(secao.chave, input.fatos)
+      );
+    }
+
+    corpoSecoes.push("");
+  }
 
   const numeroProcesso = input.comarca?.numeroProcesso?.trim() || null;
 
   const pecaBruta = [
     enderecamento,
-    montarMarcadorEspaco6(
-      ehPeticaoInicial(tipoAcao) ? null : numeroProcesso
-    ),
-    `[NOME COMPLETO DO(A) AUTOR(A)], [nacionalidade], [estado civil], [profissão], inscrito(a) no CPF sob nº [CPF], `
-      + "portador(a) do RG nº [RG], residente e domiciliado(a) na [endereço completo], "
-      + "endereço eletrônico [e-mail], por seu advogado que esta subscreve "
-      + `(procuração anexa), ${autor}, inscrito na ${oabQualificacao}, `
-      + "com escritório profissional na [endereço do advogado], onde recebe intimações, "
-      + "vem, respeitosamente, à presença de Vossa Excelência, com fundamento na Lei nº 9.099/95, "
-      + "propor a presente",
+    montarMarcadorEspaco6(ehInicial ? null : numeroProcesso),
+    formatarBlocoQualificacaoAutor({
+      autores: input.autores ?? (input.autor ? [input.autor] : []),
+      advogadoNome: autor,
+      oabQualificacao,
+      enderecoAdvogado: null,
+    }),
     MARCADOR_ESPACO_1,
     `${tipoAcao.toUpperCase()}`,
     MARCADOR_ESPACO_1,
-    `em face de ${qualificacaoReus}, pelos fatos e fundamentos jurídicos a seguir expostos.`,
+    `em face de ${qualificacaoReus}, ${metaEsp.conectivoPartes}`,
     MARCADOR_ESPACO_2,
-    "I - DOS FATOS",
-    ...fatosNormalizados.split("\n").filter(Boolean),
-    "",
-    ...fundamentos,
-    "",
-    `${romValor} - DO VALOR DA CAUSA`,
-    ...montarSecaoValorCausa(valorCausaResumo),
-    "",
-    `${romPedidos} - DOS PEDIDOS`,
-    "Ante o exposto, requer a Vossa Excelência:",
-    extrairPedidos(tipoAcao, tutelaUrgencia, valorCausaResumo),
-    "",
+    ...corpoSecoes,
     "Nestes termos,",
     "pede deferimento.",
     MARCADOR_ESPACO_1,

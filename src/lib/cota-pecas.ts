@@ -2,9 +2,21 @@
  * Cota mensal de peças FACTO (plano + extras do ciclo).
  */
 
-import { PLANO_ANUAL, PLANO_JEC, PLANO_MENSAL } from "@/lib/planos-facto";
+import {
+  PLANO_ANUAL,
+  PLANO_JEC,
+  PLANO_MENSAL,
+  PLANO_PRO,
+  PLANO_PRO_ANUAL,
+} from "@/lib/planos-facto";
 
-export type PlanoCota = "jec" | "mensal" | "anual" | null;
+export type PlanoCota =
+  | "jec"
+  | "mensal"
+  | "pro"
+  | "anual"
+  | "pro_anual"
+  | null;
 
 export type ResumoCota = {
   ciclo: string;
@@ -32,7 +44,9 @@ export function cicloAtualSaoPaulo(agora = new Date()): string {
 }
 
 export function limiteDoPlano(plano: PlanoCota): number | null {
+  if (plano === "pro_anual") return PLANO_PRO_ANUAL.pecasPorMes;
   if (plano === "anual") return PLANO_ANUAL.pecasPorMes;
+  if (plano === "pro") return PLANO_PRO.pecasPorMes;
   if (plano === "mensal") return PLANO_MENSAL.pecasPorMes;
   if (plano === "jec") return PLANO_JEC.pecasPorMes;
   return null;

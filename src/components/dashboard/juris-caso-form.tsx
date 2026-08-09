@@ -281,7 +281,9 @@ export function JurisCasoSection({
         Jurisprudência e súmulas do caso (opcional)
       </h2>
       <p className="mb-4 text-sm text-slate-500">
-        Acórdãos, súmulas ou decisões do caso (texto ou arquivo).
+        Acórdãos, súmulas ou decisões do caso (texto ou arquivo). O que você
+        salvar aqui entra na peça na geração — não gasta cota do
+        Jurisprudências.ai e não depende de “Sugerir Jurisprudência/Súmula”.
       </p>
 
       <label className="flex items-start gap-2 text-sm text-slate-700">

@@ -135,3 +135,36 @@ export async function verificarLimiteSuporte(
     return { ok: true };
   }
 }
+
+/**
+ * Anti-spam para formulário público (sem login):
+ * no máximo 3 mensagens/hora pelo e-mail informado (aparece no assunto).
+ */
+export async function verificarLimiteSuportePublico(
+  email: string
+): Promise<{ ok: true } | { ok: false; retryAfterMin: number }> {
+  const remetente = email.trim().toLowerCase();
+  if (!remetente) return { ok: true };
+  try {
+    const admin = createAdminClient();
+    const desde = new Date(Date.now() - JANELA_SUPORTE_MS).toISOString();
+    const { count, error } = await admin
+      .from("email_eventos")
+      .select("id", { count: "exact", head: true })
+      .eq("tipo", "suporte")
+      .ilike("assunto", `%${remetente}%`)
+      .gte("criado_em", desde);
+
+    if (error) {
+      console.warn("[rate-limit suporte publico]", error.message);
+      return { ok: true };
+    }
+
+    if ((count ?? 0) >= 3) {
+      return { ok: false, retryAfterMin: 60 };
+    }
+    return { ok: true };
+  } catch {
+    return { ok: true };
+  }
+}

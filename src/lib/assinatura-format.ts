@@ -9,7 +9,7 @@ export type AssinaturaDb = {
   id: string;
   mp_preapproval_id: string;
   email: string | null;
-  plano: "jec" | "mensal" | "anual" | null;
+  plano: "jec" | "mensal" | "pro" | "anual" | "pro_anual" | null;
   status: "pending" | "authorized" | "paused" | "canceled";
   data_inicio: string | null;
   acesso_valido_ate: string | null;
@@ -38,7 +38,9 @@ function formatarDataPt(iso: string | null | undefined): string {
 }
 
 export function rotuloPlano(plano: AssinaturaDb["plano"]): string {
+  if (plano === "pro_anual") return "Plano Completo Pro Anual";
   if (plano === "anual") return "Plano Completo Anual";
+  if (plano === "pro") return "Plano Completo Pro";
   if (plano === "mensal") return "Plano Completo";
   if (plano === "jec") return "Plano JEC";
   return "Plano FACTO";

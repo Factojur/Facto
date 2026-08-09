@@ -7,9 +7,10 @@
 import { montarFundamentosDireitoJec } from "@/lib/peca-do-direito-jec";
 import { dividirEmParagrafosRetoricos } from "@/lib/peca-paragrafos";
 
-const RE_TITULO_DIREITO = /^II\s*[-—–.]\s*DO DIREITO\b/i;
+const RE_TITULO_DIREITO =
+  /^[IVXLCDM]+\s*[-—–.]\s*(?:DO DIREITO|DO MÉRITO|DAS RAZÕES DE REFORMA|DO REFORÇO DA INICIAL)/i;
 const RE_PROXIMO_ROMANO =
-  /^(?:III|IV|V|VI|VII)\s*[-—–.]\s*(?:DO VALOR|DA TUTELA|DAS PROVAS|DOS PEDIDOS)\b/i;
+  /^[IVXLCDM]+\s*[-—–.]\s*(?:DO VALOR|DA TUTELA|DAS PROVAS|DOS PEDIDOS|DAS MEDIDAS|DO DÉBITO|DA TEMPESTIVIDADE|DO HISTÓRICO|DA IMPUGNAÇÃO|DAS PRELIMINARES|DO TÍTULO)/i;
 
 /** Extrai o corpo de DOS FATOS (sem o título). */
 export function extrairCorpoDosFatos(peca: string): string | null {
@@ -153,6 +154,7 @@ export function mesclarFatosIaComDireitoReserva(opcoes: {
   tipoAcao: string;
   fatos: string;
   tutelaUrgencia: boolean;
+  pedirJusticaGratuita?: boolean;
   trechosBase?: { titulo: string; categoria: string; texto: string }[];
   blocoValorCausa?: string;
 }): string {
@@ -160,6 +162,7 @@ export function mesclarFatosIaComDireitoReserva(opcoes: {
     tipoAcao: opcoes.tipoAcao,
     fatos: opcoes.fatos,
     tutelaUrgencia: opcoes.tutelaUrgencia,
+    pedirJusticaGratuita: opcoes.pedirJusticaGratuita,
     trechosBase: opcoes.trechosBase,
   }).join("\n");
 

@@ -64,7 +64,9 @@ export default async function DashboardPage() {
         if (
           ativa?.plano === "jec" ||
           ativa?.plano === "mensal" ||
-          ativa?.plano === "anual"
+          ativa?.plano === "pro" ||
+          ativa?.plano === "anual" ||
+          ativa?.plano === "pro_anual"
         ) {
           plano = ativa.plano;
         }

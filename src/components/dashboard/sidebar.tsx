@@ -13,7 +13,7 @@ const navItems = [
   },
   {
     href: "/dashboard/jec",
-    label: "Juizado Especial Cível",
+    label: "Gerar peça JEC",
     icon: "⚖️",
     match: (path: string) => path.startsWith("/dashboard/jec"),
   },

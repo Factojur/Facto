@@ -12,11 +12,14 @@ export function montarFundamentosDireitoJec(opcoes: {
   fatos: string;
   tutelaUrgencia: boolean;
   trechosBase?: { titulo: string; categoria: string; texto: string }[];
+  /** Título romano completo, ex.: "II - DO DIREITO" ou "III - DAS RAZÕES…". */
+  tituloSecao?: string;
+  pedirJusticaGratuita?: boolean;
 }): string[] {
   const tipo = opcoes.tipoAcao.toLowerCase();
   const fatos = opcoes.fatos.toLowerCase();
 
-  const linhas: string[] = ["II - DO DIREITO"];
+  const linhas: string[] = [opcoes.tituloSecao?.trim() || "II - DO DIREITO"];
   let sub = 0;
 
   const addSub = (titulo: string, ...paragrafos: string[]) => {
@@ -114,6 +117,13 @@ export function montarFundamentosDireitoJec(opcoes: {
     addSub(
       "Da tutela de urgência",
       "Presentes a probabilidade do direito (*fumus boni iuris*) e o perigo de dano ou o risco ao resultado útil do processo (*periculum in mora*), nos termos do art. 300 do Código de Processo Civil, impõe-se a concessão da tutela de urgência para acautelar o direito da parte autora até o julgamento definitivo."
+    );
+  }
+
+  if (opcoes.pedirJusticaGratuita) {
+    addSub(
+      "Da justiça gratuita",
+      "A parte autora declara não possuir condições de arcar com as custas, as taxas e as despesas processuais sem prejuízo do próprio sustento e de sua família, fazendo jus aos benefícios da justiça gratuita, nos termos da Lei nº 9.099/95 e da legislação processual pertinente, sem prejuízo da juntada da declaração de hipossuficiência."
     );
   }
 

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { JecForm } from "@/components/dashboard/jec-form";
 import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
@@ -25,5 +26,13 @@ export default async function JecDashboardPage() {
   const acessoLivre = isEmailAcessoLivre(user?.email);
   const leigo = tipoUsuario === "leigo" && !acessoLivre;
 
-  return <JecForm leigo={leigo} />;
+  return (
+    <Suspense
+      fallback={
+        <div className="p-8 text-sm text-slate-500">Carregando formulário…</div>
+      }
+    >
+      <JecForm leigo={leigo} />
+    </Suspense>
+  );
 }

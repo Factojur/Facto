@@ -23,6 +23,8 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const tipoAcao = String(body?.tipoAcao ?? "").trim();
   const fatosFicticios = String(body?.fatosFicticios ?? "").trim();
+  const especiePeca =
+    typeof body?.especiePeca === "string" ? body.especiePeca.trim() : null;
 
   if (!tipoAcao || !fatosFicticios) {
     return NextResponse.json(
@@ -31,7 +33,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const resultado = await gerarPecaTeste({ tipoAcao, fatosFicticios });
+  const resultado = await gerarPecaTeste({
+    tipoAcao,
+    fatosFicticios,
+    especiePeca,
+  });
 
   if (!resultado.ok) {
     return NextResponse.json({ error: resultado.erro }, { status: 400 });

@@ -12,16 +12,24 @@ import {
   PRECO_CHEQUE_ANUAL,
   PRECO_CHEQUE_JEC,
   PRECO_CHEQUE_MENSAL,
+  PRECO_CHEQUE_PRO,
+  PRECO_CHEQUE_PRO_ANUAL,
   planoPorValor,
+  type PlanoId,
 } from "@/lib/planos-facto";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
 const DIA_EM_MS = 24 * 60 * 60 * 1000;
-const DURACAO_CICLO_DIAS: Record<"jec" | "mensal" | "anual", number> = {
+const DURACAO_CICLO_DIAS: Record<
+  "jec" | "mensal" | "pro" | "anual" | "pro_anual",
+  number
+> = {
   jec: 30,
   mensal: 30,
+  pro: 30,
   anual: 365,
+  pro_anual: 365,
 };
 
 export type PreapprovalMp = {
@@ -40,7 +48,7 @@ export type SyncAssinaturaResultado = {
   preapprovalId: string;
   email: string | null;
   status: string | null;
-  plano: "jec" | "mensal" | "anual" | null;
+  plano: PlanoId | null;
   valor: number | null;
   mpPaymentId: string | null;
   upserted: boolean;
@@ -59,19 +67,35 @@ function inferirPlano(
   valor: number | null,
   frequencyType: string | undefined,
   frequency: number | undefined
-): "jec" | "mensal" | "anual" | null {
-  if (frequencyType === "months" && frequency === 12) return "anual";
+): PlanoId | null {
+  if (frequencyType === "months" && frequency === 12) {
+    const porValor = planoPorValor(valor);
+    if (porValor === "pro_anual" || porValor === "anual") return porValor;
+    if (typeof valor === "number") {
+      if (Math.abs(valor - PRECO_CHEQUE_PRO_ANUAL) < 2) return "pro_anual";
+      if (Math.abs(valor - PRECO_CHEQUE_ANUAL) < 2) return "anual";
+    }
+    return "anual";
+  }
   if (frequencyType === "months" && frequency === 1) {
     const porValor = planoPorValor(valor);
-    if (porValor === "jec" || porValor === "mensal") return porValor;
+    if (
+      porValor === "jec" ||
+      porValor === "mensal" ||
+      porValor === "pro"
+    ) {
+      return porValor;
+    }
     if (typeof valor === "number") {
       if (Math.abs(valor - PRECO_CHEQUE_JEC) < 1) return "jec";
+      if (Math.abs(valor - PRECO_CHEQUE_PRO) < 1) return "pro";
       if (Math.abs(valor - PRECO_CHEQUE_MENSAL) < 1) return "mensal";
     }
     return "mensal";
   }
-  if (typeof valor === "number" && Math.abs(valor - PRECO_CHEQUE_ANUAL) < 2) {
-    return "anual";
+  if (typeof valor === "number") {
+    if (Math.abs(valor - PRECO_CHEQUE_PRO_ANUAL) < 2) return "pro_anual";
+    if (Math.abs(valor - PRECO_CHEQUE_ANUAL) < 2) return "anual";
   }
   return planoPorValor(valor);
 }

@@ -15,6 +15,11 @@ const LINKS_ADMIN = [
   { label: "Convites", href: "/admin/convites", icon: "✉️" },
   { label: "Log de e-mails", href: "/admin/emails", icon: "📡" },
   { label: "Base de Conhecimento", href: "/admin/conhecimento", icon: "📚" },
+  {
+    label: "Verificação de julgados",
+    href: "/admin/juris-verificacao",
+    icon: "🔎",
+  },
   { label: "Teste de IA (sandbox)", href: "/admin/teste-ia", icon: "🧪" },
 ] as const;
 

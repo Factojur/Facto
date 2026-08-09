@@ -1,7 +1,7 @@
 /**
- * Workflow agentic sequencial (2 etapas) — Gemini:
- * 1) Paralegal triador → estrategiaJuridica
- * 2) Advogado sênior → peça final em Markdown
+ * Workflow agentic da equipe FACTO (Pacote A) — Gemini:
+ * Maestro (plano) → Analista+Estrategista → Pesquisa & súmulas (RAG curado)
+ * → Redator → Auditor (citações / regras).
  */
 
 import {
@@ -25,6 +25,14 @@ import {
   verificarCitacoes,
   type CitacaoVerificada,
 } from "@/lib/ia/verificacao-citacoes";
+import {
+  planoMaestroEquipe,
+  type EtapaEquipeFacto,
+} from "@/lib/ia/agentes-facto";
+import {
+  inferirEspeciePeca,
+  type EspeciePecaJec,
+} from "@/lib/jec-especie-peca";
 import { formatarOabAssinatura } from "@/lib/formatar-oab";
 import {
   contextoVerificacaoJurisCaso,
@@ -35,6 +43,8 @@ export type InstrucoesDeterministicas = {
   enderecamento?: string;
   valorCausa?: string;
   tutelaUrgencia?: boolean;
+  pedirJusticaGratuita?: boolean;
+  temMle?: boolean;
   autorNome?: string;
   autorOab?: string;
   localFechamento?: string;
@@ -45,6 +55,8 @@ export type InstrucoesDeterministicas = {
   midiasArquivos?: string[];
   /** Qualificação completa após "em face de" (sem o prefixo). */
   qualificacaoReus?: string | null;
+  /** Bloco da parte autora até "propor a presente". */
+  qualificacaoAutor?: string | null;
 };
 
 export type AnaliseEstrategica = {
@@ -74,6 +86,8 @@ export type ResultadoPecaIA =
       marcadoresNaoEncontrado: number;
       itensConhecimento: TrechoConhecimento[];
       analiseEstrategica?: AnaliseEstrategica;
+      /** Etapas da equipe FACTO (skins) para UI / transparência. */
+      equipeEtapas?: EtapaEquipeFacto[];
     }
   | {
       ok: false;
@@ -114,11 +128,15 @@ function montarUserPromptTriagem(params: {
   fatos: string;
   tutelaUrgencia?: boolean;
   casoReal: boolean;
+  especiePeca?: string;
 }): string {
   return [
     "Processe o relato abaixo e devolva APENAS o resumo estruturado pedido no system prompt.",
     "",
     `Indicação do formulário (pista): ${params.tipoAcao}`,
+    params.especiePeca
+      ? `Espécie da peça (formulário): ${params.especiePeca}`
+      : null,
     params.tutelaUrgencia != null
       ? `Tutela marcada no formulário: ${params.tutelaUrgencia ? "Sim" : "Não"}`
       : null,
@@ -139,18 +157,28 @@ function montarUserPromptRedacao(params: {
   instrucoes?: InstrucoesDeterministicas;
   casoReal: boolean;
   estrategiaJuridica: string;
+  especiePeca?: string;
 }): string {
   const partes = [
     "TAREFA: redija a PEÇA COMPLETA seguindo o system prompt e o resumo estratégico abaixo.",
-    "NÃO devolva o resumo — só a petição em Markdown limpo.",
+    "NÃO devolva o resumo — só a peça em Markdown limpo.",
     "",
     "<ESTRATEGIA_JURIDICA>",
     params.estrategiaJuridica,
     "</ESTRATEGIA_JURIDICA>",
     "",
     `Indicação do formulário (pista): ${params.tipoAcao}`,
+    params.especiePeca
+      ? `Espécie da peça: ${params.especiePeca} — use exatamente a estrutura romana dessa espécie.`
+      : null,
     params.instrucoes?.tutelaUrgencia != null
       ? `Tutela no formulário: ${params.instrucoes.tutelaUrgencia ? "Sim — incluir se confirmada na estratégia/fatos" : "Não — só se os fatos revelarem urgência manifesta"}`
+      : null,
+    params.instrucoes?.pedirJusticaGratuita
+      ? "Justiça gratuita: SIM — incluir subtítulo no direito e pedido de JG; mencionar declaração de hipossuficiência."
+      : null,
+    params.instrucoes?.temMle
+      ? "MLE: SIM — prever nos pedidos a expedição/utilização do Mandado de Levantamento Eletrônico, se cabível."
       : null,
     "",
     params.casoReal
@@ -165,6 +193,14 @@ function montarUserPromptRedacao(params: {
       "",
       "ENDEREÇAMENTO DETERMINÍSTICO (usar literalmente no início):",
       params.instrucoes.enderecamento.trim()
+    );
+  }
+
+  if (params.instrucoes?.qualificacaoAutor?.trim()) {
+    partes.push(
+      "",
+      "QUALIFICAÇÃO DA PARTE AUTORA DETERMINÍSTICA (usar literalmente após o endereçamento):",
+      params.instrucoes.qualificacaoAutor.trim()
     );
   }
 
@@ -264,6 +300,7 @@ export { normalizarPecaGerada as markdownLeveParaTexto } from "@/lib/ia/normaliz
 export async function gerarPecaComIA(params: {
   tipoAcao: string;
   fatos: string;
+  especiePeca?: EspeciePecaJec | string | null;
   itensConhecimento?: TrechoConhecimento[];
   leiMunicipal?: BlocoLeiMunicipal | null;
   jurisDoCaso?: BlocoJurisCaso[] | null;
@@ -278,9 +315,22 @@ export async function gerarPecaComIA(params: {
   }
 
   const casoReal = params.casoReal ?? true;
+  const especie = inferirEspeciePeca(
+    params.tipoAcao,
+    params.fatos,
+    params.especiePeca
+  );
+  const equipe: EtapaEquipeFacto[] = [...planoMaestroEquipe()];
+  if (equipe[0]) {
+    equipe[0] = {
+      ...equipe[0],
+      detalhe: `Espécie: ${especie} · Analista → Pesquisa & súmulas → Estrategista → Redator → Auditor`,
+    };
+  }
+
   const itens =
     params.itensConhecimento ??
-    (await buscarConhecimentoRelacionado(params.tipoAcao, 6, params.fatos));
+    (await buscarConhecimentoRelacionado(params.tipoAcao, 8, params.fatos));
 
   const contextoBase = montarContextoConhecimento(itens);
   const leiMunicipal = params.leiMunicipal?.texto?.trim()
@@ -296,18 +346,29 @@ export async function gerarPecaComIA(params: {
       texto: j.texto.trim(),
     })) ?? null;
 
-  // —— ETAPA 1: Paralegal Triador / Estrategista (Flash) ——
+  const nJurisUpload = jurisDoCaso?.length ?? 0;
+  const nSumulas = itens.filter((i) =>
+    i.categoria.toLowerCase().includes("súmula") ||
+    i.categoria.toLowerCase().includes("sumula")
+  ).length;
+  const nLeis = itens.filter((i) =>
+    i.categoria.toLowerCase().includes("lei")
+  ).length;
+
+  // —— Analista Facto + Estrategista (uma chamada LLM barata/triagem) ——
   const triagemRes = await gerarTextoComGemini({
     systemPrompt: montarSystemPromptAnaliseEstrategica(
       contextoBase,
       leiMunicipal,
-      jurisDoCaso
+      jurisDoCaso,
+      especie
     ),
     userPrompt: montarUserPromptTriagem({
       tipoAcao: params.tipoAcao,
       fatos: params.fatos,
       tutelaUrgencia: params.instrucoes?.tutelaUrgencia,
       casoReal,
+      especiePeca: especie,
     }),
     modelos: MODELOS_TRIAGEM,
     temperature: 0.25,
@@ -328,7 +389,18 @@ export async function gerarPecaComIA(params: {
 
   const analiseEstrategica = parseEstrategiaJuridica(estrategiaJuridica);
 
-  // Amplia RAG com tese / nome da ação descobertos na triagem
+  equipe.push({
+    id: "analista",
+    skin: "Analista Facto",
+    titulo: "Análise do caso",
+    status: "ok",
+    detalhe: analiseEstrategica.nomeAcao
+      ? `Ação sugerida: ${analiseEstrategica.nomeAcao}`
+      : "Caso analisado (tese e riscos).",
+    modelo: triagemRes.modelo,
+  });
+
+  // Amplia RAG com tese / nome da ação (Pesquisa & súmulas)
   const queryExtra = [
     analiseEstrategica.nomeAcao,
     analiseEstrategica.tesePrincipal,
@@ -340,7 +412,7 @@ export async function gerarPecaComIA(params: {
   if (queryExtra.trim()) {
     const reforco = await buscarConhecimentoRelacionado(
       queryExtra,
-      6,
+      8,
       params.fatos
     );
     const vistos = new Set(
@@ -353,17 +425,49 @@ export async function gerarPecaComIA(params: {
         vistos.add(k);
       }
     }
-    itensFinais = itensFinais.slice(0, 10);
+    itensFinais = itensFinais.slice(0, 12);
   }
+
+  const nSumulasF = itensFinais.filter((i) =>
+    /s[uú]mula/i.test(i.categoria)
+  ).length;
+  const nLeisF = itensFinais.filter((i) => /lei/i.test(i.categoria)).length;
+
+  equipe.push({
+    id: "pesquisa_sumulas",
+    skin: "Pesquisa & súmulas",
+    titulo: "Fundamentos encontrados",
+    status: itensFinais.length > 0 || nJurisUpload > 0 ? "ok" : "parcial",
+    detalhe: [
+      `${itensFinais.length} trecho(s) da base curada/admin`,
+      nLeisF || nLeis ? `${nLeisF || nLeis} lei(s)` : null,
+      nSumulasF || nSumulas ? `${nSumulasF || nSumulas} súmula(s)` : null,
+      nJurisUpload ? `${nJurisUpload} juris do caso` : null,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+  });
+
+  equipe.push({
+    id: "estrategista",
+    skin: "Estrategista",
+    titulo: "Tese e DO DIREITO",
+    status: "ok",
+    detalhe: analiseEstrategica.tesePrincipal
+      ? analiseEstrategica.tesePrincipal.slice(0, 160)
+      : "Estratégia jurídica montada.",
+    modelo: triagemRes.modelo,
+  });
 
   const contextoRedacao = montarContextoConhecimento(itensFinais);
 
-  // —— ETAPA 2: Advogado Sênior Redator (Pro → Flash) ——
+  // —— Redator forense ——
   const redacaoRes = await gerarTextoComGemini({
     systemPrompt: montarSystemPromptRedacaoTier1(
       contextoRedacao,
       leiMunicipal,
-      jurisDoCaso
+      jurisDoCaso,
+      especie
     ),
     userPrompt: montarUserPromptRedacao({
       tipoAcao: analiseEstrategica.nomeAcao || params.tipoAcao,
@@ -371,6 +475,7 @@ export async function gerarPecaComIA(params: {
       instrucoes: params.instrucoes,
       casoReal,
       estrategiaJuridica,
+      especiePeca: especie,
     }),
     modelos: modelosRedacao(),
     temperature: 0.35,
@@ -389,6 +494,15 @@ export async function gerarPecaComIA(params: {
     };
   }
 
+  equipe.push({
+    id: "redator",
+    skin: "Redator forense",
+    titulo: "Redação da peça",
+    status: "ok",
+    detalhe: `Minuta gerada (${textoGerado.length.toLocaleString("pt-BR")} caracteres).`,
+    modelo: redacaoRes.modelo,
+  });
+
   const contextoParaVerificacao = [
     contextoRedacao,
     leiMunicipal
@@ -400,6 +514,19 @@ export async function gerarPecaComIA(params: {
     .filter(Boolean)
     .join("\n\n---\n\n");
 
+  const citacoes = verificarCitacoes(textoGerado, contextoParaVerificacao);
+  const marcadores = contarMarcadoresNaoEncontrado(textoGerado);
+  const citacoesOk = citacoes.filter((c) => c.verificada).length;
+
+  equipe.push({
+    id: "auditor",
+    skin: "Auditor",
+    titulo: "Revisão de citações",
+    status: marcadores > 0 ? "parcial" : "ok",
+    detalhe: `${citacoesOk}/${citacoes.length} citações conferidas` +
+      (marcadores > 0 ? ` · ${marcadores} marcador(es) não encontrado` : ""),
+  });
+
   return {
     ok: true,
     textoGerado,
@@ -408,9 +535,10 @@ export async function gerarPecaComIA(params: {
       titulo: item.titulo,
       categoria: item.categoria,
     })),
-    citacoes: verificarCitacoes(textoGerado, contextoParaVerificacao),
-    marcadoresNaoEncontrado: contarMarcadoresNaoEncontrado(textoGerado),
+    citacoes,
+    marcadoresNaoEncontrado: marcadores,
     itensConhecimento: itensFinais,
     analiseEstrategica,
+    equipeEtapas: equipe,
   };
 }
