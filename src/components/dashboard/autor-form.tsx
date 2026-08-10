@@ -429,11 +429,13 @@ export function AutorSection({
       className="scroll-mt-24 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
     >
       <h2 className="mb-1 text-lg font-semibold text-slate-800">
-        Dados do Autor
+        Dados do autor
       </h2>
       <p className="mb-4 text-sm text-slate-500">
-        Preencha e salve cada autor na checklist. Nome e OAB do advogado vêm do
-        Perfil. Anexos abaixo são opcionais — não geram PDF separado.
+        Cadastre e salve cada autor na lista abaixo. Nome e OAB do advogado
+        saem do seu{" "}
+        <span className="font-medium text-slate-600">Perfil</span> — não
+        precisam ser digitados aqui.
       </p>
 
       {value.length > 0 ? (
@@ -451,7 +453,7 @@ export function AutorSection({
       ) : (
         !editorAberto && (
           <p className="mb-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-500">
-            Nenhum autor salvo ainda.
+            Nenhum autor cadastrado. Use “Adicionar autor” para começar.
           </p>
         )
       )}

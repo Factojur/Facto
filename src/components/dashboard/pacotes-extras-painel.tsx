@@ -42,7 +42,6 @@ function CardPacote({
 }) {
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
-  const porPeca = (pacote.preco / pacote.pecas).toFixed(2).replace(".", ",");
   const linkEstatico = pacote.linkMp?.trim() || null;
 
   async function contratar() {
@@ -106,7 +105,9 @@ function CardPacote({
           {pacote.rotuloPreco}
         </span>
       </div>
-      <p className="mt-0.5 text-xs text-slate-500">≈ R$ {porPeca} por peça</p>
+      <p className="mt-0.5 text-xs text-slate-500">
+        ≈ {pacote.custoPorPecaAprox} por peça
+      </p>
       <button
         type="button"
         onClick={() => void contratar()}

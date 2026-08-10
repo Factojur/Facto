@@ -190,7 +190,7 @@ export async function buscarPrecedentes(
       precedentes: [],
       chamadasApi: 0,
       aviso:
-        "Para ementas de tribunais com link oficial, configure JURISPRUDENCIAS_AI_API_KEY (e opcionalmente JURISPRUDENCIAS_AI_API_KEYS) após assinar o Jurisprudências.ai.",
+        "Busca externa de tribunais não configurada. Use anexos e a base FACTO, ou configure as chaves no servidor.",
     };
   }
 
@@ -234,7 +234,7 @@ export async function buscarPrecedentes(
     precedentes: [],
     chamadasApi,
     erroApi:
-      "Todas as contas do Jurisprudências.ai no pool estão temporariamente sem cota. Tente mais tarde.",
+      "Busca externa de tribunais temporariamente indisponível. Tente mais tarde ou use anexos e a base FACTO.",
   };
 }
 

@@ -1,8 +1,10 @@
 /**
  * Preços, cotas e benefícios comerciais FACTO (landing + área logada + webhook).
  * JEC 79,90/40 · Completo 189,90/100 · Pro 289,90/180 ·
- * Completo Anual 1.819,04/110 · Pro Anual 2.956,98/200 (15% off).
+ * Completo Anual 1.890/110 · Pro Anual 2.990/200.
  * Valores legados continuam reconhecidos em planoPorValor (assinantes antigos).
+ *
+ * custoPorPecaAprox = preço do ciclo ÷ peças do ciclo (anuais: preço/ano ÷ 12×cota).
  */
 
 export const PLANO_JEC = {
@@ -12,9 +14,11 @@ export const PLANO_JEC = {
   rotuloPreco: "R$ 79,90",
   rotuloPeriodo: "/mês",
   rotulo: "Plano JEC",
+  /** 79,90 ÷ 40 */
+  custoPorPecaAprox: "R$ 2,00",
   beneficios: [
     "Foco total no Juizado Especial Cível",
-    "40 minutas/mês — PDF e Word forenses",
+    "40 minutas/mês — ≈ R$ 2,00 por peça na cota",
     "Equipe FACTO: análise, súmulas da base curada e redação",
     "Timbre e dados do seu perfil na peça",
     "Pacotes extras se a cota do mês acabar",
@@ -29,14 +33,14 @@ export const PLANO_MENSAL = {
   rotuloPreco: "R$ 189,90",
   rotuloPeriodo: "/mês",
   rotulo: "Plano Completo",
-  /** ~R$ 1,90 por peça na cota cheia */
+  /** 189,90 ÷ 100 */
   custoPorPecaAprox: "R$ 1,90",
   beneficios: [
     "Todas as áreas liberadas no FACTO",
-    "100 minutas/mês (~R$ 1,90 por peça na cota)",
+    "100 minutas/mês — ≈ R$ 1,90 por peça na cota",
     "Equipe completa: Analista, Pesquisa & súmulas, Redator e Auditor",
     "Base curada de leis e súmulas + fundamentos do seu caso",
-    "Formatação forense, PDF/Word e timbre do perfil",
+    "Formatação forense (PDF/Word); revise antes de protocolar",
     "Pacotes extras ou upgrade para o Pro se o volume crescer",
     "Leigos (sem OAB): JEC até 20 SM; demais áreas com OAB",
     "Cancele quando quiser — sem fidelidade",
@@ -50,9 +54,11 @@ export const PLANO_PRO = {
   rotuloPreco: "R$ 289,90",
   rotuloPeriodo: "/mês",
   rotulo: "Plano Completo Pro",
+  /** 289,90 ÷ 180 */
+  custoPorPecaAprox: "R$ 1,61",
   beneficios: [
     "Tudo do Plano Completo",
-    "180 minutas/mês — ritmo de escritório em alta demanda",
+    "180 minutas/mês — ≈ R$ 1,61 por peça na cota",
     "Prioridade na fila de geração e pesquisa reforçada",
     "Mesma base curada e equipe FACTO, com mais capacidade",
     "Pacotes extras se ainda precisar de mais peças",
@@ -62,22 +68,25 @@ export const PLANO_PRO = {
 
 export const PLANO_ANUAL = {
   id: "anual" as const,
-  /** 12 × 189,90 × 0,80 = 1.819,04 */
-  preco: 1819.04,
+  /** Preço redondo comercial (vs 12 × 189,90 = 2.278,80). */
+  preco: 1890,
   pecasPorMes: 110,
-  rotuloPreco: "R$ 1.819,04",
+  rotuloPreco: "R$ 1.890,00",
   rotuloPeriodo: "/ano",
   rotulo: "Plano Completo Anual",
-  equivalenteMensal: 151.59,
-  rotuloEquivalenteMensal: "R$ 151,59",
-  /** Economia vs 12× mensal: 2.278,80 − 1.819,04 */
-  economiaAno: 459.76,
-  rotuloEconomia: "R$ 459,76",
-  descontoPercentual: 20,
+  equivalenteMensal: 157.5,
+  rotuloEquivalenteMensal: "R$ 157,50",
+  /** Economia vs 12× mensal: 2.278,80 − 1.890,00 */
+  economiaAno: 388.8,
+  rotuloEconomia: "R$ 388,80",
+  /** ~17% vs 12× mensal — preferir comunicar a economia em R$. */
+  descontoPercentual: 17,
+  /** 1.890 ÷ (110 × 12) */
+  custoPorPecaAprox: "R$ 1,43",
   beneficios: [
-    "Tudo do Completo mensal, com desconto de 20%",
-    "110 minutas/mês (+10 vs mensal) o ano inteiro",
-    "Equivalente a R$ 151,59/mês — economia de R$ 459,76/ano",
+    "Tudo do Completo mensal, com desconto no anual",
+    "110 minutas/mês — ≈ R$ 1,43 por peça na cota anual",
+    "Equivalente a R$ 157,50/mês — economia de R$ 388,80/ano",
     "Melhor custo por peça do FACTO no Completo",
     "Equipe FACTO + base curada de leis e súmulas",
     "Pacotes extras quando a cota mensal acabar",
@@ -86,35 +95,42 @@ export const PLANO_ANUAL = {
 
 export const PLANO_PRO_ANUAL = {
   id: "pro_anual" as const,
-  /** 12 × 289,90 × 0,85 = 2.956,98 (15% de desconto) */
-  preco: 2956.98,
+  /** Preço redondo comercial (vs 12 × 289,90 = 3.478,80). */
+  preco: 2990,
   pecasPorMes: 200,
-  rotuloPreco: "R$ 2.956,98",
+  rotuloPreco: "R$ 2.990,00",
   rotuloPeriodo: "/ano",
   rotulo: "Plano Completo Pro Anual",
-  equivalenteMensal: 246.415,
-  rotuloEquivalenteMensal: "R$ 246,42",
-  /** Economia vs 12× Pro mensal: 3.478,80 − 2.956,98 */
-  economiaAno: 521.82,
-  rotuloEconomia: "R$ 521,82",
-  descontoPercentual: 15,
+  equivalenteMensal: 249.16666666666666,
+  rotuloEquivalenteMensal: "R$ 249,17",
+  /** Economia vs 12× Pro mensal: 3.478,80 − 2.990,00 */
+  economiaAno: 488.8,
+  rotuloEconomia: "R$ 488,80",
+  /** ~14% vs 12× Pro mensal — preferir comunicar a economia em R$. */
+  descontoPercentual: 14,
+  /** 2.990 ÷ (200 × 12) */
+  custoPorPecaAprox: "R$ 1,25",
   beneficios: [
-    "Tudo do Pro mensal, com 15% de desconto no ano",
-    "200 minutas/mês (+20 vs Pro mensal)",
-    "Equivalente a R$ 246,42/mês — economia de R$ 521,82/ano",
+    "Tudo do Pro mensal, com desconto no anual",
+    "200 minutas/mês — ≈ R$ 1,25 por peça na cota anual",
+    "Equivalente a R$ 249,17/mês — economia de R$ 488,80/ano",
     "Prioridade na fila e pesquisa reforçada o ano todo",
     "Melhor custo por peça do FACTO no alto volume",
     "Pacotes extras se ainda precisar de mais peças",
   ],
 };
 
-/** Assinantes cobrados nos preços anteriores ao Pacote A. */
+/** Assinantes cobrados nos preços anteriores ao Pacote A / arredondamento. */
 export const PRECOS_LEADOS = {
   jec: 67.9,
   mensal: 147.9,
   anual: 1419.84,
+  /** Completo Anual com 20% exato (antes do arredondamento para 1.890). */
+  anual_pacote_a: 1819.04,
   /** Pro Anual com 20% (antes do ajuste para 15%). */
   pro_anual: 2783.04,
+  /** Pro Anual com 15% exato (antes do arredondamento para 2.990). */
+  pro_anual_pacote_a: 2956.98,
 } as const;
 
 /** Pacotes avulsos (área logada) — compra eventual, não assinatura. */
@@ -125,6 +141,8 @@ export const PACOTES_EXTRA = [
     preco: 49.9,
     rotuloPreco: "R$ 49,90",
     rotulo: "+50 peças",
+    /** 49,90 ÷ 50 */
+    custoPorPecaAprox: "R$ 1,00",
     descricao: "Ideal para fechar o mês sem mudar de plano.",
     linkMp: (process.env.NEXT_PUBLIC_MP_LINK_EXTRA_50 ?? "").trim(),
   },
@@ -134,6 +152,8 @@ export const PACOTES_EXTRA = [
     preco: 89.9,
     rotuloPreco: "R$ 89,90",
     rotulo: "+100 peças",
+    /** 89,90 ÷ 100 */
+    custoPorPecaAprox: "R$ 0,90",
     descricao: "Melhor custo por peça entre os pacotes extras.",
     linkMp: (process.env.NEXT_PUBLIC_MP_LINK_EXTRA_100 ?? "").trim(),
   },
@@ -201,7 +221,9 @@ export function planoPorValor(valor: number | null | undefined): PlanoId | null 
   if (Math.abs(valor - PLANO_PRO.preco) < 1) return "pro";
   if (Math.abs(valor - PLANO_MENSAL.preco) < 1) return "mensal";
   if (Math.abs(valor - PLANO_JEC.preco) < 1) return "jec";
+  if (Math.abs(valor - PRECOS_LEADOS.pro_anual_pacote_a) < 1) return "pro_anual";
   if (Math.abs(valor - PRECOS_LEADOS.pro_anual) < 1) return "pro_anual";
+  if (Math.abs(valor - PRECOS_LEADOS.anual_pacote_a) < 1) return "anual";
   if (Math.abs(valor - PRECOS_LEADOS.anual) < 1) return "anual";
   if (Math.abs(valor - PRECOS_LEADOS.mensal) < 1) return "mensal";
   if (Math.abs(valor - PRECOS_LEADOS.jec) < 1) return "jec";

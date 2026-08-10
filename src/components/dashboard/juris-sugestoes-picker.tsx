@@ -29,7 +29,7 @@ const POR_PAGINA = 6;
 function rotuloOrigem(origem: string): string {
   switch (origem) {
     case "jurisprudencias_ai":
-      return "Julgado (API)";
+      return "Julgado (busca externa)";
     case "tribunal_scraper":
       return "TJSP";
     case "base_conhecimento":
@@ -245,8 +245,7 @@ export function JurisSugestoesPicker({
         <p className="mb-2 text-xs font-medium text-slate-700">
           Tribunais da busca
           <span className="ml-1 font-normal text-slate-500">
-            (mín. 1 · máx. {MAX_TRIBUNAIS_POR_BUSCA} · cada um consome 1 da cota
-            mensal da API)
+            (mín. 1 · máx. {MAX_TRIBUNAIS_POR_BUSCA})
           </span>
         </p>
         <div className="flex flex-wrap gap-2">
@@ -282,15 +281,12 @@ export function JurisSugestoesPicker({
         </div>
         {!ufForo ? (
           <p className="mt-2 text-[11px] text-slate-500">
-            Marque ao menos 1 tribunal (máx. {MAX_TRIBUNAIS_POR_BUSCA}). Informe
-            a UF no foro (ex.: …/SP) para o TJ local aparecer no topo da lista.
-            Cada tribunal da API consome 1 da cota de {cota?.limite ?? 15}/mês.
+            Informe a UF no foro (ex.: …/SP) para o TJ local aparecer no topo da
+            lista.
           </p>
         ) : (
           <p className="mt-2 text-[11px] text-slate-500">
-            Nada pré-marcado: escolha onde usar a cota (mín. 1 · máx.{" "}
-            {MAX_TRIBUNAIS_POR_BUSCA}). O TJ do foro ({ufForo}) aparece em
-            destaque no início da lista.
+            O TJ do foro ({ufForo}) aparece em destaque no início da lista.
           </p>
         )}
       </div>
@@ -302,22 +298,23 @@ export function JurisSugestoesPicker({
           disabled={consulta.trim().length < 8 || tribunaisSel.length < 1}
           className="rounded-lg border border-stone-700 bg-stone-800 px-4 py-2.5 text-sm font-medium text-amber-50 hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Sugerir Jurisprudência/Súmula
+          Sugerir jurisprudência / súmula
         </button>
         {cota && provedorExterno ? (
           <span
             className="text-xs tabular-nums text-slate-500"
-            title="Buscas externas usadas neste mês (Jurisprudências.ai). Cada tribunal marcado consome 1. Uploads não contam. Renova no dia 1º."
+            title="Buscas externas neste mês. Cada tribunal marcado consome 1. Anexos e base FACTO não gastam cota. Renova no dia 1º."
           >
             {cota.usadas}/{cota.limite}
           </span>
         ) : null}
       </div>
       <p className="text-xs text-slate-500">
-        Por busca: 1 súmula + 1 julgado da API por tribunal marcado (consome
-        cota) + até 5 do scraper TJSP (só se TJSP estiver marcado) ou base
-        FACTO, além dos anexos. Cota externa:{" "}
-        {cota ? `${cota.usadas}/${cota.limite}` : "15/mês"} (renova todo mês).
+        Selecione até {MAX_TRIBUNAIS_POR_BUSCA} tribunais. Cada um consome 1
+        busca externa da cota mensal (
+        {cota ? `${cota.usadas}/${cota.limite}` : "15/mês"}; renova no dia 1º).
+        Seus anexos e a base FACTO não gastam cota e continuam disponíveis
+        mesmo com a cota esgotada.
       </p>
 
       {aberto && (
@@ -344,8 +341,8 @@ export function JurisSugestoesPicker({
               </div>
               <p className="mt-1 text-sm text-slate-500">
                 Marque as que quiser usar na peça. Seus anexos já entram na
-                geração; aqui servem para conferência. Julgados da API vão para
-                fila de verificação do admin (julgados de tribunal e da API).
+                geração; aqui servem para conferência. Julgados de busca externa
+                e de tribunal vão para fila de verificação do admin.
               </p>
               {totais && !carregando ? (
                 <p className="mt-2 text-xs text-slate-600">

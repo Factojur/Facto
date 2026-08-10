@@ -90,7 +90,7 @@ import type { AnaliseProcessoResultado } from "@/lib/analisar-processo-types";
 import { ROTULO_DOC_LABEL } from "@/lib/analisar-processo-types";
 
 const NAV_SECOES = [
-  { id: "secao-acao", label: "Ação" },
+  { id: "secao-acao", label: "Peça e ação" },
   { id: "secao-comarca", label: "Comarca" },
   { id: "secao-autor", label: "Dados do Autor" },
   { id: "secao-reus", label: "Réus" },
@@ -1161,18 +1161,8 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
       fatos: fatos.trim(),
       pedidosUsuario,
       documentos: {
-        declaracaoHipossuficiencia: pedirJusticaGratuita
-          ? getFileNames(
-              form.querySelector<HTMLInputElement>("#declaracaoHipossuficiencia")
-            )
-          : [],
-        mandadoLevantamentoEletronico: temMle
-          ? getFileNames(
-              form.querySelector<HTMLInputElement>(
-                "#mandadoLevantamentoEletronico"
-              )
-            )
-          : [],
+        declaracaoHipossuficiencia: [],
+        mandadoLevantamentoEletronico: [],
       },
       provas: getFileNames(
         form.querySelector<HTMLInputElement>("#provasEssenciais")
@@ -1354,10 +1344,13 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
           id="secao-acao"
           className="scroll-mt-24 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
         >
-          <h2 className="mb-1 text-lg font-semibold text-slate-800">Ação</h2>
+          <h2 className="mb-1 text-lg font-semibold text-slate-800">
+            Peça e nome da ação
+          </h2>
           <p className="mb-4 text-sm text-slate-500">
-            Escolha a espécie da peça (estrutura romana), depois nomeie a ação
-            com o Assistente FACTO ou em texto livre.
+            Escolha o tipo de peça (petição inicial, recurso, embargos etc.) e
+            como obter o nome da ação: pelos fatos, pelos autos em PDF ou
+            digitando você mesmo.
           </p>
 
           <div className="space-y-4 sm:max-w-2xl">
@@ -1366,7 +1359,7 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
                 htmlFor="especiePeca"
                 className="mb-1.5 block text-sm font-medium text-slate-700"
               >
-                Espécie da peça
+                Tipo de peça
               </label>
               <select
                 id="especiePeca"
@@ -1411,11 +1404,10 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
                 />
                 <span>
                   <span className="font-medium text-slate-800">
-                    Assistente FACTO (IA)
+                    Assistente FACTO
                   </span>
                   <span className="mt-0.5 block text-xs text-slate-500">
-                    Interpreta os fatos, busca nomenclatura usual e nomeia a
-                    ação.
+                    A partir dos fatos, sugerimos o nome usual da ação.
                   </span>
                 </span>
               </label>
@@ -1440,8 +1432,8 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
                     Analisar processo
                   </span>
                   <span className="mt-0.5 block text-xs text-slate-500">
-                    Envie os autos ou peças e receba a peça cabível para
-                    confirmar.
+                    Envie PDF/DOCX dos autos; sugerimos a peça cabível para você
+                    confirmar. Não gasta cota de peça.
                   </span>
                 </span>
               </label>
@@ -1462,10 +1454,10 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
                 />
                 <span>
                   <span className="font-medium text-slate-800">
-                    Informar tipo de ação
+                    Digitar o nome da ação
                   </span>
                   <span className="mt-0.5 block text-xs text-slate-500">
-                    Você escreve livremente o nome da ação.
+                    Você escreve o título (ex.: indenização por danos morais).
                   </span>
                 </span>
               </label>
@@ -1698,12 +1690,12 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
           <div className="space-y-4">
             <div>
               <h3 className="mb-1 text-sm font-semibold text-slate-800">
-                Pedidos que alteram a peça
+                Opções na peça
               </h3>
               <p className="mb-3 text-xs leading-relaxed text-slate-500">
-                Só estes documentos/pedidos entram na redação (justiça gratuita e
-                MLE). RG, CPF, residência e procuração ficam no checklist de
-                protocolo no final da página.
+                Marque só o que deve constar no texto gerado. A declaração de
+                hipossuficiência e o MLE (documento) você junta em Provas ou no
+                checklist de protocolo no final — não nesta seção.
               </p>
             </div>
 
@@ -1719,18 +1711,11 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
                   Pedir justiça gratuita (hipossuficiência)
                 </span>
                 <span className="mt-0.5 block text-xs text-slate-500">
-                  Inclui subtítulo e pedido de JG na peça.
+                  Inclui subtítulo e pedido de JG na peça. Fundamente nos fatos
+                  e anexe a declaração em Provas / checklist.
                 </span>
               </span>
             </label>
-
-            {pedirJusticaGratuita && (
-              <FileField
-                id="declaracaoHipossuficiencia"
-                label="Anexar declaração de hipossuficiência (opcional — para seu arquivo)"
-                accept="image/*,.pdf,.doc,.docx"
-              />
-            )}
 
             <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-sm text-slate-700">
               <input
@@ -1745,17 +1730,10 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
                 </span>
                 <span className="mt-0.5 block text-xs text-slate-500">
                   Inclui pedido de expedição/utilização do MLE, quando cabível.
+                  O documento do MLE vai em Provas / checklist.
                 </span>
               </span>
             </label>
-
-            {temMle && (
-              <FileField
-                id="mandadoLevantamentoEletronico"
-                label="Anexar MLE (opcional — para seu arquivo)"
-                accept="image/*,.pdf,.doc,.docx"
-              />
-            )}
           </div>
         </AutorSection>
 

@@ -80,9 +80,9 @@ const BENEFICIOS = [
   },
   {
     icone: IconeDocumento,
-    titulo: "Formatação impecável",
+    titulo: "Padrão forense",
     texto:
-      "Peças formatadas em padrão jurídico, exportáveis em Word ou PDF, prontas para protocolar sem retrabalho.",
+      "Peças em Word ou PDF no padrão do escritório; revise tipografia e detalhes do caso antes de protocolar.",
   },
   {
     icone: IconeCadeado,
@@ -186,8 +186,8 @@ export function LandingPage() {
             </h1>
             <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-stone-400">
               O FACTO economiza horas da sua rotina, fundamenta com súmulas da
-              base curada e entrega peças com formatação impecável — prontas
-              para protocolar.
+              base curada e entrega peças em padrão forense (Word ou PDF) —
+              minuta para você revisar e protocolar.
             </p>
 
             <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center">
@@ -296,8 +296,8 @@ export function LandingPage() {
                   {PLANO_JEC.rotulo}
                 </h3>
                 <p className="mt-1 text-sm text-stone-500">
-                  Para quem vive o Juizado: 40 minutas/mês com lastro e
-                  formatação forense.
+                  Para quem vive o Juizado: 40 minutas/mês com lastro e padrão
+                  forense.
                 </p>
                 <div className="mt-6 flex items-baseline gap-1">
                   <span className="text-4xl font-bold text-white">
@@ -305,8 +305,8 @@ export function LandingPage() {
                   </span>
                   <span className="text-stone-500">{PLANO_JEC.rotuloPeriodo}</span>
                 </div>
-                <p className="mt-1 text-xs text-stone-600">
-                  ~R$ {(PLANO_JEC.preco / PLANO_JEC.pecasPorMes).toFixed(2).replace(".", ",")} por peça na cota
+                <p className="mt-1 text-xs text-stone-500">
+                  ≈ {PLANO_JEC.custoPorPecaAprox} por peça na cota
                 </p>
                 <ul className="mt-6 flex-1 space-y-3 text-sm text-stone-400">
                   {PLANO_JEC.beneficios.map((b) => (
@@ -330,7 +330,7 @@ export function LandingPage() {
                   {PLANO_MENSAL.rotulo}
                 </h3>
                 <p className="mt-1 text-sm text-stone-500">
-                  Todas as áreas · 100 minutas/mês · ~{PLANO_MENSAL.custoPorPecaAprox}/peça.
+                  Todas as áreas · 100 minutas/mês.
                 </p>
                 <div className="mt-6 flex items-baseline gap-1">
                   <span className="text-4xl font-bold text-white">
@@ -338,8 +338,8 @@ export function LandingPage() {
                   </span>
                   <span className="text-stone-500">{PLANO_MENSAL.rotuloPeriodo}</span>
                 </div>
-                <p className="mt-1 text-xs text-stone-600">
-                  Equipe completa + base curada de súmulas
+                <p className="mt-1 text-xs text-stone-500">
+                  ≈ {PLANO_MENSAL.custoPorPecaAprox} por peça na cota
                 </p>
                 <ul className="mt-6 flex-1 space-y-3 text-sm text-stone-400">
                   {PLANO_MENSAL.beneficios.map((b) => (
@@ -357,7 +357,7 @@ export function LandingPage() {
               {/* Completo Anual */}
               <div className="relative flex flex-col rounded-2xl border border-facto-gold/40 bg-gradient-to-br from-facto-gold/[0.1] via-white/[0.04] to-transparent p-8">
                 <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-facto-gold/90 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-facto-dark">
-                  20% off · melhor custo Completo
+                  Economia · melhor custo Completo
                 </span>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-facto-gold">
                   Economia anual
@@ -377,6 +377,9 @@ export function LandingPage() {
                 </div>
                 <p className="mt-1 text-sm font-medium text-facto-gold">
                   Economize {PLANO_ANUAL.rotuloEconomia}/ano · +10 peças vs mensal
+                </p>
+                <p className="mt-1 text-xs text-stone-500">
+                  ≈ {PLANO_ANUAL.custoPorPecaAprox} por peça na cota anual
                 </p>
                 <ul className="mt-6 flex-1 space-y-3 text-sm text-stone-300">
                   {PLANO_ANUAL.beneficios.map((b) => (
@@ -411,8 +414,8 @@ export function LandingPage() {
                   </span>
                   <span className="text-stone-500">{PLANO_PRO.rotuloPeriodo}</span>
                 </div>
-                <p className="mt-1 text-xs text-stone-600">
-                  ~R$ {(PLANO_PRO.preco / PLANO_PRO.pecasPorMes).toFixed(2).replace(".", ",")} por peça na cota
+                <p className="mt-1 text-xs text-stone-500">
+                  ≈ {PLANO_PRO.custoPorPecaAprox} por peça na cota
                 </p>
                 <ul className="mt-6 flex-1 space-y-3 text-sm text-stone-400">
                   {PLANO_PRO.beneficios.map((b) => (
@@ -430,7 +433,7 @@ export function LandingPage() {
               {/* Pro Anual */}
               <div className="relative flex flex-col rounded-2xl border border-amber-400/50 bg-gradient-to-br from-amber-500/[0.12] via-white/[0.04] to-transparent p-8 shadow-xl shadow-amber-500/10 md:col-span-2 xl:col-span-2">
                 <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-amber-400 px-4 py-1 text-xs font-bold uppercase tracking-wide text-facto-dark">
-                  Máximo volume · 15% off
+                  Máximo volume · economia anual
                 </span>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300/90">
                   Escritório em escala
@@ -454,6 +457,9 @@ export function LandingPage() {
                 <p className="mt-1 text-sm font-medium text-amber-300">
                   Economize {PLANO_PRO_ANUAL.rotuloEconomia}/ano · +20 peças vs
                   Pro mensal
+                </p>
+                <p className="mt-1 text-xs text-stone-500">
+                  ≈ {PLANO_PRO_ANUAL.custoPorPecaAprox} por peça na cota anual
                 </p>
                 <ul className="mt-6 grid flex-1 gap-3 text-sm text-stone-300 sm:grid-cols-2">
                   {PLANO_PRO_ANUAL.beneficios.map((b) => (

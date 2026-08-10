@@ -21,7 +21,7 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   title: "FACTO — Inteligência Artificial para peças jurídicas",
   description:
-    "O FACTO redige peças jurídicas com IA: economize horas, fundamentos com súmulas da base curada e formatação impecável, prontas para protocolar.",
+    "O FACTO redige peças jurídicas com IA: economize horas, fundamentos com súmulas da base curada e padrão forense em Word/PDF; revise antes de protocolar.",
   applicationName: "FACTO",
   manifest: "/site.webmanifest",
   appleWebApp: {

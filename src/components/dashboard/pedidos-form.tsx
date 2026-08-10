@@ -43,7 +43,8 @@ export function PedidosSection({
         Pedidos (opcional)
       </h2>
       <p className="mb-4 text-sm text-slate-500">
-        O que o Juizado deve determinar.
+        O que o Juizado deve determinar. Se não listar, o FACTO monta os
+        pedidos a partir do tipo de ação e dos fatos.
       </p>
       <ul className="space-y-2">
         {value.map((p, idx) => (

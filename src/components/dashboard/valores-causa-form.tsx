@@ -59,10 +59,12 @@ export function ValoresCausaSection({
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="mb-1 text-lg font-semibold text-slate-800">
-        Valores da Causa
+        Valores da Causa (opcional)
       </h2>
       <p className="mb-4 text-sm text-slate-500">
-        Descrição e valor de cada item. A soma entra na peça sem alteração.
+        Descrição e valor de cada item. Se preencher, a soma entra na peça sem
+        alteração. Se deixar em branco, o sistema calcula a partir dos valores
+        citados nos fatos.
       </p>
 
       <div className="space-y-5">

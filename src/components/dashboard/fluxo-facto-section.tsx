@@ -37,9 +37,9 @@ const PASSOS = [
   },
   {
     passo: "04",
-    titulo: "Peça pronta",
+    titulo: "Exporte e revise",
     texto:
-      "Documento formatado, timbrado e exportável em Word ou PDF — pronto para protocolar.",
+      "Documento timbrado em Word ou PDF; confira formatação e conteúdo antes do protocolo.",
     icone: (
       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
         <path d="M8 4h8l4 4v12H8V4z" strokeLinejoin="round" />

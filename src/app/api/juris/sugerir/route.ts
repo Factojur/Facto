@@ -193,7 +193,7 @@ export async function POST(request: Request) {
     }
   } else {
     avisoExterno =
-      "Jurisprudências.ai ainda não configurada — nesta busca entram súmula + base FACTO + seus anexos.";
+      "Busca externa de tribunais indisponível neste ambiente — nesta busca entram súmula, base FACTO e seus anexos.";
   }
 
   const excluir = new Set<string>();

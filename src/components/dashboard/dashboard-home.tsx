@@ -331,7 +331,7 @@ export function DashboardHome({
             Você advoga. O FACTO redige.
           </p>
           <p className="mt-3 max-w-lg text-sm leading-relaxed text-stone-400 md:text-base">
-            Peças completas, formatadas e prontas para protocolar — no ritmo
+            Peças completas no padrão forense — revise e protocole no ritmo
             do seu escritório.
           </p>
         </div>
