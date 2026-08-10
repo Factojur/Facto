@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { FactoLogo } from "@/components/brand/facto-logo";
 import { isAdminEmail } from "@/lib/admin-auth";
 import { ReenviarCompraEmailForm } from "@/components/admin/reenviar-compra-email-form";
+import { TesteCompraEmailForm } from "@/components/admin/teste-compra-email-form";
 import { SincronizarComprasButton } from "@/components/admin/sincronizar-compras-button";
 
 export default async function AdminEmailsPage() {
@@ -104,6 +105,8 @@ export default async function AdminEmailsPage() {
         </p>
 
         <SincronizarComprasButton />
+
+        <TesteCompraEmailForm emailInicial="" />
 
         <ReenviarCompraEmailForm emailInicial="nathalia.gomes1@gmail.com" />
 

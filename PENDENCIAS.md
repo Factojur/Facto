@@ -15,23 +15,21 @@ Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou
 3. **[P1] Leitura de autos → peça + teses** — _código em prod; falta validar_
    - [x] Modo **Analisar processo** + ficha + peça + confirmação
    - [x] Coluna Análises em `/admin/uso-pecas`
-   - [ ] Rodar `migration-cota-analises.sql` + `migration-admin-avisos.sql` no Supabase
+   - [x] Rodar `migration-cota-analises.sql` + `migration-admin-avisos.sql` no Supabase
    - [ ] **Teste manual (você):** PDF real no JEC (sentença ou inicial+sentença) → confirmar peça → gerar em produção
    - [ ] Chunking fino / OCR / Map-Reduce / demais áreas (depois)
 
-4. **[P1] Admin — avisos operacionais** — _código em prod_
-   - [x] Banner disco + compras desde último acesso + e-mails
-   - [ ] Rodar `migration-admin-avisos.sql`
-   - [ ] `SUPABASE_PLAN=pro` no Vercel **somente depois** de assinar Pro (hoje default Free no banner — não setar no escuro)
+4. **[P1] Admin — avisos e e-mails** — _código em prod_
+   - [x] Banner disco + compras desde último acesso (**`/admin`**)
+   - [x] Rodar `migration-admin-avisos.sql`
+   - [x] Teste de e-mails pós-compra sem cobrança (**`/admin/emails`** → “compra falsa”)
+   - [ ] Você dispara o teste com um e-mail seu e confere caixa + log
+   - [ ] `SUPABASE_PLAN=pro` no Vercel **somente depois** de assinar Pro
 
-5. **[P1] TJSP scraper confiável em produção** — _em andamento_
-   - [x] Cache por **termo de busca** (não texto inteiro do caso)
-   - [x] Hook `SCRAPER_TJSP_WORKER_URL` (Chromium fora da Vercel)
-   - [x] `fonteTjsp` na resposta de `/api/juris/sugerir`
-   - [x] Script `npm run aquecer:cache-tjsp`
-   - [ ] Confirmar `migration-juris-scrape-cache.sql` no Supabase prod
-   - [ ] Aquecer cache localmente contra o Supabase de prod
-   - [ ] Subir worker Chromium (Railway/Fly/VPS) e apontar `SCRAPER_TJSP_WORKER_URL` na Vercel
+5. **[P1] TJSP scraper confiável em produção** — _parcial_
+   - [x] Cache por termo + hook worker + `fonteTjsp`
+   - [x] Migration scrape-cache + aquecer 15/15 termos JEC
+   - [ ] Worker Chromium + `SCRAPER_TJSP_WORKER_URL` (temas frios em prod)
 
 6. **[P1] Segundo tribunal (STJ)**  
 7. **[P2] Política CDC / cota-teste 7 dias**  
@@ -60,9 +58,9 @@ Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou
 
 ## Jurisprudência
 
+- [x] Migration scrape-cache aplicada.
+- [x] Aquecer cache JEC (`npm run aquecer:cache-tjsp`) — 15 termos.
 - [ ] **Worker TJSP em produção** (Chromium fora da Vercel) + env na Vercel.
-- [ ] Migration scrape-cache (se falta): `migration-juris-scrape-cache.sql`.
-- [ ] Aquecer cache JEC (`npm run aquecer:cache-tjsp`).
 - [ ] **7º token** Jurisprudências.ai.
 - [ ] Provedor secundário STJ.
 - [x] Embeddings / leitura de autos MVP (falta teste PDF).
@@ -76,4 +74,6 @@ Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou
 
 - [ ] Worker Chromium + observabilidade por tribunal.
 - [x] Reindex embeddings.
-- [ ] Migrations SQL pendentes: `cota-analises`, `admin-avisos`, `juris-scrape-cache` (conferir).
+- [x] `migration-juris-scrape-cache.sql` aplicada + cache aquecido (15 termos).
+- [ ] Worker Chromium TJSP (temas frios em prod).
+- [x] Teste de e-mails compra falsa em `/admin/emails` (validar manualmente).
