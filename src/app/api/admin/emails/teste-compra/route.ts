@@ -61,7 +61,7 @@ export async function POST(request: Request) {
       mpPaymentId,
       ...resultado,
       dica:
-        "Confira as caixas do destinatário e financeiro@factoia.com.br, e o log abaixo. Convite só sai se o e-mail ainda não tiver perfil.",
+        "Confira as caixas do destinatário e financeiro@factoia.com.br, o SMS de alerta (se Twilio estiver configurado) e o log abaixo. Convite só sai se o e-mail ainda não tiver perfil.",
     });
   } catch (erro) {
     console.error("[admin/emails/teste-compra]", erro);

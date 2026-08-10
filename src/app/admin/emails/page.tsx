@@ -108,7 +108,7 @@ export default async function AdminEmailsPage() {
 
         <TesteCompraEmailForm emailInicial="" />
 
-        <ReenviarCompraEmailForm emailInicial="nathalia.gomes1@gmail.com" />
+        <ReenviarCompraEmailForm emailInicial="" />
 
         <div className="mt-6 rounded-xl border border-amber-500/25 bg-amber-500/5 p-4 text-sm text-amber-100/90">
           <p className="font-medium text-amber-100">
@@ -116,7 +116,9 @@ export default async function AdminEmailsPage() {
           </p>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-xs leading-relaxed text-amber-100/80">
             <li>
-              Webhook MP → e-mails na hora (financeiro@ + noreply@).
+              Webhook MP → e-mails na hora (financeiro@ + noreply@) + SMS de
+              alerta ao admin (Twilio), para você conferir /admin se o e-mail
+              falhar.
             </li>
             <li>
               Rede de segurança: cron diário na Vercel (Hobby) + botão

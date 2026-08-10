@@ -4,7 +4,8 @@ export type TipoEmailEvento =
   | "suporte"
   | "convite"
   | "financeiro_compra"
-  | "financeiro_cancelamento";
+  | "financeiro_cancelamento"
+  | "alerta_sms_compra";
 
 export type StatusEmailEvento = "enviado" | "falha";
 

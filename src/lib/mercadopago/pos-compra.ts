@@ -8,6 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { enviarEmailConvite } from "@/lib/email/convite-pago";
 import { enviarEmailsFinanceiroCompra } from "@/lib/email/pagamento-aprovado";
 import { emailJaEnviadoParaPagamento } from "@/lib/email/eventos";
+import { enviarSmsAlertaCompra } from "@/lib/sms/alerta-compra";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
@@ -16,6 +17,7 @@ type AdminClient = ReturnType<typeof createAdminClient>;
  *
  * - financeiro@: sempre tenta (idempotente por destinatário + mp_payment_id)
  * - noreply@: só se o cliente ainda não tem perfil
+ * - SMS admin: alerta para conferir /admin se o e-mail falhar
  */
 export async function garantirConviteEEmailsPosCompra(
   admin: AdminClient,
@@ -44,6 +46,18 @@ export async function garantirConviteEEmailsPosCompra(
     financeiroOk = true;
   } catch (erro) {
     console.error("[pos-compra] falha e-mails financeiro", erro);
+  }
+
+  // Alerta SMS independente do e-mail (não quebra o fluxo se falhar).
+  try {
+    await enviarSmsAlertaCompra({
+      emailCliente: email,
+      valor: opcoes.valor,
+      mpPaymentId: opcoes.mpPaymentId,
+      tipoCompra: "assinatura",
+    });
+  } catch (erro) {
+    console.error("[pos-compra] falha SMS alerta", erro);
   }
 
   const { data: perfil } = await admin

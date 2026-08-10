@@ -491,6 +491,19 @@ async function processarPayment(admin: AdminClient, id: string) {
         pecas: extra.pecas,
         pacoteRotulo: pacote?.rotulo ?? extra.pacoteId,
       });
+      const { enviarSmsAlertaCompra } = await import(
+        "@/lib/sms/alerta-compra"
+      );
+      try {
+        await enviarSmsAlertaCompra({
+          emailCliente: email,
+          valor,
+          mpPaymentId: String(id),
+          tipoCompra: "pacote_extra",
+        });
+      } catch (erro) {
+        console.error("[webhook mercadopago] falha SMS pacote extra", erro);
+      }
     }
     return;
   }
