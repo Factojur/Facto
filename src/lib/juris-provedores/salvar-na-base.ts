@@ -303,6 +303,10 @@ export async function aprovarVerificacao(
     })
     .eq("id", verificacaoId);
 
+  void import("@/lib/ia/indexar-conhecimento").then(({ indexarConhecimentoPorId }) =>
+    indexarConhecimentoPorId(criado.id)
+  );
+
   return { ok: true, baseId: criado.id };
 }
 

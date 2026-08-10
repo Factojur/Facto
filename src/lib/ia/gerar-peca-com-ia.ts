@@ -21,6 +21,7 @@ import {
   MODELOS_TRIAGEM,
 } from "@/lib/ia/gemini-client";
 import {
+  anotarJurisprudenciasSemLastro,
   contarMarcadoresNaoEncontrado,
   verificarCitacoes,
   type CitacaoVerificada,
@@ -515,21 +516,31 @@ export async function gerarPecaComIA(params: {
     .join("\n\n---\n\n");
 
   const citacoes = verificarCitacoes(textoGerado, contextoParaVerificacao);
-  const marcadores = contarMarcadoresNaoEncontrado(textoGerado);
+  const textoComLastro = anotarJurisprudenciasSemLastro(textoGerado, citacoes);
+  const marcadores = contarMarcadoresNaoEncontrado(textoComLastro);
   const citacoesOk = citacoes.filter((c) => c.verificada).length;
+  const jurisSemLastro = citacoes.filter(
+    (c) => c.tipo === "jurisprudencia" && !c.verificada
+  ).length;
 
   equipe.push({
     id: "auditor",
     skin: "Auditor",
     titulo: "Revisão de citações",
-    status: marcadores > 0 ? "parcial" : "ok",
-    detalhe: `${citacoesOk}/${citacoes.length} citações conferidas` +
-      (marcadores > 0 ? ` · ${marcadores} marcador(es) não encontrado` : ""),
+    status: jurisSemLastro > 0 || marcadores > 0 ? "parcial" : "ok",
+    detalhe:
+      `${citacoesOk}/${citacoes.length} citações conferidas` +
+      (jurisSemLastro > 0
+        ? ` · ${jurisSemLastro} julgado(s) sem lastro (marcados)`
+        : "") +
+      (marcadores > 0 && jurisSemLastro === 0
+        ? ` · ${marcadores} marcador(es)`
+        : ""),
   });
 
   return {
     ok: true,
-    textoGerado,
+    textoGerado: textoComLastro,
     modelo: `${triagemRes.modelo} → ${redacaoRes.modelo}`,
     contextoUtilizado: itensFinais.map((item) => ({
       titulo: item.titulo,

@@ -8,6 +8,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CONHECIMENTO_CURADO_JEC } from "@/lib/conhecimento-curado-jec";
 import { SUMULAS_ATIVAS_CURADAS } from "@/lib/sumulas";
+import { gerarEmbedding } from "@/lib/ia/embeddings";
 
 export const CATEGORIAS_CONHECIMENTO = ["Lei", "Súmula", "Jurisprudência"] as const;
 export type CategoriaConhecimento = (typeof CATEGORIAS_CONHECIMENTO)[number];
@@ -34,6 +35,10 @@ export type TrechoConhecimento = {
   titulo: string;
   categoria: string;
   texto: string;
+  /** Id na base_conhecimento, quando vier do banco. */
+  conhecimentoId?: string;
+  /** Similaridade semântica 0–1, se retrieve vetorial. */
+  scoreSemantico?: number;
 };
 
 /** Núcleo curado + lote 01 de súmulas (SV 1–10 STF). */
@@ -243,18 +248,14 @@ function pontuarItemCurado(
 /**
  * Busca na base de conhecimento os trechos relacionados ao tema da ação.
  *
- * Funciona em duas etapas: primeiro um filtro grosseiro no banco (documentos
- * que mencionam pelo menos uma palavra-chave em algum lugar) só para reduzir
- * o que precisa ser lido; depois, cada documento candidato é quebrado em
- * trechos (por artigo, quando possível) e cada trecho é pontuado pela
- * quantidade de palavras-chave que contém. Só os trechos mais relevantes são
- * retornados — nunca o documento inteiro. Isso permite cadastrar uma lei ou
- * código inteiro na base sem que ele "vença" a busca inteiro toda vez que
- * contiver algum termo genérico em algum canto.
+ * Estratégia híbrida (P0 RAG semântico):
+ * 1. Embedding da query → RPC `match_base_conhecimento` (pgvector), se disponível
+ * 2. Fallback/complemento por palavra-chave (ILIKE) — comportamento legado
+ * 3. Núcleo curado em memória (súmulas/JEC) por keyword
+ * 4. Documentos candidatos são quebrados em trechos (por artigo) e ranqueados
  *
- * Falha de forma silenciosa (retorna lista vazia) se a tabela ainda não
- * existir ou a busca der erro — a geração da peça nunca deve travar por
- * causa disso.
+ * Falha de forma silenciosa (lista vazia / só curado) se a tabela ainda não
+ * existir — a geração da peça nunca deve travar por causa disso.
  */
 export async function buscarConhecimentoRelacionado(
   tipoAcao: string,
@@ -265,9 +266,45 @@ export async function buscarConhecimentoRelacionado(
   const palavras = palavrasChave(tipoAcao, textoExtra);
   if (palavras.length === 0) return [];
 
+  const consulta = [tipoAcao, textoExtra ?? ""].filter(Boolean).join("\n");
+
   try {
     const admin = createAdminClient();
+    const porId = new Map<
+      string,
+      ItemConhecimento & { similarity?: number }
+    >();
 
+    // —— 1) Retrieve semântico ——
+    const queryEmb = await gerarEmbedding(consulta.slice(0, 4_000), {
+      taskType: "RETRIEVAL_QUERY",
+    });
+    if (queryEmb) {
+      const { data: sem, error: semErr } = await admin.rpc(
+        "match_base_conhecimento",
+        {
+          query_embedding: queryEmb,
+          match_count: 24,
+        }
+      );
+      if (!semErr && Array.isArray(sem)) {
+        for (const row of sem as Array<
+          ItemConhecimento & { similarity?: number }
+        >) {
+          if (!row?.id) continue;
+          porId.set(row.id, {
+            id: row.id,
+            titulo: row.titulo,
+            categoria: row.categoria,
+            texto: row.texto,
+            criado_em: row.criado_em,
+            similarity: Number(row.similarity ?? 0),
+          });
+        }
+      }
+    }
+
+    // —— 2) Complemento keyword (legado) ——
     const condicoes = palavras
       .map((p) => {
         const termo = p.replace(/[,()]/g, "");
@@ -282,22 +319,31 @@ export async function buscarConhecimentoRelacionado(
       .order("criado_em", { ascending: false })
       .limit(30);
 
-    if (error) throw error;
-    const documentos = (data ?? []) as ItemConhecimento[];
-    if (documentos.length === 0) return [];
+    if (error && porId.size === 0) throw error;
 
+    for (const row of (data ?? []) as ItemConhecimento[]) {
+      if (!porId.has(row.id)) {
+        porId.set(row.id, { ...row, similarity: 0 });
+      }
+    }
+
+    const documentos = Array.from(porId.values());
     const candidatos: (TrechoConhecimento & { score: number })[] = [];
+
     for (const documento of documentos) {
+      const boostSemantico = (documento.similarity ?? 0) * 12;
       const trechos = dividirEmTrechos(documento.texto);
       for (const trecho of trechos) {
+        const scoreKw = pontuarTrecho(normalizar(trecho), palavras);
         const score =
-          pontuarTrecho(normalizar(trecho), palavras) +
-          bonusCategoria(documento.categoria);
-        if (score > 0) {
+          scoreKw + bonusCategoria(documento.categoria) + boostSemantico;
+        if (score > 0 || boostSemantico >= 4) {
           candidatos.push({
             titulo: documento.titulo,
             categoria: documento.categoria,
             texto: trecho,
+            conhecimentoId: documento.id,
+            scoreSemantico: documento.similarity,
             score,
           });
         }
@@ -322,6 +368,8 @@ export async function buscarConhecimentoRelacionado(
         titulo: c.titulo,
         categoria: c.categoria,
         texto: c.texto,
+        conhecimentoId: c.conhecimentoId,
+        scoreSemantico: c.scoreSemantico,
       });
       if (unicos.length >= limite) break;
     }

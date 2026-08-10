@@ -1,36 +1,40 @@
 /**
  * Verificação de citações jurídicas geradas por IA — sem nenhuma chamada de
- * modelo adicional. Como o FACTO controla exatamente quais textos (leis,
- * súmulas, jurisprudências) foram injetados no prompt, basta comparar cada
- * citação que aparece no texto gerado contra esse contexto: se não houver
- * correspondência, a citação é marcada como não verificada para revisão
- * humana antes do protocolo. Ver canvas "melhores-ias-peca-juridica" — esta
- * é a camada de "misgrounding check" recomendada ali, e não ataca invenção
- * total (isso é papel do prompt), apenas confirma se o que foi citado tem
- * lastro no material fornecido.
+ * modelo adicional. Compara cada citação do texto gerado contra o contexto
+ * realmente injetado no prompt (base + juris do caso + lei municipal).
  */
 
-// Padrões de citação jurídica mais comuns em peças brasileiras. Propositalmente
-// amplos (falso positivo é aceitável — só gera mais itens para revisar; falso
-// negativo é o risco real, porque deixaria uma citação passar sem checagem).
-//
-// Separados em duas categorias porque o nível de confiança é diferente:
-// - "lei": artigos de códigos consolidados e súmulas STF/STJ (podem vir da
-//   memória do modelo). Falso "não verificado" aqui é só informativo.
-// - "jurisprudencia": acórdãos / número de processo. Risco alto de invenção
-//   (datas, relatores, números) — só valem com lastro na base injetada.
 export type TipoCitacao = "lei" | "jurisprudencia";
 
 const PADROES_CITACAO: { tipo: TipoCitacao; regex: RegExp }[] = [
-  // Súmulas consolidadas STF/STJ: tratadas como "lei" na verificação (podem
-  // vir da memória do modelo, como códigos). Acórdãos/processos continuam
-  // exigindo lastro na base.
-  { tipo: "lei", regex: /súmula\s+(?:vinculante\s+)?n?[ºo°.]?\s*\d+(?:\s+d[oa]\s+\w+)?/gi },
+  {
+    tipo: "lei",
+    regex: /súmula\s+(?:vinculante\s+)?n?[ºo°.]?\s*\d+(?:\s+d[oa]\s+\w+)?/gi,
+  },
   { tipo: "lei", regex: /lei\s+n?[ºo°.]?\s*[\d.]+(?:\/\d{2,4})?/gi },
-  { tipo: "lei", regex: /decreto(?:-lei)?\s+n?[ºo°.]?\s*[\d.]+(?:\/\d{2,4})?/gi },
-  { tipo: "lei", regex: /art(?:igo)?\.?\s*\d+[º°]?(?:[,-]?\s*(?:§\s*\d+[º°]?|inciso\s+[ivxlcdm]+|caput))?/gi },
-  { tipo: "jurisprudencia", regex: /(?:re|resp|agrg|agint|aresp|edcl|hc|adi|adpf|rext)\s*n?[ºo°.]?\s*[\d.\-\/]+/gi },
-  { tipo: "jurisprudencia", regex: /processo\s+n?[ºo°.]?\s*[\d.\-\/]+/gi },
+  {
+    tipo: "lei",
+    regex: /decreto(?:-lei)?\s+n?[ºo°.]?\s*[\d.]+(?:\/\d{2,4})?/gi,
+  },
+  {
+    tipo: "lei",
+    regex:
+      /art(?:igo)?\.?\s*\d+[º°]?(?:[,-]?\s*(?:§\s*\d+[º°]?|inciso\s+[ivxlcdm]+|caput))?/gi,
+  },
+  {
+    tipo: "jurisprudencia",
+    regex:
+      /(?:re|resp|agrg|agint|aresp|edcl|hc|adi|adpf|rext)\s*n?[ºo°.]?\s*[\d.\-\/]+/gi,
+  },
+  {
+    tipo: "jurisprudencia",
+    regex: /processo\s+n?[ºo°.]?\s*[\d.\-\/]+/gi,
+  },
+  // Número CNJ completo (comum em ementas TJSP)
+  {
+    tipo: "jurisprudencia",
+    regex: /\b\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}\b/g,
+  },
 ];
 
 function normalizar(texto: string): string {
@@ -42,23 +46,49 @@ function normalizar(texto: string): string {
     .trim();
 }
 
+function soDigitos(s: string): string {
+  return s.replace(/\D/g, "");
+}
+
 export type CitacaoVerificada = {
   trecho: string;
   tipo: TipoCitacao;
   verificada: boolean;
 };
 
+/** Checa lastro no contexto (string normalizada ou dígitos do processo). */
+function temLastro(trecho: string, contextoNorm: string, tipo: TipoCitacao): boolean {
+  const chave = normalizar(trecho);
+  if (chave && contextoNorm.includes(chave)) return true;
+
+  const digitos = soDigitos(trecho);
+  if (digitos.length >= 8) {
+    const ctxDigits = soDigitos(contextoNorm);
+    if (ctxDigits.includes(digitos)) return true;
+  }
+
+  // Súmula: "sumula 37" ≈ "sumula n 37" / "sumula vinculante 37"
+  if (tipo === "lei") {
+    const m = chave.match(/sumula(?:\s+vinculante)?\s*(?:n[oº°.]?\s*)?(\d+)/);
+    if (m?.[1]) {
+      const n = m[1];
+      if (
+        contextoNorm.includes(`sumula ${n}`) ||
+        contextoNorm.includes(`sumula n ${n}`) ||
+        contextoNorm.includes(`sumula vinculante ${n}`) ||
+        contextoNorm.includes(`sumula vinculante n ${n}`)
+      ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 /**
- * Extrai todas as citações jurídicas de `textoGerado` e checa, para cada
- * uma, se ela (normalizada) aparece em algum lugar de `contextoFornecido` —
- * a concatenação exata dos textos da base de conhecimento que foram
- * realmente injetados no prompt daquela geração.
- *
- * `verificada: false` numa citação de lei é apenas informativo (o modelo tem
- * permissão de citar códigos consolidados de memória). Numa citação de
- * jurisprudência, `verificada: false` é um alerta real — o prompt proíbe
- * esse tipo de citação fora da base, então se aparece sem lastro é sinal de
- * possível invenção e precisa de revisão humana antes do protocolo.
+ * Extrai citações e confere lastro no contexto injetado.
+ * Jurisprudência sem lastro = alerta real (possível invenção).
  */
 export function verificarCitacoes(
   textoGerado: string,
@@ -77,7 +107,7 @@ export function verificarCitacoes(
       encontradas.set(chave, {
         trecho,
         tipo,
-        verificada: contextoNormalizado.includes(chave),
+        verificada: temLastro(trecho, contextoNormalizado, tipo),
       });
     }
   }
@@ -85,13 +115,40 @@ export function verificarCitacoes(
   return Array.from(encontradas.values());
 }
 
-/**
- * Marcador literal que o system prompt instrui a IA a usar quando ela
- * própria reconhece que não há fundamento suficiente no material fornecido.
- * Contá-lo aqui é mais confiável do que tentar inferir "incerteza" no texto.
- */
 export const MARCADOR_NAO_ENCONTRADO = "[NÃO ENCONTRADO NA BASE]";
 
 export function contarMarcadoresNaoEncontrado(texto: string): number {
   return texto.split(MARCADOR_NAO_ENCONTRADO).length - 1;
+}
+
+/**
+ * Insere o marcador após jurisprudências citadas sem lastro no contexto
+ * (não altera leis/códigos — só alertas de acórdão/processo inventável).
+ */
+export function anotarJurisprudenciasSemLastro(
+  texto: string,
+  citacoes: CitacaoVerificada[]
+): string {
+  let out = texto;
+  const semLastro = citacoes.filter(
+    (c) => c.tipo === "jurisprudencia" && !c.verificada
+  );
+
+  for (const c of semLastro) {
+    const trecho = c.trecho;
+    if (!trecho || out.includes(`${trecho} ${MARCADOR_NAO_ENCONTRADO}`)) {
+      continue;
+    }
+    // Substitui só a primeira ocorrência não marcada
+    const idx = out.indexOf(trecho);
+    if (idx < 0) continue;
+    const depois = out.slice(idx + trecho.length);
+    if (depois.trimStart().startsWith(MARCADOR_NAO_ENCONTRADO)) continue;
+    out =
+      out.slice(0, idx + trecho.length) +
+      ` ${MARCADOR_NAO_ENCONTRADO}` +
+      out.slice(idx + trecho.length);
+  }
+
+  return out;
 }

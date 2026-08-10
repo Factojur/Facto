@@ -134,6 +134,12 @@ async function criarViaArquivo(request: Request, userId: string) {
     );
   }
 
+  if (data?.id) {
+    void import("@/lib/ia/indexar-conhecimento").then(({ indexarConhecimentoPorId }) =>
+      indexarConhecimentoPorId(data.id)
+    );
+  }
+
   return NextResponse.json({ item: data });
 }
 
@@ -159,6 +165,13 @@ async function criarViaTexto(request: Request, userId: string) {
       .single();
 
     if (error) throw error;
+
+    // Indexação semântica em background (não bloqueia o save se falhar)
+    if (data?.id) {
+      void import("@/lib/ia/indexar-conhecimento").then(({ indexarConhecimentoPorId }) =>
+        indexarConhecimentoPorId(data.id)
+      );
+    }
 
     return NextResponse.json({ item: data });
   } catch {

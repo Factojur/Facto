@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test:formatacao-peca": "npx tsx scripts/testar-formatacao-peca.ts",
     "test:scraper-tjsp": "npx tsx scripts/testar-scraper-tjsp.ts",
+    "reindex:embeddings": "npx tsx scripts/reindex-embeddings.ts",
     "corrigir-metadados": "node scripts/limpar-metadados-perfil.mjs"
   },
   "dependencies": {
