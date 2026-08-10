@@ -166,11 +166,14 @@ export async function POST(request: Request) {
   let secundarios: Bruto[] = [];
   let usandoFallbackSecundario = true;
   let avisoSecundario: string | undefined;
+  let fonteTjsp: RespostaSugestoesJuris["fonteTjsp"] = "off";
   try {
     const r = await buscarJulgadosProvedorSecundario(consulta, excluir);
     secundarios = r.precedentes;
     usandoFallbackSecundario = r.usandoFallbackLocal;
     avisoSecundario = r.aviso;
+    fonteTjsp = r.fonteTjsp ?? "off";
+    console.info("[sugerir] fonteTjsp=", fonteTjsp, "fallback=", usandoFallbackSecundario);
   } catch {
     secundarios = [];
   }
@@ -232,6 +235,8 @@ export async function POST(request: Request) {
         }
       : undefined,
     aviso: partesAviso.length ? partesAviso.join(" ") : undefined,
+    fonteTjsp,
+    usandoFallbackLocal: usandoFallbackSecundario,
   };
 
   return NextResponse.json(resposta);

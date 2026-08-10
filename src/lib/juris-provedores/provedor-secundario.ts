@@ -16,7 +16,7 @@ export type ResultadoProvedorSecundario = {
   /** true se precisou completar/usar só a base FACTO. */
   usandoFallbackLocal: boolean;
   aviso?: string;
-  fonteTjsp?: "cache" | "live" | "off" | "erro";
+  fonteTjsp?: "cache" | "live" | "worker" | "off" | "erro";
 };
 
 function deScrape(j: {
@@ -87,7 +87,8 @@ export async function buscarJulgadosProvedorSecundario(
 
   try {
     const scrape = await buscarTjsp(q);
-    if (scrape.doCache) fonteTjsp = "cache";
+    if (scrape.fonte) fonteTjsp = scrape.fonte;
+    else if (scrape.doCache) fonteTjsp = "cache";
     else if (scrape.julgados.length) fonteTjsp = "live";
     else if (scrape.erro) fonteTjsp = "erro";
     else fonteTjsp = scrape.aviso?.includes("desligado") ? "off" : "erro";

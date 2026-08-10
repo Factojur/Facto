@@ -42,6 +42,9 @@ export type RespostaSugestoesJuris = {
     limite: number;
     restantes: number;
   };
+  /** Diagnóstico do provedor secundário TJSP. */
+  fonteTjsp?: "cache" | "live" | "worker" | "off" | "erro";
+  usandoFallbackLocal?: boolean;
 };
 
 /** Normaliza título/ementa para colapsar duplicatas (ex.: Súmula 37 com/sem ATIVA). */

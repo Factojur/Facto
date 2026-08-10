@@ -22,6 +22,8 @@ export type ResultadoScrape = {
   duracaoMs: number;
   /** Tamanho do pool antes do ranking por afinidade. */
   poolSize?: number;
+  /** Origem do pool (quando não vazio / diagnóstico). */
+  fonte?: "cache" | "live" | "worker" | "off" | "erro";
 };
 
 /** Janela temporal máxima dos julgados. */

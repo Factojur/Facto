@@ -4,69 +4,76 @@ Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou
 
 ## Prioridade sugerida (próximos passos)
 
-Ordem recomendada para excelência de peça + caminho JEC → demais áreas, sem burn alto:
-
 1. **[P0] Qualidade da peça JEC (lastro + anti-alucinação)** — _parcial_
    - [x] Anotar jurisprudência sem lastro com `[NÃO ENCONTRADO NA BASE]`
-   - [x] Conferência de citações reforçada (dígitos de processo / súmulas)
-   - [ ] Ampliar suite de casos-ouro JEC (regressão manual/automática)
+   - [x] Conferência de citações reforçada
+   - [ ] Ampliar suite de casos-ouro JEC
 
-2. **[P0] Embeddings / busca semântica na `base_conhecimento`** — _feito_
-   - [x] Migration + reindex (`1436/1436`) + retrieve híbrido + deploy
+2. **[P0] Embeddings / busca semântica** — _feito_
+   - [x] Migration + reindex + retrieve híbrido + deploy
 
-3. **[P1] Leitura de autos → peça cabível + teses** — _MVP JEC no código; validar em prod_
-   - [x] Modo **Analisar processo** (autos/seletivo) + ficha + peça + confirmação
-   - [x] Coluna Análises + custo est. em `/admin/uso-pecas`
-   - [ ] Rodar no Supabase: `migration-cota-analises.sql` + `migration-admin-avisos.sql`
-   - [ ] **Próximo passo imediato:** teste manual com PDF real (sentença/autos) no JEC em produção
+3. **[P1] Leitura de autos → peça + teses** — _código em prod; falta validar_
+   - [x] Modo **Analisar processo** + ficha + peça + confirmação
+   - [x] Coluna Análises em `/admin/uso-pecas`
+   - [ ] Rodar `migration-cota-analises.sql` + `migration-admin-avisos.sql` no Supabase
+   - [ ] **Teste manual (você):** PDF real no JEC (sentença ou inicial+sentença) → confirmar peça → gerar em produção
    - [ ] Chunking fino / OCR / Map-Reduce / demais áreas (depois)
 
-4. **[P1] Admin — avisos operacionais** — _código pronto_
-   - [x] Banner disco Supabase no `/admin`
-   - [x] Compras desde o último acesso + status e-mail pgto/convite + “Marcar como vistas”
-   - [ ] Rodar `migration-admin-avisos.sql` (e opcional `SUPABASE_PLAN=pro` no Vercel)
+4. **[P1] Admin — avisos operacionais** — _código em prod_
+   - [x] Banner disco + compras desde último acesso + e-mails
+   - [ ] Rodar `migration-admin-avisos.sql`
+   - [ ] `SUPABASE_PLAN=pro` no Vercel **somente depois** de assinar Pro (hoje default Free no banner — não setar no escuro)
 
-5. **[P1] TJSP scraper confiável em produção**  
+5. **[P1] TJSP scraper confiável em produção** — _em andamento_
+   - [x] Cache por **termo de busca** (não texto inteiro do caso)
+   - [x] Hook `SCRAPER_TJSP_WORKER_URL` (Chromium fora da Vercel)
+   - [x] `fonteTjsp` na resposta de `/api/juris/sugerir`
+   - [x] Script `npm run aquecer:cache-tjsp`
+   - [ ] Confirmar `migration-juris-scrape-cache.sql` no Supabase prod
+   - [ ] Aquecer cache localmente contra o Supabase de prod
+   - [ ] Subir worker Chromium (Railway/Fly/VPS) e apontar `SCRAPER_TJSP_WORKER_URL` na Vercel
+
 6. **[P1] Segundo tribunal (STJ)**  
 7. **[P2] Política CDC / cota-teste 7 dias**  
-8. **[P2] Expandir áreas** (mesmo RAG semântico)  
+8. **[P2] Expandir áreas**  
 9. **[P3]** Chat multi-turno, Word add-in, contratos  
 
-### Supabase Free vs Pro (ops)
+---
 
-- Disco hoje é folgado para várias áreas; o motivo do **Pro** é sobretudo **uptime** (Free pausa) e teto de 500 MB a médio prazo.
-- Assinar Pro quando: produto em produção com clientes pagantes **ou** ~**50+ usuários ativos**/mês com uso diário **ou** database > ~**200–300 MB** / Storage apertando. Não precisa esperar “milhares” de usuários.
+## Supabase Free vs Pro
+
+| Quando assinar **Pro** (~US$ 25/mês) | Por quê |
+|--------------------------------------|---------|
+| Produto no ar com **clientes pagantes** | Free **pausa** o projeto por inatividade → site cai |
+| ~**50+ usuários ativos**/mês com uso diário | Uptime + folga de disco/egress |
+| Database > ~**200–300 MB** ou Storage apertando | Free trava em **500 MB** (read-only) |
+
+- Disco hoje é folgado para várias áreas; Pro não é “por milhares de usuários”.
+- Banner `/admin` assume Free (500 MB) até existir `SUPABASE_PLAN=pro` (ou `SUPABASE_DB_LIMIT_MB`).
+- **Não** definir `SUPABASE_PLAN=pro` na Vercel enquanto o projeto ainda for Free (alerta falso).
 
 ---
 
 ## Assinatura / CDC (art. 49)
 
-- [ ] Definir política dos **7 dias de arrependimento** vs uso de cota:
-  - Opção preferencial em discussão: **cota-teste limitada nos 7 dias**, depois liberar cota integral.
-  - Reforço opcional: no arrependimento, reembolso **menos peças já geradas** (preço unitário público), com aceite destacado no checkout + aviso na 1ª peça.
-  - Validar copy/termos com advogado consumerista antes de publicar.
-  - Decisão: (A) só teste 7 dias · (B) só desconto por peça · (C) combinação.
+- [ ] Definir política dos **7 dias de arrependimento** vs uso de cota (A/B/C).
 
-## Jurisprudência — o que já existe em partes / falta fechar
+## Jurisprudência
 
-- [ ] **Scraper TJSP em produção:** Chromium/worker fora da Vercel (hoje scrape live só local; prod = cache + fallback base FACTO).
-- [ ] **Migration scrape/cache no Supabase** (se ainda não rodou em todos os ambientes): `migration-juris-scrape-cache.sql`.
-- [ ] **7º token** Jurisprudências.ai no pool (`JURISPRUDENCIAS_AI_API_KEYS`).
-- [ ] **Provedor secundário** além do TJSP (próximo: STJ).
-- [x] **Embeddings / busca vetorial** na `base_conhecimento`.
-- [x] **Leitura de autos (MVP JEC)** — validar com PDF real; expansões depois.
-- [ ] **Citação com lastro passage-level**.
-- [ ] **Chat jurídico multi-turno**.
-- [ ] **Integração Word add-in**.
-- [ ] **Análise de contratos / playbooks**.
+- [ ] **Worker TJSP em produção** (Chromium fora da Vercel) + env na Vercel.
+- [ ] Migration scrape-cache (se falta): `migration-juris-scrape-cache.sql`.
+- [ ] Aquecer cache JEC (`npm run aquecer:cache-tjsp`).
+- [ ] **7º token** Jurisprudências.ai.
+- [ ] Provedor secundário STJ.
+- [x] Embeddings / leitura de autos MVP (falta teste PDF).
+- [ ] Citação passage-level · chat multi-turno · Word · contratos.
 
-## Scrapers de tribunais (após piloto TJSP)
+## Scrapers
 
-- [ ] STJ · TJRJ · TJMG · STF · TST · demais TJs sob demanda
+- [ ] STJ · TJRJ · TJMG · STF · TST · demais TJs
 
 ## Infra / ops
 
-- [ ] Worker/ambiente com Chromium para scrape em produção.
-- [ ] Observabilidade de sucesso/falha por tribunal (HTML/captcha).
-- [x] Reindex embeddings: `npm run reindex:embeddings`.
-- [ ] Migrations pendentes no SQL Editor: `cota-analises` + `admin-avisos`.
+- [ ] Worker Chromium + observabilidade por tribunal.
+- [x] Reindex embeddings.
+- [ ] Migrations SQL pendentes: `cota-analises`, `admin-avisos`, `juris-scrape-cache` (conferir).

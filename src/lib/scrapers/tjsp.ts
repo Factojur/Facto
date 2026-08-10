@@ -1,13 +1,14 @@
 /**
- * Scraper TJSP (e-SAJ CJSG) — Playwright headless.
+ * Scraper TJSP (e-SAJ CJSG) — Playwright headless (local) ou worker HTTP (prod).
  *
  * Fluxo:
- * 1. Termo de busca derivado das palavras-chave do caso (≤4 anos)
- * 2. Coleta pool amplo (até POOL_SCRAPE_MAX)
- * 3. Ranqueia por afinidade ao caso → devolve os 5 melhores
+ * 1. Termo de busca derivado das palavras-chave do caso (chave de cache)
+ * 2. Cache compartilhado → worker URL (se configurado) → Playwright local
+ * 3. Ranqueia pool por afinidade ao caso → top 5
  *
  * Env:
  * - SCRAPER_TJSP_ENABLED / SCRAPER_TJSP_TIMEOUT_MS
+ * - SCRAPER_TJSP_WORKER_URL / SCRAPER_TJSP_WORKER_SECRET (Chromium fora da Vercel)
  */
 
 import {
@@ -34,6 +35,11 @@ export function scraperTjspHabilitado(): boolean {
   if (v === "1" || v === "true" || v === "on") return true;
   if (process.env.VERCEL) return false;
   return true;
+}
+
+export function scraperTjspWorkerUrl(): string | null {
+  const u = process.env.SCRAPER_TJSP_WORKER_URL?.trim();
+  return u || null;
 }
 
 function dataLimiteAnos(anos: number): { inicio: string; fim: string } {
@@ -282,7 +288,8 @@ function topDoPool(
 }
 
 /**
- * Busca no TJSP: cache/pool → ranking por afinidade ao caso → top 5.
+ * Busca no TJSP: cache (por termo de busca) → worker HTTP → Playwright local.
+ * Ranking por afinidade usa o texto completo do caso.
  */
 export async function buscarTjsp(query: string): Promise<ResultadoScrape> {
   const q = query.trim();
@@ -296,15 +303,17 @@ export async function buscarTjsp(query: string): Promise<ResultadoScrape> {
   }
 
   const t0 = Date.now();
+  const termoCache = termoBuscaAPartirDoCaso(q);
 
   try {
-    const cached = await lerCacheScrape(TRIBUNAL, q);
+    const cached = await lerCacheScrape(TRIBUNAL, termoCache);
     if (cached && cached.julgados.length) {
       const top = topDoPool(q, cached.julgados);
       return {
         julgados: top,
         doCache: true,
         poolSize: cached.julgados.length,
+        fonte: "cache",
         duracaoMs: Date.now() - t0,
       };
     }
@@ -312,25 +321,43 @@ export async function buscarTjsp(query: string): Promise<ResultadoScrape> {
     /* cache ausente */
   }
 
-  if (!scraperTjspHabilitado()) {
+  let pool: JulgadoScrape[] = [];
+  let aviso: string | undefined;
+  let erro: string | undefined;
+  let fonte: ResultadoScrape["fonte"] = "off";
+
+  const workerUrl = scraperTjspWorkerUrl();
+  if (workerUrl) {
+    const viaWorker = await scrapeTjspViaWorker(termoCache);
+    pool = viaWorker.pool;
+    aviso = viaWorker.aviso;
+    erro = viaWorker.erro;
+    if (pool.length) fonte = "worker";
+    else if (erro) fonte = "erro";
+  } else if (scraperTjspHabilitado()) {
+    const live = await scrapeTjspLive(q);
+    pool = live.pool;
+    aviso = live.aviso;
+    erro = live.erro;
+    if (pool.length) fonte = "live";
+    else if (erro) fonte = "erro";
+  } else {
     return {
       julgados: [],
       doCache: false,
+      fonte: "off",
       aviso:
-        "Scraper TJSP desligado neste ambiente (defina SCRAPER_TJSP_ENABLED=true).",
+        "Scraper TJSP desligado neste ambiente (cache miss). Configure SCRAPER_TJSP_WORKER_URL ou rode local com SCRAPER_TJSP_ENABLED=true.",
       duracaoMs: Date.now() - t0,
     };
   }
 
-  const live = await scrapeTjspLive(q);
-  const pool = live.pool;
   const top = topDoPool(q, pool);
 
   let cacheId: string | undefined;
   if (pool.length) {
     try {
-      // Cache guarda o pool; o picker recebe só o top ranqueado
-      cacheId = await gravarCacheScrape(TRIBUNAL, q, pool);
+      cacheId = await gravarCacheScrape(TRIBUNAL, termoCache, pool);
       await enfileirarScrapeNaVerificacao(top, {
         scrapeCacheId: cacheId,
         fonte: "tjsp_scraper",
@@ -344,8 +371,69 @@ export async function buscarTjsp(query: string): Promise<ResultadoScrape> {
     julgados: top,
     doCache: false,
     poolSize: pool.length,
-    aviso: live.aviso,
-    erro: live.erro,
+    aviso,
+    erro,
+    fonte,
     duracaoMs: Date.now() - t0,
   };
+}
+
+async function scrapeTjspViaWorker(termoBusca: string): Promise<{
+  pool: JulgadoScrape[];
+  aviso?: string;
+  erro?: string;
+}> {
+  const url = scraperTjspWorkerUrl();
+  if (!url) return { pool: [], erro: "WORKER_URL ausente" };
+
+  const secret = process.env.SCRAPER_TJSP_WORKER_SECRET?.trim();
+  const timeout = Number(process.env.SCRAPER_TJSP_TIMEOUT_MS ?? 45000);
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(secret ? { Authorization: `Bearer ${secret}` } : {}),
+      },
+      body: JSON.stringify({ tribunal: TRIBUNAL, query: termoBusca }),
+      signal: AbortSignal.timeout(timeout),
+    });
+
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      return {
+        pool: [],
+        erro: `Worker TJSP HTTP ${res.status}: ${txt.slice(0, 120)}`,
+      };
+    }
+
+    const json = (await res.json()) as {
+      pool?: JulgadoScrape[];
+      julgados?: JulgadoScrape[];
+      aviso?: string;
+      erro?: string;
+    };
+    const pool = Array.isArray(json.pool)
+      ? json.pool
+      : Array.isArray(json.julgados)
+        ? json.julgados
+        : [];
+    return {
+      pool: pool.slice(0, POOL_SCRAPE_MAX).map((j) => ({
+        ...j,
+        tribunal: j.tribunal || TRIBUNAL,
+      })),
+      aviso: json.aviso,
+      erro: json.erro,
+    };
+  } catch (e) {
+    return {
+      pool: [],
+      erro:
+        e instanceof Error
+          ? `Worker TJSP: ${e.message.slice(0, 160)}`
+          : "Worker TJSP falhou.",
+    };
+  }
 }
