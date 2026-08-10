@@ -7,7 +7,8 @@ Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou
 1. **[P0] Qualidade da peça JEC (lastro + anti-alucinação)** — _parcial_
    - [x] Anotar jurisprudência sem lastro com `[NÃO ENCONTRADO NA BASE]`
    - [x] Conferência de citações reforçada
-   - [ ] Ampliar suite de casos-ouro JEC
+   - [x] Suite casos-ouro JEC (`npm run test:casos-ouro` — 6 temas, 0 tokens)
+   - [ ] Ampliar casos-ouro (mais temas / asserts) conforme surgirem regressões
 
 2. **[P0] Embeddings / busca semântica** — _feito_
    - [x] Migration + reindex + retrieve híbrido + deploy
