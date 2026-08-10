@@ -5,7 +5,10 @@ import {
   marcarPagamentosLocaisRefunded,
   tentarEstornoCdc,
 } from "@/lib/mercadopago/cancelar-assinatura";
-import { buscarPagamentoInicialAprovado } from "@/lib/mercadopago/client";
+import {
+  buscarEmailPagadorPreapproval,
+  buscarPagamentoInicialAprovado,
+} from "@/lib/mercadopago/client";
 import {
   cobrancaAssinaturaAprovada,
   extrairPaymentIdDeInvoice,
@@ -141,7 +144,24 @@ async function processarPreapproval(admin: AdminClient, id: string) {
   const status = preapproval.status as string | undefined;
   if (!status) return;
 
-  const email = (preapproval.payer_email as string | undefined) ?? null;
+  const emailHint =
+    typeof preapproval.payer_email === "string"
+      ? preapproval.payer_email.trim()
+      : "";
+  let email =
+    emailHint && emailHint.includes("@") ? emailHint.toLowerCase() : null;
+  if (!email) {
+    try {
+      email = await buscarEmailPagadorPreapproval(id, emailHint);
+    } catch (erro) {
+      console.warn(
+        "[webhook mercadopago] falha ao resolver e-mail do pagador",
+        id,
+        erro
+      );
+    }
+  }
+
   const valorRaw = preapproval.auto_recurring?.transaction_amount ?? null;
   const valor =
     typeof valorRaw === "number"
@@ -168,22 +188,29 @@ async function processarPreapproval(admin: AdminClient, id: string) {
 
   const { data: existente } = await admin
     .from("assinaturas")
-    .select("id, status, motivo_encerramento, data_inicio, acesso_valido_ate")
+    .select(
+      "id, status, motivo_encerramento, data_inicio, acesso_valido_ate, email"
+    )
     .eq("mp_preapproval_id", id)
     .maybeSingle();
+
+  // Nunca apagar e-mail já gravado com null/vazio do MP.
+  if (!email && typeof existente?.email === "string" && existente.email.trim()) {
+    email = existente.email.trim().toLowerCase();
+  }
 
   const dataInicio = preapproval.date_created ?? existente?.data_inicio ?? null;
 
   const dados: Record<string, unknown> = {
     mp_preapproval_id: id,
     profile_id: profileId,
-    email,
     plano,
     valor,
     status,
     data_inicio: dataInicio,
     atualizado_em: new Date().toISOString(),
   };
+  if (email) dados.email = email;
 
   if (status === "authorized" && !existente?.acesso_valido_ate && dataInicio && plano) {
     dados.acesso_valido_ate = new Date(

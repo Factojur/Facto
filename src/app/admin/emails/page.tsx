@@ -110,15 +110,37 @@ export default async function AdminEmailsPage() {
 
         <ReenviarCompraEmailForm emailInicial="" />
 
+        <div className="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-100/90">
+          <p className="font-medium text-red-100">
+            Atenção: webhook do Mercado Pago
+          </p>
+          <p className="mt-2 text-xs leading-relaxed text-red-100/80">
+            Se compras no MP não geram e-mail automático, confira no painel MP →
+            Webhooks se a URL{" "}
+            <code className="text-red-50">
+              https://factoia.com.br/api/webhooks/mercadopago
+            </code>{" "}
+            está ativa com os tópicos{" "}
+            <code className="text-red-50">subscription_preapproval</code>,{" "}
+            <code className="text-red-50">
+              subscription_authorized_payment
+            </code>{" "}
+            e <code className="text-red-50">payment</code>, na{" "}
+            <strong className="font-medium">mesma aplicação</strong> dos links
+            mpago.la. Enquanto isso, use &quot;Sincronizar MP agora&quot; abaixo
+            para disparar financeiro + convite.
+          </p>
+        </div>
+
         <div className="mt-6 rounded-xl border border-amber-500/25 bg-amber-500/5 p-4 text-sm text-amber-100/90">
           <p className="font-medium text-amber-100">
             Envio automático (como funciona)
           </p>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-xs leading-relaxed text-amber-100/80">
             <li>
-              Webhook MP → e-mails na hora (financeiro@ + noreply@) + SMS de
-              alerta ao admin (Twilio), para você conferir /admin se o e-mail
-              falhar.
+              Webhook MP → e-mails na hora (financeiro@ + confirmação) + SMS de
+              alerta ao admin (Twilio), se configurado; convite noreply ~10 min
+              depois.
             </li>
             <li>
               Rede de segurança: cron diário na Vercel (Hobby) + botão

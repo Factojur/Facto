@@ -140,7 +140,9 @@ function statusDosEventos(
 }
 
 /**
- * Compras aprovadas desde `desdeIso` (ou últimas 48h se null — 1ª visita).
+ * Compras desde `desdeIso` (ou últimas 48h se null).
+ * Usa assinaturas authorized/pending (webhook/sync) — não depende só de
+ * `pagamentos`, que muitas vezes não é gravado quando o webhook falha.
  */
 export async function listarComprasDesde(desdeIso: string | null): Promise<{
   desdeIso: string;
@@ -153,11 +155,11 @@ export async function listarComprasDesde(desdeIso: string | null): Promise<{
   try {
     const admin = createAdminClient();
     const { data, error } = await admin
-      .from("pagamentos")
-      .select("id, valor, status, pago_em, assinaturas(email, plano)")
-      .eq("status", "approved")
-      .gte("pago_em", desde)
-      .order("pago_em", { ascending: false })
+      .from("assinaturas")
+      .select("id, email, valor, plano, status, criado_em, atualizado_em")
+      .in("status", ["authorized", "pending"])
+      .or(`criado_em.gte.${desde},atualizado_em.gte.${desde}`)
+      .order("atualizado_em", { ascending: false })
       .limit(40);
 
     if (error) {
@@ -165,55 +167,51 @@ export async function listarComprasDesde(desdeIso: string | null): Promise<{
       return { desdeIso: desde, compras: [] };
     }
 
-    const linhas = (data ?? []) as unknown as Array<{
+    const linhas = (data ?? []) as Array<{
       id: string;
+      email: string | null;
       valor: number | string | null;
-      pago_em: string | null;
-      assinaturas: { email: string | null; plano: string | null } | null;
+      plano: string | null;
+      criado_em: string | null;
+      atualizado_em: string | null;
     }>;
-
-    const emails = [
-      ...new Set(
-        linhas
-          .map((l) => l.assinaturas?.email?.trim().toLowerCase())
-          .filter(Boolean) as string[]
-      ),
-    ];
 
     type Ev = {
       tipo: string | null;
       status: string | null;
       destinatario: string | null;
+      assunto: string | null;
     };
-    let eventos: Ev[] = [];
-    if (emails.length > 0) {
-      const { data: evData } = await admin
-        .from("email_eventos")
-        .select("tipo, status, destinatario")
-        .in("tipo", ["financeiro_compra", "convite"])
-        .gte("criado_em", desde)
-        .order("criado_em", { ascending: false })
-        .limit(200);
-      eventos = (evData ?? []) as Ev[];
-    }
+    const { data: evData } = await admin
+      .from("email_eventos")
+      .select("tipo, status, destinatario, assunto")
+      .in("tipo", ["financeiro_compra", "convite", "alerta_sms_compra"])
+      .gte("criado_em", desde)
+      .order("criado_em", { ascending: false })
+      .limit(300);
+    const eventos = (evData ?? []) as Ev[];
 
     const compras: CompraDesdeUltimoAcesso[] = linhas.map((l) => {
-      const email = (l.assinaturas?.email ?? "").trim();
+      const email = (l.email ?? "").trim();
       const emailLow = email.toLowerCase();
-      const doCliente = eventos.filter(
-        (e) => (e.destinatario ?? "").toLowerCase() === emailLow
-      );
+      const relacionados = eventos.filter((e) => {
+        const dest = (e.destinatario ?? "").toLowerCase();
+        const assunto = (e.assunto ?? "").toLowerCase();
+        if (emailLow && dest === emailLow) return true;
+        if (emailLow && assunto.includes(emailLow)) return true;
+        return false;
+      });
       return {
         id: l.id,
-        email: email || "—",
+        email: email || "(sem e-mail no cadastro — sync/webhook incompleto)",
         valor: l.valor === null ? null : Number(l.valor),
-        plano: l.assinaturas?.plano ?? null,
-        pagoEm: l.pago_em,
+        plano: l.plano ?? null,
+        pagoEm: l.atualizado_em ?? l.criado_em,
         emailFinanceiro: statusDosEventos(
-          doCliente.filter((e) => e.tipo === "financeiro_compra")
+          relacionados.filter((e) => e.tipo === "financeiro_compra")
         ),
         emailConvite: statusDosEventos(
-          doCliente.filter((e) => e.tipo === "convite")
+          relacionados.filter((e) => e.tipo === "convite")
         ),
       };
     });
@@ -235,5 +233,29 @@ export function rotuloStatusEmail(s: StatusEmailCompra): string {
       return "Parcial";
     default:
       return "Sem registro";
+  }
+}
+
+/** true se não houve webhook MP real nas últimas `horas`. */
+export async function webhookMpSilencioso(horas = 24): Promise<boolean> {
+  try {
+    const admin = createAdminClient();
+    const desde = new Date(Date.now() - horas * 60 * 60 * 1000).toISOString();
+    const { data, error } = await admin
+      .from("webhook_eventos_mp")
+      .select("id, mp_id, erro")
+      .gte("recebido_em", desde)
+      .order("recebido_em", { ascending: false })
+      .limit(30);
+    if (error) return false;
+    const reais = (data ?? []).filter((w) => {
+      const id = String(w.mp_id ?? "");
+      if (!id || id === "123456" || id === "123456789") return false;
+      if (String(w.erro ?? "").toLowerCase().includes("simulação")) return false;
+      return true;
+    });
+    return reais.length === 0;
+  } catch {
+    return false;
   }
 }

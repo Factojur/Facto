@@ -4,9 +4,13 @@
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { buscarPagamentoInicialAprovado } from "@/lib/mercadopago/client";
+import {
+  buscarEmailPagadorPreapproval,
+  buscarPagamentoInicialAprovado,
+} from "@/lib/mercadopago/client";
 import { garantirConviteEEmailsPosCompra } from "@/lib/mercadopago/pos-compra";
 import { sincronizarPreapprovalsRecentesDoMp } from "@/lib/mercadopago/sincronizar-assinatura";
+import type { PlanoId } from "@/lib/planos-facto";
 
 export async function executarSincronizarCompras() {
   const admin = createAdminClient();
@@ -23,7 +27,7 @@ export async function executarSincronizarCompras() {
 
   const { data: assinaturas, error } = await admin
     .from("assinaturas")
-    .select("id, mp_preapproval_id, email, valor, status, criado_em")
+    .select("id, mp_preapproval_id, email, valor, status, plano, criado_em")
     .in("status", ["authorized", "pending"])
     .gte("criado_em", desde.toISOString())
     .order("criado_em", { ascending: false })
@@ -47,19 +51,9 @@ export async function executarSincronizarCompras() {
 
     if (!email) {
       try {
-        const token = process.env.MERCADOPAGO_ACCESS_TOKEN?.trim();
-        if (token) {
-          const resp = await fetch(
-            `https://api.mercadopago.com/preapproval/${preapprovalId}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          if (resp.ok) {
-            const pre = (await resp.json()) as { payer_email?: string };
-            email = pre.payer_email?.trim() || null;
-            if (email) {
-              await admin.from("assinaturas").update({ email }).eq("id", row.id);
-            }
-          }
+        email = await buscarEmailPagadorPreapproval(preapprovalId);
+        if (email) {
+          await admin.from("assinaturas").update({ email }).eq("id", row.id);
         }
       } catch (erro) {
         console.warn("[sincronizar-compras] e-mail", preapprovalId, erro);
@@ -86,6 +80,7 @@ export async function executarSincronizarCompras() {
         email,
         mpPaymentId,
         valor: typeof valor === "number" && !Number.isNaN(valor) ? valor : null,
+        plano: (row.plano as PlanoId | null) ?? null,
       });
       resultados.push({ preapprovalId, email, mpPaymentId, ...envio });
     } catch (erro) {

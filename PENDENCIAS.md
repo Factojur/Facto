@@ -13,16 +13,18 @@ Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou
 2. **[P0] Embeddings / busca semântica** — _feito_
    - [x] Migration + reindex + retrieve híbrido + deploy
 
-3. **[P0] Pós-compra: e-mail / plano / SMS** — _em andamento_
-   - Sintoma: compra teste MP ok; financeiro às vezes sem plano se valor ≠ catálogo (ex. R$ 0,50)
-   - [x] Inferir plano pelo **nome/reason** do MP + passar `plano` no e-mail financeiro
-   - [x] Convite noreply ~**10 min** após financeiro (Resend `scheduledAt`); admin/teste imediato
-   - [ ] Validar em prod após deploy (compra teste Completo mensal)
-   - [x] Código SMS alerta (Twilio → **+5511985036364**)
-   - [ ] Deploy Vercel + `migration-email-eventos-sms.sql` + env Twilio
-   - [ ] Conta Twilio: From SMS→BR; trial = Verified Caller IDs
-   - [x] Campo reenviar convite sem e-mail pré-preenchido
-   - [x] Limpeza conta teste `nathalia.gomes1@gmail.com` (reteste)4. **[P1] Leitura de autos → peça + teses** — _código em prod; falta validar_
+3. **[P0] Pós-compra: webhook / e-mail / SMS** — _urgente_
+   - **Causa raiz (10/08):** zero webhooks reais em 36h — MP não entrega em `https://factoia.com.br/api/webhooks/mercadopago` (só simulações antigas). Sem webhook → sem e-mail/SMS automático.
+   - `payer_email` no preapproval costuma vir vazio após cancelar; e-mail está no `/v1/payments`.
+   - [x] Resolver e-mail via payment/fatura/search; não apagar e-mail local com null do MP
+   - [x] Aviso admin lista assinaturas; alerta se webhook silencioso 24h
+   - [x] Convite noreply ~10 min após financeiro; admin/teste imediato
+   - [x] Código SMS Twilio → +5511985036364
+   - [ ] **Você (MP):** URL + tópicos `subscription_preapproval`, `subscription_authorized_payment`, `payment` na mesma app dos mpago.la; compra teste deve criar linha em `/admin/emails` → Webhooks
+   - [ ] **Você (Vercel):** `TWILIO_*` + `migration-email-eventos-sms.sql`
+   - [ ] Enquanto webhook falhar: `/admin/emails` → **Sincronizar MP agora**
+
+4. **[P1] Leitura de autos → peça + teses** — _código em prod; falta validar_
    - [x] Modo **Analisar processo** + ficha + peça + confirmação
    - [x] Coluna Análises em `/admin/uso-pecas`
    - [x] Rodar `migration-cota-analises.sql` + `migration-admin-avisos.sql` no Supabase

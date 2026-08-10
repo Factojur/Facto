@@ -5,6 +5,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
+  buscarEmailPagadorPreapproval,
   buscarPagamentoInicialAprovado,
   chamarMercadoPago,
 } from "@/lib/mercadopago/client";
@@ -147,7 +148,18 @@ export async function upsertAssinaturaDePreapproval(
   const id = String(preapproval.id);
   const statusRaw = (preapproval.status ?? "").toLowerCase();
   const status = statusRaw === "cancelled" ? "canceled" : statusRaw;
-  const email = preapproval.payer_email?.trim().toLowerCase() || null;
+  let email = preapproval.payer_email?.trim().toLowerCase() || null;
+  if (email && !email.includes("@")) email = null;
+  if (!email) {
+    try {
+      email = await buscarEmailPagadorPreapproval(
+        id,
+        preapproval.payer_email
+      );
+    } catch {
+      /* ignore */
+    }
+  }
   const valor = parseValor(preapproval.auto_recurring?.transaction_amount);
   const plano = inferirPlano(
     valor,
@@ -168,9 +180,15 @@ export async function upsertAssinaturaDePreapproval(
 
   const { data: existente } = await admin
     .from("assinaturas")
-    .select("id, status, acesso_valido_ate, data_inicio, motivo_encerramento")
+    .select(
+      "id, status, acesso_valido_ate, data_inicio, motivo_encerramento, email"
+    )
     .eq("mp_preapproval_id", id)
     .maybeSingle();
+
+  if (!email && typeof existente?.email === "string" && existente.email.trim()) {
+    email = existente.email.trim().toLowerCase();
+  }
 
   const dataInicio =
     preapproval.date_created ?? existente?.data_inicio ?? null;
@@ -178,13 +196,13 @@ export async function upsertAssinaturaDePreapproval(
   const dados: Record<string, unknown> = {
     mp_preapproval_id: id,
     profile_id: profileId,
-    email,
     plano,
     valor,
     status,
     data_inicio: dataInicio,
     atualizado_em: new Date().toISOString(),
   };
+  if (email) dados.email = email;
 
   if (
     status === "authorized" &&

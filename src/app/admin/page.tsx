@@ -9,6 +9,7 @@ import {
   listarComprasDesde,
   obterInfoDiscoSupabase,
   rotuloStatusEmail,
+  webhookMpSilencioso,
   type CompraDesdeUltimoAcesso,
   type InfoDiscoSupabase,
   type StatusEmailCompra,
@@ -235,9 +236,10 @@ export default async function AdminPage({
   let naoRenovaram = 0;
   let totalHistorico = 0;
 
-  const [disco, acessoAnterior] = await Promise.all([
+  const [disco, acessoAnterior, webhookSilencioso] = await Promise.all([
     obterInfoDiscoSupabase(),
     lerUltimoAcessoAdmin(),
+    webhookMpSilencioso(24),
   ]);
   const { desdeIso, compras } = await listarComprasDesde(acessoAnterior);
   const primeiroAcesso = !acessoAnterior;
@@ -396,6 +398,24 @@ export default async function AdminPage({
         </div>
 
         <div className="mt-6 space-y-3">
+          {webhookSilencioso ? (
+            <div className="rounded-2xl border border-red-500/35 bg-red-500/10 px-5 py-4 text-sm text-red-100/90">
+              <p className="font-semibold text-red-100">
+                Webhook Mercado Pago sem eventos reais nas últimas 24h
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-red-100/75">
+                Compras podem não disparar e-mail/SMS automaticamente. Confira a
+                URL e os tópicos no painel MP e use{" "}
+                <Link
+                  href="/admin/emails"
+                  className="underline hover:text-white"
+                >
+                  /admin/emails → Sincronizar MP agora
+                </Link>
+                .
+              </p>
+            </div>
+          ) : null}
           <BannerDisco disco={disco} />
           <CardComprasDesdeAcesso
             desdeIso={desdeIso}

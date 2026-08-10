@@ -112,7 +112,7 @@ export async function buscarFaturasDaAssinatura(
 ): Promise<FaturaAssinaturaMp[]> {
   const qs = new URLSearchParams({
     preapproval_id: mpPreapprovalId,
-    limit: "50",
+    limit: "12",
     offset: "0",
   });
   const data = (await chamarMercadoPago(
@@ -192,6 +192,97 @@ export async function buscarPagamentoInicialAprovado(
     if (!detalhe) continue;
     const completo = faturaParaPagamentoInicial(detalhe);
     if (completo) return completo;
+  }
+
+  return null;
+}
+
+/**
+ * E-mail do pagador: preapproval.payer_email costuma vir vazio após cancelar.
+ * Fallback: payment vinculado à fatura (authorized_payments → /v1/payments).
+ */
+export async function buscarEmailPagadorPreapproval(
+  mpPreapprovalId: string,
+  payerEmailHint?: string | null
+): Promise<string | null> {
+  const hint = payerEmailHint?.trim().toLowerCase() || null;
+  if (hint && hint.includes("@")) return hint;
+
+  try {
+    const pag = await buscarPagamentoInicialAprovado(mpPreapprovalId);
+    // Mesmo refunded/approved: o payment guarda o e-mail do pagador.
+    if (pag?.paymentId) {
+      const payment = (await chamarMercadoPago(
+        `/v1/payments/${pag.paymentId}`
+      )) as {
+        payer?: { email?: string | null };
+        additional_info?: { payer?: { email?: string | null } };
+      };
+      const email =
+        payment.payer?.email?.trim() ||
+        payment.additional_info?.payer?.email?.trim() ||
+        null;
+      if (email && email.includes("@")) return email.toLowerCase();
+    }
+  } catch (erro) {
+    console.warn(
+      "[mercadopago] e-mail via payment inicial",
+      mpPreapprovalId,
+      erro
+    );
+  }
+
+  // Qualquer fatura → payment (inclusive refunded).
+  try {
+    const faturas = await buscarFaturasDaAssinatura(mpPreapprovalId);
+    for (const fatura of faturas) {
+      let paymentId = extrairPaymentId(fatura.payment as PaymentCampo);
+      if (!paymentId) {
+        const detalhe = await detalharFatura(fatura.id);
+        paymentId = extrairPaymentId(detalhe?.payment as PaymentCampo);
+      }
+      if (!paymentId) continue;
+      const payment = (await chamarMercadoPago(
+        `/v1/payments/${paymentId}`
+      )) as { payer?: { email?: string | null } };
+      const email = payment.payer?.email?.trim();
+      if (email && email.includes("@")) return email.toLowerCase();
+    }
+  } catch (erro) {
+    console.warn(
+      "[mercadopago] e-mail via faturas",
+      mpPreapprovalId,
+      erro
+    );
+  }
+
+  // Último recurso: payments recentes cujo subscription_id = preapproval.
+  try {
+    const data = (await chamarMercadoPago(
+      `/v1/payments/search?sort=date_created&criteria=desc&range=date_created&begin_date=NOW-7DAYS&end_date=NOW`
+    )) as {
+      results?: Array<{
+        id?: number | string;
+        payer?: { email?: string | null };
+        point_of_interaction?: {
+          transaction_data?: { subscription_id?: string | null };
+        };
+      }>;
+    };
+    for (const r of data.results ?? []) {
+      const sub =
+        r.point_of_interaction?.transaction_data?.subscription_id ?? null;
+      if (sub && String(sub) === String(mpPreapprovalId)) {
+        const email = r.payer?.email?.trim();
+        if (email && email.includes("@")) return email.toLowerCase();
+      }
+    }
+  } catch (erro) {
+    console.warn(
+      "[mercadopago] e-mail via payments/search",
+      mpPreapprovalId,
+      erro
+    );
   }
 
   return null;
