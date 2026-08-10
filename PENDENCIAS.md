@@ -62,8 +62,9 @@ Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou
 - [x] Migration scrape-cache aplicada.
 - [x] Aquecer cache JEC (`npm run aquecer:cache-tjsp`) — 15 termos.
 - [x] Lote inicial juris na base (`npm run seed:juris-ai-lote`) — ~97 ementas TJSP (temas JEC).
+- [x] Lote 2 balanceado autor×réu (`npm run seed:juris-ai-lote-2`) — +69 ementas (cota API esgotou no fim; retomar depois).
 - [ ] Reaquecer/limpar `juris_scrape_cache` (hoje tem HTML inválido do e-SAJ) + scraper mais rígido.
-- [ ] Completar temas com 0 resultados no lote (ex.: veículo, juros) + STJ.
+- [ ] Completar temas com 0 resultados / retomar lote 2 após reset da cota Jurisprudências.ai.
 - [ ] **7º token** Jurisprudências.ai.
 - [ ] Provedor secundário STJ.
 - [x] Embeddings / leitura de autos MVP (falta teste PDF).

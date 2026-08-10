@@ -15,6 +15,7 @@ import {
   tokensDoPool,
   type PrecedenteInterno,
 } from "../src/lib/juris-provedores/jurisprudencia-service";
+import { termosDoLote } from "./seed-juris-termos";
 
 config({ path: resolve(process.cwd(), ".env.local") });
 
@@ -24,25 +25,8 @@ const POR_TEMA = Math.max(
   Number(process.env.SEED_JURIS_POR_TEMA ?? 10) || 10
 );
 const TRIBUNAL = (process.env.SEED_JURIS_TRIBUNAL ?? "tjsp").toLowerCase();
-
-/** Temas JEC prioritários (alinhados ao aquecimento de cache). */
-const TERMOS_JEC = [
-  "indenização dano moral atraso voo",
-  "inexigibilidade débito negativação indevida",
-  "obrigação de fazer plano de saúde",
-  "dano moral cobrança indevida telefone",
-  "rescisão contrato compra venda veículo",
-  "dano material e moral falha prestação serviço",
-  "tutela urgência corte energia elétrica",
-  "CDC vício produto garantia",
-  "juros abusivos cartão crédito revisão",
-  "golpe pix transferência fraude banco",
-  "nome sujo SPC SERASA negativação",
-  "atraso entrega imóvel construtora",
-  "cancelamento passagem aérea reembolso",
-  "honorários advocatícios JEC",
-  "prova emprestada juizado especial",
-];
+const LOTE = Math.max(1, Number(process.env.SEED_JURIS_LOTE ?? 1) || 1);
+const TERMOS = termosDoLote(LOTE);
 
 type DecisaoAi = {
   process_number?: string;
@@ -223,7 +207,7 @@ async function main() {
   console.log(`Removidos: ${removidos}\n`);
 
   console.log(
-    `Lote Jurisprudências.ai → ${TRIBUNAL.toUpperCase()} · ${TERMOS_JEC.length} temas · até ${POR_TEMA}/tema\n`
+    `Lote ${LOTE} Jurisprudências.ai → ${TRIBUNAL.toUpperCase()} · ${TERMOS.length} consultas · até ${POR_TEMA}/consulta\n`
   );
 
   let inseridos = 0;
@@ -233,7 +217,7 @@ async function main() {
   let chamadas = 0;
   let tokenIdx = 0;
 
-  for (const termo of TERMOS_JEC) {
+  for (const termo of TERMOS) {
     process.stdout.write(`▸ ${termo.slice(0, 56)}… `);
 
     let decisoes: DecisaoAi[] = [];
