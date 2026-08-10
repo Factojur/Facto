@@ -3,6 +3,7 @@ import {
   emailJaEnviadoParaPagamento,
   registrarEmailEvento,
 } from "@/lib/email/eventos";
+import { htmlLogoEmail } from "@/lib/email/marca";
 
 const REMETENTE_FINANCEIRO =
   "FACTO Financeiro <financeiro@factoia.com.br>";
@@ -66,7 +67,7 @@ function htmlConfirmacaoCliente(opcoes: {
           <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="max-width:480px;width:100%;background-color:#242420;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);">
             <tr>
               <td style="padding:36px 40px 8px;text-align:center;">
-                <span style="display:inline-block;font-size:24px;font-weight:800;letter-spacing:0.08em;color:#908b6a;">FACTO</span>
+                ${htmlLogoEmail({ heightPx: 56 })}
               </td>
             </tr>
             <tr>

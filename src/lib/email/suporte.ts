@@ -4,6 +4,7 @@ import {
   type AssuntoSuporte,
 } from "@/lib/email/suporte-assuntos";
 import { registrarEmailEvento } from "@/lib/email/eventos";
+import { htmlLogoEmail } from "@/lib/email/marca";
 
 export type { AssuntoSuporte } from "@/lib/email/suporte-assuntos";
 export {
@@ -45,7 +46,7 @@ function montarHtmlSuporte(opcoes: {
           <table role="presentation" width="560" style="max-width:560px;width:100%;background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;">
             <tr>
               <td style="padding:24px 28px 8px;">
-                <div style="font-size:13px;font-weight:700;letter-spacing:0.08em;color:#908b6a;">FACTO</div>
+                <div style="margin:0 0 4px;">${htmlLogoEmail({ heightPx: 40 })}</div>
                 <h1 style="margin:12px 0 0;font-size:18px;color:#1c1917;">Nova mensagem de suporte</h1>
               </td>
             </tr>
