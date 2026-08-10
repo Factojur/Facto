@@ -5,11 +5,8 @@ import {
 } from "@/lib/email/eventos";
 import {
   planoPorValor,
-  PLANO_ANUAL,
-  PLANO_JEC,
-  PLANO_MENSAL,
-  PLANO_PRO,
-  PLANO_PRO_ANUAL,
+  rotuloPlano,
+  type PlanoId,
 } from "@/lib/planos-facto";
 import { htmlLogoEmail } from "@/lib/email/marca";
 
@@ -25,16 +22,15 @@ function formatarValor(valor: number | null | undefined): string {
   });
 }
 
-function rotuloPlanoPorValor(valor: number | null | undefined): string {
-  const id = planoPorValor(
+function rotuloPlanoEmail(
+  plano: PlanoId | null | undefined,
+  valor: number | null | undefined
+): string {
+  const porId = rotuloPlano(plano);
+  if (porId !== "—") return porId;
+  return rotuloPlano(planoPorValor(
     typeof valor === "number" && !Number.isNaN(valor) ? valor : null
-  );
-  if (id === "jec") return PLANO_JEC.rotulo;
-  if (id === "mensal") return PLANO_MENSAL.rotulo;
-  if (id === "pro") return PLANO_PRO.rotulo;
-  if (id === "anual") return PLANO_ANUAL.rotulo;
-  if (id === "pro_anual") return PLANO_PRO_ANUAL.rotulo;
-  return "—";
+  ));
 }
 
 function escaparHtml(texto: string): string {
@@ -49,6 +45,7 @@ function htmlAvisoInterno(opcoes: {
   emailCliente: string;
   valor: number | null | undefined;
   mpPaymentId: string;
+  plano?: PlanoId | null;
 }): string {
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -58,12 +55,12 @@ function htmlAvisoInterno(opcoes: {
       <h1 style="margin:12px 0 0;font-size:18px;">Nova compra aprovada</h1>
       <p style="margin:16px 0 8px;font-size:14px;line-height:1.5;">
         <strong>Cliente:</strong> ${escaparHtml(opcoes.emailCliente)}<br />
-        <strong>Plano:</strong> ${escaparHtml(rotuloPlanoPorValor(opcoes.valor))}<br />
+        <strong>Plano:</strong> ${escaparHtml(rotuloPlanoEmail(opcoes.plano, opcoes.valor))}<br />
         <strong>Valor:</strong> ${escaparHtml(formatarValor(opcoes.valor))}<br />
         <strong>ID Mercado Pago:</strong> ${escaparHtml(opcoes.mpPaymentId)}
       </p>
       <p style="margin:16px 0 0;font-size:12px;color:#78716c;">
-        O convite de cadastro é enviado em paralelo por noreply@factoia.com.br.
+        O convite de cadastro (noreply@) segue ~10 minutos depois, se o cliente ainda não tiver conta.
       </p>
     </div>
   </body>
@@ -144,6 +141,7 @@ export async function enviarEmailsFinanceiroCompra(opcoes: {
   emailCliente: string;
   valor?: number | null;
   mpPaymentId: string;
+  plano?: PlanoId | null;
 }): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   if (!apiKey) {
@@ -156,7 +154,7 @@ export async function enviarEmailsFinanceiroCompra(opcoes: {
       destinatario: opcoes.emailCliente,
       assunto: "Pagamento aprovado — FACTO",
       erro: "RESEND_API_KEY ausente",
-      metadados: { mpPaymentId: opcoes.mpPaymentId },
+      metadados: { mpPaymentId: opcoes.mpPaymentId, plano: opcoes.plano ?? null },
     });
     return;
   }
@@ -185,6 +183,7 @@ export async function enviarEmailsFinanceiroCompra(opcoes: {
         emailCliente: opcoes.emailCliente,
         valor: opcoes.valor ?? null,
         mpPaymentId: opcoes.mpPaymentId,
+        plano: opcoes.plano,
       }),
     });
   }

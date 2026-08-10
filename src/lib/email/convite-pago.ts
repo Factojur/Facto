@@ -74,12 +74,12 @@ function montarHtmlBoasVindas(link: string): string {
 
 /**
  * Boas-vindas + link de cadastro (remetente noreply@).
- * O comprovante financeiro vai em paralelo por financeiro@.
+ * No fluxo automático, agenda ~10 min após o financeiro (Resend scheduledAt).
  */
 export async function enviarEmailConvite(
   email: string,
   token: string,
-  opcoes?: { mpPaymentId?: string }
+  opcoes?: { mpPaymentId?: string; atrasoMinutos?: number }
 ) {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const remetente =
@@ -87,7 +87,14 @@ export async function enviarEmailConvite(
   const siteUrl = getSiteUrl();
   const link = `${siteUrl}/cadastro?token=${token}`;
   const assunto = "Bem-vindo ao FACTO — crie sua conta";
-  const metadados: Record<string, unknown> = { link };
+  const atrasoMin =
+    typeof opcoes?.atrasoMinutos === "number" && opcoes.atrasoMinutos > 0
+      ? opcoes.atrasoMinutos
+      : 0;
+  const metadados: Record<string, unknown> = {
+    link,
+    atrasoMinutos: atrasoMin,
+  };
   if (opcoes?.mpPaymentId) metadados.mpPaymentId = opcoes.mpPaymentId;
 
   if (!apiKey) {
@@ -113,6 +120,9 @@ export async function enviarEmailConvite(
     to: email,
     subject: assunto,
     html: montarHtmlBoasVindas(link),
+    ...(atrasoMin > 0
+      ? { scheduledAt: `in ${atrasoMin} minutes` }
+      : {}),
   });
 
   if (error) {

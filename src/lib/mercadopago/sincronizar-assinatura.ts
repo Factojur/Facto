@@ -14,6 +14,7 @@ import {
   PRECO_CHEQUE_MENSAL,
   PRECO_CHEQUE_PRO,
   PRECO_CHEQUE_PRO_ANUAL,
+  inferirPlanoPorTexto,
   planoPorValor,
   type PlanoId,
 } from "@/lib/planos-facto";
@@ -36,6 +37,7 @@ export type PreapprovalMp = {
   id: string;
   status?: string;
   payer_email?: string | null;
+  reason?: string | null;
   date_created?: string | null;
   auto_recurring?: {
     transaction_amount?: number | string | null;
@@ -66,8 +68,12 @@ function parseValor(raw: unknown): number | null {
 function inferirPlano(
   valor: number | null,
   frequencyType: string | undefined,
-  frequency: number | undefined
+  frequency: number | undefined,
+  reason?: string | null
 ): PlanoId | null {
+  const porNome = inferirPlanoPorTexto(reason);
+  if (porNome) return porNome;
+
   if (frequencyType === "months" && frequency === 12) {
     const porValor = planoPorValor(valor);
     if (porValor === "pro_anual" || porValor === "anual") return porValor;
@@ -146,7 +152,8 @@ export async function upsertAssinaturaDePreapproval(
   const plano = inferirPlano(
     valor,
     preapproval.auto_recurring?.frequency_type,
-    preapproval.auto_recurring?.frequency
+    preapproval.auto_recurring?.frequency,
+    preapproval.reason
   );
 
   let profileId: string | null = null;

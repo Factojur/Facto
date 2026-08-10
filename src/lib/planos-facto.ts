@@ -230,6 +230,34 @@ export function planoPorValor(valor: number | null | undefined): PlanoId | null 
   return null;
 }
 
+/** Rótulo comercial do plano (e-mails / admin). */
+export function rotuloPlano(id: PlanoId | null | undefined): string {
+  if (id === "jec") return PLANO_JEC.rotulo;
+  if (id === "mensal") return PLANO_MENSAL.rotulo;
+  if (id === "pro") return PLANO_PRO.rotulo;
+  if (id === "anual") return PLANO_ANUAL.rotulo;
+  if (id === "pro_anual") return PLANO_PRO_ANUAL.rotulo;
+  return "—";
+}
+
+/**
+ * Infere plano pelo nome/reason do MP (ex.: "Facto - Plano Completo (Mensal)").
+ * Essencial quando o valor no MP é de teste (ex.: R$ 0,50) e não bate no catálogo.
+ */
+export function inferirPlanoPorTexto(
+  texto: string | null | undefined
+): PlanoId | null {
+  if (!texto?.trim()) return null;
+  const t = texto.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
+
+  if (/\bpro\b/.test(t) && /anual/.test(t)) return "pro_anual";
+  if (/anual/.test(t) && !/\bpro\b/.test(t)) return "anual";
+  if (/\bpro\b/.test(t)) return "pro";
+  if (/\bjec\b|juizado/.test(t)) return "jec";
+  if (/completo|mensal/.test(t)) return "mensal";
+  return null;
+}
+
 export const PRECO_CHEQUE_JEC = PLANO_JEC.preco;
 export const PRECO_CHEQUE_MENSAL = PLANO_MENSAL.preco;
 export const PRECO_CHEQUE_PRO = PLANO_PRO.preco;

@@ -1,6 +1,9 @@
 /**
  * Pós-compra: convite + e-mails financeiro/noreply.
  * Usado pelo webhook MP e pelo reenvio manual no admin.
+ *
+ * - financeiro@: imediato (junto ao webhook de compra aprovada)
+ * - noreply@ (convite): ~10 min depois no fluxo automático; imediato no reenvio admin
  */
 
 import crypto from "node:crypto";
@@ -9,8 +12,12 @@ import { enviarEmailConvite } from "@/lib/email/convite-pago";
 import { enviarEmailsFinanceiroCompra } from "@/lib/email/pagamento-aprovado";
 import { emailJaEnviadoParaPagamento } from "@/lib/email/eventos";
 import { enviarSmsAlertaCompra } from "@/lib/sms/alerta-compra";
+import type { PlanoId } from "@/lib/planos-facto";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
+
+/** Atraso padrão do e-mail de boas-vindas após o financeiro (fluxo automático). */
+export const ATRASO_CONVITE_MINUTOS = 10;
 
 /**
  * Gera convite + e-mails (financeiro + boas-vindas) após cobrança aprovada.
@@ -25,6 +32,9 @@ export async function garantirConviteEEmailsPosCompra(
     email: string;
     mpPaymentId: string;
     valor: number | null;
+    plano?: PlanoId | null;
+    /** 0 = envia convite na hora (admin/teste). Default 10 no automático. */
+    atrasoConviteMinutos?: number;
   }
 ): Promise<{ financeiroOk: boolean; conviteOk: boolean; motivoConvite?: string }> {
   const email = opcoes.email.trim();
@@ -36,19 +46,31 @@ export async function garantirConviteEEmailsPosCompra(
     return { financeiroOk: false, conviteOk: false, motivoConvite: "sem_email" };
   }
 
+  let plano: PlanoId | null = opcoes.plano ?? null;
+  if (!plano) {
+    const { data: ass } = await admin
+      .from("assinaturas")
+      .select("plano")
+      .ilike("email", email)
+      .order("atualizado_em", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (ass?.plano) plano = ass.plano as PlanoId;
+  }
+
   let financeiroOk = false;
   try {
     await enviarEmailsFinanceiroCompra({
       emailCliente: email,
       valor: opcoes.valor,
       mpPaymentId: opcoes.mpPaymentId,
+      plano,
     });
     financeiroOk = true;
   } catch (erro) {
     console.error("[pos-compra] falha e-mails financeiro", erro);
   }
 
-  // Alerta SMS independente do e-mail (não quebra o fluxo se falhar).
   try {
     await enviarSmsAlertaCompra({
       emailCliente: email,
@@ -136,9 +158,15 @@ export async function garantirConviteEEmailsPosCompra(
     return { financeiroOk, conviteOk: false, motivoConvite: "sem_token" };
   }
 
+  const atrasoMin =
+    typeof opcoes.atrasoConviteMinutos === "number"
+      ? opcoes.atrasoConviteMinutos
+      : ATRASO_CONVITE_MINUTOS;
+
   try {
     await enviarEmailConvite(email, token, {
       mpPaymentId: opcoes.mpPaymentId,
+      atrasoMinutos: atrasoMin,
     });
     return { financeiroOk, conviteOk: true };
   } catch (erro) {
@@ -194,7 +222,6 @@ export function cobrancaAssinaturaAprovada(invoice: {
     return true;
   }
 
-  // Alguns payloads trazem só o id numérico do payment + status processed.
   if (invoiceStatus === "processed" || invoiceStatus === "approved") {
     return true;
   }

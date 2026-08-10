@@ -20,6 +20,7 @@ import {
   PRECO_CHEQUE_MENSAL,
   PRECO_CHEQUE_PRO,
   PRECO_CHEQUE_PRO_ANUAL,
+  inferirPlanoPorTexto,
   planoPorValor,
   type PlanoId,
 } from "@/lib/planos-facto";
@@ -84,8 +85,12 @@ function assinaturaValida(request: Request, dataId: string | null): boolean {
 function inferirPlano(
   valor: number | null,
   frequencyType: string | undefined,
-  frequency: number | undefined
+  frequency: number | undefined,
+  reason?: string | null
 ): PlanoId | null {
+  const porNome = inferirPlanoPorTexto(reason);
+  if (porNome) return porNome;
+
   if (frequencyType === "months" && frequency === 12) {
     const porValor = planoPorValor(valor);
     if (porValor === "pro_anual" || porValor === "anual") return porValor;
@@ -147,7 +152,8 @@ async function processarPreapproval(admin: AdminClient, id: string) {
   const plano = inferirPlano(
     valor,
     preapproval.auto_recurring?.frequency_type,
-    preapproval.auto_recurring?.frequency
+    preapproval.auto_recurring?.frequency,
+    typeof preapproval.reason === "string" ? preapproval.reason : null
   );
 
   let profileId: string | null = null;
@@ -263,11 +269,13 @@ async function processarPreapproval(admin: AdminClient, id: string) {
     console.info("[webhook mercadopago] pós-compra via preapproval authorized", {
       email,
       mpPaymentId,
+      plano,
     });
     await garantirConviteEEmailsPosCompra(admin, {
       email,
       mpPaymentId,
       valor: valorPago,
+      plano,
     });
   }
 }
@@ -289,6 +297,7 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
 
   let assinaturaId: string | null = null;
   let emailCliente: string | null = null;
+  let planoCliente: PlanoId | null = null;
 
   if (preapprovalId) {
     const { data: assinatura } = await admin
@@ -298,6 +307,7 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
       .maybeSingle();
     assinaturaId = assinatura?.id ?? null;
     emailCliente = (assinatura?.email as string | undefined) ?? null;
+    planoCliente = (assinatura?.plano as PlanoId | null) ?? null;
 
     if (!emailCliente) {
       try {
@@ -306,6 +316,23 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
         );
         emailCliente =
           (preapproval.payer_email as string | undefined) ?? null;
+        if (!planoCliente) {
+          const valorPa = preapproval.auto_recurring?.transaction_amount;
+          const valorNum =
+            typeof valorPa === "number"
+              ? valorPa
+              : typeof valorPa === "string"
+                ? parseFloat(valorPa)
+                : null;
+          planoCliente = inferirPlano(
+            typeof valorNum === "number" && !Number.isNaN(valorNum)
+              ? valorNum
+              : null,
+            preapproval.auto_recurring?.frequency_type,
+            preapproval.auto_recurring?.frequency,
+            typeof preapproval.reason === "string" ? preapproval.reason : null
+          );
+        }
       } catch (erro) {
         console.warn(
           "[webhook mercadopago] não foi possível obter e-mail do preapproval",
@@ -315,8 +342,7 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
     }
 
     if (assinaturaId && cobrancaAprovada) {
-      const plano =
-        (assinatura?.plano as PlanoId | null) ?? "mensal";
+      const plano = planoCliente ?? "mensal";
       const dataPagamento = invoice.debit_date
         ? new Date(invoice.debit_date)
         : new Date();
@@ -329,6 +355,7 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
         .update({
           acesso_valido_ate: acessoValidoAte,
           ...(emailCliente ? { email: emailCliente } : {}),
+          ...(planoCliente ? { plano: planoCliente } : {}),
         })
         .eq("id", assinaturaId);
     } else if (
@@ -413,11 +440,13 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
     console.info("[webhook mercadopago] pós-compra via authorized_payment", {
       email: emailCliente,
       mpPaymentId,
+      plano: planoCliente,
     });
     await garantirConviteEEmailsPosCompra(admin, {
       email: emailCliente,
       mpPaymentId,
       valor: typeof valor === "number" && !Number.isNaN(valor) ? valor : null,
+      plano: planoCliente,
     });
   } else {
     console.info(

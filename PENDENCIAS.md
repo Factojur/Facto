@@ -13,18 +13,16 @@ Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou
 2. **[P0] Embeddings / busca semântica** — _feito_
    - [x] Migration + reindex + retrieve híbrido + deploy
 
-3. **[P0] Pós-compra: e-mail não chega + alerta SMS** — _urgente_
-   - Sintoma: compra teste MP ok; e-mail financeiro@ e cliente **não chegam**
-   - [ ] Diagnosticar Resend (domínio, SPF/DKIM/DMARC, logs Resend, `email_eventos`, webhook_eventos_mp)
-   - [x] Código SMS alerta (Twilio → **+5511985036364**) no pós-compra (assinatura + pacote extra)
-   - [ ] **Deploy** Vercel após push
-   - [ ] Rodar `supabase/migration-email-eventos-sms.sql` no Supabase
-   - [ ] Vercel env: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`
-   - [ ] Opcional: `ALERTA_COMPRA_SMS_PARA=+5511985036364` (já é o default no código)
-   - [ ] Conta Twilio: número From capaz de SMS para BR; em trial, verificar o destino em Verified Caller IDs
-   - [ ] Testar: `/admin/emails` → compra falsa **ou** compra real → SMS deve chegar; aí abrir admin e reenviar e-mail se preciso
-   - [x] Campo reenviar convite sem e-mail pré-preenchido (preencher por compra)
-4. **[P1] Leitura de autos → peça + teses** — _código em prod; falta validar_
+3. **[P0] Pós-compra: e-mail / plano / SMS** — _em andamento_
+   - Sintoma: compra teste MP ok; financeiro às vezes sem plano se valor ≠ catálogo (ex. R$ 0,50)
+   - [x] Inferir plano pelo **nome/reason** do MP + passar `plano` no e-mail financeiro
+   - [x] Convite noreply ~**10 min** após financeiro (Resend `scheduledAt`); admin/teste imediato
+   - [ ] Validar em prod após deploy (compra teste Completo mensal)
+   - [x] Código SMS alerta (Twilio → **+5511985036364**)
+   - [ ] Deploy Vercel + `migration-email-eventos-sms.sql` + env Twilio
+   - [ ] Conta Twilio: From SMS→BR; trial = Verified Caller IDs
+   - [x] Campo reenviar convite sem e-mail pré-preenchido
+   - [x] Limpeza conta teste `nathalia.gomes1@gmail.com` (reteste)4. **[P1] Leitura de autos → peça + teses** — _código em prod; falta validar_
    - [x] Modo **Analisar processo** + ficha + peça + confirmação
    - [x] Coluna Análises em `/admin/uso-pecas`
    - [x] Rodar `migration-cota-analises.sql` + `migration-admin-avisos.sql` no Supabase

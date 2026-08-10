@@ -51,6 +51,7 @@ export async function POST(request: Request) {
       email,
       mpPaymentId,
       valor,
+      atrasoConviteMinutos: 0,
     });
 
     return NextResponse.json({

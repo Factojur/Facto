@@ -5,6 +5,7 @@ import { isAdminEmail } from "@/lib/admin-auth";
 import { buscarPagamentoInicialAprovado } from "@/lib/mercadopago/client";
 import { garantirConviteEEmailsPosCompra } from "@/lib/mercadopago/pos-compra";
 import { sincronizarAssinaturaPorEmail } from "@/lib/mercadopago/sincronizar-assinatura";
+import type { PlanoId } from "@/lib/planos-facto";
 
 /**
  * POST /api/admin/emails/reenviar-compra
@@ -126,6 +127,8 @@ export async function POST(request: Request) {
       email: emailEnvio,
       mpPaymentId,
       valor,
+      plano: (assinatura?.plano as PlanoId | null) ?? sync?.plano ?? null,
+      atrasoConviteMinutos: 0,
     });
 
     return NextResponse.json({
