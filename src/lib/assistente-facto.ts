@@ -24,7 +24,7 @@ export type DecisaoAssistente = {
   fonte: "gemini" | "regras";
 };
 
-export type ModoDefinicaoAcao = "assistente" | "livre";
+export type ModoDefinicaoAcao = "assistente" | "livre" | "processo";
 
 function contemAlgum(texto: string, termos: string[]): boolean {
   return termos.some((t) => texto.includes(t));

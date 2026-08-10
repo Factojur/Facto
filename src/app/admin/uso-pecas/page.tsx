@@ -6,6 +6,7 @@ import { FactoLogo } from "@/components/brand/facto-logo";
 import { EMAIL_ADMIN, isAdminEmail } from "@/lib/admin-auth";
 import {
   cicloAtualLocal,
+  estimarCustoAnalises,
   estimarCustoGemini,
   formatarBrl,
   formatarUsd,
@@ -26,6 +27,7 @@ type CotaRow = {
   ciclo: string;
   usadas: number;
   extras: number;
+  analises?: number | null;
 };
 
 type AssinaturaRow = {
@@ -45,7 +47,12 @@ type ClienteUso = {
   plano: string;
   pecasPeriodo: number;
   extrasPeriodo: number;
+  analisesPeriodo: number;
   ciclosComUso: number;
+  custoPecasUsd: number;
+  custoPecasBrl: number;
+  custoAnalisesUsd: number;
+  custoAnalisesBrl: number;
   custoUsd: number;
   custoBrl: number;
 };
@@ -91,6 +98,7 @@ export default async function AdminUsoPecasPage({
   let clientes: ClienteUso[] = [];
   let ciclosDisponiveis: string[] = [cicloAtual];
   const estimativaUnitaria = estimarCustoGemini(1);
+  const estimativaAnalise = estimarCustoAnalises(1);
 
   try {
     const admin = createAdminClient();
@@ -100,7 +108,7 @@ export default async function AdminUsoPecasPage({
         .from("profiles")
         .select("id, email, nome_completo, created_at, tipo_usuario")
         .order("created_at", { ascending: false }),
-      admin.from("cota_pecas_ciclo").select("user_id, ciclo, usadas, extras"),
+      admin.from("cota_pecas_ciclo").select("user_id, ciclo, usadas, extras, analises"),
       admin
         .from("assinaturas")
         .select("email, plano, status, criado_em, acesso_valido_ate")
@@ -179,7 +187,12 @@ export default async function AdminUsoPecasPage({
           (acc, c) => acc + (c.extras ?? 0),
           0
         );
-        const custo = estimarCustoGemini(pecasPeriodo);
+        const analisesPeriodo = linhas.reduce(
+          (acc, c) => acc + (c.analises ?? 0),
+          0
+        );
+        const custoPecas = estimarCustoGemini(pecasPeriodo);
+        const custoAnalises = estimarCustoAnalises(analisesPeriodo);
 
         return {
           id: p.id,
@@ -190,9 +203,18 @@ export default async function AdminUsoPecasPage({
           plano: planoPorEmail.get(email.toLowerCase()) ?? "sem plano",
           pecasPeriodo,
           extrasPeriodo,
-          ciclosComUso: linhas.filter((c) => (c.usadas ?? 0) > 0).length,
-          custoUsd: custo.usd,
-          custoBrl: custo.brl,
+          analisesPeriodo,
+          ciclosComUso: linhas.filter(
+            (c) => (c.usadas ?? 0) > 0 || (c.analises ?? 0) > 0
+          ).length,
+          custoPecasUsd: custoPecas.usd,
+          custoPecasBrl: custoPecas.brl,
+          custoAnalisesUsd: custoAnalises.usd,
+          custoAnalisesBrl: custoAnalises.brl,
+          custoUsd:
+            Math.round((custoPecas.usd + custoAnalises.usd) * 100) / 100,
+          custoBrl:
+            Math.round((custoPecas.brl + custoAnalises.brl) * 100) / 100,
         } satisfies ClienteUso;
       })
       .filter((c) => {
@@ -208,8 +230,16 @@ export default async function AdminUsoPecasPage({
   }
 
   const totalPecas = clientes.reduce((a, c) => a + c.pecasPeriodo, 0);
-  const totalCusto = estimarCustoGemini(totalPecas);
-  const comUso = clientes.filter((c) => c.pecasPeriodo > 0).length;
+  const totalAnalises = clientes.reduce((a, c) => a + c.analisesPeriodo, 0);
+  const totalCustoPecas = estimarCustoGemini(totalPecas);
+  const totalCustoAnalises = estimarCustoAnalises(totalAnalises);
+  const totalCustoUsd =
+    Math.round((totalCustoPecas.usd + totalCustoAnalises.usd) * 100) / 100;
+  const totalCustoBrl =
+    Math.round((totalCustoPecas.brl + totalCustoAnalises.brl) * 100) / 100;
+  const comUso = clientes.filter(
+    (c) => c.pecasPeriodo > 0 || c.analisesPeriodo > 0
+  ).length;
 
   const pill = (id: string, label: string, href: string, ativo: boolean) => (
     <Link
@@ -257,10 +287,11 @@ export default async function AdminUsoPecasPage({
           Uso de peças por cliente
         </h1>
         <p className="mt-1 max-w-2xl text-sm text-stone-400">
-          Checklist mensal desde o cadastro de cada cliente. O custo Gemini é
-          estimado (~{formatarUsd(estimativaUnitaria.usdPorPeca)}/peça, câmbio ≈
-          R$ {estimativaUnitaria.cambio.toFixed(2)}) — ainda sem medição de
-          tokens por request.
+          Checklist mensal desde o cadastro de cada cliente. Custo Gemini
+          estimado: ~{formatarUsd(estimativaUnitaria.usdPorPeca)}/peça e ~
+          {formatarUsd(estimativaAnalise.usdPorAnalise)}/análise (câmbio ≈ R${" "}
+          {estimativaUnitaria.cambio.toFixed(2)}) — ainda sem medição de tokens
+          por request. Análises de processo não cobram o cliente.
         </p>
         <p className="mt-1 text-xs text-stone-500">
           Visível apenas para {EMAIL_ADMIN}.
@@ -355,7 +386,7 @@ export default async function AdminUsoPecasPage({
               </button>
             </form>
 
-            <div className="mt-8 grid gap-4 sm:grid-cols-3">
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
                 <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
                   Peças no período
@@ -369,13 +400,26 @@ export default async function AdminUsoPecasPage({
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
                 <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
+                  Análises no período
+                </p>
+                <p className="mt-2 text-3xl font-bold text-white">
+                  {totalAnalises}
+                </p>
+                <p className="mt-1 text-xs text-stone-500">
+                  grátis para o usuário
+                </p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
                   Custo Gemini (est.)
                 </p>
                 <p className="mt-2 text-3xl font-bold text-facto-gold">
-                  {formatarUsd(totalCusto.usd)}
+                  {formatarUsd(totalCustoUsd)}
                 </p>
                 <p className="mt-1 text-xs text-stone-500">
-                  ≈ {formatarBrl(totalCusto.brl)}
+                  ≈ {formatarBrl(totalCustoBrl)} · peças{" "}
+                  {formatarUsd(totalCustoPecas.usd)} + análises{" "}
+                  {formatarUsd(totalCustoAnalises.usd)}
                 </p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
@@ -405,6 +449,9 @@ export default async function AdminUsoPecasPage({
                       Extras
                     </th>
                     <th className="px-4 py-3 font-medium text-right">
+                      Análises
+                    </th>
+                    <th className="px-4 py-3 font-medium text-right">
                       Gemini (est.)
                     </th>
                   </tr>
@@ -413,7 +460,7 @@ export default async function AdminUsoPecasPage({
                   {clientes.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={7}
                         className="px-4 py-10 text-center text-stone-500"
                       >
                         Nenhum cliente neste filtro.
@@ -443,6 +490,14 @@ export default async function AdminUsoPecasPage({
                         </td>
                         <td className="px-4 py-3 text-right text-stone-400">
                           {c.extrasPeriodo}
+                        </td>
+                        <td className="px-4 py-3 text-right text-white">
+                          {c.analisesPeriodo}
+                          {c.analisesPeriodo > 0 && (
+                            <span className="block text-[10px] text-stone-600">
+                              ≈ {formatarUsd(c.custoAnalisesUsd)}
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <span className="text-facto-gold">

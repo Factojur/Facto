@@ -162,6 +162,7 @@ export async function consumirUmaPeca(opcoes: {
         ciclo,
         usadas: 1,
         extras: 0,
+        analises: 0,
       });
       if (insErr) {
         console.warn("[cota] insert falhou (fail-open):", insErr.message);
@@ -213,6 +214,7 @@ export async function creditarExtras(opcoes: {
       ciclo,
       usadas: 0,
       extras: q,
+      analises: 0,
     });
   } else {
     await admin
@@ -226,4 +228,101 @@ export async function creditarExtras(opcoes: {
   }
 
   return obterResumoCotaUsuario(opcoes);
+}
+
+/**
+ * Lê contagem de análises do ciclo (fail-open → 0).
+ */
+export async function obterContagemAnalises(opcoes: {
+  userId: string;
+}): Promise<number> {
+  const ciclo = cicloAtualSaoPaulo();
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("cota_pecas_ciclo")
+      .select("analises")
+      .eq("user_id", opcoes.userId)
+      .eq("ciclo", ciclo)
+      .maybeSingle();
+    if (error) return 0;
+    return Number(data?.analises ?? 0);
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Registra 1 análise de processo no ciclo (métrica operacional).
+ * Não consome cota de peça. Fail-open se a coluna ainda não existir.
+ * Rate-limit suave: ~60 análises/mês por usuário (anti-abuso).
+ */
+export const LIMITE_ANALISES_CICLO = 60;
+
+export async function registrarUmaAnalise(opcoes: {
+  userId: string;
+  email: string;
+}): Promise<
+  | { ok: true; analises: number }
+  | { ok: false; motivo: "limite"; analises: number }
+> {
+  if (isEmailAcessoLivre(opcoes.email)) {
+    return { ok: true, analises: 0 };
+  }
+
+  const ciclo = cicloAtualSaoPaulo();
+
+  try {
+    const admin = createAdminClient();
+    const { data: atual, error } = await admin
+      .from("cota_pecas_ciclo")
+      .select("usadas, extras, analises")
+      .eq("user_id", opcoes.userId)
+      .eq("ciclo", ciclo)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("[analises] leitura falhou (fail-open):", error.message);
+      return { ok: true, analises: 0 };
+    }
+
+    const usadasAnalises = Number(atual?.analises ?? 0);
+    if (usadasAnalises >= LIMITE_ANALISES_CICLO) {
+      return { ok: false, motivo: "limite", analises: usadasAnalises };
+    }
+
+    if (!atual) {
+      const { error: insErr } = await admin.from("cota_pecas_ciclo").insert({
+        user_id: opcoes.userId,
+        ciclo,
+        usadas: 0,
+        extras: 0,
+        analises: 1,
+      });
+      if (insErr) {
+        console.warn("[analises] insert falhou (fail-open):", insErr.message);
+        return { ok: true, analises: 0 };
+      }
+      return { ok: true, analises: 1 };
+    }
+
+    const { error: updErr } = await admin
+      .from("cota_pecas_ciclo")
+      .update({
+        analises: usadasAnalises + 1,
+        atualizado_em: new Date().toISOString(),
+      })
+      .eq("user_id", opcoes.userId)
+      .eq("ciclo", ciclo);
+
+    if (updErr) {
+      console.warn("[analises] update falhou (fail-open):", updErr.message);
+      return { ok: true, analises: usadasAnalises };
+    }
+
+    return { ok: true, analises: usadasAnalises + 1 };
+  } catch (erro) {
+    console.warn("[analises] exceção (fail-open):", erro);
+    return { ok: true, analises: 0 };
+  }
 }

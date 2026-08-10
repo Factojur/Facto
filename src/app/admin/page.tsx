@@ -4,6 +4,16 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { FactoLogo } from "@/components/brand/facto-logo";
 import { EMAIL_ADMIN, isAdminEmail } from "@/lib/admin-auth";
+import {
+  lerUltimoAcessoAdmin,
+  listarComprasDesde,
+  obterInfoDiscoSupabase,
+  rotuloStatusEmail,
+  type CompraDesdeUltimoAcesso,
+  type InfoDiscoSupabase,
+  type StatusEmailCompra,
+} from "@/lib/admin-avisos";
+import { BotaoMarcarComprasVistas } from "@/components/admin/botao-marcar-compras-vistas";
 
 const PERIODOS = {
   mensal: { label: "Último mês", dias: 30 },
@@ -30,6 +40,167 @@ function formatarData(data: string | null) {
   return new Date(data).toLocaleDateString("pt-BR");
 }
 
+function formatarDataHora(data: string | null) {
+  if (!data) return "—";
+  return new Date(data).toLocaleString("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+}
+
+function classeStatusEmail(s: StatusEmailCompra): string {
+  if (s === "enviado") return "text-emerald-400";
+  if (s === "falha") return "text-red-400";
+  if (s === "parcial") return "text-amber-300";
+  return "text-stone-500";
+}
+
+function BannerDisco({ disco }: { disco: InfoDiscoSupabase }) {
+  if (disco.status === "desconhecido") {
+    return (
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 text-sm text-stone-400">
+        <p className="font-medium text-stone-300">Disco Supabase</p>
+        <p className="mt-1">
+          Não foi possível ler o tamanho do banco (rode{" "}
+          <code className="text-facto-gold">migration-admin-avisos.sql</code>
+          ). Limite configurado: {disco.limiteMb} MB ({disco.rotuloPlano}).
+        </p>
+      </div>
+    );
+  }
+
+  const tom =
+    disco.status === "critico"
+      ? "border-red-500/40 bg-red-500/10 text-red-100"
+      : disco.status === "atencao"
+        ? "border-amber-500/40 bg-amber-500/10 text-amber-100"
+        : "border-emerald-500/30 bg-emerald-500/10 text-emerald-100";
+
+  const titulo =
+    disco.status === "critico"
+      ? "Disco Supabase — crítico"
+      : disco.status === "atencao"
+        ? "Disco Supabase — atenção"
+        : "Disco Supabase — OK";
+
+  return (
+    <div className={`rounded-2xl border px-5 py-4 text-sm ${tom}`}>
+      <p className="font-semibold">{titulo}</p>
+      <p className="mt-1 opacity-90">
+        {disco.usadosMb} MB usados de {disco.limiteMb} MB ({disco.percentual}
+        %) · {disco.rotuloPlano}. Ajuste{" "}
+        <code className="opacity-80">SUPABASE_PLAN</code> /{" "}
+        <code className="opacity-80">SUPABASE_DB_LIMIT_MB</code> no ambiente se
+        o plano for outro.
+      </p>
+    </div>
+  );
+}
+
+function CardComprasDesdeAcesso({
+  desdeIso,
+  primeiroAcesso,
+  compras,
+}: {
+  desdeIso: string;
+  primeiroAcesso: boolean;
+  compras: CompraDesdeUltimoAcesso[];
+}) {
+  if (compras.length === 0) {
+    return (
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 text-sm text-stone-400">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="font-medium text-stone-300">
+            Compras desde o último acesso
+          </p>
+          {!primeiroAcesso && <BotaoMarcarComprasVistas />}
+        </div>
+        <p className="mt-1">
+          Nenhuma compra aprovada{" "}
+          {primeiroAcesso
+            ? "nas últimas 48h (ainda sem “último acesso” registrado — use Marcar como vistas após conferir)."
+            : `desde ${formatarDataHora(desdeIso)}.`}
+        </p>
+        {primeiroAcesso && (
+          <div className="mt-3">
+            <BotaoMarcarComprasVistas />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-facto-gold/30 bg-facto-gold/[0.07] px-5 py-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p className="text-sm font-semibold text-facto-gold">
+          {compras.length} compra{compras.length !== 1 ? "s" : ""} desde o
+          último acesso
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-xs text-stone-500">
+            {primeiroAcesso
+              ? "Janela: últimas 48h"
+              : `Desde ${formatarDataHora(desdeIso)}`}
+            {" · "}
+            <Link
+              href="/admin/emails"
+              className="underline hover:text-stone-300"
+            >
+              ver e-mails
+            </Link>
+          </p>
+          <BotaoMarcarComprasVistas />
+        </div>
+      </div>
+      <p className="mt-1 text-xs text-stone-400">
+        Confira se o e-mail de pagamento e o convite saíram corretamente. Depois
+        clique em “Marcar como vistas”.
+      </p>
+      <div className="mt-4 overflow-x-auto rounded-xl border border-white/10">
+        <table className="min-w-full text-left text-sm">
+          <thead className="bg-black/20 text-xs uppercase tracking-wide text-stone-500">
+            <tr>
+              <th className="px-3 py-2 font-medium">Quando</th>
+              <th className="px-3 py-2 font-medium">Cliente</th>
+              <th className="px-3 py-2 font-medium">Plano</th>
+              <th className="px-3 py-2 font-medium text-right">Valor</th>
+              <th className="px-3 py-2 font-medium">E-mail pgto</th>
+              <th className="px-3 py-2 font-medium">Convite</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5 text-stone-300">
+            {compras.map((c) => (
+              <tr key={c.id}>
+                <td className="whitespace-nowrap px-3 py-2 text-xs text-stone-400">
+                  {formatarDataHora(c.pagoEm)}
+                </td>
+                <td className="px-3 py-2">{c.email}</td>
+                <td className="px-3 py-2 capitalize text-stone-400">
+                  {c.plano ?? "—"}
+                </td>
+                <td className="px-3 py-2 text-right">
+                  {c.valor !== null ? formatarMoeda(c.valor) : "—"}
+                </td>
+                <td
+                  className={`px-3 py-2 text-xs font-medium ${classeStatusEmail(c.emailFinanceiro)}`}
+                >
+                  {rotuloStatusEmail(c.emailFinanceiro)}
+                </td>
+                <td
+                  className={`px-3 py-2 text-xs font-medium ${classeStatusEmail(c.emailConvite)}`}
+                >
+                  {rotuloStatusEmail(c.emailConvite)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export default async function AdminPage({
   searchParams,
 }: {
@@ -40,15 +211,15 @@ export default async function AdminPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  // O middleware já bloqueia quem não é admin, mas checamos de novo aqui —
-  // esta página nunca deve confiar só numa camada de proteção.
   if (!user || !isAdminEmail(user.email)) {
     redirect("/dashboard");
   }
 
   const { periodo: periodoParam } = await searchParams;
   const periodo: PeriodoKey =
-    periodoParam && periodoParam in PERIODOS ? (periodoParam as PeriodoKey) : "mensal";
+    periodoParam && periodoParam in PERIODOS
+      ? (periodoParam as PeriodoKey)
+      : "mensal";
   const { dias } = PERIODOS[periodo];
 
   const desde = new Date();
@@ -63,6 +234,13 @@ export default async function AdminPage({
   let cancelados = 0;
   let naoRenovaram = 0;
   let totalHistorico = 0;
+
+  const [disco, acessoAnterior] = await Promise.all([
+    obterInfoDiscoSupabase(),
+    lerUltimoAcessoAdmin(),
+  ]);
+  const { desdeIso, compras } = await listarComprasDesde(acessoAnterior);
+  const primeiroAcesso = !acessoAnterior;
 
   try {
     const admin = createAdminClient();
@@ -82,16 +260,23 @@ export default async function AdminPage({
         .eq("status", "approved")
         .gte("pago_em", desde.toISOString())
         .order("pago_em", { ascending: false }),
-      // Faturamento de todo o histórico, sem filtro de data — independente
-      // do período escolhido nos botões acima.
       admin.from("pagamentos").select("valor").eq("status", "approved"),
-      admin.from("assinaturas").select("id", { count: "exact", head: true }).eq("status", "authorized"),
-      admin.from("assinaturas").select("id", { count: "exact", head: true }).eq("status", "paused"),
+      admin
+        .from("assinaturas")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "authorized"),
+      admin
+        .from("assinaturas")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "paused"),
       admin
         .from("assinaturas")
         .select("id", { count: "exact", head: true })
         .eq("status", "canceled")
-        .in("motivo_encerramento", ["cancelado_pelo_cliente", "arrependimento_cdc"]),
+        .in("motivo_encerramento", [
+          "cancelado_pelo_cliente",
+          "arrependimento_cdc",
+        ]),
       admin
         .from("assinaturas")
         .select("id", { count: "exact", head: true })
@@ -110,9 +295,13 @@ export default async function AdminPage({
       assinaturas: { email: string | null } | null;
     }>;
 
-    faturamentoPeriodo = linhas.reduce((soma, item) => soma + Number(item.valor ?? 0), 0);
+    faturamentoPeriodo = linhas.reduce(
+      (soma, item) => soma + Number(item.valor ?? 0),
+      0
+    );
     faturamentoTotal = (faturamentoTotalResp.data ?? []).reduce(
-      (soma, item) => soma + Number((item as { valor: number | string | null }).valor ?? 0),
+      (soma, item) =>
+        soma + Number((item as { valor: number | string | null }).valor ?? 0),
       0
     );
     pagamentosRecentes = linhas.slice(0, 20).map((item) => ({
@@ -149,7 +338,11 @@ export default async function AdminPage({
           <code className="rounded bg-white/10 px-1.5 py-0.5 text-facto-gold">
             SUPABASE_SERVICE_ROLE_KEY
           </code>{" "}
-          no <code className="rounded bg-white/10 px-1.5 py-0.5 text-facto-gold">.env.local</code>.
+          no{" "}
+          <code className="rounded bg-white/10 px-1.5 py-0.5 text-facto-gold">
+            .env.local
+          </code>
+          .
         </p>
         <Link
           href="/dashboard"
@@ -167,7 +360,9 @@ export default async function AdminPage({
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <FactoLogo variant="horizontal" size="sm" />
-            <h1 className="mt-4 text-2xl font-bold text-white">Painel financeiro</h1>
+            <h1 className="mt-4 text-2xl font-bold text-white">
+              Painel financeiro
+            </h1>
             <p className="mt-1 text-sm text-stone-500">
               Visível apenas para {EMAIL_ADMIN}.
             </p>
@@ -200,6 +395,15 @@ export default async function AdminPage({
           </div>
         </div>
 
+        <div className="mt-6 space-y-3">
+          <BannerDisco disco={disco} />
+          <CardComprasDesdeAcesso
+            desdeIso={desdeIso}
+            primeiroAcesso={primeiroAcesso}
+            compras={compras}
+          />
+        </div>
+
         <div className="mt-8 flex gap-2">
           {(Object.keys(PERIODOS) as PeriodoKey[]).map((chave) => (
             <Link
@@ -228,9 +432,18 @@ export default async function AdminPage({
           />
           <CardKpi titulo="Assinantes ativos" valor={String(ativos)} />
           <CardKpi titulo="Assinantes pausados" valor={String(pausados)} />
-          <CardKpi titulo="Cancelaram a assinatura" valor={String(cancelados)} />
-          <CardKpi titulo="Não renovaram (pagamento falhou)" valor={String(naoRenovaram)} />
-          <CardKpi titulo="Total de contas já criadas" valor={String(totalHistorico)} />
+          <CardKpi
+            titulo="Cancelaram a assinatura"
+            valor={String(cancelados)}
+          />
+          <CardKpi
+            titulo="Não renovaram (pagamento falhou)"
+            valor={String(naoRenovaram)}
+          />
+          <CardKpi
+            titulo="Total de contas já criadas"
+            valor={String(totalHistorico)}
+          />
         </div>
 
         <div className="mt-10">
@@ -250,19 +463,28 @@ export default async function AdminPage({
               <tbody className="divide-y divide-white/5">
                 {pagamentosRecentes.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-stone-500">
+                    <td
+                      colSpan={4}
+                      className="px-4 py-8 text-center text-stone-500"
+                    >
                       Nenhum pagamento registrado neste período ainda.
                     </td>
                   </tr>
                 )}
                 {pagamentosRecentes.map((pagamento) => (
                   <tr key={pagamento.id} className="text-stone-300">
-                    <td className="px-4 py-3">{formatarData(pagamento.pago_em)}</td>
+                    <td className="px-4 py-3">
+                      {formatarData(pagamento.pago_em)}
+                    </td>
                     <td className="px-4 py-3">{pagamento.email ?? "—"}</td>
                     <td className="px-4 py-3">
-                      {pagamento.valor !== null ? formatarMoeda(pagamento.valor) : "—"}
+                      {pagamento.valor !== null
+                        ? formatarMoeda(pagamento.valor)
+                        : "—"}
                     </td>
-                    <td className="px-4 py-3 capitalize">{pagamento.status ?? "—"}</td>
+                    <td className="px-4 py-3 capitalize">
+                      {pagamento.status ?? "—"}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -291,7 +513,9 @@ function CardKpi({
           : "border-white/10 bg-white/[0.03]"
       }`}
     >
-      <p className="text-xs font-medium uppercase tracking-wide text-stone-500">{titulo}</p>
+      <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
+        {titulo}
+      </p>
       <p
         className={`mt-2 text-2xl font-bold ${
           destaque ? "text-facto-gold" : "text-white"

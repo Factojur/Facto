@@ -24,6 +24,12 @@ export const TOKENS_MEDIOS_POR_PECA = {
   redacaoOut: 6_000,
 } as const;
 
+/** Tokens médios por análise de processo (1 chamada Flash estruturada). */
+export const TOKENS_MEDIOS_POR_ANALISE = {
+  input: 18_000,
+  output: 2_500,
+} as const;
+
 /** Câmbio aproximado para exibição em BRL (atualize periodicamente). */
 export const CAMBIO_USD_BRL_APROX = 5.7;
 
@@ -35,6 +41,15 @@ export function custoEstimadoUsdPorPeca(): number {
     (t.triagemOut / 1_000_000) * p.flashLiteOutput +
     (t.redacaoIn / 1_000_000) * p.flashInput +
     (t.redacaoOut / 1_000_000) * p.flashOutput;
+  return Math.round(usd * 10_000) / 10_000;
+}
+
+export function custoEstimadoUsdPorAnalise(): number {
+  const t = TOKENS_MEDIOS_POR_ANALISE;
+  const p = CUSTO_GEMINI_USD_POR_1M;
+  const usd =
+    (t.input / 1_000_000) * p.flashInput +
+    (t.output / 1_000_000) * p.flashOutput;
   return Math.round(usd * 10_000) / 10_000;
 }
 
@@ -54,6 +69,26 @@ export function estimarCustoGemini(pecas: number): {
     usd,
     brl,
     usdPorPeca,
+    cambio: CAMBIO_USD_BRL_APROX,
+  };
+}
+
+export function estimarCustoAnalises(analises: number): {
+  analises: number;
+  usd: number;
+  brl: number;
+  usdPorAnalise: number;
+  cambio: number;
+} {
+  const n = Math.max(0, Math.floor(analises));
+  const usdPorAnalise = custoEstimadoUsdPorAnalise();
+  const usd = Math.round(n * usdPorAnalise * 100) / 100;
+  const brl = Math.round(usd * CAMBIO_USD_BRL_APROX * 100) / 100;
+  return {
+    analises: n,
+    usd,
+    brl,
+    usdPorAnalise,
     cambio: CAMBIO_USD_BRL_APROX,
   };
 }

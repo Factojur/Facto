@@ -19,12 +19,15 @@ export function montarChecklistJec(opcoes: {
   temValor: boolean;
   /** true enquanto o tipo de ação ainda não foi definido. */
   assistentePendente?: boolean;
+  /** true enquanto a peça sugerida pelos autos não foi confirmada. */
+  processoPendenteConfirmacao?: boolean;
 }): ItemChecklistJec[] {
   const fatosOk = opcoes.fatos.trim().length >= 40;
   const tipoOk =
     Boolean(opcoes.tipoSelecionado.trim()) &&
     opcoes.tipoSelecionado !== "assistente-facto" &&
-    !opcoes.assistentePendente;
+    !opcoes.assistentePendente &&
+    !opcoes.processoPendenteConfirmacao;
   const reusOk = opcoes.reusCount > 0;
   const autorOk = opcoes.autoresCount > 0;
   const comarcaOk = opcoes.comarcaForo.trim().length >= 12;
@@ -32,9 +35,11 @@ export function montarChecklistJec(opcoes: {
   return [
     {
       id: "tipo",
-      label: opcoes.assistentePendente
-        ? "Definir o tipo de ação (Assistente ou texto livre)"
-        : "Tipo de ação definido",
+      label: opcoes.processoPendenteConfirmacao
+        ? "Confirmar a peça sugerida a partir do processo"
+        : opcoes.assistentePendente
+          ? "Definir o tipo de ação (Assistente, processo ou texto livre)"
+          : "Tipo de ação definido",
       ok: tipoOk,
       bloqueante: true,
     },

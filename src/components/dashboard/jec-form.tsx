@@ -85,6 +85,9 @@ import {
 import type { JurisCasoPayload } from "@/lib/juris-caso-types";
 import type { ResumoCota } from "@/lib/cota-pecas";
 import { PacotesExtrasPainel } from "@/components/dashboard/pacotes-extras-painel";
+import { AnalisarProcessoSection } from "@/components/dashboard/analisar-processo-section";
+import type { AnaliseProcessoResultado } from "@/lib/analisar-processo-types";
+import { ROTULO_DOC_LABEL } from "@/lib/analisar-processo-types";
 
 const NAV_SECOES = [
   { id: "secao-acao", label: "Ação" },
@@ -655,14 +658,18 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
     string | null
   >(null);
   const [analisandoAssistente, setAnalisandoAssistente] = useState(false);
+  const [analiseProcesso, setAnaliseProcesso] =
+    useState<AnaliseProcessoResultado | null>(null);
+  const [processoConfirmado, setProcessoConfirmado] = useState(false);
   const [rascunhos, setRascunhos] = useState<JecRascunhoSalvo[]>([]);
   const [rascunhoAtivoId, setRascunhoAtivoId] = useState<string | null>(null);
   const [msgRascunho, setMsgRascunho] = useState<string | null>(null);
   const [cota, setCota] = useState<ResumoCota | null>(null);
 
   const isAssistente = modoAcao === "assistente";
+  const isProcesso = modoAcao === "processo";
   const assistentePendente =
-    isAssistente && tipoAcaoTexto.trim().length < 8;
+    (isAssistente || isProcesso) && tipoAcaoTexto.trim().length < 8;
   const tipoAcaoDefinido = formatarNomeAcaoForense(tipoAcaoTexto);
 
   useEffect(() => {
@@ -744,6 +751,8 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
     assistentePendente:
       assistentePendente ||
       (modoAcao === "livre" && tipoAcaoTexto.trim().length < 8),
+    processoPendenteConfirmacao:
+      isProcesso && Boolean(analiseProcesso) && !processoConfirmado,
   });
 
   const podeGerar = podeGerarPeca(checklistItens) && !bloqueadoTetoLeigo;
@@ -789,6 +798,37 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
     setJustificativaAssistente(decisao.justificativa);
     setNotaAssistente(true);
     setDecisaoSugerida(decisao);
+  }
+
+  function aplicarAnaliseProcesso(analise: AnaliseProcessoResultado) {
+    setAnaliseProcesso(analise);
+    setProcessoConfirmado(false);
+    setModoAcao("processo");
+    const peca = analise.pecaCandidata;
+    const titulo = peca.tituloCompleto || peca.tipoAcao;
+    setTipoAcaoTexto(titulo);
+    setEspeciePeca(peca.especiePeca);
+    setEspecieManual(true);
+    setTutelaUrgencia(peca.tutelaUrgencia);
+    setCumuloDanosMorais(peca.danosMorais);
+    setCumuloDanosMateriais(peca.danosMateriais);
+    setJustificativaAssistente(peca.justificativa);
+    setNotaAssistente(true);
+    if (analise.ficha.fatosSugeridos.trim()) {
+      setFatos(analise.ficha.fatosSugeridos.trim());
+    }
+    if (analise.ficha.numeroProcesso.trim()) {
+      setComarca((c) => ({
+        ...c,
+        numeroProcesso: analise.ficha.numeroProcesso.trim(),
+      }));
+    }
+  }
+
+  function confirmarPecaDoProcesso() {
+    if (!analiseProcesso) return;
+    setProcessoConfirmado(true);
+    setError(null);
   }
 
   async function handleAnalisarAssistente() {
@@ -883,6 +923,8 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
     setDecisaoSugerida(null);
     setJustificativaAssistente(ini.justificativaAssistente);
     setNotaAssistente(ini.notaAssistente);
+    setAnaliseProcesso(null);
+    setProcessoConfirmado(false);
     setResultado(null);
     setRascunhoAtivoId(null);
     setMsgRascunho(null);
@@ -1350,7 +1392,7 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
               </p>
             </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-4">
               <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm has-[:checked]:border-stone-500 has-[:checked]:bg-stone-50">
                 <input
                   type="radio"
@@ -1362,6 +1404,8 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
                     setJustificativaAssistente(null);
                     setDecisaoSugerida(null);
                     setTipoAcaoTexto("");
+                    setAnaliseProcesso(null);
+                    setProcessoConfirmado(false);
                   }}
                   className="mt-0.5 h-4 w-4 border-slate-300 text-stone-700 focus:ring-stone-500"
                 />
@@ -1379,12 +1423,40 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
                 <input
                   type="radio"
                   name="modoAcao"
+                  checked={modoAcao === "processo"}
+                  onChange={() => {
+                    setModoAcao("processo");
+                    setNotaAssistente(false);
+                    setJustificativaAssistente(null);
+                    setDecisaoSugerida(null);
+                    setTipoAcaoTexto("");
+                    setAnaliseProcesso(null);
+                    setProcessoConfirmado(false);
+                  }}
+                  className="mt-0.5 h-4 w-4 border-slate-300 text-stone-700 focus:ring-stone-500"
+                />
+                <span>
+                  <span className="font-medium text-slate-800">
+                    Analisar processo
+                  </span>
+                  <span className="mt-0.5 block text-xs text-slate-500">
+                    Envie os autos ou peças e receba a peça cabível para
+                    confirmar.
+                  </span>
+                </span>
+              </label>
+              <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm has-[:checked]:border-stone-500 has-[:checked]:bg-stone-50">
+                <input
+                  type="radio"
+                  name="modoAcao"
                   checked={modoAcao === "livre"}
                   onChange={() => {
                     setModoAcao("livre");
                     setNotaAssistente(false);
                     setJustificativaAssistente(null);
                     setDecisaoSugerida(null);
+                    setAnaliseProcesso(null);
+                    setProcessoConfirmado(false);
                   }}
                   className="mt-0.5 h-4 w-4 border-slate-300 text-stone-700 focus:ring-stone-500"
                 />
@@ -1405,6 +1477,75 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
               value={tituloAcaoCompleto || ASSISTENTE_FACTO}
             />
 
+            {modoAcao === "processo" && !analiseProcesso && (
+              <AnalisarProcessoSection
+                onResultado={(a) => {
+                  aplicarAnaliseProcesso(a);
+                  setError(null);
+                }}
+                onErro={(msg) => setError(msg || null)}
+              />
+            )}
+
+            {modoAcao === "processo" && analiseProcesso && !processoConfirmado && (
+              <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-50/70 p-4">
+                <p className="text-sm font-medium text-stone-800">
+                  Peça sugerida — confirme para continuar
+                </p>
+                <p className="text-sm text-slate-700">
+                  <span className="font-semibold">Espécie:</span>{" "}
+                  {metaEspecie(analiseProcesso.pecaCandidata.especiePeca).rotulo}
+                  {" · "}
+                  <span className="font-semibold">Confiança:</span>{" "}
+                  {Math.round(analiseProcesso.pecaCandidata.confianca * 100)}%
+                </p>
+                <p className="text-sm font-medium uppercase tracking-wide text-stone-800">
+                  {analiseProcesso.pecaCandidata.tituloCompleto}
+                </p>
+                <p className="text-xs leading-relaxed text-stone-600">
+                  {analiseProcesso.pecaCandidata.justificativa}
+                </p>
+                {analiseProcesso.documentos.length > 0 && (
+                  <ul className="text-xs text-slate-600">
+                    {analiseProcesso.documentos.map((d, i) => (
+                      <li key={`${d.nome}-${i}`}>
+                        {ROTULO_DOC_LABEL[d.rotulo]} — {d.nome}
+                        {d.resumo ? `: ${d.resumo}` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {analiseProcesso.avisos.length > 0 && (
+                  <ul className="text-xs text-amber-900/80">
+                    {analiseProcesso.avisos.map((a) => (
+                      <li key={a}>• {a}</li>
+                    ))}
+                  </ul>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={confirmarPecaDoProcesso}
+                    className="rounded-lg bg-stone-700 px-4 py-2 text-sm font-medium text-amber-50 hover:bg-stone-600"
+                  >
+                    Confirmar peça sugerida
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAnaliseProcesso(null);
+                      setProcessoConfirmado(false);
+                      setTipoAcaoTexto("");
+                      setNotaAssistente(false);
+                    }}
+                    className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                  >
+                    Enviar outros documentos
+                  </button>
+                </div>
+              </div>
+            )}
+
             {modoAcao === "assistente" && !tipoAcaoTexto.trim() && (
               <div className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/80 p-4">
                 <p className="text-sm text-slate-600">
@@ -1424,7 +1565,9 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
               </div>
             )}
 
-            {(modoAcao === "livre" || tipoAcaoTexto.trim().length > 0) && (
+            {(modoAcao === "livre" ||
+              (tipoAcaoTexto.trim().length > 0 &&
+                !(isProcesso && analiseProcesso && !processoConfirmado))) && (
               <div className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/80 p-4">
                 {notaAssistente && justificativaAssistente && (
                   <p className="text-xs leading-relaxed text-stone-600">
@@ -1446,7 +1589,9 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
                   >
                     {modoAcao === "assistente"
                       ? "Nome da ação (editável)"
-                      : "Tipo de ação"}
+                      : modoAcao === "processo"
+                        ? "Nome da ação (confirmada — editável)"
+                        : "Tipo de ação"}
                   </label>
                   <textarea
                     id="tipoAcaoLivre"
@@ -1525,6 +1670,21 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
                     className="text-xs font-medium text-stone-600 underline hover:text-stone-900"
                   >
                     Analisar de novo com o Assistente
+                  </button>
+                )}
+                {modoAcao === "processo" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAnaliseProcesso(null);
+                      setProcessoConfirmado(false);
+                      setTipoAcaoTexto("");
+                      setNotaAssistente(false);
+                      setJustificativaAssistente(null);
+                    }}
+                    className="text-xs font-medium text-stone-600 underline hover:text-stone-900"
+                  >
+                    Analisar outro processo / documentos
                   </button>
                 )}
               </div>

@@ -12,22 +12,30 @@ Ordem recomendada para excelência de peça + caminho JEC → demais áreas, sem
    - [ ] Ampliar suite de casos-ouro JEC (regressão manual/automática)
 
 2. **[P0] Embeddings / busca semântica na `base_conhecimento`** — _feito_
-   - [x] Migration `migration-base-conhecimento-embeddings.sql` (pgvector + RPC)
-   - [x] Retrieve híbrido (vetorial + keyword) em `buscarConhecimentoRelacionado`
-   - [x] Indexação ao salvar no admin / ao aprovar verificação
-   - [x] Migration rodada no Supabase + reindex completo (`1436/1436`, `gemini-embedding-001`)
-   - [x] Deploy produção: commit `7a4a352` em `main` (RAG semântico + grounding)
+   - [x] Migration + reindex (`1436/1436`) + retrieve híbrido + deploy
 
-3. **[P1] Leitura de autos → peça cabível + teses** — _proposta pronta, aguardando aprovação_
-   - [x] Draft em `docs/proposta-leitura-autos.md` (+ canvas `proposta-leitura-autos`)
-   - [ ] Review seu: escopo MVP, catálogo de peças, cota da análise, UX
-   - [ ] Implementar só após ok explícito (não começar pelo chunking genérico)
+3. **[P1] Leitura de autos → peça cabível + teses** — _MVP JEC no código; validar em prod_
+   - [x] Modo **Analisar processo** (autos/seletivo) + ficha + peça + confirmação
+   - [x] Coluna Análises + custo est. em `/admin/uso-pecas`
+   - [ ] Rodar no Supabase: `migration-cota-analises.sql` + `migration-admin-avisos.sql`
+   - [ ] **Próximo passo imediato:** teste manual com PDF real (sentença/autos) no JEC em produção
+   - [ ] Chunking fino / OCR / Map-Reduce / demais áreas (depois)
 
-4. **[P1] TJSP scraper confiável em produção**  
-5. **[P1] Segundo tribunal (STJ)**  
-6. **[P2] Política CDC / cota-teste 7 dias**  
-7. **[P2] Expandir áreas** (mesmo RAG semântico)  
-8. **[P3]** Chat multi-turno, Word add-in, contratos  
+4. **[P1] Admin — avisos operacionais** — _código pronto_
+   - [x] Banner disco Supabase no `/admin`
+   - [x] Compras desde o último acesso + status e-mail pgto/convite + “Marcar como vistas”
+   - [ ] Rodar `migration-admin-avisos.sql` (e opcional `SUPABASE_PLAN=pro` no Vercel)
+
+5. **[P1] TJSP scraper confiável em produção**  
+6. **[P1] Segundo tribunal (STJ)**  
+7. **[P2] Política CDC / cota-teste 7 dias**  
+8. **[P2] Expandir áreas** (mesmo RAG semântico)  
+9. **[P3]** Chat multi-turno, Word add-in, contratos  
+
+### Supabase Free vs Pro (ops)
+
+- Disco hoje é folgado para várias áreas; o motivo do **Pro** é sobretudo **uptime** (Free pausa) e teto de 500 MB a médio prazo.
+- Assinar Pro quando: produto em produção com clientes pagantes **ou** ~**50+ usuários ativos**/mês com uso diário **ou** database > ~**200–300 MB** / Storage apertando. Não precisa esperar “milhares” de usuários.
 
 ---
 
@@ -45,24 +53,20 @@ Ordem recomendada para excelência de peça + caminho JEC → demais áreas, sem
 - [ ] **Migration scrape/cache no Supabase** (se ainda não rodou em todos os ambientes): `migration-juris-scrape-cache.sql`.
 - [ ] **7º token** Jurisprudências.ai no pool (`JURISPRUDENCIAS_AI_API_KEYS`).
 - [ ] **Provedor secundário** além do TJSP (próximo: STJ).
-- [x] **Embeddings / busca vetorial** na `base_conhecimento` (híbrido: pgvector + keyword; indexação Gemini 768d).
-- [ ] **Citação com lastro passage-level** (hoje: checagem por string + marcadores; sem grafo cite→trecho).
-- [ ] **Chat jurídico multi-turno** / pesquisa livre estilo assistant (hoje: formulário + assistente de classificação).
-- [ ] **Integração Word add-in** (hoje: export DOCX, sem plugin Office).
-- [ ] **Análise de contratos / playbooks** (não existe como superfície de produto).
-- [ ] **Leitura de autos / classificador de peça** — ver proposta; depende de aprovação.
+- [x] **Embeddings / busca vetorial** na `base_conhecimento`.
+- [x] **Leitura de autos (MVP JEC)** — validar com PDF real; expansões depois.
+- [ ] **Citação com lastro passage-level**.
+- [ ] **Chat jurídico multi-turno**.
+- [ ] **Integração Word add-in**.
+- [ ] **Análise de contratos / playbooks**.
 
 ## Scrapers de tribunais (após piloto TJSP)
 
-- [ ] STJ  
-- [ ] TJRJ  
-- [ ] TJMG  
-- [ ] STF (além das súmulas já curadas)  
-- [ ] TST (se o produto expandir)  
-- [ ] Demais TJs sob demanda (PR, RS, BA, DF…)
+- [ ] STJ · TJRJ · TJMG · STF · TST · demais TJs sob demanda
 
 ## Infra / ops
 
 - [ ] Worker/ambiente com Chromium para scrape em produção.
 - [ ] Observabilidade de sucesso/falha por tribunal (HTML/captcha).
-- [x] Reindex embeddings: `npm run reindex:embeddings` (lotes + backoff 429).
+- [x] Reindex embeddings: `npm run reindex:embeddings`.
+- [ ] Migrations pendentes no SQL Editor: `cota-analises` + `admin-avisos`.
