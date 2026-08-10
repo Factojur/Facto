@@ -282,9 +282,15 @@ export function JurisSugestoesPicker({
         </div>
         {!ufForo ? (
           <p className="mt-2 text-[11px] text-slate-500">
-            Dica: informe a UF no foro (ex.: …/SP) para pré-marcar o TJ local.
+            Informe a UF no foro (ex.: …/SP) para pré-marcar só o TJ local.
+            STJ/STF e outros TJs você marca se quiser gastar cota neles.
           </p>
-        ) : null}
+        ) : (
+          <p className="mt-2 text-[11px] text-slate-500">
+            Pré-marcado: TJ do foro. STJ/STF só entram se você marcar (cada um
+            gasta 1 da cota de {cota?.limite ?? 15}/mês).
+          </p>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -299,16 +305,16 @@ export function JurisSugestoesPicker({
         {cota && provedorExterno ? (
           <span
             className="text-xs tabular-nums text-slate-500"
-            title="Buscas externas usadas neste mês (Jurisprudências.ai). Uploads não contam. Renova no dia 1º."
+            title="Buscas externas usadas neste mês (Jurisprudências.ai). Cada tribunal marcado consome 1. Uploads não contam. Renova no dia 1º."
           >
             {cota.usadas}/{cota.limite}
           </span>
         ) : null}
       </div>
       <p className="text-xs text-slate-500">
-        Em cada busca: 1 súmula + 1 julgado externo (se houver cota) + até 5 do
-        TJSP/base FACTO, além dos seus anexos. Anexos/texto que você colar
-        entram na peça mesmo sem abrir esta sugestão. Busca externa:{" "}
+        Por busca: 1 súmula + 1 julgado da API por tribunal marcado (consome
+        cota) + até 5 do scraper TJSP (só se TJSP estiver marcado) ou base
+        FACTO, além dos anexos. Cota externa:{" "}
         {cota ? `${cota.usadas}/${cota.limite}` : "15/mês"} (renova todo mês).
       </p>
 

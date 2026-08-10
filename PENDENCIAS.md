@@ -33,7 +33,7 @@ Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou
    - [ ] Worker Chromium + `SCRAPER_TJSP_WORKER_URL` (temas frios em prod)
 
 6. **[P1] Tribunais na busca de juris (UX)** — _feito (MVP)_
-   - [x] Multiseleção: TJ do foro + STJ + STF (+ outros TJs), máx. 3, mín. 1
+   - [x] Multiseleção: TJ do foro + STJ + STF (+ outros TJs), máx. 3, mín. 1; default só TJ do foro (STJ/STF opcionais — cota por tribunal)
 7. **[P1] Segundo tribunal (STJ) em produção** (scraper/cache dedicado; API já busca STJ via seletor)  
 8. **[P2] Política CDC / cota-teste 7 dias**  
 9. **[P2] Expandir áreas**  
@@ -70,9 +70,8 @@ Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou
 - [ ] Reaquecer/limpar `juris_scrape_cache` (HTML inválido do e-SAJ) + scraper mais rígido.
 - [ ] **7º token** Jurisprudências.ai.
 - [ ] Provedor secundário STJ estável em prod.
-- [ ] UX: seletor de tribunal(is) na busca de juris — alinhar obrigatório vs opcional antes de codar (ver P1 #6).
-- [x] UX: multiseleção de tribunais no “Sugerir juris” (mín. 1, máx. 3; default TJ do foro + STJ).
-- [ ] Janela temporal de julgados (hoje 4 anos no scraper TJSP) — avaliar 5–6 anos ou por tribunal.
+- [x] UX: multiseleção de tribunais no “Sugerir juris” (mín. 1, máx. 3; default só TJ do foro; STJ/STF sob demanda; 1 cota API por tribunal).
+- [x] Janela temporal de julgados no scraper TJSP: **manter 4 anos** (decisão alinhada).
 - [x] Embeddings / leitura de autos MVP (falta teste PDF).
 - [ ] Citação passage-level · chat multi-turno · Word · contratos.
 
