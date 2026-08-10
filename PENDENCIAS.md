@@ -32,10 +32,12 @@ Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou
    - [x] Migration scrape-cache + aquecer 15/15 termos JEC
    - [ ] Worker Chromium + `SCRAPER_TJSP_WORKER_URL` (temas frios em prod)
 
-6. **[P1] Segundo tribunal (STJ)**  
-7. **[P2] Política CDC / cota-teste 7 dias**  
-8. **[P2] Expandir áreas**  
-9. **[P3]** Chat multi-turno, Word add-in, contratos  
+6. **[P1] Tribunais na busca de juris (UX)** — _feito (MVP)_
+   - [x] Multiseleção: TJ do foro + STJ + STF (+ outros TJs), máx. 3, mín. 1
+7. **[P1] Segundo tribunal (STJ) em produção** (scraper/cache dedicado; API já busca STJ via seletor)  
+8. **[P2] Política CDC / cota-teste 7 dias**  
+9. **[P2] Expandir áreas**  
+10. **[P3]** Chat multi-turno, Word add-in, contratos  
 
 ---
 
@@ -61,12 +63,16 @@ Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou
 
 - [x] Migration scrape-cache aplicada.
 - [x] Aquecer cache JEC (`npm run aquecer:cache-tjsp`) — 15 termos.
-- [x] Lote inicial juris na base (`npm run seed:juris-ai-lote`) — ~97 ementas TJSP (temas JEC).
-- [x] Lote 2 balanceado autor×réu (`npm run seed:juris-ai-lote-2`) — +69 ementas (cota API esgotou no fim; retomar depois).
-- [ ] Reaquecer/limpar `juris_scrape_cache` (hoje tem HTML inválido do e-SAJ) + scraper mais rígido.
-- [ ] Completar temas com 0 resultados / retomar lote 2 após reset da cota Jurisprudências.ai.
+- [x] Lote 1 juris na base (`npm run seed:juris-ai-lote`) — ~97 ementas TJSP (temas JEC).
+- [x] Lote 2 balanceado autor×réu (`npm run seed:juris-ai-lote-2`) — +69 ementas; **parcial** (cota API esgotou).
+- [ ] **Retomar lote 2** após reset da cota Jurisprudências.ai (`npm run seed:juris-ai-lote-2` + `npm run reindex:embeddings`).
+- [ ] **Lotes multiárea** (não só JEC): trabalhista, família, criminal, tributário, administrativo, consumerista amplo, bancário, imobiliário, etc. — ~8–15 ementas/tema, pró-autor e pró-réu; STJ/STF onde couber.
+- [ ] Reaquecer/limpar `juris_scrape_cache` (HTML inválido do e-SAJ) + scraper mais rígido.
 - [ ] **7º token** Jurisprudências.ai.
-- [ ] Provedor secundário STJ.
+- [ ] Provedor secundário STJ estável em prod.
+- [ ] UX: seletor de tribunal(is) na busca de juris — alinhar obrigatório vs opcional antes de codar (ver P1 #6).
+- [x] UX: multiseleção de tribunais no “Sugerir juris” (mín. 1, máx. 3; default TJ do foro + STJ).
+- [ ] Janela temporal de julgados (hoje 4 anos no scraper TJSP) — avaliar 5–6 anos ou por tribunal.
 - [x] Embeddings / leitura de autos MVP (falta teste PDF).
 - [ ] Citação passage-level · chat multi-turno · Word · contratos.
 

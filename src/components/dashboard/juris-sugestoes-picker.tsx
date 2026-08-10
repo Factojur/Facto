@@ -3,6 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import type { JurisCandidato } from "@/lib/juris-provedores/types";
 import {
+  MAX_TRIBUNAIS_POR_BUSCA,
+  opcoesTribunaisParaUi,
+  tribunaisPadrao,
+} from "@/lib/juris-provedores/tribunais-opcoes";
+import {
   jurisCasoVazio,
   type JurisCasoItem,
 } from "@/lib/juris-caso-types";
@@ -13,6 +18,8 @@ type Props = {
   consulta: string;
   /** Uploads já no formulário — entram como opções pré-marcáveis (sem gastar cota). */
   uploads: JurisCasoSalvo[];
+  /** UF do foro (ex.: SP) para pré-marcar o TJ local. */
+  ufForo?: string | null;
   onAplicar: (itens: JurisCasoSalvo[]) => void;
 };
 
@@ -36,7 +43,24 @@ function rotuloOrigem(origem: string): string {
   }
 }
 
-export function JurisSugestoesPicker({ consulta, uploads, onAplicar }: Props) {
+export function JurisSugestoesPicker({
+  consulta,
+  uploads,
+  ufForo,
+  onAplicar,
+}: Props) {
+  const opcoesTribunal = useMemo(
+    () => opcoesTribunaisParaUi(ufForo),
+    [ufForo]
+  );
+  const [tribunaisSel, setTribunaisSel] = useState<string[]>(() =>
+    tribunaisPadrao(ufForo)
+  );
+
+  useEffect(() => {
+    setTribunaisSel(tribunaisPadrao(ufForo));
+  }, [ufForo]);
+
   const [aberto, setAberto] = useState(false);
   const [carregando, setCarregando] = useState(false);
   const [salvando, setSalvando] = useState(false);
@@ -89,7 +113,22 @@ export function JurisSugestoesPicker({ consulta, uploads, onAplicar }: Props) {
 
   const qtdMarcadas = candidatos.filter((c) => selecionados[c.id]).length;
 
+  function toggleTribunal(id: string) {
+    setTribunaisSel((prev) => {
+      if (prev.includes(id)) {
+        if (prev.length <= 1) return prev;
+        return prev.filter((x) => x !== id);
+      }
+      if (prev.length >= MAX_TRIBUNAIS_POR_BUSCA) return prev;
+      return [...prev, id];
+    });
+  }
+
   async function abrirEBuscar() {
+    if (tribunaisSel.length < 1) {
+      setErro("Selecione ao menos um tribunal.");
+      return;
+    }
     setAberto(true);
     setCarregando(true);
     setErro(null);
@@ -101,6 +140,7 @@ export function JurisSugestoesPicker({ consulta, uploads, onAplicar }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           consulta,
+          tribunais: tribunaisSel,
           uploads: uploads
             .filter((u) => (u.texto ?? "").trim().length > 20 || u.titulo)
             .map((u) => ({
@@ -126,7 +166,6 @@ export function JurisSugestoesPicker({ consulta, uploads, onAplicar }: Props) {
       if (data.cota) setCota(data.cota);
       const init: Record<string, boolean> = {};
       for (const c of lista) {
-        // Anexos do caso já estão na peça — pré-marca só para conferência
         init[c.id] = c.origem === "upload_usuario";
       }
       setSelecionados(init);
@@ -202,11 +241,57 @@ export function JurisSugestoesPicker({ consulta, uploads, onAplicar }: Props) {
 
   return (
     <div className="space-y-3">
+      <div className="rounded-lg border border-slate-200 bg-white p-3">
+        <p className="mb-2 text-xs font-medium text-slate-700">
+          Tribunais da busca
+          <span className="ml-1 font-normal text-slate-500">
+            (mín. 1 · máx. {MAX_TRIBUNAIS_POR_BUSCA} · cada um consome 1 da cota
+            mensal da API)
+          </span>
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {opcoesTribunal.map((t) => {
+            const ativo = tribunaisSel.includes(t.id);
+            const desabilitaMarcar =
+              !ativo && tribunaisSel.length >= MAX_TRIBUNAIS_POR_BUSCA;
+            return (
+              <label
+                key={t.id}
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs ${
+                  ativo
+                    ? "border-facto-gold/50 bg-amber-50 text-stone-800"
+                    : "border-slate-200 bg-slate-50 text-slate-600"
+                } ${desabilitaMarcar ? "opacity-40" : ""}`}
+              >
+                <input
+                  type="checkbox"
+                  className="rounded border-slate-300"
+                  checked={ativo}
+                  disabled={desabilitaMarcar}
+                  onChange={() => toggleTribunal(t.id)}
+                />
+                {t.rotulo}
+                {t.grupo === "superior" ? (
+                  <span className="text-[10px] uppercase text-slate-400">
+                    {t.grupo}
+                  </span>
+                ) : null}
+              </label>
+            );
+          })}
+        </div>
+        {!ufForo ? (
+          <p className="mt-2 text-[11px] text-slate-500">
+            Dica: informe a UF no foro (ex.: …/SP) para pré-marcar o TJ local.
+          </p>
+        ) : null}
+      </div>
+
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
           onClick={() => void abrirEBuscar()}
-          disabled={consulta.trim().length < 8}
+          disabled={consulta.trim().length < 8 || tribunaisSel.length < 1}
           className="rounded-lg border border-stone-700 bg-stone-800 px-4 py-2.5 text-sm font-medium text-amber-50 hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Sugerir Jurisprudência/Súmula

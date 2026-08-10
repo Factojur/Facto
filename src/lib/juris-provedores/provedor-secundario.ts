@@ -72,7 +72,8 @@ async function fallbackBaseFacto(
 
 export async function buscarJulgadosProvedorSecundario(
   query: string,
-  excluirTitulos?: Set<string>
+  excluirTitulos?: Set<string>,
+  opcoes?: { incluirTjsp?: boolean }
 ): Promise<ResultadoProvedorSecundario> {
   const q = query.trim();
   if (q.length < 4) {
@@ -84,31 +85,34 @@ export async function buscarJulgadosProvedorSecundario(
   let usandoFallbackLocal = false;
   let aviso: string | undefined;
   let fonteTjsp: ResultadoProvedorSecundario["fonteTjsp"] = "off";
+  const incluirTjsp = opcoes?.incluirTjsp !== false;
 
-  try {
-    const scrape = await buscarTjsp(q);
-    if (scrape.fonte) fonteTjsp = scrape.fonte;
-    else if (scrape.doCache) fonteTjsp = "cache";
-    else if (scrape.julgados.length) fonteTjsp = "live";
-    else if (scrape.erro) fonteTjsp = "erro";
-    else fonteTjsp = scrape.aviso?.includes("desligado") ? "off" : "erro";
+  if (incluirTjsp) {
+    try {
+      const scrape = await buscarTjsp(q);
+      if (scrape.fonte) fonteTjsp = scrape.fonte;
+      else if (scrape.doCache) fonteTjsp = "cache";
+      else if (scrape.julgados.length) fonteTjsp = "live";
+      else if (scrape.erro) fonteTjsp = "erro";
+      else fonteTjsp = scrape.aviso?.includes("desligado") ? "off" : "erro";
 
-    if (scrape.aviso) aviso = scrape.aviso;
-    if (scrape.erro) aviso = scrape.erro;
+      if (scrape.aviso) aviso = scrape.aviso;
+      if (scrape.erro) aviso = scrape.erro;
 
-    for (const j of scrape.julgados) {
-      if (out.length >= MAX) break;
-      const key = j.titulo.toLowerCase().trim();
-      if (excluir.has(key)) continue;
-      excluir.add(key);
-      out.push(deScrape(j));
+      for (const j of scrape.julgados) {
+        if (out.length >= MAX) break;
+        const key = j.titulo.toLowerCase().trim();
+        if (excluir.has(key)) continue;
+        excluir.add(key);
+        out.push(deScrape(j));
+      }
+    } catch (e) {
+      fonteTjsp = "erro";
+      aviso =
+        e instanceof Error
+          ? `Scraper TJSP indisponível: ${e.message.slice(0, 120)}`
+          : "Scraper TJSP indisponível.";
     }
-  } catch (e) {
-    fonteTjsp = "erro";
-    aviso =
-      e instanceof Error
-        ? `Scraper TJSP indisponível: ${e.message.slice(0, 120)}`
-        : "Scraper TJSP indisponível.";
   }
 
   if (out.length < MIN) {

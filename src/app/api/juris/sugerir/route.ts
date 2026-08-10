@@ -17,6 +17,10 @@ import {
   type JurisCandidato,
   type RespostaSugestoesJuris,
 } from "@/lib/juris-provedores/types";
+import {
+  MAX_TRIBUNAIS_POR_BUSCA,
+  normalizarTribunaisEscolhidos,
+} from "@/lib/juris-provedores/tribunais-opcoes";
 import type { TipoFonteJurisCaso } from "@/lib/juris-caso-types";
 
 export const runtime = "nodejs";
@@ -53,8 +57,8 @@ function dedupe(brutos: Bruto[]): Bruto[] {
  * Mix por clique em "Sugerir":
  * - uploads do usuário (sem cota)
  * - 1 súmula que melhor encaixa (base/curadas)
- * - 1 julgado Jurisprudências.ai (consome 1 da cota 15/mês; pool rotaciona em 429)
- * - 3–5 julgados do provedor secundário (hoje: base FACTO)
+ * - até 3 julgados Jurisprudências.ai (1 por tribunal selecionado; cada um consome cota)
+ * - 3–5 julgados do provedor secundário (TJSP se selecionado / base FACTO)
  */
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -65,7 +69,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
   }
 
-  let body: { consulta?: string; uploads?: UploadIn[] };
+  let body: { consulta?: string; uploads?: UploadIn[]; tribunais?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -79,6 +83,12 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
+
+  const tribunaisNorm = normalizarTribunaisEscolhidos(body.tribunais);
+  if (!tribunaisNorm.ok) {
+    return NextResponse.json({ error: tribunaisNorm.erro }, { status: 400 });
+  }
+  const tribunais = tribunaisNorm.ids;
 
   const uploadsBrutos: Bruto[] = [];
   for (const u of body.uploads ?? []) {
@@ -141,17 +151,44 @@ export async function POST(request: Request) {
     if (!cotaAntes.podeBuscarExterno) {
       avisoExterno = `Limite mensal de buscas externas atingido (${JURIS_BUSCAS_POR_USUARIO_MES}/mês). Uploads e base FACTO continuam disponíveis. A cota renova no dia 1º (horário de Brasília).`;
     } else {
-      const consumo = await consumirCotaJurisUsuario(user.id);
-      cotaUsadas = consumo.usadas;
-      cotaRestantes = consumo.restantes;
+      const tribunaisParaBuscar = tribunais.slice(
+        0,
+        Math.min(MAX_TRIBUNAIS_POR_BUSCA, cotaRestantes)
+      );
+      if (tribunaisParaBuscar.length < tribunais.length) {
+        avisoExterno = `Cota restante (${cotaRestantes}) menor que tribunais selecionados — buscando só: ${tribunaisParaBuscar
+          .map((t) => t.toUpperCase())
+          .join(", ")}.`;
+      }
 
-      if (consumo.consumida) {
+      for (const court of tribunaisParaBuscar) {
+        const consumo = await consumirCotaJurisUsuario(user.id);
+        cotaUsadas = consumo.usadas;
+        cotaRestantes = consumo.restantes;
+        if (!consumo.consumida) {
+          avisoExterno = [
+            avisoExterno,
+            `Cota esgotada ao buscar ${court.toUpperCase()}.`,
+          ]
+            .filter(Boolean)
+            .join(" ");
+          break;
+        }
+
         const { precedentes, erroApi, aviso } = await buscarPrecedentes(
-          consulta
+          consulta,
+          { tribunal: court }
         );
         julgadoAi.push(...precedentes);
-        if (erroApi) avisoExterno = erroApi;
-        else if (aviso && !precedentes.length) avisoExterno = aviso;
+        if (erroApi) {
+          avisoExterno = [avisoExterno, `${court.toUpperCase()}: ${erroApi}`]
+            .filter(Boolean)
+            .join(" ");
+        } else if (aviso && !precedentes.length) {
+          avisoExterno = [avisoExterno, `${court.toUpperCase()}: ${aviso}`]
+            .filter(Boolean)
+            .join(" ");
+        }
       }
     }
   } else {
@@ -167,13 +204,17 @@ export async function POST(request: Request) {
   let usandoFallbackSecundario = true;
   let avisoSecundario: string | undefined;
   let fonteTjsp: RespostaSugestoesJuris["fonteTjsp"] = "off";
+  const querTjsp = tribunais.includes("tjsp");
   try {
-    const r = await buscarJulgadosProvedorSecundario(consulta, excluir);
+    // Scraper/cache TJSP só quando o usuário pediu TJSP; senão só base FACTO no secundário
+    const r = await buscarJulgadosProvedorSecundario(consulta, excluir, {
+      incluirTjsp: querTjsp,
+    });
     secundarios = r.precedentes;
     usandoFallbackSecundario = r.usandoFallbackLocal;
     avisoSecundario = r.aviso;
     fonteTjsp = r.fonteTjsp ?? "off";
-    console.info("[sugerir] fonteTjsp=", fonteTjsp, "fallback=", usandoFallbackSecundario);
+    console.info("[sugerir] fonteTjsp=", fonteTjsp, "fallback=", usandoFallbackSecundario, "tribunais=", tribunais.join(","));
   } catch {
     secundarios = [];
   }

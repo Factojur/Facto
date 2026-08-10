@@ -1952,6 +1952,13 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
                 .filter(Boolean)
                 .join("\n")
                 .slice(0, 2500)}
+              ufForo={
+                comarca.uf?.trim().toUpperCase() ||
+                (() => {
+                  const m = comarca.foro.match(/\/\s*([A-Za-z]{2})\b/);
+                  return m?.[1]?.toUpperCase() ?? null;
+                })()
+              }
               uploads={jurisCaso}
               onAplicar={(itens) => {
                 setJurisCaso((prev) => {
