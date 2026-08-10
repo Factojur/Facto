@@ -282,13 +282,15 @@ export function JurisSugestoesPicker({
         </div>
         {!ufForo ? (
           <p className="mt-2 text-[11px] text-slate-500">
-            Informe a UF no foro (ex.: …/SP) para pré-marcar só o TJ local.
-            STJ/STF e outros TJs você marca se quiser gastar cota neles.
+            Marque ao menos 1 tribunal (máx. {MAX_TRIBUNAIS_POR_BUSCA}). Informe
+            a UF no foro (ex.: …/SP) para o TJ local aparecer no topo da lista.
+            Cada tribunal da API consome 1 da cota de {cota?.limite ?? 15}/mês.
           </p>
         ) : (
           <p className="mt-2 text-[11px] text-slate-500">
-            Pré-marcado: TJ do foro. STJ/STF só entram se você marcar (cada um
-            gasta 1 da cota de {cota?.limite ?? 15}/mês).
+            Nada pré-marcado: escolha onde usar a cota (mín. 1 · máx.{" "}
+            {MAX_TRIBUNAIS_POR_BUSCA}). O TJ do foro ({ufForo}) aparece em
+            destaque no início da lista.
           </p>
         )}
       </div>

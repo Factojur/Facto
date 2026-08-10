@@ -76,13 +76,11 @@ export function opcoesTribunaisParaUi(ufPreferida?: string | null): OpcaoTribuna
 }
 
 /**
- * Defaults: só o TJ do foro (se houver UF).
- * STJ/STF ficam desmarcados — o usuário escolhe onde gastar a cota.
- * Sem UF: lista vazia até o usuário marcar ao menos um.
+ * Defaults: nenhum pré-marcado.
+ * O usuário escolhe onde gastar a cota (mín. 1 na hora de buscar).
  */
-export function tribunaisPadrao(ufPreferida?: string | null): string[] {
-  const tj = tjPorUf(ufPreferida);
-  return tj ? [tj.id] : [];
+export function tribunaisPadrao(_ufPreferida?: string | null): string[] {
+  return [];
 }
 
 /** Valida e normaliza lista enviada pelo cliente (máx. 3, ids conhecidos). */
