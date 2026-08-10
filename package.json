@@ -11,6 +11,8 @@
     "test:casos-ouro": "npx tsx scripts/casos-ouro-jec.ts",
     "test:scraper-tjsp": "npx tsx scripts/testar-scraper-tjsp.ts",
     "aquecer:cache-tjsp": "npx tsx scripts/aquecer-cache-tjsp.ts",
+    "seed:juris-cache-tjsp": "npx tsx scripts/seed-juris-cache-tjsp.ts",
+    "seed:juris-ai-lote": "npx tsx scripts/seed-juris-ai-lote.ts",
     "reindex:embeddings": "npx tsx scripts/reindex-embeddings.ts",
     "corrigir-metadados": "node scripts/limpar-metadados-perfil.mjs"
   },

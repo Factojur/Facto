@@ -61,7 +61,9 @@ Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou
 
 - [x] Migration scrape-cache aplicada.
 - [x] Aquecer cache JEC (`npm run aquecer:cache-tjsp`) — 15 termos.
-- [ ] **Worker TJSP em produção** (Chromium fora da Vercel) + env na Vercel.
+- [x] Lote inicial juris na base (`npm run seed:juris-ai-lote`) — ~97 ementas TJSP (temas JEC).
+- [ ] Reaquecer/limpar `juris_scrape_cache` (hoje tem HTML inválido do e-SAJ) + scraper mais rígido.
+- [ ] Completar temas com 0 resultados no lote (ex.: veículo, juros) + STJ.
 - [ ] **7º token** Jurisprudências.ai.
 - [ ] Provedor secundário STJ.
 - [x] Embeddings / leitura de autos MVP (falta teste PDF).
