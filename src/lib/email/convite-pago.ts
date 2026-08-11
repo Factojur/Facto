@@ -1,6 +1,6 @@
 import { Resend } from "resend";
 import { registrarEmailEvento } from "@/lib/email/eventos";
-import { getSiteUrl } from "@/lib/site-url";
+import { getEmailAssetBaseUrl } from "@/lib/site-url";
 import { htmlLogoEmail } from "@/lib/email/marca";
 
 const REMETENTE_NOREPLY = "FACTO <noreply@factoia.com.br>";
@@ -84,7 +84,7 @@ export async function enviarEmailConvite(
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const remetente =
     process.env.RESEND_FROM_EMAIL?.trim() || REMETENTE_NOREPLY;
-  const siteUrl = getSiteUrl();
+  const siteUrl = getEmailAssetBaseUrl();
   const link = `${siteUrl}/cadastro?token=${token}`;
   const assunto = "Bem-vindo ao FACTO — crie sua conta";
   const atrasoMin =

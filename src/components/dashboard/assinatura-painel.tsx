@@ -91,10 +91,14 @@ export function AssinaturaPainel() {
         return;
       }
       if (data.assinatura) setAssinatura(data.assinatura);
+      const partes = [
+        data.mensagem as string | undefined,
+        data.aviso as string | undefined,
+      ].filter(Boolean);
       setMensagemOk(
-        data.mensagem ??
-          data.aviso ??
-          "Assinatura cancelada no Mercado Pago."
+        partes.length > 0
+          ? partes.join(" ")
+          : "Assinatura cancelada no Mercado Pago."
       );
       setModalAberto(false);
     } catch {
@@ -244,7 +248,7 @@ export function AssinaturaPainel() {
 
       {modalAberto && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-cancelar-titulo"
@@ -263,10 +267,11 @@ export function AssinaturaPainel() {
               Confirmar cancelamento
             </h3>
             <p className="mt-3 text-sm leading-relaxed text-slate-600">
-              Se você está dentro dos 7 dias, o cancelamento encerra o acesso e
-              solicita o estorno (pode levar até 30 dias para aparecer na
-              fatura). Se já passou de 7 dias, sua assinatura
-              continuará ativa até o fim do ciclo atual e não será renovada.
+              Se você está dentro dos 7 dias (CDC), cancelamos no Mercado Pago,
+              encerramos o acesso e pedimos o estorno automático pelo mesmo
+              meio de pagamento (pode levar até 30 dias para aparecer). Depois
+              dos 7 dias, a recorrência é cancelada e o acesso segue até o fim
+              do ciclo já pago, sem renovação.
             </p>
             <p className="mt-3 text-sm font-medium text-slate-700">
               Esta ação cancela a cobrança recorrente no Mercado Pago e não pode

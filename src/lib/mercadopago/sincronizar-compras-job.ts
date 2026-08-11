@@ -81,7 +81,22 @@ export async function executarSincronizarCompras() {
         mpPaymentId,
         valor: typeof valor === "number" && !Number.isNaN(valor) ? valor : null,
         plano: (row.plano as PlanoId | null) ?? null,
+        atrasoConviteMinutos: 0,
       });
+
+      // Espelha pagamento local para cancelamento/CDC
+      if (mpPaymentId && !mpPaymentId.startsWith("preapproval:")) {
+        await admin.from("pagamentos").upsert(
+          {
+            mp_payment_id: mpPaymentId,
+            assinatura_id: row.id,
+            status: "approved",
+            valor:
+              typeof valor === "number" && !Number.isNaN(valor) ? valor : null,
+          },
+          { onConflict: "mp_payment_id" }
+        );
+      }
       resultados.push({ preapprovalId, email, mpPaymentId, ...envio });
     } catch (erro) {
       resultados.push({

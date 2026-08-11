@@ -74,11 +74,8 @@ async function main() {
   console.log("=== ENV LOCAL ===");
   console.log({
     RESEND_API_KEY: Boolean(process.env.RESEND_API_KEY?.trim()),
-    TWILIO_ACCOUNT_SID: Boolean(process.env.TWILIO_ACCOUNT_SID?.trim()),
-    TWILIO_AUTH_TOKEN: Boolean(process.env.TWILIO_AUTH_TOKEN?.trim()),
-    TWILIO_FROM_NUMBER: process.env.TWILIO_FROM_NUMBER?.trim() || null,
-    ALERTA_COMPRA_SMS_PARA:
-      process.env.ALERTA_COMPRA_SMS_PARA?.trim() || "+5511985036364 (default)",
+    NTFY_TOPIC: process.env.NTFY_TOPIC?.trim() || null,
+    NTFY_BASE_URL: process.env.NTFY_BASE_URL?.trim() || "https://ntfy.sh",
     MERCADOPAGO_ACCESS_TOKEN: Boolean(
       process.env.MERCADOPAGO_ACCESS_TOKEN?.trim()
     ),

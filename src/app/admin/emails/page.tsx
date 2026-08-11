@@ -7,6 +7,7 @@ import { isAdminEmail } from "@/lib/admin-auth";
 import { ReenviarCompraEmailForm } from "@/components/admin/reenviar-compra-email-form";
 import { TesteCompraEmailForm } from "@/components/admin/teste-compra-email-form";
 import { SincronizarComprasButton } from "@/components/admin/sincronizar-compras-button";
+import { rotuloTipoEmail } from "@/lib/email/eventos";
 
 export default async function AdminEmailsPage() {
   const supabase = await createClient();
@@ -138,9 +139,10 @@ export default async function AdminEmailsPage() {
           </p>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-xs leading-relaxed text-amber-100/80">
             <li>
-              Webhook MP → e-mails na hora (financeiro@ + confirmação) + SMS de
-              alerta ao admin (Twilio), se configurado; convite noreply ~10 min
-              depois.
+              Webhook MP → e-mails na hora (financeiro@ + confirmação ao cliente
+              + convite noreply se não houver perfil) + push ntfy ao admin, se{" "}
+              <code className="text-amber-50">NTFY_TOPIC</code> estiver na
+              Vercel.
             </li>
             <li>
               Rede de segurança: cron diário na Vercel (Hobby) + botão
@@ -249,7 +251,7 @@ export default async function AdminEmailsPage() {
                     <td className="px-4 py-3 whitespace-nowrap text-xs text-stone-500">
                       {new Date(e.criado_em).toLocaleString("pt-BR")}
                     </td>
-                    <td className="px-4 py-3 text-xs">{e.tipo}</td>
+                    <td className="px-4 py-3 text-xs">{rotuloTipoEmail(e.tipo)}</td>
                     <td className="px-4 py-3">
                       <span
                         className={

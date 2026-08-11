@@ -111,7 +111,6 @@ async function main() {
   );
 
   let inseridos = 0;
-  let atualizados = 0;
   let pulados = 0;
   let falhas = 0;
   const idsNovos: string[] = [];
@@ -140,22 +139,8 @@ async function main() {
         .maybeSingle();
 
       if (existente?.id) {
-        const { error: updErr } = await supabase
-          .from("base_conhecimento")
-          .update({
-            categoria: "Jurisprudência",
-            texto,
-            fonte: "tjsp_scraper",
-            status: "validado",
-          })
-          .eq("id", existente.id);
-        if (updErr) {
-          console.error(`  ERRO update ${titulo}:`, updErr.message);
-          falhas++;
-        } else {
-          atualizados++;
-          console.log(`  update ${titulo}`);
-        }
+        // Não sobrescreve item já cadastrado.
+        pulados++;
         continue;
       }
 
@@ -183,7 +168,7 @@ async function main() {
   }
 
   console.log(
-    `\nConcluído: ${inseridos} insert, ${atualizados} update, ${pulados} pulados, ${falhas} falha(s).`
+    `\nConcluído: ${inseridos} insert, ${pulados} pulados (já existiam), ${falhas} falha(s).`
   );
   console.log(
     `Próximo: npm run reindex:embeddings  (novos sem vetor: ~${idsNovos.length})`

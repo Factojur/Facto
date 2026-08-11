@@ -9,6 +9,24 @@ export type TipoEmailEvento =
 
 export type StatusEmailEvento = "enviado" | "falha";
 
+/** Rótulo amigável para o painel admin (DB continua com o slug). */
+export function rotuloTipoEmail(tipo: string): string {
+  switch (tipo) {
+    case "financeiro_compra":
+      return "Compra aprovada";
+    case "financeiro_cancelamento":
+      return "Cancelamento";
+    case "convite":
+      return "Convite (noreply)";
+    case "alerta_sms_compra":
+      return "Alerta push (ntfy)";
+    case "suporte":
+      return "Suporte";
+    default:
+      return tipo;
+  }
+}
+
 /**
  * Registra envio/falha de e-mail para o painel admin.
  * Se a tabela ainda não existir, só registra no console (não quebra o fluxo).

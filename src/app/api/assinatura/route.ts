@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { mapearAssinaturaParaUI, type AssinaturaDb } from "@/lib/assinatura-format";
+import { mapearAssinaturaParaUI } from "@/lib/assinatura-format";
+import { buscarAssinaturaDoEmail } from "@/lib/mercadopago/buscar-assinatura-email";
 
 /**
- * GET /api/assinatura — assinatura mais recente do usuário logado.
+ * GET /api/assinatura — assinatura ativa do usuário logado (senão a mais recente).
  */
 export async function GET() {
   const supabase = await createClient();
@@ -18,15 +19,7 @@ export async function GET() {
 
   try {
     const admin = createAdminClient();
-    const { data, error } = await admin
-      .from("assinaturas")
-      .select(
-        "id, mp_preapproval_id, email, plano, status, data_inicio, acesso_valido_ate, motivo_encerramento, data_cancelamento"
-      )
-      .ilike("email", user.email)
-      .order("criado_em", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const { data, error } = await buscarAssinaturaDoEmail(admin, user.email);
 
     if (error) {
       console.error("[api/assinatura]", error);
@@ -41,7 +34,7 @@ export async function GET() {
     }
 
     return NextResponse.json({
-      assinatura: mapearAssinaturaParaUI(data as AssinaturaDb),
+      assinatura: mapearAssinaturaParaUI(data),
     });
   } catch (erro) {
     console.error("[api/assinatura]", erro);

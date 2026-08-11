@@ -65,10 +65,40 @@ export async function chamarMercadoPago(
 export async function cancelarPreapprovalMercadoPago(
   mpPreapprovalId: string
 ): Promise<void> {
-  await chamarMercadoPago(`/preapproval/${mpPreapprovalId}`, {
-    method: "PUT",
-    body: JSON.stringify({ status: "canceled" }),
-  });
+  try {
+    await chamarMercadoPago(`/preapproval/${mpPreapprovalId}`, {
+      method: "PUT",
+      body: JSON.stringify({ status: "canceled" }),
+    });
+  } catch (erro) {
+    const mensagem = erro instanceof Error ? erro.message : String(erro);
+    // Já cancelada / inexistente — trata como sucesso operacional.
+    if (
+      /already.?cancel|status.?canceled|404|400.*cancel/i.test(mensagem)
+    ) {
+      console.info(
+        "[mercadopago] preapproval já cancelada ou indisponível",
+        mpPreapprovalId
+      );
+      return;
+    }
+    // Confirma no GET se o MP já está canceled.
+    try {
+      const atual = (await chamarMercadoPago(
+        `/preapproval/${mpPreapprovalId}`
+      )) as { status?: string };
+      if (
+        String(atual?.status ?? "")
+          .toLowerCase()
+          .startsWith("cancel")
+      ) {
+        return;
+      }
+    } catch {
+      /* ignore */
+    }
+    throw erro;
+  }
 }
 
 type PaymentCampo =

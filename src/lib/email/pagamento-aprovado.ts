@@ -60,7 +60,7 @@ function htmlAvisoInterno(opcoes: {
         <strong>ID Mercado Pago:</strong> ${escaparHtml(opcoes.mpPaymentId)}
       </p>
       <p style="margin:16px 0 0;font-size:12px;color:#78716c;">
-        O convite de cadastro (noreply@) segue ~10 minutos depois, se o cliente ainda não tiver conta.
+        O convite de cadastro (noreply@) é enviado em seguida, se o cliente ainda não tiver conta.
       </p>
     </div>
   </body>
@@ -106,7 +106,7 @@ function htmlConfirmacaoCliente(opcoes: {
                       ? `no valor de <strong style="color:#e7e5e4;">${escaparHtml(formatarValor(opcoes.valor))}</strong>`
                       : ""
                   }.
-                  Em instantes você receberá outro e-mail com o link para criar sua conta no FACTO.
+              Em instantes você receberá outro e-mail com o link para criar sua conta no FACTO.
                 </p>
               </td>
             </tr>

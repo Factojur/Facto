@@ -404,7 +404,7 @@ export default async function AdminPage({
                 Webhook Mercado Pago sem eventos reais nas últimas 24h
               </p>
               <p className="mt-1 text-xs leading-relaxed text-red-100/75">
-                Compras podem não disparar e-mail/SMS automaticamente. Confira a
+                Compras podem não disparar e-mail/alerta automaticamente. Confira a
                 URL e os tópicos no painel MP e use{" "}
                 <Link
                   href="/admin/emails"

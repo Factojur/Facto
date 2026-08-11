@@ -558,7 +558,7 @@ async function processarPayment(admin: AdminClient, id: string) {
           tipoCompra: "pacote_extra",
         });
       } catch (erro) {
-        console.error("[webhook mercadopago] falha SMS pacote extra", erro);
+        console.error("[webhook mercadopago] falha alerta ntfy pacote extra", erro);
       }
     }
     return;

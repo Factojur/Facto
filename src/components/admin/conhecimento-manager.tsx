@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { CATEGORIAS_CONHECIMENTO } from "@/lib/base-conhecimento";
 
 type Item = {
@@ -16,6 +16,50 @@ type Item = {
 
 type Modo = "texto" | "arquivo";
 
+const ORDEM_CATEGORIAS = ["Súmula", "Jurisprudência", "Lei"] as const;
+
+/** Tribunais conhecidos — novos entram em "Outros" até aparecerem no título. */
+const TRIBUNAIS_CONHECIDOS = [
+  "STF",
+  "STJ",
+  "TST",
+  "TSE",
+  "STM",
+  "TJAC",
+  "TJAL",
+  "TJAM",
+  "TJAP",
+  "TJBA",
+  "TJCE",
+  "TJDFT",
+  "TJES",
+  "TJGO",
+  "TJMA",
+  "TJMG",
+  "TJMS",
+  "TJMT",
+  "TJPA",
+  "TJPB",
+  "TJPE",
+  "TJPI",
+  "TJPR",
+  "TJRJ",
+  "TJRN",
+  "TJRO",
+  "TJRR",
+  "TJRS",
+  "TJSC",
+  "TJSE",
+  "TJSP",
+  "TJTO",
+  "TRF1",
+  "TRF2",
+  "TRF3",
+  "TRF4",
+  "TRF5",
+  "TRF6",
+] as const;
+
 function formatarData(data: string) {
   return new Date(data).toLocaleDateString("pt-BR", {
     day: "2-digit",
@@ -24,10 +68,154 @@ function formatarData(data: string) {
   });
 }
 
+/**
+ * Extrai tribunal do título (ex.: "TJSP — 1000…", "STJ — Súmula 479").
+ */
+export function inferirTribunal(titulo: string): string {
+  const t = titulo.trim().toUpperCase();
+  for (const trib of TRIBUNAIS_CONHECIDOS) {
+    if (
+      t.startsWith(`${trib} `) ||
+      t.startsWith(`${trib}—`) ||
+      t.startsWith(`${trib} -`) ||
+      t.startsWith(`${trib}–`) ||
+      t.includes(` ${trib} —`) ||
+      t.includes(` ${trib} -`)
+    ) {
+      return trib;
+    }
+  }
+  const m = t.match(/\b(T[JR][A-Z]{1,3}|ST[FJM]|TRF\d|TSE|STM)\b/);
+  if (m?.[1]) return m[1];
+  return "Outros";
+}
+
+function ordenarTribunais(a: string, b: string): number {
+  if (a === "Outros") return 1;
+  if (b === "Outros") return -1;
+  const ia = TRIBUNAIS_CONHECIDOS.indexOf(
+    a as (typeof TRIBUNAIS_CONHECIDOS)[number]
+  );
+  const ib = TRIBUNAIS_CONHECIDOS.indexOf(
+    b as (typeof TRIBUNAIS_CONHECIDOS)[number]
+  );
+  if (ia >= 0 && ib >= 0) return ia - ib;
+  if (ia >= 0) return -1;
+  if (ib >= 0) return 1;
+  return a.localeCompare(b, "pt-BR");
+}
+
+function SecaoRecolhivel({
+  titulo,
+  contagem,
+  aberto,
+  onToggle,
+  children,
+  nivel = 1,
+}: {
+  titulo: string;
+  contagem: number;
+  aberto: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+  nivel?: 1 | 2;
+}) {
+  const pad = nivel === 1 ? "px-4 py-3" : "px-3 py-2.5";
+  const border =
+    nivel === 1
+      ? "border-white/10 bg-white/[0.03]"
+      : "border-white/8 bg-white/[0.02]";
+
+  return (
+    <div className={`rounded-xl border ${border}`}>
+      <button
+        type="button"
+        onClick={onToggle}
+        className={`flex w-full items-center justify-between gap-3 ${pad} text-left transition hover:bg-white/[0.04]`}
+        aria-expanded={aberto}
+      >
+        <span
+          className={`font-semibold text-white ${nivel === 1 ? "text-base" : "text-sm"}`}
+        >
+          {titulo}
+          <span className="ml-2 font-normal text-stone-500">({contagem})</span>
+        </span>
+        <span className="text-xs text-stone-500" aria-hidden>
+          {aberto ? "▾ recolher" : "▸ expandir"}
+        </span>
+      </button>
+      {aberto ? <div className="border-t border-white/5 p-3">{children}</div> : null}
+    </div>
+  );
+}
+
+function ItemLinha({
+  item,
+  removendoId,
+  onRemover,
+}: {
+  item: Item;
+  removendoId: string | null;
+  onRemover: (id: string) => void;
+}) {
+  return (
+    <details className="group rounded-lg border border-white/10 bg-black/20 px-3 py-2.5">
+      <summary className="flex cursor-pointer list-none items-start justify-between gap-3 [&::-webkit-details-marker]:hidden">
+        <div className="min-w-0 flex-1">
+          <span className="text-sm font-medium text-white">{item.titulo}</span>
+          <span className="ml-2 text-xs text-stone-600">
+            {formatarData(item.criado_em)}
+          </span>
+          {item.arquivo_nome ? (
+            <div className="mt-0.5 truncate text-xs text-stone-500">
+              📎 {item.arquivo_nome}
+            </div>
+          ) : null}
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {item.arquivo_url ? (
+            <a
+              href={item.arquivo_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-xs font-medium text-stone-300 hover:text-facto-gold"
+            >
+              Baixar
+            </a>
+          ) : null}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onRemover(item.id);
+            }}
+            disabled={removendoId === item.id}
+            className="rounded-lg px-2 py-1 text-xs font-medium text-red-400 transition hover:bg-red-500/10 disabled:opacity-60"
+          >
+            {removendoId === item.id ? "…" : "Remover"}
+          </button>
+        </div>
+      </summary>
+      <p className="mt-2 max-h-64 overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed text-stone-400">
+        {item.texto}
+      </p>
+      <p className="mt-2 text-xs text-stone-600">
+        Para atualizar: remova este item e cadastre a versão nova (evita
+        sobrescrita silenciosa).
+      </p>
+    </details>
+  );
+}
+
 export function ConhecimentoManager({
   itensIniciais,
+  totalDb,
 }: {
   itensIniciais: Item[];
+  /** Contagem exact do banco (pode igualar itensIniciais.length). */
+  totalDb?: number;
 }) {
   const [itens, setItens] = useState<Item[]>(itensIniciais);
   const [modo, setModo] = useState<Modo>("texto");
@@ -40,6 +228,55 @@ export function ConhecimentoManager({
   const [sucesso, setSucesso] = useState(false);
   const [removendoId, setRemovendoId] = useState<string | null>(null);
   const arquivoRef = useRef<HTMLInputElement>(null);
+
+  /** Categorias abertas; tribunais abertos: chave `Jurisprudência::TJSP`. */
+  const [abertas, setAbertas] = useState<Record<string, boolean>>({});
+
+  function toggle(chave: string) {
+    setAbertas((prev) => ({ ...prev, [chave]: !prev[chave] }));
+  }
+
+  const totalExibido = totalDb ?? itens.length;
+
+  const porCategoria = useMemo(() => {
+    const map = new Map<string, Item[]>();
+    for (const cat of ORDEM_CATEGORIAS) map.set(cat, []);
+    for (const item of itens) {
+      const cat = ORDEM_CATEGORIAS.includes(
+        item.categoria as (typeof ORDEM_CATEGORIAS)[number]
+      )
+        ? item.categoria
+        : "Lei";
+      const lista = map.get(cat) ?? [];
+      lista.push(item);
+      map.set(cat, lista);
+    }
+    return map;
+  }, [itens]);
+
+  const jurisPorTribunal = useMemo(() => {
+    const juris = porCategoria.get("Jurisprudência") ?? [];
+    const map = new Map<string, Item[]>();
+    for (const item of juris) {
+      const trib = inferirTribunal(item.titulo);
+      const lista = map.get(trib) ?? [];
+      lista.push(item);
+      map.set(trib, lista);
+    }
+    return [...map.entries()].sort(([a], [b]) => ordenarTribunais(a, b));
+  }, [porCategoria]);
+
+  const sumulasPorOrgao = useMemo(() => {
+    const sumulas = porCategoria.get("Súmula") ?? [];
+    const map = new Map<string, Item[]>();
+    for (const item of sumulas) {
+      const trib = inferirTribunal(item.titulo);
+      const lista = map.get(trib) ?? [];
+      lista.push(item);
+      map.set(trib, lista);
+    }
+    return [...map.entries()].sort(([a], [b]) => ordenarTribunais(a, b));
+  }, [porCategoria]);
 
   function limparFormulario() {
     setTitulo("");
@@ -135,10 +372,10 @@ export function ConhecimentoManager({
       >
         <h2 className="text-lg font-semibold text-white">Adicionar item</h2>
         <p className="mt-1 text-sm text-stone-500">
-          Cadastre leis específicas, súmulas ou jurisprudências importantes,
-          colando o texto ou enviando um arquivo PDF/Word. Elas serão
-          buscadas automaticamente pelo tema da ação e usadas para
-          fundamentar as peças geradas.
+          Cadastre leis, súmulas ou jurisprudências (cole o texto ou envie
+          PDF/Word). Para juris, prefira título com tribunal, ex.:{" "}
+          <code className="text-stone-400">TJSP — 1000123-45.2024.8.26.0100</code>
+          . Para atualizar um item existente: remova o antigo e cadastre o novo.
         </p>
 
         <div className="mt-4 flex gap-2">
@@ -190,7 +427,7 @@ export function ConhecimentoManager({
               type="text"
               value={titulo}
               onChange={(e) => setTitulo(e.target.value)}
-              placeholder="Ex: Súmula 385 do STJ"
+              placeholder="Ex: STJ — Súmula 479 · TJSP — 1000…"
               className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white placeholder-stone-600 outline-none focus:border-facto-gold/50 focus:ring-2 focus:ring-facto-gold/20"
             />
           </div>
@@ -247,14 +484,14 @@ export function ConhecimentoManager({
               ref={arquivoRef}
               type="file"
               accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              onChange={(e) => setNomeArquivo(e.target.files?.[0]?.name ?? null)}
+              onChange={(e) =>
+                setNomeArquivo(e.target.files?.[0]?.name ?? null)
+              }
               className="block w-full cursor-pointer rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-stone-300 file:mr-3 file:rounded-md file:border-0 file:bg-facto-gold file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-facto-dark hover:file:bg-facto-gold/90"
             />
             <p className="mt-1.5 text-xs text-stone-500">
-              O texto é extraído automaticamente do arquivo para ser buscado
-              pelo sistema. Arquivos .doc antigos não são aceitos — salve
-              como .docx antes de enviar. PDFs escaneados sem OCR (imagem)
-              não têm texto extraível.
+              O texto é extraído automaticamente. .doc antigo: salve como
+              .docx. PDF só imagem (sem OCR) não extrai texto.
             </p>
             {nomeArquivo && (
               <p className="mt-1 text-xs text-facto-gold">
@@ -277,66 +514,107 @@ export function ConhecimentoManager({
 
       <div>
         <h2 className="text-lg font-semibold text-white">
-          Itens cadastrados ({itens.length})
+          Acervo ({totalExibido.toLocaleString("pt-BR")} no banco
+          {itens.length !== totalExibido
+            ? ` · ${itens.length.toLocaleString("pt-BR")} carregados`
+            : ""}
+          )
         </h2>
+        <p className="mt-1 text-sm text-stone-500">
+          Separado por categoria; jurisprudências (e súmulas) por tribunal.
+          Seções recolhidas por padrão — expanda para editar/remover.
+        </p>
+
         {itens.length === 0 ? (
           <p className="mt-3 text-sm text-stone-500">
             Nenhum item cadastrado ainda.
           </p>
         ) : (
           <div className="mt-4 space-y-3">
-            {itens.map((item) => (
-              <details
-                key={item.id}
-                className="group rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3"
-              >
-                <summary className="flex cursor-pointer items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <span className="mr-2 rounded-full bg-facto-gold/10 px-2 py-0.5 text-xs font-medium text-facto-gold">
-                      {item.categoria}
-                    </span>
-                    <span className="truncate text-sm font-medium text-white">
-                      {item.titulo}
-                    </span>
-                    <span className="ml-2 text-xs text-stone-600">
-                      {formatarData(item.criado_em)}
-                    </span>
-                    {item.arquivo_nome && (
-                      <div className="mt-0.5 truncate text-xs text-stone-500">
-                        📎 {item.arquivo_nome}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-3">
-                    {item.arquivo_url && (
-                      <a
-                        href={item.arquivo_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-xs font-medium text-stone-300 hover:text-facto-gold"
-                      >
-                        Baixar original
-                      </a>
-                    )}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleRemover(item.id);
-                      }}
-                      disabled={removendoId === item.id}
-                      className="rounded-lg px-2 py-1 text-xs font-medium text-red-400 transition hover:bg-red-500/10 disabled:opacity-60"
-                    >
-                      {removendoId === item.id ? "Removendo..." : "Remover"}
-                    </button>
-                  </div>
-                </summary>
-                <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-stone-400">
-                  {item.texto}
-                </p>
-              </details>
-            ))}
+            {ORDEM_CATEGORIAS.map((cat) => {
+              const lista = porCategoria.get(cat) ?? [];
+              const chaveCat = `cat:${cat}`;
+              const abertoCat = Boolean(abertas[chaveCat]);
+
+              return (
+                <SecaoRecolhivel
+                  key={cat}
+                  titulo={cat === "Súmula" ? "Súmulas" : cat === "Lei" ? "Leis" : "Jurisprudências"}
+                  contagem={lista.length}
+                  aberto={abertoCat}
+                  onToggle={() => toggle(chaveCat)}
+                >
+                  {lista.length === 0 ? (
+                    <p className="text-sm text-stone-500">Nenhum item.</p>
+                  ) : cat === "Jurisprudência" ? (
+                    <div className="space-y-2">
+                      {jurisPorTribunal.map(([trib, itensTrib]) => {
+                        const chave = `jur:${trib}`;
+                        return (
+                          <SecaoRecolhivel
+                            key={chave}
+                            nivel={2}
+                            titulo={trib}
+                            contagem={itensTrib.length}
+                            aberto={Boolean(abertas[chave])}
+                            onToggle={() => toggle(chave)}
+                          >
+                            <div className="space-y-2">
+                              {itensTrib.map((item) => (
+                                <ItemLinha
+                                  key={item.id}
+                                  item={item}
+                                  removendoId={removendoId}
+                                  onRemover={handleRemover}
+                                />
+                              ))}
+                            </div>
+                          </SecaoRecolhivel>
+                        );
+                      })}
+                    </div>
+                  ) : cat === "Súmula" && sumulasPorOrgao.length > 1 ? (
+                    <div className="space-y-2">
+                      {sumulasPorOrgao.map(([org, itensOrg]) => {
+                        const chave = `sum:${org}`;
+                        return (
+                          <SecaoRecolhivel
+                            key={chave}
+                            nivel={2}
+                            titulo={org}
+                            contagem={itensOrg.length}
+                            aberto={Boolean(abertas[chave])}
+                            onToggle={() => toggle(chave)}
+                          >
+                            <div className="space-y-2">
+                              {itensOrg.map((item) => (
+                                <ItemLinha
+                                  key={item.id}
+                                  item={item}
+                                  removendoId={removendoId}
+                                  onRemover={handleRemover}
+                                />
+                              ))}
+                            </div>
+                          </SecaoRecolhivel>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {lista.map((item) => (
+                        <ItemLinha
+                          key={item.id}
+                          item={item}
+                          removendoId={removendoId}
+                          onRemover={handleRemover}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </SecaoRecolhivel>
+              );
+            })}
           </div>
         )}
       </div>

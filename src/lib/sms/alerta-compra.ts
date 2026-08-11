@@ -1,20 +1,19 @@
 /**
- * Alerta SMS ao admin quando uma compra MP é aprovada.
- * Provedor: Twilio (REST, sem SDK).
+ * Alerta push ao admin quando uma compra MP é aprovada.
+ * Provedor: ntfy.sh (HTTP POST; grátis).
  *
  * Env:
- * - TWILIO_ACCOUNT_SID
- * - TWILIO_AUTH_TOKEN
- * - TWILIO_FROM_NUMBER (E.164, ex.: +1… capaz de SMS para BR)
- * - ALERTA_COMPRA_SMS_PARA (default +5511985036364)
+ * - NTFY_TOPIC (obrigatório; tópico inscrito no app/web ntfy)
+ * - NTFY_BASE_URL (opcional; default https://ntfy.sh)
+ *
+ * Continua registrando em email_eventos como tipo `alerta_sms_compra`
+ * (nome legado do enum / painel admin).
  */
 
 import {
   emailJaEnviadoParaPagamento,
   registrarEmailEvento,
 } from "@/lib/email/eventos";
-
-const DESTINO_PADRAO = "+5511985036364";
 
 function formatarValor(valor: number | null | undefined): string {
   if (typeof valor !== "number" || Number.isNaN(valor)) return "—";
@@ -24,25 +23,17 @@ function formatarValor(valor: number | null | undefined): string {
   });
 }
 
-function destinoAlerta(): string {
-  const env = process.env.ALERTA_COMPRA_SMS_PARA?.trim();
-  return env || DESTINO_PADRAO;
-}
-
-function twilioConfigurado(): {
-  sid: string;
-  token: string;
-  from: string;
-} | null {
-  const sid = process.env.TWILIO_ACCOUNT_SID?.trim();
-  const token = process.env.TWILIO_AUTH_TOKEN?.trim();
-  const from = process.env.TWILIO_FROM_NUMBER?.trim();
-  if (!sid || !token || !from) return null;
-  return { sid, token, from };
+function ntfyConfigurado(): { base: string; topic: string } | null {
+  const topic = process.env.NTFY_TOPIC?.trim();
+  if (!topic) return null;
+  const base = (
+    process.env.NTFY_BASE_URL?.trim() || "https://ntfy.sh"
+  ).replace(/\/$/, "");
+  return { base, topic };
 }
 
 /**
- * Dispara SMS de alerta (idempotente por mpPaymentId).
+ * Dispara alerta push (idempotente por mpPaymentId).
  * Nunca lança — falhas só vão para log / email_eventos.
  */
 export async function enviarSmsAlertaCompra(opcoes: {
@@ -51,27 +42,29 @@ export async function enviarSmsAlertaCompra(opcoes: {
   mpPaymentId: string;
   tipoCompra?: "assinatura" | "pacote_extra";
 }): Promise<{ ok: boolean; motivo?: string }> {
-  const to = destinoAlerta();
-  const cfg = twilioConfigurado();
+  const cfg = ntfyConfigurado();
 
   if (!cfg) {
     console.warn(
-      "[sms alerta-compra] Twilio não configurado (TWILIO_ACCOUNT_SID / AUTH_TOKEN / FROM_NUMBER); SMS não enviado."
+      "[alerta-compra] NTFY_TOPIC não configurado; alerta push não enviado."
     );
     await registrarEmailEvento({
       tipo: "alerta_sms_compra",
       status: "falha",
-      destinatario: to,
-      assunto: "SMS alerta compra",
-      erro: "Twilio não configurado",
+      destinatario: "ntfy:não-configurado",
+      assunto: "Alerta compra (ntfy)",
+      erro: "NTFY_TOPIC não configurado",
       metadados: {
         mpPaymentId: opcoes.mpPaymentId,
         emailCliente: opcoes.emailCliente,
         tipoCompra: opcoes.tipoCompra ?? "assinatura",
+        provedor: "ntfy",
       },
     });
-    return { ok: false, motivo: "twilio_ausente" };
+    return { ok: false, motivo: "ntfy_ausente" };
   }
+
+  const destinatario = `ntfy:${cfg.topic}`;
 
   const ja = await emailJaEnviadoParaPagamento(
     "alerta_sms_compra",
@@ -85,92 +78,73 @@ export async function enviarSmsAlertaCompra(opcoes: {
   const tipo =
     opcoes.tipoCompra === "pacote_extra" ? "pacote extra" : "assinatura";
   const body =
-    `FACTO: compra ${tipo} aprovada ${valorTxt}. ` +
+    `Compra ${tipo} aprovada ${valorTxt}. ` +
     `Cliente: ${opcoes.emailCliente}. ` +
-    `Confira /admin/emails e reenvie se o e-mail falhou. ` +
-    `MP:${opcoes.mpPaymentId}`;
+    `Confira /admin/emails. MP:${opcoes.mpPaymentId}`;
 
   try {
-    const url = `https://api.twilio.com/2010-04-01/Accounts/${cfg.sid}/Messages.json`;
-    const auth = Buffer.from(`${cfg.sid}:${cfg.token}`).toString("base64");
-    const form = new URLSearchParams({
-      To: to,
-      From: cfg.from,
-      Body: body.slice(0, 1500),
-    });
-
+    const url = `${cfg.base}/${encodeURIComponent(cfg.topic)}`;
     const res = await fetch(url, {
       method: "POST",
       headers: {
-        Authorization: `Basic ${auth}`,
-        "Content-Type": "application/x-www-form-urlencoded",
+        Title: "FACTO — compra aprovada",
+        Priority: "high",
+        Tags: "moneybag",
+        "Content-Type": "text/plain; charset=utf-8",
       },
-      body: form.toString(),
+      body: body.slice(0, 3900),
     });
 
-    const raw = (await res.json().catch(() => ({}))) as {
-      sid?: string;
-      status?: string;
-      message?: string;
-      code?: number;
-      error_message?: string;
-    };
-
     if (!res.ok) {
-      const erro =
-        raw.message ||
-        raw.error_message ||
-        `Twilio HTTP ${res.status}`;
-      console.error("[sms alerta-compra] falha Twilio", {
-        status: res.status,
-        code: raw.code,
-        erro,
-      });
+      const texto = await res.text().catch(() => "");
+      const erro = `ntfy HTTP ${res.status}${texto ? `: ${texto.slice(0, 200)}` : ""}`;
+      console.error("[alerta-compra] falha ntfy", { status: res.status, erro });
       await registrarEmailEvento({
         tipo: "alerta_sms_compra",
         status: "falha",
-        destinatario: to,
-        assunto: "SMS alerta compra",
+        destinatario,
+        assunto: "Alerta compra (ntfy)",
         erro,
         metadados: {
           mpPaymentId: opcoes.mpPaymentId,
           emailCliente: opcoes.emailCliente,
-          twilioCode: raw.code ?? null,
+          provedor: "ntfy",
         },
       });
-      return { ok: false, motivo: "falha_twilio" };
+      return { ok: false, motivo: "falha_ntfy" };
     }
 
     await registrarEmailEvento({
       tipo: "alerta_sms_compra",
       status: "enviado",
-      destinatario: to,
-      assunto: "SMS alerta compra",
+      destinatario,
+      assunto: "Alerta compra (ntfy)",
       metadados: {
         mpPaymentId: opcoes.mpPaymentId,
         emailCliente: opcoes.emailCliente,
-        twilioSid: raw.sid ?? null,
-        twilioStatus: raw.status ?? null,
         tipoCompra: opcoes.tipoCompra ?? "assinatura",
+        provedor: "ntfy",
       },
     });
 
-    console.info("[sms alerta-compra] enviado", {
-      to,
-      twilioSid: raw.sid,
+    console.info("[alerta-compra] ntfy enviado", {
+      topic: cfg.topic,
       mpPaymentId: opcoes.mpPaymentId,
     });
     return { ok: true };
   } catch (erro) {
     const msg = erro instanceof Error ? erro.message : String(erro);
-    console.error("[sms alerta-compra]", msg);
+    console.error("[alerta-compra]", msg);
     await registrarEmailEvento({
       tipo: "alerta_sms_compra",
       status: "falha",
-      destinatario: to,
-      assunto: "SMS alerta compra",
+      destinatario,
+      assunto: "Alerta compra (ntfy)",
       erro: msg,
-      metadados: { mpPaymentId: opcoes.mpPaymentId },
+      metadados: {
+        mpPaymentId: opcoes.mpPaymentId,
+        provedor: "ntfy",
+      },
     });
     return { ok: false, motivo: "excecao" };
   }

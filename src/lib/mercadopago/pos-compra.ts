@@ -3,7 +3,7 @@
  * Usado pelo webhook MP e pelo reenvio manual no admin.
  *
  * - financeiro@: imediato (junto ao webhook de compra aprovada)
- * - noreply@ (convite): ~10 min depois no fluxo automático; imediato no reenvio admin
+ * - noreply@ (convite): imediato no automático e no reenvio admin
  */
 
 import crypto from "node:crypto";
@@ -16,15 +16,16 @@ import type { PlanoId } from "@/lib/planos-facto";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
-/** Atraso padrão do e-mail de boas-vindas após o financeiro (fluxo automático). */
-export const ATRASO_CONVITE_MINUTOS = 10;
+/** Atraso padrão do e-mail de boas-vindas após o financeiro (fluxo automático).
+ * 0 = imediato (mais confiável que schedule do Resend). */
+export const ATRASO_CONVITE_MINUTOS = 0;
 
 /**
  * Gera convite + e-mails (financeiro + boas-vindas) após cobrança aprovada.
  *
  * - financeiro@: sempre tenta (idempotente por destinatário + mp_payment_id)
  * - noreply@: só se o cliente ainda não tem perfil
- * - SMS admin: alerta para conferir /admin se o e-mail falhar
+ * - Push ntfy admin: alerta para conferir /admin se o e-mail falhar
  */
 export async function garantirConviteEEmailsPosCompra(
   admin: AdminClient,
@@ -79,7 +80,7 @@ export async function garantirConviteEEmailsPosCompra(
       tipoCompra: "assinatura",
     });
   } catch (erro) {
-    console.error("[pos-compra] falha SMS alerta", erro);
+    console.error("[pos-compra] falha alerta ntfy", erro);
   }
 
   const { data: perfil } = await admin

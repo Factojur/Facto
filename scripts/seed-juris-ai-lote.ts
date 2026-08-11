@@ -15,7 +15,7 @@ import {
   tokensDoPool,
   type PrecedenteInterno,
 } from "../src/lib/juris-provedores/jurisprudencia-service";
-import { termosDoLote } from "./seed-juris-termos";
+import { termosDoLote, type TermoSeed } from "./seed-juris-termos";
 
 config({ path: resolve(process.cwd(), ".env.local") });
 
@@ -26,7 +26,7 @@ const POR_TEMA = Math.max(
 );
 const TRIBUNAL = (process.env.SEED_JURIS_TRIBUNAL ?? "tjsp").toLowerCase();
 const LOTE = Math.max(1, Number(process.env.SEED_JURIS_LOTE ?? 1) || 1);
-const TERMOS = termosDoLote(LOTE);
+const TERMOS: TermoSeed[] = termosDoLote(LOTE);
 
 type DecisaoAi = {
   process_number?: string;
@@ -107,6 +107,14 @@ async function buscarPagina(
 async function limparLixoTjsp(
   supabase: SupabaseClient
 ): Promise<number> {
+  // Só roda com SEED_JURIS_LIMPAR_LIXO=1 — evita apagar itens por engano.
+  if (process.env.SEED_JURIS_LIMPAR_LIXO !== "1") {
+    console.log(
+      "Limpeza de lixo desligada (defina SEED_JURIS_LIMPAR_LIXO=1 para ativar).\n"
+    );
+    return 0;
+  }
+
   const { data } = await supabase
     .from("base_conhecimento")
     .select("id, titulo, texto")
@@ -129,7 +137,6 @@ async function limparLixoTjsp(
     }
   }
 
-  // Também remove textos óbvios de HTML do e-SAJ
   const { data: htmlRows } = await supabase
     .from("base_conhecimento")
     .select("id, titulo, texto")
@@ -150,37 +157,36 @@ async function limparLixoTjsp(
   return removidos;
 }
 
+/**
+ * Insere precedente. Se o título já existe, NÃO sobrescreve o texto
+ * (preserva o que já estava na base).
+ */
 async function upsertPrecedente(
   supabase: SupabaseClient,
   p: PrecedenteInterno
-): Promise<"insert" | "update" | "skip" | "erro"> {
+): Promise<"insert" | "skip" | "erro"> {
   const titulo = p.titulo.trim();
   const texto = montarTexto(p);
   if (!ementaValida(texto)) return "skip";
 
   const { data: existente } = await supabase
     .from("base_conhecimento")
-    .select("id")
+    .select("id, texto")
     .eq("titulo", titulo)
     .maybeSingle();
 
-  const payload = {
+  if (existente?.id) {
+    // Já cadastrado — não apaga nem sobrescreve conteúdo anterior.
+    return "skip";
+  }
+
+  const { error } = await supabase.from("base_conhecimento").insert({
     titulo,
     categoria: "Jurisprudência" as const,
     texto,
     fonte: "jurisprudencias.ai",
     status: "validado",
-  };
-
-  if (existente?.id) {
-    const { error } = await supabase
-      .from("base_conhecimento")
-      .update(payload)
-      .eq("id", existente.id);
-    return error ? "erro" : "update";
-  }
-
-  const { error } = await supabase.from("base_conhecimento").insert(payload);
+  });
   return error ? "erro" : "insert";
 }
 
@@ -202,30 +208,33 @@ async function main() {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  console.log("Limpando lixo de seed anterior (cache HTML)…");
+  console.log("Checando base (sem apagar itens existentes)…");
   const removidos = await limparLixoTjsp(supabase);
-  console.log(`Removidos: ${removidos}\n`);
+  if (removidos) console.log(`Removidos (lixo): ${removidos}\n`);
 
   console.log(
-    `Lote ${LOTE} Jurisprudências.ai → ${TRIBUNAL.toUpperCase()} · ${TERMOS.length} consultas · até ${POR_TEMA}/consulta\n`
+    `Lote ${LOTE} Jurisprudências.ai · ${TERMOS.length} consultas · até ${POR_TEMA}/consulta · tribunal default ${TRIBUNAL.toUpperCase()}\n`
   );
 
   let inseridos = 0;
-  let atualizados = 0;
   let pulados = 0;
   let falhas = 0;
   let chamadas = 0;
   let tokenIdx = 0;
 
   for (const termo of TERMOS) {
-    process.stdout.write(`▸ ${termo.slice(0, 56)}… `);
+    const court = (termo.tribunal ?? TRIBUNAL).toLowerCase();
+    const query = termo.q;
+    process.stdout.write(
+      `▸ [${court}] ${query.slice(0, 48)}… `
+    );
 
     let decisoes: DecisaoAi[] = [];
     let okHttp = false;
     for (let t = 0; t < tokens.length; t++) {
       const token = tokens[(tokenIdx + t) % tokens.length]!;
       chamadas++;
-      const r = await buscarPagina(TRIBUNAL, termo, token);
+      const r = await buscarPagina(court, query, token);
       if (r.status === 429 || r.status === 401 || r.status === 403) {
         console.log(`token esgotado/negado (${r.status}), tentando outro…`);
         continue;
@@ -251,7 +260,7 @@ async function main() {
     const vistos = new Set<string>();
     const formatados: PrecedenteInterno[] = [];
     for (const d of decisoes) {
-      const fmt = formatar(d, TRIBUNAL);
+      const fmt = formatar(d, court);
       if (!fmt) continue;
       const chave =
         fmt.numeroProcesso?.replace(/\D/g, "") ||
@@ -263,28 +272,27 @@ async function main() {
     }
 
     let i = 0;
-    let u = 0;
+    let s = 0;
     for (const p of formatados) {
       const r = await upsertPrecedente(supabase, p);
       if (r === "insert") {
         i++;
         inseridos++;
-      } else if (r === "update") {
-        u++;
-        atualizados++;
-      } else if (r === "skip") pulados++;
-      else falhas++;
+      } else if (r === "skip") {
+        s++;
+        pulados++;
+      } else falhas++;
     }
-    console.log(`${formatados.length} úteis (${i} new / ${u} upd)`);
+    console.log(`${formatados.length} úteis (${i} new / ${s} skip)`);
 
     await new Promise((r) => setTimeout(r, 400));
   }
 
   console.log(
-    `\nConcluído: ${inseridos} insert, ${atualizados} update, ${pulados} skip, ${falhas} falha(s), ${chamadas} HTTP.`
+    `\nConcluído: ${inseridos} insert, ${pulados} skip (já na base), ${falhas} falha(s), ${chamadas} HTTP.`
   );
   console.log("Próximo: npm run reindex:embeddings");
-  if (falhas && inseridos === 0 && atualizados === 0) process.exit(1);
+  if (falhas && inseridos === 0) process.exit(1);
 }
 
 main().catch((e) => {

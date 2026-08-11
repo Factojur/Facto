@@ -12,6 +12,7 @@ import {
   type AssinaturaDb,
 } from "@/lib/assinatura-format";
 import type { PagamentoInicialAssinatura } from "@/lib/mercadopago/client";
+import { buscarAssinaturaDoEmail } from "@/lib/mercadopago/buscar-assinatura-email";
 
 /**
  * POST /api/assinatura/cancelar
@@ -32,16 +33,10 @@ export async function POST() {
 
   try {
     const admin = createAdminClient();
-    const { data: row, error } = await admin
-      .from("assinaturas")
-      .select(
-        "id, mp_preapproval_id, email, plano, status, data_inicio, acesso_valido_ate, motivo_encerramento, data_cancelamento"
-      )
-      .ilike("email", user.email)
-      .in("status", ["authorized", "paused", "pending"])
-      .order("criado_em", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const { data: row, error } = await buscarAssinaturaDoEmail(
+      admin,
+      user.email
+    );
 
     if (error) {
       console.error("[api/assinatura/cancelar]", error);
@@ -55,9 +50,24 @@ export async function POST() {
       return NextResponse.json(
         {
           error:
-            "Nenhuma assinatura ativa encontrada para esta conta. Se você assinou com outro e-mail, fale com o suporte.",
+            "Nenhuma assinatura encontrada para esta conta. Se você assinou com outro e-mail, fale com o suporte.",
         },
         { status: 404 }
+      );
+    }
+
+    if (
+      row.status !== "authorized" &&
+      row.status !== "paused" &&
+      row.status !== "pending"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Esta assinatura já está cancelada. Não há renovação pendente.",
+          assinatura: mapearAssinaturaParaUI(row),
+        },
+        { status: 409 }
       );
     }
 
@@ -94,6 +104,19 @@ export async function POST() {
         paymentId: mp.estorno.paymentId,
         invoiceId: mp.estorno.invoiceId,
       });
+    }
+
+    // Garante registro local do pagamento (ajuda auditoria / retries)
+    if (mp.pagamentoInicial?.paymentId) {
+      await admin.from("pagamentos").upsert(
+        {
+          mp_payment_id: mp.pagamentoInicial.paymentId,
+          assinatura_id: assinatura.id,
+          status: mp.estorno?.sucesso ? "refunded" : "approved",
+          pago_em: mp.pagamentoInicial.debitDate,
+        },
+        { onConflict: "mp_payment_id" }
+      );
     }
 
     const assinaturaFinal: AssinaturaDb =
@@ -189,7 +212,9 @@ function montarMensagemCancelamento(
     return `Cancelamento concluído. Não haverá renovação. Seu acesso permanece até ${ate}.`;
   }
 
-  // Mensagem ao cliente: prazo suave (cartão/Pix). Detalhe técnico do estorno
-  // fica no e-mail interno financeiro@ e no campo `aviso` da API.
-  return "Cancelamento concluído dentro do prazo de 7 dias. O acesso foi encerrado; o estorno deve ser creditado em até 30 dias, conforme o meio de pagamento.";
+  if (mp.estorno?.sucesso) {
+    return "Cancelamento concluído dentro do prazo de 7 dias. O acesso foi encerrado e o estorno foi solicitado no Mercado Pago (pode levar até 30 dias para aparecer na fatura/Pix).";
+  }
+
+  return "Cancelamento concluído dentro do prazo de 7 dias. O acesso foi encerrado; se o estorno automático não concluir, o suporte finalizará o reembolso.";
 }
