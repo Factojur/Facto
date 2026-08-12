@@ -16,11 +16,21 @@ import {
 } from "@/lib/email/eventos";
 
 function formatarValor(valor: number | null | undefined): string {
-  if (typeof valor !== "number" || Number.isNaN(valor)) return "—";
+  if (typeof valor !== "number" || Number.isNaN(valor)) return "n/d";
   return valor.toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
   });
+}
+
+/** Cabeçalhos HTTP exigem bytes Latin-1; ntfy rejeita em dash e outros Unicode. */
+function headerAscii(valor: string): string {
+  return valor
+    .replace(/\u2014/g, "-")
+    .replace(/\u2013/g, "-")
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[^\x00-\xFF]/g, "?");
 }
 
 function ntfyConfigurado(): { base: string; topic: string } | null {
@@ -87,7 +97,7 @@ export async function enviarSmsAlertaCompra(opcoes: {
     const res = await fetch(url, {
       method: "POST",
       headers: {
-        Title: "FACTO — compra aprovada",
+        Title: headerAscii("FACTO - compra aprovada"),
         Priority: "high",
         Tags: "moneybag",
         "Content-Type": "text/plain; charset=utf-8",

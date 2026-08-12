@@ -252,7 +252,7 @@ export default async function AdminEmailsPage() {
                     <td className="px-4 py-3 whitespace-nowrap text-xs text-stone-500">
                       {new Date(e.criado_em).toLocaleString("pt-BR")}
                     </td>
-                    <td className="px-4 py-3 text-xs">{rotuloTipoEmail(e.tipo)}</td>
+                    <td className="px-4 py-3 text-xs">{rotuloTipoEmail(e.tipo, e.destinatario)}</td>
                     <td className="px-4 py-3">
                       <span
                         className={

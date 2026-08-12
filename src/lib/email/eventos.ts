@@ -10,10 +10,17 @@ export type TipoEmailEvento =
 export type StatusEmailEvento = "enviado" | "falha";
 
 /** Rótulo amigável para o painel admin (DB continua com o slug). */
-export function rotuloTipoEmail(tipo: string): string {
+export function rotuloTipoEmail(
+  tipo: string,
+  destinatario?: string | null
+): string {
+  const dest = (destinatario ?? "").toLowerCase();
   switch (tipo) {
     case "financeiro_compra":
-      return "Compra aprovada";
+      if (dest.includes("financeiro@factoia.com.br")) {
+        return "Compra aprovada (interno)";
+      }
+      return "Compra aprovada (cliente)";
     case "financeiro_cancelamento":
       return "Cancelamento";
     case "convite":
