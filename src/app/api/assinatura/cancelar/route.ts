@@ -159,9 +159,11 @@ export async function POST() {
       estorno: mp.estorno,
       aviso: updateError
         ? "Assinatura cancelada no Mercado Pago. A sincronização no FACTO pode levar alguns minutos via webhook."
-        : mp.estorno?.sucesso === false
-          ? mp.estorno.aviso
-          : undefined,
+        : !mp.preapprovalCancelada
+          ? "Acesso encerrado no FACTO, mas a assinatura ainda pode aparecer ativa no Mercado Pago. Se persistir, avise o suporte."
+          : mp.estorno?.sucesso === false
+            ? mp.estorno.aviso
+            : undefined,
       mensagem,
     });
   } catch (erro) {

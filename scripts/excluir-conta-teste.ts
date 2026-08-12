@@ -9,6 +9,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { cancelarPreapprovalMercadoPago } from "../src/lib/mercadopago/client";
+import { buscarPreapprovalsPorEmail } from "../src/lib/mercadopago/sincronizar-assinatura";
 
 const EMAILS_TESTE_PERMITIDOS = new Set([
   "nathalia.gomes1@gmail.com",
@@ -100,11 +102,46 @@ async function main() {
     }
   }
 
-  // 3) Assinaturas + pagamentos
+  // 3) Mercado Pago — cancela preapprovals ativas deste e-mail
+  try {
+    const preapprovals = await buscarPreapprovalsPorEmail(emailArg);
+    for (const pre of preapprovals) {
+      if (!pre.id) continue;
+      const st = (pre.status ?? "").toLowerCase();
+      if (st !== "authorized" && st !== "pending" && st !== "paused") continue;
+      const r = await cancelarPreapprovalMercadoPago(pre.id);
+      ok(
+        `MP preapproval ${pre.id}: ${r.cancelado ? "cancelado" : `ainda ${r.statusMp ?? "?"}`}`
+      );
+    }
+    if (!preapprovals.length) ok("nenhuma preapproval no MP para este e-mail");
+  } catch (erro) {
+    warn(
+      `MP preapprovals: ${erro instanceof Error ? erro.message : String(erro)}`
+    );
+  }
+
+  // 4) Assinaturas + pagamentos locais
   const { data: assinaturas } = await admin
     .from("assinaturas")
     .select("id, mp_preapproval_id, status, plano")
     .ilike("email", emailArg);
+
+  for (const row of assinaturas ?? []) {
+    const preId = row.mp_preapproval_id as string | null;
+    if (preId) {
+      try {
+        const r = await cancelarPreapprovalMercadoPago(preId);
+        ok(
+          `MP preapproval local ${preId}: ${r.cancelado ? "cancelado" : r.statusMp ?? "?"}`
+        );
+      } catch (erro) {
+        warn(
+          `MP cancel ${preId}: ${erro instanceof Error ? erro.message : String(erro)}`
+        );
+      }
+    }
+  }
 
   const assinaturaIds = (assinaturas ?? []).map((a) => a.id as string);
   if (assinaturaIds.length) {
@@ -123,7 +160,7 @@ async function main() {
     else ok(`assinaturas removidas: ${assinaturaIds.join(", ")}`);
   } else ok("nenhuma assinatura local");
 
-  // 4) Convites
+  // 5) Convites
   const { data: convites, error: errConvSel } = await admin
     .from("convites_pagos")
     .select("id")
@@ -138,7 +175,7 @@ async function main() {
     else ok(`convites_pagos removidos: ${(convites ?? []).length}`);
   } else ok("nenhum convite");
 
-  // 5) E-mail eventos (idempotencia)
+  // 6) E-mail eventos (idempotencia)
   const { data: emails } = await admin
     .from("email_eventos")
     .select("id")
@@ -164,8 +201,29 @@ async function main() {
     else ok(`email_eventos (assunto) removidos: ${(emailsAssunto ?? []).length}`);
   }
 
+  const { data: smsRows } = await admin
+    .from("email_eventos")
+    .select("id, metadados")
+    .eq("tipo", "alerta_sms_compra")
+    .order("criado_em", { ascending: false })
+    .limit(80);
+  const smsIds = (smsRows ?? [])
+    .filter((r) => {
+      const m = r.metadados as { emailCliente?: string } | null;
+      return (m?.emailCliente ?? "").toLowerCase() === emailArg;
+    })
+    .map((r) => r.id as string);
+  if (smsIds.length) {
+    const { error: errSms } = await admin
+      .from("email_eventos")
+      .delete()
+      .in("id", smsIds);
+    if (errSms) warn(`alerta_sms eventos: ${errSms.message}`);
+    else ok(`alerta_sms eventos removidos: ${smsIds.length}`);
+  }
+
   if (userId) {
-    // 6) Tabelas por user_id
+    // 7) Tabelas por user_id
     for (const tabela of ["aceites_termos", "cota_pecas_ciclo", "pagamentos_extras"] as const) {
       const { error } = await admin.from(tabela).delete().eq("user_id", userId);
       if (error) warn(`${tabela}: ${error.message}`);
@@ -179,12 +237,12 @@ async function main() {
     if (errEmUser) warn(`email_eventos user_id: ${errEmUser.message}`);
     else ok("email_eventos por user_id limpo");
 
-    // 7) Profile
+    // 8) Profile
     const { error: errProf } = await admin.from("profiles").delete().eq("id", userId);
     if (errProf) warn(`profiles: ${errProf.message}`);
     else ok("perfil removido");
 
-    // 8) Auth
+    // 9) Auth
     const { error: errAuth } = await admin.auth.admin.deleteUser(userId);
     if (errAuth) {
       console.error("FALHA auth.deleteUser:", errAuth.message);

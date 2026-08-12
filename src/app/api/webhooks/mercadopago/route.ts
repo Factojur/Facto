@@ -8,6 +8,7 @@ import {
 import {
   buscarEmailPagadorPreapproval,
   buscarPagamentoInicialAprovado,
+  normalizarStatusPreapprovalMp,
 } from "@/lib/mercadopago/client";
 import {
   cobrancaAssinaturaAprovada,
@@ -141,7 +142,7 @@ async function chamarApiMercadoPago(caminho: string) {
 async function processarPreapproval(admin: AdminClient, id: string) {
   const preapproval = await chamarApiMercadoPago(`/preapproval/${id}`);
 
-  const status = preapproval.status as string | undefined;
+  let status = normalizarStatusPreapprovalMp(preapproval.status as string);
   if (!status) return;
 
   const emailHint =
@@ -201,6 +202,14 @@ async function processarPreapproval(admin: AdminClient, id: string) {
 
   const dataInicio = preapproval.date_created ?? existente?.data_inicio ?? null;
 
+  if (existente?.status === "canceled" && status === "authorized") {
+    console.warn(
+      "[webhook mercadopago] MP authorized mas local canceled — mantendo canceled",
+      id
+    );
+    status = "canceled";
+  }
+
   const dados: Record<string, unknown> = {
     mp_preapproval_id: id,
     profile_id: profileId,
@@ -212,7 +221,13 @@ async function processarPreapproval(admin: AdminClient, id: string) {
   };
   if (email) dados.email = email;
 
-  if (status === "authorized" && !existente?.acesso_valido_ate && dataInicio && plano) {
+  if (
+    status === "authorized" &&
+    existente?.status !== "canceled" &&
+    !existente?.acesso_valido_ate &&
+    dataInicio &&
+    plano
+  ) {
     dados.acesso_valido_ate = new Date(
       new Date(dataInicio).getTime() + DURACAO_CICLO_DIAS[plano] * DIA_EM_MS
     ).toISOString();

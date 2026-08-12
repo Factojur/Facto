@@ -147,7 +147,7 @@ export async function upsertAssinaturaDePreapproval(
 ): Promise<SyncAssinaturaResultado> {
   const id = String(preapproval.id);
   const statusRaw = (preapproval.status ?? "").toLowerCase();
-  const status = statusRaw === "cancelled" ? "canceled" : statusRaw;
+  let status = statusRaw === "cancelled" ? "canceled" : statusRaw;
   let email = preapproval.payer_email?.trim().toLowerCase() || null;
   if (email && !email.includes("@")) email = null;
   if (!email) {
@@ -186,6 +186,14 @@ export async function upsertAssinaturaDePreapproval(
     .eq("mp_preapproval_id", id)
     .maybeSingle();
 
+  if (existente?.status === "canceled" && status === "authorized") {
+    console.warn(
+      "[sincronizar-assinatura] MP ainda authorized; mantendo canceled local",
+      id
+    );
+    status = "canceled";
+  }
+
   if (!email && typeof existente?.email === "string" && existente.email.trim()) {
     email = existente.email.trim().toLowerCase();
   }
@@ -206,6 +214,7 @@ export async function upsertAssinaturaDePreapproval(
 
   if (
     status === "authorized" &&
+    existente?.status !== "canceled" &&
     !existente?.acesso_valido_ate &&
     dataInicio &&
     plano

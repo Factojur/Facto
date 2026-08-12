@@ -61,44 +61,63 @@ export async function chamarMercadoPago(
   return resposta.json();
 }
 
-/** Cancela uma assinatura (preapproval) de forma irreversível. */
+/** Normaliza status do MP para o enum gravado no Supabase. */
+export function normalizarStatusPreapprovalMp(
+  status: string | null | undefined
+): string {
+  const s = (status ?? "").toLowerCase();
+  if (s === "cancelled" || s === "canceled") return "canceled";
+  if (s === "authorized" || s === "paused" || s === "pending") return s;
+  return s || "pending";
+}
+
+export function preapprovalMpEstaCancelado(
+  status: string | null | undefined
+): boolean {
+  const s = (status ?? "").toLowerCase();
+  return s === "canceled" || s === "cancelled";
+}
+
+export async function obterPreapprovalMercadoPago(
+  mpPreapprovalId: string
+): Promise<{ status?: string }> {
+  return (await chamarMercadoPago(
+    `/preapproval/${mpPreapprovalId}`
+  )) as { status?: string };
+}
+
+/** Cancela preapproval no MP e confirma via GET (tenta canceled e cancelled). */
 export async function cancelarPreapprovalMercadoPago(
   mpPreapprovalId: string
-): Promise<void> {
-  try {
-    await chamarMercadoPago(`/preapproval/${mpPreapprovalId}`, {
-      method: "PUT",
-      body: JSON.stringify({ status: "canceled" }),
-    });
-  } catch (erro) {
-    const mensagem = erro instanceof Error ? erro.message : String(erro);
-    // Já cancelada / inexistente — trata como sucesso operacional.
-    if (
-      /already.?cancel|status.?canceled|404|400.*cancel/i.test(mensagem)
-    ) {
-      console.info(
-        "[mercadopago] preapproval já cancelada ou indisponível",
-        mpPreapprovalId
-      );
-      return;
-    }
-    // Confirma no GET se o MP já está canceled.
-    try {
-      const atual = (await chamarMercadoPago(
-        `/preapproval/${mpPreapprovalId}`
-      )) as { status?: string };
-      if (
-        String(atual?.status ?? "")
-          .toLowerCase()
-          .startsWith("cancel")
-      ) {
-        return;
-      }
-    } catch {
-      /* ignore */
-    }
-    throw erro;
+): Promise<{ cancelado: boolean; statusMp: string | null }> {
+  let atual = await obterPreapprovalMercadoPago(mpPreapprovalId);
+  if (preapprovalMpEstaCancelado(atual?.status)) {
+    return { cancelado: true, statusMp: atual.status ?? null };
   }
+
+  for (const statusBody of ["canceled", "cancelled"] as const) {
+    try {
+      await chamarMercadoPago(`/preapproval/${mpPreapprovalId}`, {
+        method: "PUT",
+        body: JSON.stringify({ status: statusBody }),
+      });
+    } catch (erro) {
+      const mensagem = erro instanceof Error ? erro.message : String(erro);
+      if (!/already.?cancel|status.?cancel|404/i.test(mensagem)) {
+        console.warn(
+          "[mercadopago] PUT cancel preapproval",
+          mpPreapprovalId,
+          mensagem
+        );
+      }
+    }
+    atual = await obterPreapprovalMercadoPago(mpPreapprovalId);
+    if (preapprovalMpEstaCancelado(atual?.status)) {
+      return { cancelado: true, statusMp: atual.status ?? null };
+    }
+  }
+
+  return { cancelado: false, statusMp: atual?.status ?? null };
 }
 
 type PaymentCampo =

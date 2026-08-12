@@ -172,11 +172,19 @@ export async function executarCancelamentoNoMercadoPago(opcoes: {
   const dataReferenciaCdc = pagamentoInicial?.debitDate ?? dataInicio;
   const dentroPrazoCdc = dentroPrazoArrependimentoCdc(dataReferenciaCdc);
 
-  await cancelarPreapprovalMercadoPago(mpPreapprovalId);
+  const { cancelado: preapprovalCancelada, statusMp } =
+    await cancelarPreapprovalMercadoPago(mpPreapprovalId);
+  if (!preapprovalCancelada) {
+    console.error(
+      "[cancelar-assinatura] preapproval ainda ativa no MP após cancelamento",
+      mpPreapprovalId,
+      statusMp
+    );
+  }
 
   if (!dentroPrazoCdc) {
     return {
-      preapprovalCancelada: true,
+      preapprovalCancelada,
       dentroPrazoCdc: false,
       dataReferenciaCdc,
       pagamentoInicial,
@@ -190,7 +198,7 @@ export async function executarCancelamentoNoMercadoPago(opcoes: {
   });
 
   return {
-    preapprovalCancelada: true,
+    preapprovalCancelada,
     dentroPrazoCdc: true,
     dataReferenciaCdc,
     pagamentoInicial: pagamentoUsado,

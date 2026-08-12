@@ -48,8 +48,9 @@ export function rotuloPlano(plano: AssinaturaDb["plano"]): string {
 
 export function mapearAssinaturaParaUI(row: AssinaturaDb): AssinaturaResumoUI {
   const planoLabel = rotuloPlano(row.plano);
+  const statusDb = String(row.status ?? "").toLowerCase();
 
-  if (row.status === "canceled") {
+  if (statusDb === "canceled" || statusDb === "cancelled") {
     return {
       planoLabel,
       statusLabel: "Cancelado",
