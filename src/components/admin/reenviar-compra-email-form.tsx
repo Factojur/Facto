@@ -8,6 +8,7 @@ export function ReenviarCompraEmailForm({
   emailInicial?: string;
 }) {
   const [email, setEmail] = useState(emailInicial);
+  const [forcar, setForcar] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -21,7 +22,7 @@ export function ReenviarCompraEmailForm({
       const res = await fetch("/api/admin/emails/reenviar-compra", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim() }),
+        body: JSON.stringify({ email: email.trim(), force: forcar }),
       });
       const data = (await res.json()) as {
         error?: string;
@@ -57,7 +58,8 @@ export function ReenviarCompraEmailForm({
       </p>
       <p className="mt-1 text-xs text-stone-500">
         Use quando o webhook não disparou financeiro@ / noreply@. Informe o
-        e-mail do comprador no Mercado Pago.
+        e-mail do comprador no Mercado Pago. Marque “forçar” se o log já
+        mostra enviado mas a caixa não recebeu.
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
         <input
@@ -76,6 +78,15 @@ export function ReenviarCompraEmailForm({
           {busy ? "Enviando…" : "Reenviar agora"}
         </button>
       </div>
+      <label className="mt-3 flex items-center gap-2 text-xs text-stone-500">
+        <input
+          type="checkbox"
+          checked={forcar}
+          onChange={(ev) => setForcar(ev.target.checked)}
+          className="accent-facto-gold"
+        />
+        Forçar reenvio (ignora “já enviado”)
+      </label>
       {msg && (
         <p className="mt-3 text-sm text-emerald-200">{msg}</p>
       )}

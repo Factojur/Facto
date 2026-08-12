@@ -61,6 +61,18 @@ export async function enfileirarScrapeNaVerificacao(
       ignorados++;
       continue;
     }
+    if (!j.numeroProcesso?.match(/\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/)) {
+      ignorados++;
+      continue;
+    }
+    if (
+      /esajCelula|escolhaBeta|suportesistemastjsp|Identificar-se|Peticionamento Eletr/i.test(
+        j.ementa
+      )
+    ) {
+      ignorados++;
+      continue;
+    }
 
     const dup = analisarDuplicidade(
       {

@@ -36,9 +36,27 @@ async function main() {
   const { termoBuscaAPartirDoCaso } = await import(
     "../src/lib/scrapers/afinidade"
   );
+  const { limparLixoCacheScrape } = await import("../src/lib/scrapers/cache");
+
+  const forcar =
+    process.env.FORCE_SCRAPE === "1" || process.argv.includes("--force");
+
+  if (
+    process.env.LIMPAR_CACHE_LIXO === "1" ||
+    process.argv.includes("--limpar") ||
+    process.argv.includes("--limpar-only")
+  ) {
+    const limpeza = await limparLixoCacheScrape("TJSP");
+    console.log(
+      `Cache lixo: ${limpeza.removidos} ementa(s) em ${limpeza.linhas} linha(s).`
+    );
+    if (process.argv.includes("--limpar-only")) {
+      return;
+    }
+  }
 
   console.log(
-    `Aquecendo ${TERMOS_JEC.length} termos TJSP → juris_scrape_cache…`
+    `Aquecendo ${TERMOS_JEC.length} termos TJSP → juris_scrape_cache${forcar ? " (FORCE)" : ""}…`
   );
 
   let ok = 0;
@@ -48,7 +66,7 @@ async function main() {
     const chave = termoBuscaAPartirDoCaso(termo);
     process.stdout.write(`• ${chave.slice(0, 60)}… `);
     try {
-      const r = await buscarTjsp(termo);
+      const r = await buscarTjsp(termo, { forcar });
       if (r.julgados.length || r.doCache) {
         ok++;
         console.log(

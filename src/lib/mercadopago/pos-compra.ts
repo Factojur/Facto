@@ -36,6 +36,8 @@ export async function garantirConviteEEmailsPosCompra(
     plano?: PlanoId | null;
     /** 0 = envia convite na hora (admin/teste). Default 10 no automático. */
     atrasoConviteMinutos?: number;
+    /** Reenvio admin: ignora “já enviado” se o e-mail não chegou. */
+    forcarEmails?: boolean;
   }
 ): Promise<{ financeiroOk: boolean; conviteOk: boolean; motivoConvite?: string }> {
   const email = opcoes.email.trim();
@@ -61,13 +63,14 @@ export async function garantirConviteEEmailsPosCompra(
 
   let financeiroOk = false;
   try {
-    await enviarEmailsFinanceiroCompra({
+    const r = await enviarEmailsFinanceiroCompra({
       emailCliente: email,
       valor: opcoes.valor,
       mpPaymentId: opcoes.mpPaymentId,
       plano,
+      forcar: opcoes.forcarEmails,
     });
-    financeiroOk = true;
+    financeiroOk = r.admin !== "falha" && r.cliente !== "falha";
   } catch (erro) {
     console.error("[pos-compra] falha e-mails financeiro", erro);
   }
@@ -96,10 +99,9 @@ export async function garantirConviteEEmailsPosCompra(
     };
   }
 
-  const conviteJaEnviado = await emailJaEnviadoParaPagamento(
-    "convite",
-    opcoes.mpPaymentId
-  );
+  const conviteJaEnviado =
+    !opcoes.forcarEmails &&
+    (await emailJaEnviadoParaPagamento("convite", opcoes.mpPaymentId));
   if (conviteJaEnviado) {
     return { financeiroOk, conviteOk: true, motivoConvite: "ja_enviado" };
   }

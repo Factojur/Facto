@@ -24,6 +24,7 @@ import {
 } from "@/lib/scrapers/afinidade";
 import { gravarCacheScrape, lerCacheScrape } from "@/lib/scrapers/cache";
 import { enfileirarScrapeNaVerificacao } from "@/lib/scrapers/verificacao-scrape";
+import { filtrarJulgadosScrape } from "@/lib/scrapers/validar-ementa";
 
 const TRIBUNAL = "TJSP";
 const URL_CONSULTA =
@@ -76,28 +77,39 @@ async function extrairJulgadosDaPagina(
 ): Promise<BrutoPagina[]> {
   return page.evaluate((limite) => {
     const out: BrutoPagina[] = [];
-    const blocos = Array.from(
-      document.querySelectorAll(
-        "tr.fundocin, .fundocin, div[id^='divDadosResultado']"
-      )
+    const lixo =
+      /esajCelula|escolhaBeta|suportesistemastjsp|Identificar-se|Peticionamento Eletr|downloadEmenta|ementaClass|\{[\s\S]*position:\s*relative/i;
+    const cnjRe = /\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/;
+
+    const linhas = Array.from(
+      document.querySelectorAll("tr.fundocin, .fundocin")
     );
     const fonte =
-      blocos.length > 0
-        ? blocos
-        : Array.from(document.querySelectorAll("table")).flatMap((t) =>
-            Array.from(t.querySelectorAll("tr"))
-          );
+      linhas.length > 0
+        ? linhas
+        : Array.from(document.querySelectorAll(".ementaClass2, td.ementaClass2"))
+            .map((el) => el.closest("tr") || el.parentElement)
+            .filter((el): el is Element => Boolean(el));
 
+    const vistos = new Set<Element>();
     for (const el of fonte) {
       if (out.length >= limite) break;
-      const texto = (el.textContent || "").replace(/\s+/g, " ").trim();
-      if (texto.length < 80) continue;
+      if (vistos.has(el)) continue;
+      vistos.add(el);
 
-      const ementaEl =
-        el.querySelector(".ementaClass2, .ementaClass, td.ementaClass2") || el;
+      const ementaEl = el.querySelector(
+        ".ementaClass2, .ementaClass, td.ementaClass2"
+      );
+      if (!ementaEl) continue;
+
       let ementa = (ementaEl.textContent || "").replace(/\s+/g, " ").trim();
       ementa = ementa.replace(/^EMENTA:?\s*/i, "").trim();
-      if (ementa.length < 60) continue;
+      if (ementa.length < 100) continue;
+      if (lixo.test(ementa)) continue;
+
+      const texto = (el.textContent || "").replace(/\s+/g, " ").trim();
+      const procMatch = texto.match(cnjRe);
+      if (!procMatch) continue;
 
       const link =
         (el.querySelector(
@@ -105,9 +117,6 @@ async function extrairJulgadosDaPagina(
         ) as HTMLAnchorElement | null) ||
         (el.querySelector("a[href]") as HTMLAnchorElement | null);
 
-      const procMatch = texto.match(
-        /\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}|\d{4,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/
-      );
       const dataMatch =
         texto.match(
           /(?:Data\s+(?:do\s+)?[Jj]ulgamento|Julgamento)\s*:?\s*(\d{2}\/\d{2}\/\d{4})/i
@@ -116,9 +125,9 @@ async function extrairJulgadosDaPagina(
         /Relator(?:\(a\))?\s*:?\s*([^\n|]+?)(?:\s{2}|Data|$)/i
       );
 
-      const numeroProcesso = procMatch?.[0];
+      const numeroProcesso = procMatch[0];
       out.push({
-        titulo: numeroProcesso ? `TJSP — ${numeroProcesso}` : `TJSP — julgado`,
+        titulo: `TJSP — ${numeroProcesso}`,
         ementa: ementa.slice(0, 4000),
         data: dataMatch?.[1],
         url: link?.href || undefined,
@@ -247,10 +256,12 @@ async function scrapeTjspLive(queryCaso: string): Promise<{
       brutos.push(...mais);
     }
 
-    const pool = dedupePool(
-      brutos
-        .filter((j) => dentroDeAnos(j.data, ANOS_MAX_JULGADO))
-        .map((j) => ({ ...j, tribunal: TRIBUNAL }))
+    const pool = filtrarJulgadosScrape(
+      dedupePool(
+        brutos
+          .filter((j) => dentroDeAnos(j.data, ANOS_MAX_JULGADO))
+          .map((j) => ({ ...j, tribunal: TRIBUNAL }))
+      )
     ).slice(0, POOL_SCRAPE_MAX);
 
     if (!pool.length) {
@@ -291,7 +302,10 @@ function topDoPool(
  * Busca no TJSP: cache (por termo de busca) → worker HTTP → Playwright local.
  * Ranking por afinidade usa o texto completo do caso.
  */
-export async function buscarTjsp(query: string): Promise<ResultadoScrape> {
+export async function buscarTjsp(
+  query: string,
+  opcoes?: { forcar?: boolean }
+): Promise<ResultadoScrape> {
   const q = query.trim();
   if (q.length < 4) {
     return {
@@ -306,16 +320,21 @@ export async function buscarTjsp(query: string): Promise<ResultadoScrape> {
   const termoCache = termoBuscaAPartirDoCaso(q);
 
   try {
-    const cached = await lerCacheScrape(TRIBUNAL, termoCache);
-    if (cached && cached.julgados.length) {
-      const top = topDoPool(q, cached.julgados);
-      return {
-        julgados: top,
-        doCache: true,
-        poolSize: cached.julgados.length,
-        fonte: "cache",
-        duracaoMs: Date.now() - t0,
-      };
+    if (!opcoes?.forcar) {
+      const cached = await lerCacheScrape(TRIBUNAL, termoCache);
+      if (cached && cached.julgados.length) {
+        const limpos = filtrarJulgadosScrape(cached.julgados);
+        if (limpos.length) {
+          const top = topDoPool(q, limpos);
+          return {
+            julgados: top,
+            doCache: true,
+            poolSize: limpos.length,
+            fonte: "cache",
+            duracaoMs: Date.now() - t0,
+          };
+        }
+      }
     }
   } catch {
     /* cache ausente */
@@ -350,6 +369,12 @@ export async function buscarTjsp(query: string): Promise<ResultadoScrape> {
         "Scraper TJSP desligado neste ambiente (cache miss). Configure SCRAPER_TJSP_WORKER_URL ou rode local com SCRAPER_TJSP_ENABLED=true.",
       duracaoMs: Date.now() - t0,
     };
+  }
+
+  pool = filtrarJulgadosScrape(pool);
+  if (!pool.length && !aviso && !erro) {
+    aviso =
+      "TJSP não retornou ementas úteis (layout mudou, captcha ou sem resultado).";
   }
 
   const top = topDoPool(q, pool);
@@ -419,11 +444,14 @@ async function scrapeTjspViaWorker(termoBusca: string): Promise<{
       : Array.isArray(json.julgados)
         ? json.julgados
         : [];
-    return {
-      pool: pool.slice(0, POOL_SCRAPE_MAX).map((j) => ({
+    const limpos = filtrarJulgadosScrape(
+      pool.slice(0, POOL_SCRAPE_MAX).map((j) => ({
         ...j,
         tribunal: j.tribunal || TRIBUNAL,
-      })),
+      }))
+    ).filter((j) => dentroDeAnos(j.data, ANOS_MAX_JULGADO));
+    return {
+      pool: limpos,
       aviso: json.aviso,
       erro: json.erro,
     };

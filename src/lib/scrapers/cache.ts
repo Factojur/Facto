@@ -5,6 +5,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { JulgadoScrape } from "@/lib/scrapers/types";
+import { filtrarJulgadosScrape } from "@/lib/scrapers/validar-ementa";
 
 /** TTL do cache em dias — após isso, re-scrape. */
 const TTL_DIAS = 14;
@@ -39,8 +40,9 @@ export async function lerCacheScrape(
   if (idadeDias > TTL_DIAS) return null;
 
   const julgados = Array.isArray(data.resultados)
-    ? (data.resultados as JulgadoScrape[])
+    ? filtrarJulgadosScrape(data.resultados as JulgadoScrape[])
     : [];
+  if (!julgados.length) return null;
   return { id: data.id, julgados };
 }
 
@@ -70,4 +72,42 @@ export async function gravarCacheScrape(
     return undefined;
   }
   return data?.id;
+}
+
+/** Remove ementas-lixo já gravadas no cache (não toca base_conhecimento). */
+export async function limparLixoCacheScrape(
+  tribunal = "TJSP"
+): Promise<{ linhas: number; removidos: number }> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("juris_scrape_cache")
+    .select("id, tribunal, query_norm, resultados")
+    .eq("tribunal", tribunal);
+
+  if (error) {
+    console.error("[limparLixoCacheScrape]", error.message);
+    return { linhas: 0, removidos: 0 };
+  }
+
+  let linhas = 0;
+  let removidos = 0;
+  for (const row of data ?? []) {
+    const bruto = Array.isArray(row.resultados)
+      ? (row.resultados as JulgadoScrape[])
+      : [];
+    const limpos = filtrarJulgadosScrape(bruto);
+    const n = bruto.length - limpos.length;
+    if (n <= 0) continue;
+    removidos += n;
+    linhas++;
+    if (limpos.length) {
+      await admin
+        .from("juris_scrape_cache")
+        .update({ resultados: limpos })
+        .eq("id", row.id);
+    } else {
+      await admin.from("juris_scrape_cache").delete().eq("id", row.id);
+    }
+  }
+  return { linhas, removidos };
 }

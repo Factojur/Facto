@@ -13,4 +13,8 @@ export {
   selecionarTopPorAfinidade,
   termoBuscaAPartirDoCaso,
 } from "@/lib/scrapers/afinidade";
+export {
+  ementaPareceLixo,
+  julgadoScrapeValido,
+} from "@/lib/scrapers/validar-ementa";
 

@@ -217,7 +217,10 @@ export async function enviarEmailsCancelamentoAssinatura(opcoes: {
         status: "falha",
         destinatario,
         erro: resultado.value.error.message,
-        metadados: { mpPreapprovalId: opcoes.mpPreapprovalId },
+        metadados: {
+          mpPreapprovalId: opcoes.mpPreapprovalId,
+          resendId: resultado.value.data?.id ?? null,
+        },
       });
       continue;
     }
@@ -225,7 +228,10 @@ export async function enviarEmailsCancelamentoAssinatura(opcoes: {
       tipo: "financeiro_cancelamento",
       status: "enviado",
       destinatario,
-      metadados: { mpPreapprovalId: opcoes.mpPreapprovalId },
+      metadados: {
+        mpPreapprovalId: opcoes.mpPreapprovalId,
+        resendId: resultado.value.data?.id ?? null,
+      },
     });
   }
 }

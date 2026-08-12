@@ -1,6 +1,6 @@
 /**
  * Termos de busca para seed de jurisprudência (Jurisprudências.ai).
- * Lotes 1–2: JEC. Lote 3: multiárea, pares autor × réu.
+ * Lotes 1–2: JEC. Lotes 3+: multiárea, pares autor × réu.
  */
 
 export type TermoSeed = {
@@ -143,7 +143,180 @@ export const TERMOS_MULTIAREA_LOTE_3: TermoSeed[] = [
   },
 ];
 
+/**
+ * Lote 4 — multiárea complementar, com foco em temas fora do recorte
+ * clássico de juizados.
+ */
+export const TERMOS_MULTIAREA_LOTE_4: TermoSeed[] = [
+  // Previdenciário
+  {
+    lado: "autor",
+    tribunal: "stj",
+    q: "aposentadoria por invalidez restabelecimento benefício incapacidade permanente procedência",
+  },
+  {
+    lado: "reu",
+    tribunal: "stj",
+    q: "benefício por incapacidade improcedência ausência qualidade de segurado laudo desfavorável",
+  },
+  // Empresarial / recuperação judicial
+  {
+    lado: "autor",
+    tribunal: "stj",
+    q: "recuperação judicial stay period prorrogação essencialidade bens procedência",
+  },
+  {
+    lado: "reu",
+    tribunal: "stj",
+    q: "recuperação judicial improcedência crédito extraconcursal não sujeição ao plano",
+  },
+  // Ambiental
+  {
+    lado: "autor",
+    q: "dano ambiental obrigação de reparar responsabilidade objetiva procedência",
+  },
+  {
+    lado: "reu",
+    q: "dano ambiental improcedência ausência nexo causal área degradada",
+  },
+  // Saúde suplementar
+  {
+    lado: "autor",
+    tribunal: "stj",
+    q: "plano de saúde home care cobertura procedimento essencial procedência",
+  },
+  {
+    lado: "reu",
+    tribunal: "stj",
+    q: "plano de saúde improcedência tratamento experimental rol ans taxativo mitigado",
+  },
+  // Administrativo disciplinar
+  {
+    lado: "autor",
+    q: "servidor público processo administrativo disciplinar nulidade cerceamento defesa procedência",
+  },
+  {
+    lado: "reu",
+    q: "processo administrativo disciplinar improcedência regularidade contraditório ampla defesa",
+  },
+  // Responsabilidade médica
+  {
+    lado: "autor",
+    q: "erro médico responsabilidade civil hospital dano moral material procedência",
+  },
+  {
+    lado: "reu",
+    q: "erro médico improcedência ausência culpa resultado inerente ao procedimento",
+  },
+  // Sucessões
+  {
+    lado: "autor",
+    q: "inventário sobrepartilha reconhecimento sonegados procedência",
+  },
+  {
+    lado: "reu",
+    q: "inventário improcedência inexistência bens sonegados ausência prova",
+  },
+  // Arbitragem / contrato empresarial
+  {
+    lado: "autor",
+    tribunal: "stj",
+    q: "cláusula compromissória arbitragem extinção processo sem resolução mérito procedência",
+  },
+  {
+    lado: "reu",
+    tribunal: "stj",
+    q: "arbitragem improcedência nulidade cláusula compromissória contrato adesão",
+  },
+];
+
+/**
+ * Lote 5 — multiárea: público, civil patrimonial, digital e societário.
+ */
+export const TERMOS_MULTIAREA_LOTE_5: TermoSeed[] = [
+  // Improbidade administrativa
+  {
+    lado: "autor",
+    tribunal: "stj",
+    q: "improbidade administrativa lesão ao erário enriquecimento ilícito procedência",
+  },
+  {
+    lado: "reu",
+    tribunal: "stj",
+    q: "improbidade administrativa improcedência ausência dolo elemento subjetivo",
+  },
+  // Licitações
+  {
+    lado: "autor",
+    q: "licitação anulação edital irregularidade mandado de segurança procedência",
+  },
+  {
+    lado: "reu",
+    q: "licitação improcedência discricionariedade administração pública edital válido",
+  },
+  // Desapropriação / urbanístico
+  {
+    lado: "autor",
+    q: "desapropriação indenização justa prévia juros compensatórios procedência",
+  },
+  {
+    lado: "reu",
+    q: "desapropriação improcedência área pública ausência direito indenizatório",
+  },
+  // Locação
+  {
+    lado: "autor",
+    q: "locação despejo falta de pagamento aluguel procedência",
+  },
+  {
+    lado: "reu",
+    q: "locação despejo improcedência purgação da mora depósito integral",
+  },
+  // Usucapião
+  {
+    lado: "autor",
+    q: "usucapião extraordinária posse mansa pacífica animus domini procedência",
+  },
+  {
+    lado: "reu",
+    q: "usucapião improcedência posse precária interrupção prazo",
+  },
+  // LGPD / dados
+  {
+    lado: "autor",
+    tribunal: "stj",
+    q: "LGPD vazamento dados pessoais dano moral responsabilidade objetiva procedência",
+  },
+  {
+    lado: "reu",
+    tribunal: "stj",
+    q: "LGPD improcedência ausência dano concreto mero aborrecimento vazamento",
+  },
+  // Societário
+  {
+    lado: "autor",
+    q: "dissolução parcial sociedade apuração haveres sócio retirante procedência",
+  },
+  {
+    lado: "reu",
+    q: "dissolução sociedade improcedência ausência justa causa exclusão sócio",
+  },
+  // Execução / penhora
+  {
+    lado: "autor",
+    tribunal: "stj",
+    q: "penhora bem de família impenhorabilidade Súmula 364 STJ procedência",
+  },
+  {
+    lado: "reu",
+    tribunal: "stj",
+    q: "penhora bem de família improcedência imóvel de luxo exceção impenhorabilidade",
+  },
+];
+
 export function termosDoLote(lote: number): TermoSeed[] {
+  if (lote === 5) return TERMOS_MULTIAREA_LOTE_5;
+  if (lote === 4) return TERMOS_MULTIAREA_LOTE_4;
   if (lote === 3) return TERMOS_MULTIAREA_LOTE_3;
   if (lote === 2) return TERMOS_JEC_LOTE_2;
   return TERMOS_JEC_LOTE_1.map((q) => ({ q, lado: "neutro" as const }));

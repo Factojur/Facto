@@ -1,9 +1,12 @@
-import { Resend } from "resend";
 import { registrarEmailEvento } from "@/lib/email/eventos";
 import { getEmailAssetBaseUrl } from "@/lib/site-url";
 import { htmlLogoEmail } from "@/lib/email/marca";
-
-const REMETENTE_NOREPLY = "FACTO <noreply@factoia.com.br>";
+import {
+  DESTINO_FINANCEIRO,
+  REMETENTE_NOREPLY,
+  getResend,
+  serializeResendError,
+} from "@/lib/email/resend-client";
 
 function montarHtmlBoasVindas(link: string): string {
   const ano = new Date().getFullYear();
@@ -74,14 +77,13 @@ function montarHtmlBoasVindas(link: string): string {
 
 /**
  * Boas-vindas + link de cadastro (remetente noreply@).
- * No fluxo automático, agenda ~10 min após o financeiro (Resend scheduledAt).
+ * Envio imediato por padrão (atraso 0); scheduledAt só se atrasoMinutos > 0.
  */
 export async function enviarEmailConvite(
   email: string,
   token: string,
   opcoes?: { mpPaymentId?: string; atrasoMinutos?: number }
 ) {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
   const remetente =
     process.env.RESEND_FROM_EMAIL?.trim() || REMETENTE_NOREPLY;
   const siteUrl = getEmailAssetBaseUrl();
@@ -97,7 +99,8 @@ export async function enviarEmailConvite(
   };
   if (opcoes?.mpPaymentId) metadados.mpPaymentId = opcoes.mpPaymentId;
 
-  if (!apiKey) {
+  const resend = getResend();
+  if (!resend) {
     console.warn(
       "[email convite] RESEND_API_KEY não configurada; e-mail não enviado. Link gerado:",
       link
@@ -110,31 +113,32 @@ export async function enviarEmailConvite(
       erro: "RESEND_API_KEY ausente",
       metadados,
     });
-    return;
+    throw new Error("RESEND_API_KEY ausente");
   }
 
-  const resend = new Resend(apiKey);
-
-  const { error } = await resend.emails.send({
+  const { data, error } = await resend.emails.send({
     from: remetente,
     to: email,
+    replyTo: DESTINO_FINANCEIRO,
     subject: assunto,
     html: montarHtmlBoasVindas(link),
+    tags: [{ name: "tipo", value: "convite" }],
     ...(atrasoMin > 0
       ? { scheduledAt: `in ${atrasoMin} minutes` }
       : {}),
   });
 
-  if (error) {
+  if (error || !data?.id) {
+    const msg = serializeResendError(error) || "Resend retornou sem id";
     await registrarEmailEvento({
       tipo: "convite",
       status: "falha",
       destinatario: email,
       assunto,
-      erro: error.message,
-      metadados,
+      erro: msg,
+      metadados: { ...metadados, resendId: data?.id ?? null },
     });
-    throw new Error(`Falha ao enviar e-mail via Resend: ${error.message}`);
+    throw new Error(`Falha ao enviar e-mail via Resend: ${msg}`);
   }
 
   await registrarEmailEvento({
@@ -142,6 +146,6 @@ export async function enviarEmailConvite(
     status: "enviado",
     destinatario: email,
     assunto,
-    metadados,
+    metadados: { ...metadados, resendId: data.id },
   });
 }

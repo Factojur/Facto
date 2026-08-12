@@ -28,6 +28,7 @@ export default async function AdminEmailsPage() {
     assunto: string | null;
     erro: string | null;
     criado_em: string;
+    metadados: Record<string, unknown> | null;
   }[] = [];
   let falhas = 0;
   let webhooks: {
@@ -47,7 +48,7 @@ export default async function AdminEmailsPage() {
     const [lista, falhasResp, webhooksResp] = await Promise.all([
       admin
         .from("email_eventos")
-        .select("id, tipo, status, destinatario, assunto, erro, criado_em")
+        .select("id, tipo, status, destinatario, assunto, erro, criado_em, metadados")
         .order("criado_em", { ascending: false })
         .limit(80),
       admin
@@ -268,6 +269,12 @@ export default async function AdminEmailsPage() {
                     </td>
                     <td className="px-4 py-3 text-xs text-stone-500">
                       {e.erro || e.assunto || "—"}
+                      {typeof e.metadados?.resendId === "string" &&
+                      e.metadados.resendId ? (
+                        <span className="mt-1 block font-mono text-[10px] text-stone-600">
+                          Resend {e.metadados.resendId}
+                        </span>
+                      ) : null}
                     </td>
                   </tr>
                 ))}

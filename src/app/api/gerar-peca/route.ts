@@ -23,6 +23,11 @@ import {
   pecaTemFundamentacaoGenerica,
 } from "@/lib/ia/normalizar-peca-gerada";
 import { mesclarFatosIaComDireitoReserva, garantirSecaoValorCausa } from "@/lib/ia/mesclar-peca-hibrida";
+import {
+  anotarJurisprudenciasSemLastro,
+  contarMarcadoresNaoEncontrado,
+  verificarCitacoes,
+} from "@/lib/ia/verificacao-citacoes";
 import { geminiConfigurado } from "@/lib/ia/gemini-client";
 import { consumirUmaPeca, verificarSaldoCota } from "@/lib/cota-pecas-server";
 import { formatarOabAssinatura } from "@/lib/formatar-oab";
@@ -528,17 +533,25 @@ async function postGerarPeca(request: Request) {
       blocoValorCausa: blocoValor,
     });
     const peca = finalizarTextoPeca(hibrida, body, opcoesAdvogadoQualificacao);
+    const citacoesHibrida = ia.contextoVerificacao
+      ? verificarCitacoes(peca, ia.contextoVerificacao)
+      : ia.citacoes;
+    const pecaAnotada = ia.contextoVerificacao
+      ? anotarJurisprudenciasSemLastro(peca, citacoesHibrida)
+      : peca;
     const { pecaHtml } = gerarDocumentoTimbrado(
-      peca,
+      pecaAnotada,
       body.escritorio?.usarTimbre ? body.escritorio : undefined
     );
     return debitarEResponder({
       ...scaffold,
-      peca,
+      peca: pecaAnotada,
       pecaHtml,
       timbrado: Boolean(body.escritorio?.usarTimbre),
       geradoPorIA: true,
       modeloIA: ia.modelo,
+      citacoes: citacoesHibrida,
+      marcadoresNaoEncontrado: contarMarcadoresNaoEncontrado(pecaAnotada),
       leiMunicipalUtilizada: leiMunicipal
         ? { nome: leiMunicipal.nome }
         : null,

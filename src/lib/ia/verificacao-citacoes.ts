@@ -28,6 +28,11 @@ const PADROES_CITACAO: { tipo: TipoCitacao; regex: RegExp }[] = [
   },
   {
     tipo: "jurisprudencia",
+    regex:
+      /(?:apelação|apelacao|agravo de instrumento|agravo interno)\s*n?[ºo°.]?\s*[\d.\-\/]+/gi,
+  },
+  {
+    tipo: "jurisprudencia",
     regex: /processo\s+n?[ºo°.]?\s*[\d.\-\/]+/gi,
   },
   // Número CNJ completo (comum em ementas TJSP)
@@ -50,22 +55,54 @@ function soDigitos(s: string): string {
   return s.replace(/\D/g, "");
 }
 
+const CNJ_RE = /\b\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}\b/g;
+const NUMERO_JULGADO_RE =
+  /(?:re|resp|agrg|agint|aresp|edcl|hc|adi|adpf|rext|apelação|apelacao|agravo de instrumento|agravo interno|processo)\s*n?[ºo°.]?\s*[\d.\-\/]+/gi;
+
+function extrairNumerosDoContexto(contexto: string): {
+  cnjs: Set<string>;
+  outros: Set<string>;
+} {
+  const cnjs = new Set<string>();
+  const outros = new Set<string>();
+  for (const m of contexto.matchAll(new RegExp(CNJ_RE.source, "g"))) {
+    const d = soDigitos(m[0]);
+    if (d.length === 20) cnjs.add(d);
+  }
+  for (const m of contexto.matchAll(new RegExp(NUMERO_JULGADO_RE.source, "gi"))) {
+    const d = soDigitos(m[0]);
+    if (d.length >= 6 && d.length < 20) outros.add(d);
+  }
+  return { cnjs, outros };
+}
+
 export type CitacaoVerificada = {
   trecho: string;
   tipo: TipoCitacao;
   verificada: boolean;
 };
 
-/** Checa lastro no contexto (string normalizada ou dígitos do processo). */
-function temLastro(trecho: string, contextoNorm: string, tipo: TipoCitacao): boolean {
+/** Checa lastro no contexto (string normalizada ou número extraído, sem “sopa” de dígitos). */
+function temLastro(
+  trecho: string,
+  contextoNorm: string,
+  tipo: TipoCitacao,
+  numeros: { cnjs: Set<string>; outros: Set<string> }
+): boolean {
   const chave = normalizar(trecho);
-  if (chave && contextoNorm.includes(chave)) return true;
-
   const digitos = soDigitos(trecho);
-  if (digitos.length >= 8) {
-    const ctxDigits = soDigitos(contextoNorm);
-    if (ctxDigits.includes(digitos)) return true;
+  const ehCnj =
+    digitos.length === 20 ||
+    /\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/.test(trecho);
+
+  if (tipo === "jurisprudencia") {
+    if (ehCnj) return numeros.cnjs.has(digitos);
+    if (digitos.length >= 6) return numeros.outros.has(digitos);
+    if (chave && contextoNorm.includes(chave)) return true;
+    return false;
   }
+
+  if (chave && contextoNorm.includes(chave)) return true;
 
   // Súmula: "sumula 37" ≈ "sumula n 37" / "sumula vinculante 37"
   if (tipo === "lei") {
@@ -95,6 +132,7 @@ export function verificarCitacoes(
   contextoFornecido: string
 ): CitacaoVerificada[] {
   const contextoNormalizado = normalizar(contextoFornecido);
+  const numeros = extrairNumerosDoContexto(contextoFornecido);
   const encontradas = new Map<string, CitacaoVerificada>();
 
   for (const { tipo, regex } of PADROES_CITACAO) {
@@ -107,7 +145,7 @@ export function verificarCitacoes(
       encontradas.set(chave, {
         trecho,
         tipo,
-        verificada: temLastro(trecho, contextoNormalizado, tipo),
+        verificada: temLastro(trecho, contextoNormalizado, tipo, numeros),
       });
     }
   }

@@ -134,16 +134,20 @@ export async function POST() {
     }
 
     // E-mails via financeiro@ (não bloqueia a resposta se o envio falhar)
-    await enviarEmailsCancelamentoAssinatura({
-      emailCliente: user.email,
-      plano: assinatura.plano,
-      dentroPrazoCdc: mp.dentroPrazoCdc,
-      estornoSucesso: mp.dentroPrazoCdc
-        ? (mp.estorno?.sucesso ?? null)
-        : null,
-      acessoValidoAte: assinaturaFinal.acesso_valido_ate,
-      mpPreapprovalId: assinatura.mp_preapproval_id,
-    });
+    try {
+      await enviarEmailsCancelamentoAssinatura({
+        emailCliente: user.email,
+        plano: assinatura.plano,
+        dentroPrazoCdc: mp.dentroPrazoCdc,
+        estornoSucesso: mp.dentroPrazoCdc
+          ? (mp.estorno?.sucesso ?? null)
+          : null,
+        acessoValidoAte: assinaturaFinal.acesso_valido_ate,
+        mpPreapprovalId: assinatura.mp_preapproval_id,
+      });
+    } catch (erroEmail) {
+      console.error("[api/assinatura/cancelar] e-mail", erroEmail);
+    }
 
     const mensagem = montarMensagemCancelamento(mp, ui.proximaCobrancaLabel);
 

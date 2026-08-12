@@ -82,6 +82,7 @@ export function montarSystemPromptAnaliseEstrategica(
     "- Indicação do formulário é só pista; a ação vem dos FATOS.",
     "- Golpe/fraude/PIX/cartão/falsa central/falha de segurança bancária → indenização (consumo), NÃO execução de título.",
     "- Acórdãos com número de processo: só se estiverem na base ou na jurisprudência do caso.",
+    "- NÃO invente número de processo, REsp, AREsp, apelação ou relator. Se a base não trouxer julgado, fundamente em lei/súmula.",
     "",
     "Formato livre em texto claro (pode usar numeração). Sem saudações.",
     "",
@@ -133,9 +134,7 @@ export function montarSystemPromptRedacaoTier1(
     "   - PROIBIDO frases genéricas do tipo \"plausibilidade do direito invocado\" ou \"necessidade de intervenção do Poder Judiciário para restabelecer\".",
     "   - Se houver tutela de urgência no pedido e a espécie admitir: trate-a como SUBTÓPICO na seção de direito (art. 300 do CPC; *\"fumus boni iuris\"* e *\"periculum in mora\"*), NÃO como tópico romano separado.",
     "   - Se houver <JURISPRUDENCIA_DO_CASO>: extraia ementa/tese do voto e CITE no padrão forense brasileiro no subtópico pertinente (tribunal, classe/nº, ementa ou trecho *\"entre aspas\"*).",
-    "   - Acórdãos / números de processo: SOMENTE se estiverem LITERALMENTE na <BASE_DE_CONHECIMENTO> ou em <JURISPRUDENCIA_DO_CASO>; senão use " +
-      MARCADOR_NAO_ENCONTRADO +
-      ".",
+    "   - Acórdãos / números de processo: SOMENTE se estiverem LITERALMENTE na <BASE_DE_CONHECIMENTO> ou em <JURISPRUDENCIA_DO_CASO>. Se não houver julgado na base, fundamente só em lei e súmula — NÃO invente número nem escreva o marcador; o sistema anota o que faltar.",
     "",
     "3) CITAÇÕES, LATIM E JURISPRUDÊNCIA:",
     "   - REGRA ABSOLUTA: em QUALQUER parte da peça (fatos, direito, provas, pedidos, citações), TODO termo em latim, inglês, espanhol ou outra língua que NÃO seja português DEVE ir entre aspas duplas E em itálico Markdown: *\"texto\"*.",

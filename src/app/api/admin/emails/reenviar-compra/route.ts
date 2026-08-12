@@ -24,9 +24,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
-  let body: { email?: string };
+  let body: { email?: string; force?: boolean };
   try {
-    body = (await request.json()) as { email?: string };
+    body = (await request.json()) as { email?: string; force?: boolean };
   } catch {
     return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
   }
@@ -129,6 +129,7 @@ export async function POST(request: Request) {
       valor,
       plano: (assinatura?.plano as PlanoId | null) ?? sync?.plano ?? null,
       atrasoConviteMinutos: 0,
+      forcarEmails: Boolean(body.force),
     });
 
     return NextResponse.json({

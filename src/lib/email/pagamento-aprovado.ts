@@ -1,4 +1,3 @@
-import { Resend } from "resend";
 import {
   emailJaEnviadoParaPagamento,
   registrarEmailEvento,
@@ -9,10 +8,14 @@ import {
   type PlanoId,
 } from "@/lib/planos-facto";
 import { htmlLogoEmail } from "@/lib/email/marca";
-
-const REMETENTE_FINANCEIRO =
-  "FACTO Financeiro <financeiro@factoia.com.br>";
-const DESTINO_FINANCEIRO = "financeiro@factoia.com.br";
+import {
+  DESTINO_FINANCEIRO,
+  REMETENTE_FINANCEIRO,
+  REMETENTE_NOREPLY,
+  getResend,
+  serializeResendError,
+  type StatusEnvioEmail,
+} from "@/lib/email/resend-client";
 
 function formatarValor(valor: number | null | undefined): string {
   if (typeof valor !== "number" || Number.isNaN(valor)) return "—";
@@ -142,9 +145,11 @@ export async function enviarEmailsFinanceiroCompra(opcoes: {
   valor?: number | null;
   mpPaymentId: string;
   plano?: PlanoId | null;
-}): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  if (!apiKey) {
+  /** Ignora idempotência (reenvio admin quando o 1º “enviado” não chegou). */
+  forcar?: boolean;
+}): Promise<{ admin: StatusEnvioEmail; cliente: StatusEnvioEmail }> {
+  const resend = getResend();
+  if (!resend) {
     console.warn(
       "[email financeiro] RESEND_API_KEY não configurada; e-mails financeiros não enviados."
     );
@@ -156,27 +161,37 @@ export async function enviarEmailsFinanceiroCompra(opcoes: {
       erro: "RESEND_API_KEY ausente",
       metadados: { mpPaymentId: opcoes.mpPaymentId, plano: opcoes.plano ?? null },
     });
-    return;
+    return { admin: "falha", cliente: "falha" };
   }
 
-  const from =
+  const fromCliente =
     process.env.RESEND_FROM_FINANCEIRO?.trim() || REMETENTE_FINANCEIRO;
-  const resend = new Resend(apiKey);
+  const fromInterno =
+    process.env.RESEND_FROM_EMAIL?.trim() || REMETENTE_NOREPLY;
 
   const envios: {
+    papel: "admin" | "cliente";
+    from: string;
     destinatario: string;
     subject: string;
     html: string;
     replyTo?: string;
   }[] = [];
 
-  const adminJaEnviado = await emailJaEnviadoParaPagamento(
-    "financeiro_compra",
-    opcoes.mpPaymentId,
-    DESTINO_FINANCEIRO
-  );
+  let admin: StatusEnvioEmail = "pulado";
+  let cliente: StatusEnvioEmail = "pulado";
+
+  const adminJaEnviado =
+    !opcoes.forcar &&
+    (await emailJaEnviadoParaPagamento(
+      "financeiro_compra",
+      opcoes.mpPaymentId,
+      DESTINO_FINANCEIRO
+    ));
   if (!adminJaEnviado) {
     envios.push({
+      papel: "admin",
+      from: fromInterno,
       destinatario: DESTINO_FINANCEIRO,
       subject: `[FACTO] Compra aprovada — ${opcoes.emailCliente}`,
       html: htmlAvisoInterno({
@@ -185,16 +200,21 @@ export async function enviarEmailsFinanceiroCompra(opcoes: {
         mpPaymentId: opcoes.mpPaymentId,
         plano: opcoes.plano,
       }),
+      replyTo: DESTINO_FINANCEIRO,
     });
   }
 
-  const clienteJaEnviado = await emailJaEnviadoParaPagamento(
-    "financeiro_compra",
-    opcoes.mpPaymentId,
-    opcoes.emailCliente
-  );
+  const clienteJaEnviado =
+    !opcoes.forcar &&
+    (await emailJaEnviadoParaPagamento(
+      "financeiro_compra",
+      opcoes.mpPaymentId,
+      opcoes.emailCliente
+    ));
   if (!clienteJaEnviado) {
     envios.push({
+      papel: "cliente",
+      from: fromCliente,
       destinatario: opcoes.emailCliente,
       subject: "Pagamento aprovado — FACTO",
       html: htmlConfirmacaoCliente({ valor: opcoes.valor ?? null }),
@@ -202,48 +222,62 @@ export async function enviarEmailsFinanceiroCompra(opcoes: {
     });
   }
 
-  if (envios.length === 0) return;
+  if (envios.length === 0) return { admin, cliente };
 
   for (const envio of envios) {
     try {
-      const { error } = await resend.emails.send({
-        from,
+      const { data, error } = await resend.emails.send({
+        from: envio.from,
         to: envio.destinatario,
         subject: envio.subject,
         html: envio.html,
         ...(envio.replyTo ? { replyTo: envio.replyTo } : {}),
+        tags: [{ name: "tipo", value: "financeiro_compra" }],
       });
 
-      if (error) {
+      if (error || !data?.id) {
+        const status: StatusEnvioEmail = "falha";
+        if (envio.papel === "admin") admin = status;
+        else cliente = status;
         await registrarEmailEvento({
           tipo: "financeiro_compra",
           status: "falha",
           destinatario: envio.destinatario,
           assunto: envio.subject,
-          erro: error.message,
-          metadados: { mpPaymentId: opcoes.mpPaymentId },
+          erro: serializeResendError(error) || "Resend retornou sem id",
+          metadados: {
+            mpPaymentId: opcoes.mpPaymentId,
+            resendId: data?.id ?? null,
+          },
         });
         continue;
       }
 
+      if (envio.papel === "admin") admin = "enviado";
+      else cliente = "enviado";
       await registrarEmailEvento({
         tipo: "financeiro_compra",
         status: "enviado",
         destinatario: envio.destinatario,
         assunto: envio.subject,
-        metadados: { mpPaymentId: opcoes.mpPaymentId },
+        metadados: {
+          mpPaymentId: opcoes.mpPaymentId,
+          resendId: data.id,
+        },
       });
     } catch (erro) {
-      const mensagem =
-        erro instanceof Error ? erro.message : String(erro);
+      if (envio.papel === "admin") admin = "falha";
+      else cliente = "falha";
       await registrarEmailEvento({
         tipo: "financeiro_compra",
         status: "falha",
         destinatario: envio.destinatario,
         assunto: envio.subject,
-        erro: mensagem,
+        erro: serializeResendError(erro),
         metadados: { mpPaymentId: opcoes.mpPaymentId },
       });
     }
   }
+
+  return { admin, cliente };
 }

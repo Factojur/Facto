@@ -12,6 +12,7 @@ import { createClient } from "@supabase/supabase-js";
 import { config } from "dotenv";
 import { resolve } from "path";
 import type { JulgadoScrape } from "../src/lib/scrapers/types";
+import { ementaPareceLixo } from "../src/lib/scrapers/validar-ementa";
 
 config({ path: resolve(process.cwd(), ".env.local") });
 
@@ -19,14 +20,6 @@ const POR_TEMA = Math.max(
   1,
   Number(process.env.SEED_JURIS_POR_TEMA ?? 10) || 10
 );
-
-function ementaPareceLixo(texto: string): boolean {
-  const t = texto.trim();
-  if (t.length < 100) return true;
-  return /esajCelula|escolhaBeta|suportesistemastjsp|Identificar-se|Peticionamento Eletr/i.test(
-    t
-  );
-}
 
 function tituloItem(j: JulgadoScrape): string {
   const n = j.numeroProcesso?.trim();

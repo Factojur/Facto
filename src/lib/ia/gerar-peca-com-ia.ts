@@ -20,6 +20,7 @@ import {
   modelosRedacao,
   MODELOS_TRIAGEM,
 } from "@/lib/ia/gemini-client";
+import { normalizarPecaGerada } from "@/lib/ia/normalizar-peca-gerada";
 import {
   anotarJurisprudenciasSemLastro,
   contarMarcadoresNaoEncontrado,
@@ -87,6 +88,8 @@ export type ResultadoPecaIA =
       marcadoresNaoEncontrado: number;
       itensConhecimento: TrechoConhecimento[];
       analiseEstrategica?: AnaliseEstrategica;
+      /** Contexto usado no auditor (sem a estratégia da triagem). */
+      contextoVerificacao?: string;
       /** Etapas da equipe FACTO (skins) para UI / transparência. */
       equipeEtapas?: EtapaEquipeFacto[];
     }
@@ -510,13 +513,16 @@ export async function gerarPecaComIA(params: {
       ? `[Lei municipal] ${leiMunicipal.nome}\n${leiMunicipal.texto}`
       : "",
     contextoVerificacaoJurisCaso(jurisDoCaso),
-    estrategiaJuridica,
   ]
     .filter(Boolean)
     .join("\n\n---\n\n");
 
-  const citacoes = verificarCitacoes(textoGerado, contextoParaVerificacao);
-  const textoComLastro = anotarJurisprudenciasSemLastro(textoGerado, citacoes);
+  const textoNormalizado = normalizarPecaGerada(textoGerado);
+  const citacoes = verificarCitacoes(textoNormalizado, contextoParaVerificacao);
+  const textoComLastro = anotarJurisprudenciasSemLastro(
+    textoNormalizado,
+    citacoes
+  );
   const marcadores = contarMarcadoresNaoEncontrado(textoComLastro);
   const citacoesOk = citacoes.filter((c) => c.verificada).length;
   const jurisSemLastro = citacoes.filter(
@@ -550,6 +556,7 @@ export async function gerarPecaComIA(params: {
     marcadoresNaoEncontrado: marcadores,
     itensConhecimento: itensFinais,
     analiseEstrategica,
+    contextoVerificacao: contextoParaVerificacao,
     equipeEtapas: equipe,
   };
 }

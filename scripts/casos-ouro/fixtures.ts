@@ -3,23 +3,9 @@
  * Cada caso: tema típico + peça sintética + contexto de lastro esperado.
  */
 
-export type CasoOuroJec = {
-  id: string;
-  tema: string;
-  /** Trecho de fatos (para híbrido / asserts de preservação). */
-  fatosChave: string[];
-  /** Contexto que teria sido injetado no prompt (base + juris). */
-  contextoLastro: string;
-  /** Peça “como a IA poderia devolver” (antes do pós-processamento). */
-  pecaIaBruta: string;
-  /** Números CNJ / REsp que DEVEM ser lastreados (estão no contexto). */
-  jurisComLastro: string[];
-  /** Números inventados — devem receber [NÃO ENCONTRADO NA BASE]. */
-  jurisSemLastro: string[];
-  tipoAcao: string;
-  valorCausaBloco: string;
-  tutelaUrgencia?: boolean;
-};
+import type { CasoOuroJec } from "./types";
+
+export type { CasoOuroJec } from "./types";
 
 export const CASOS_OURO_JEC: CasoOuroJec[] = [
   {
@@ -245,6 +231,101 @@ pede deferimento.
 
 São Paulo/SP, 10 de agosto de 2026.
 OAB/SP 777888
+    `.trim(),
+  },
+  {
+    id: "lastro-vazio",
+    tema: "CNJ sem qualquer lastro no contexto",
+    fatosChave: ["PIX", "banco"],
+    tipoAcao: "Ação de Indenização",
+    valorCausaBloco: "Dá-se à causa o valor de R$ 5.000,00 (cinco mil reais).",
+    jurisComLastro: [],
+    jurisSemLastro: ["1009999-11.2024.8.26.0100"],
+    contextoLastro: "",
+    pecaIaBruta: `
+EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DE DIREITO DO JUIZADO ESPECIAL CÍVEL
+
+AUTOR FICTO propõe ação em face de BANCO FICTO.
+
+I - DOS FATOS
+Golpe PIX com falha do banco.
+
+II - DO DIREITO
+Cita-se o Processo nº 1009999-11.2024.8.26.0100.
+
+III - DOS PEDIDOS
+a) Procedência.
+
+Nestes termos,
+pede deferimento.
+
+São Paulo/SP, 12 de agosto de 2026.
+OAB/SP 101010
+    `.trim(),
+  },
+  {
+    id: "falso-positivo-digitos",
+    tema: "REsp inventado não lastreia em fatia de CNJ",
+    fatosChave: ["golpe", "PIX"],
+    tipoAcao: "Ação de Indenização",
+    valorCausaBloco: "Dá-se à causa o valor de R$ 7.000,00 (sete mil reais).",
+    jurisComLastro: ["1001234-56.2023.8.26.0100"],
+    jurisSemLastro: ["REsp 20238260"],
+    contextoLastro: `
+Súmula 479 do STJ.
+TJSP Processo nº 1001234-56.2023.8.26.0100 — golpe PIX e falha de segurança.
+    `.trim(),
+    pecaIaBruta: `
+EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DE DIREITO DO JUIZADO ESPECIAL CÍVEL
+
+AUTOR FICTO propõe ação em face de BANCO FICTO.
+
+I - DOS FATOS
+A autora sofreu golpe PIX.
+
+II - DO DIREITO
+Cita-se o Processo nº 1001234-56.2023.8.26.0100 e o REsp 20238260.
+
+III - DOS PEDIDOS
+a) Procedência.
+
+Nestes termos,
+pede deferimento.
+
+São Paulo/SP, 12 de agosto de 2026.
+OAB/SP 202020
+    `.trim(),
+  },
+  {
+    id: "envenenamento-estrategia",
+    tema: "Número só na estratégia não conta como lastro",
+    fatosChave: ["negativação", "SPC"],
+    tipoAcao: "Ação Declaratória",
+    valorCausaBloco: "Dá-se à causa o valor de R$ 9.000,00 (nove mil reais).",
+    jurisComLastro: [],
+    jurisSemLastro: ["REsp 1234567"],
+    contextoLastro: `
+CDC. Súmula 385 do STJ. Negativação indevida.
+    `.trim(),
+    pecaIaBruta: `
+EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DE DIREITO DO JUIZADO ESPECIAL CÍVEL
+
+AUTOR FICTO propõe ação em face de FINANCEIRA FICTA.
+
+I - DOS FATOS
+Negativação indevida no SPC.
+
+II - DO DIREITO
+Aplica-se o CDC. Colaciona-se o REsp 1234567.
+
+III - DOS PEDIDOS
+a) Procedência.
+
+Nestes termos,
+pede deferimento.
+
+São Paulo/SP, 12 de agosto de 2026.
+OAB/SP 303030
     `.trim(),
   },
 ];
