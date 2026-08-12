@@ -1,11 +1,13 @@
-import { Resend } from "resend";
+import {
+  DESTINO_FINANCEIRO,
+  REMETENTE_FINANCEIRO,
+  getResend,
+  resendIdFromSendResult,
+  serializeResendError,
+} from "@/lib/email/resend-client";
 import { rotuloPlano, type AssinaturaDb } from "@/lib/assinatura-format";
 import { registrarEmailEvento } from "@/lib/email/eventos";
 import { htmlLogoEmail } from "@/lib/email/marca";
-
-const REMETENTE_FINANCEIRO =
-  "FACTO Financeiro <financeiro@factoia.com.br>";
-const DESTINO_FINANCEIRO = "financeiro@factoia.com.br";
 
 function escaparHtml(texto: string): string {
   return texto
@@ -144,8 +146,8 @@ export async function enviarEmailsCancelamentoAssinatura(opcoes: {
   acessoValidoAte: string | null;
   mpPreapprovalId: string;
 }): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  if (!apiKey) {
+  const resend = getResend();
+  if (!resend) {
     console.warn(
       "[email cancelamento] RESEND_API_KEY não configurada; e-mails não enviados."
     );
@@ -163,7 +165,6 @@ export async function enviarEmailsCancelamentoAssinatura(opcoes: {
   const from =
     process.env.RESEND_FROM_FINANCEIRO?.trim() || REMETENTE_FINANCEIRO;
   const planoLabel = rotuloPlano(opcoes.plano);
-  const resend = new Resend(apiKey);
 
   const resultados = await Promise.allSettled([
     resend.emails.send({
@@ -216,10 +217,10 @@ export async function enviarEmailsCancelamentoAssinatura(opcoes: {
         tipo: "financeiro_cancelamento",
         status: "falha",
         destinatario,
-        erro: resultado.value.error.message,
+        erro: serializeResendError(resultado.value.error),
         metadados: {
           mpPreapprovalId: opcoes.mpPreapprovalId,
-          resendId: resultado.value.data?.id ?? null,
+          resendId: resendIdFromSendResult(resultado.value),
         },
       });
       continue;
@@ -230,7 +231,7 @@ export async function enviarEmailsCancelamentoAssinatura(opcoes: {
       destinatario,
       metadados: {
         mpPreapprovalId: opcoes.mpPreapprovalId,
-        resendId: resultado.value.data?.id ?? null,
+        resendId: resendIdFromSendResult(resultado.value),
       },
     });
   }

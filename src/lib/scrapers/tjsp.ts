@@ -84,12 +84,16 @@ async function extrairJulgadosDaPagina(
     const linhas = Array.from(
       document.querySelectorAll("tr.fundocin, .fundocin")
     );
-    const fonte =
-      linhas.length > 0
-        ? linhas
-        : Array.from(document.querySelectorAll(".ementaClass2, td.ementaClass2"))
-            .map((el) => el.closest("tr") || el.parentElement)
-            .filter((el): el is Element => Boolean(el));
+    const fallbackLinhas: Element[] = [];
+    if (linhas.length === 0) {
+      for (const el of Array.from(
+        document.querySelectorAll(".ementaClass2, td.ementaClass2")
+      )) {
+        const row = el.closest("tr") || el.parentElement;
+        if (row) fallbackLinhas.push(row);
+      }
+    }
+    const fonte = linhas.length > 0 ? linhas : fallbackLinhas;
 
     const vistos = new Set<Element>();
     for (const el of fonte) {

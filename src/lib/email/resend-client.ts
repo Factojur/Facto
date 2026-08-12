@@ -28,3 +28,12 @@ export function serializeResendError(error: unknown): string {
 }
 
 export type StatusEnvioEmail = "enviado" | "falha" | "pulado";
+
+export type ResendSendResult = {
+  data?: { id?: string } | null;
+  error?: unknown;
+};
+
+export function resendIdFromSendResult(result: ResendSendResult): string | null {
+  return result.data?.id ?? null;
+}
