@@ -83,8 +83,8 @@ Quando pedir **“próximo lote”** (cota reset ~horário de Brasília):
    - [x] Seções opcionais claras (valores, pedidos, juris do caso); JG/MLE sem FileField (anexar em Provas)
    - [x] Tom honesto na formatação (landing, SEO, home, fluxo): padrão forense + revise antes de protocolar
    - [x] Preços anuais redondos (fase anterior): Completo **R$ 1.890** · Pro **R$ 2.990**
-   - [x] **PLANO X (código 14/08):** Completo Anual **R$ 1.990**; cotas anuais = mensais (100/180)
-   - [x] Links MP anuais → 1890 / 2990 (12/08) — **você:** atualizar Completo Anual no MP para **R$ 1.990** (`NEXT_PUBLIC_MP_LINK_ANUAL`)
+   - [x] **PLANO X (código 14/08):** Completo Anual **R$ 1.890** (mantido) · cotas anuais = mensais (100/180)
+   - [x] Links MP anuais → 1890 / 2990 — Completo Anual **permanece R$ 1.890** (não precisa atualizar o link)
    - [ ] Revisar copy restante (Réus, Fatos, Provas, checklist) se ainda parecer genérica — você olha depois
 
 10. **[P1] Segundo tribunal (STJ) em produção** — _exige Pro + cache com TTL_ (API já busca STJ via seletor)  
@@ -97,7 +97,7 @@ Quando pedir **“próximo lote”** (cota reset ~horário de Brasília):
     - [ ] Implementar sync v1 (dry-run + `--write`)
     - [ ] (Opcional) export fila `juris_verificacao` → Markdown
 14. **[P3]** Chat multi-turno, Word add-in, contratos  
-15. **[P1] PLANO X** — _implementado 14/08_ — B 10/30/50 + saldo; E +10 análises R$ 29,90; G/H anuais 1990 e cotas 100/180; I copy JEC leigo; J 15 juris externa; **N botão só base curada**. SQL: `supabase/migration-extras-analises.sql`. **Atualizar link MP Completo Anual → R$ 1.990.** A (Supabase Pro) só ao começar a vender.
+15. **[P1] PLANO X** — _código 14/08_ — B 10/30/50 + saldo; E +10 análises R$ 29,90; G Completo Anual **R$ 1.890** (mantido) + H cotas 100/180; I copy JEC leigo; J 15 juris externa; **N botão só base curada**. SQL: `supabase/migration-extras-analises.sql`. A (Supabase Pro) só ao começar a vender.
 
 ---
 
@@ -153,7 +153,7 @@ Ordem de grandeza (com embedding): ~2–5 mil ementas → dezenas–centenas de 
 ## PLANO X — pacote comercial + unit economics (fechado 14/08)
 
 Nome interno do pacote alinhado em 12/08. **Código da leva B/E/G/H/I/J/N no repo (14/08).** A só quando avisar “vou começar a vender”.  
-Rodar no SQL Editor: `supabase/migration-extras-analises.sql`. Atualizar link MP Completo Anual para **R$ 1.990**.  
+Rodar no SQL Editor: `supabase/migration-extras-analises.sql`. Completo Anual **permanece R$ 1.890** (link MP já está nesse valor).  
 Posicionamento: **JEC = leigo/sem OAB**; motor de caixa = **Completo + Pro** (advogados).
 
 **Lembrete A:** quando o usuário disser que vai **começar a vender**, lembrar de assinar **Supabase Pro** (e confirmar Gemini paygo / Resend / MP).
@@ -191,7 +191,7 @@ Posicionamento: **JEC = leigo/sem OAB**; motor de caixa = **Completo + Pro** (ad
 
 | Plano | Preço | Peças/mês | Notas |
 |-------|-------|-----------|--------|
-| Completo Anual | **R$ 1.990/ano** | **100** | ≈ R$ 165,83/mês |
+| Completo Anual | **R$ 1.890/ano** | **100** | ≈ R$ 157,50/mês |
 | Pro Anual | R$ 2.990/ano | **180** | |
 | Parcelamento MP | **manter como está** | | |
 
@@ -205,7 +205,7 @@ Posicionamento: **JEC = leigo/sem OAB**; motor de caixa = **Completo + Pro** (ad
 | D | Peças extras **manter** R$ 1,00 / R$ 0,90 | **ok** |
 | E | +10 análises R$ 29,90 | **código 14/08** |
 | F | +30 análises | **agora não** |
-| G | Completo Anual **1.990** · Pro Anual 2.990 | **código 14/08** (link MP Completo: você atualiza) |
+| G | Completo Anual **1.890** · Pro Anual 2.990 | **código** (1.990 revertido; MP já em 1.890) |
 | H | Cotas anuais = mensais (100 / 180) | **código 14/08** |
 | I | Copy JEC = leigo; destaque Completo/Pro | **código 14/08** |
 | J | Juris 15/mês (fallback API) | **já estava + copy** |
@@ -224,7 +224,7 @@ Implementação da leva: **feita 14/08** (B, E, G, H, I, J, N). A só quando avi
 |-------|-------|-----------|--------|----------------|
 | JEC | R$ 79,90/mês | 40 | R$ 2,00 | **10** |
 | Completo | R$ 189,90/mês | 100 | R$ 1,90 | **30** |
-| Completo Anual | **R$ 1.990/ano** | **100** | ≈ R$ 1,66 | **30** |
+| Completo Anual | **R$ 1.890/ano** | **100** | ≈ R$ 1,58 | **30** |
 | Pro | R$ 289,90/mês | 180 | R$ 1,61 | **50** |
 | Pro Anual | R$ 2.990/ano | **180** | ≈ R$ 1,38 | **50** |
 | Extra +50 / +100 | R$ 49,90 / 89,90 | — | R$ 1,00 / 0,90 | — |

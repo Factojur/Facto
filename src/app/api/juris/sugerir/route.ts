@@ -154,7 +154,7 @@ export async function POST(request: Request) {
 
   if (somenteBase) {
     avisoExterno =
-      "Busca só na base FACTO (leis, súmulas e julgados curados). Não usa a cota de tribunais nem Jurisprudências.ai.";
+      "Busca só na base FACTO (leis, súmulas e julgados curados). Não consome a cota de tribunais.";
   } else if (provedorExternoAtivo) {
     const cotaAntes = await obterCotaJurisUsuario(user.id);
     cotaUsadas = cotaAntes.usadas;

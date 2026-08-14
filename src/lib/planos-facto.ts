@@ -1,7 +1,7 @@
 /**
  * Preços, cotas e benefícios comerciais FACTO (landing + área logada + webhook).
  * JEC 79,90/40 · Completo 189,90/100 · Pro 289,90/180 ·
- * Completo Anual 1.990/100 · Pro Anual 2.990/180.
+ * Completo Anual 1.890/100 · Pro Anual 2.990/180.
  * Valores legados continuam reconhecidos em planoPorValor (assinantes antigos).
  *
  * custoPorPecaAprox = preço do ciclo ÷ peças do ciclo (anuais: preço/ano ÷ 12×cota).
@@ -74,26 +74,26 @@ export const PLANO_PRO = {
 export const PLANO_ANUAL = {
   id: "anual" as const,
   /** Preço redondo comercial (vs 12 × 189,90 = 2.278,80). */
-  preco: 1990,
+  preco: 1890,
   pecasPorMes: 100,
   analisesPorMes: 30,
-  rotuloPreco: "R$ 1.990,00",
+  rotuloPreco: "R$ 1.890,00",
   rotuloPeriodo: "/ano",
   rotulo: "Plano Completo Anual",
-  equivalenteMensal: 165.83333333333334,
-  rotuloEquivalenteMensal: "R$ 165,83",
-  /** Economia vs 12× mensal: 2.278,80 − 1.990,00 */
-  economiaAno: 288.8,
-  rotuloEconomia: "R$ 288,80",
-  /** ~13% vs 12× mensal — preferir comunicar a economia em R$. */
-  descontoPercentual: 13,
-  /** 1.990 ÷ (100 × 12) */
-  custoPorPecaAprox: "R$ 1,66",
+  equivalenteMensal: 157.5,
+  rotuloEquivalenteMensal: "R$ 157,50",
+  /** Economia vs 12× mensal: 2.278,80 − 1.890,00 */
+  economiaAno: 388.8,
+  rotuloEconomia: "R$ 388,80",
+  /** ~17% vs 12× mensal — preferir comunicar a economia em R$. */
+  descontoPercentual: 17,
+  /** 1.890 ÷ (100 × 12) */
+  custoPorPecaAprox: "R$ 1,58",
   beneficios: [
     "Para advogados (OAB) · tudo do Completo mensal, no anual",
-    "100 minutas/mês — mesma cota do mensal · ≈ R$ 1,66 por peça",
+    "100 minutas/mês — mesma cota do mensal · ≈ R$ 1,58 por peça",
     "30 análises de processo/mês",
-    "Equivalente a R$ 165,83/mês — economia de R$ 288,80/ano",
+    "Equivalente a R$ 157,50/mês — economia de R$ 388,80/ano",
     "Equipe FACTO + base curada de leis e súmulas",
     "Pacotes extras quando a cota mensal acabar",
   ],
@@ -132,7 +132,7 @@ export const PRECOS_LEADOS = {
   jec: 67.9,
   mensal: 147.9,
   anual: 1419.84,
-  /** Completo Anual comercial anterior (1.890) — assinantes já cobrados. */
+  /** Alias do Completo Anual vigente (1.890) — webhook por valor. */
   anual_1890: 1890,
   /** Completo Anual com 20% exato (antes do arredondamento para 1.890). */
   anual_pacote_a: 1819.04,

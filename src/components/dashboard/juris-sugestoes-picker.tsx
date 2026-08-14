@@ -246,7 +246,7 @@ export function JurisSugestoesPicker({
         <p className="mb-2 text-xs font-medium text-slate-700">
           Tribunais da busca
           <span className="ml-1 font-normal text-slate-500">
-            (mín. 1 · máx. {MAX_TRIBUNAIS_POR_BUSCA})
+            (só para busca nos tribunais · mín. 1 · máx. {MAX_TRIBUNAIS_POR_BUSCA})
           </span>
         </p>
         <div className="flex flex-wrap gap-2">
@@ -292,41 +292,49 @@ export function JurisSugestoesPicker({
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={() => void abrirEBuscar(false)}
-          disabled={consulta.trim().length < 8 || tribunaisSel.length < 1}
-          className="rounded-lg border border-stone-700 bg-stone-800 px-4 py-2.5 text-sm font-medium text-amber-50 hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Sugerir jurisprudência / súmula
-        </button>
-        <button
-          type="button"
-          onClick={() => void abrirEBuscar(true)}
-          disabled={consulta.trim().length < 8}
-          className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Buscar na base FACTO
-        </button>
-        {cota && provedorExterno ? (
-          <span
-            className="text-xs tabular-nums text-slate-500"
-            title="Buscas externas neste mês. Cada tribunal marcado consome 1. Anexos e base FACTO não gastam cota. Renova no dia 1º."
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="flex flex-col rounded-lg border border-slate-200 bg-slate-50/80 p-3">
+          <button
+            type="button"
+            onClick={() => void abrirEBuscar(false)}
+            disabled={consulta.trim().length < 8 || tribunaisSel.length < 1}
+            className="rounded-lg border border-stone-700 bg-stone-800 px-4 py-2.5 text-sm font-medium text-amber-50 hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {cota.usadas}/{cota.limite}
-          </span>
-        ) : null}
+            Buscar nos tribunais
+          </button>
+          {cota && provedorExterno ? (
+            <p className="mt-2 text-xs font-medium tabular-nums text-slate-700">
+              Cota deste mês: {cota.usadas}/{cota.limite}
+            </p>
+          ) : (
+            <p className="mt-2 text-xs font-medium text-slate-600">
+              Cota deste mês: 15 buscas
+            </p>
+          )}
+          <p className="mt-1 text-xs leading-relaxed text-slate-500">
+            Usa os tribunais marcados acima (mín. 1, máx.{" "}
+            {MAX_TRIBUNAIS_POR_BUSCA}). Cada tribunal consome 1 da cota; renova
+            no dia 1º.
+          </p>
+        </div>
+        <div className="flex flex-col rounded-lg border border-slate-200 bg-white p-3">
+          <button
+            type="button"
+            onClick={() => void abrirEBuscar(true)}
+            disabled={consulta.trim().length < 8}
+            className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Buscar na base FACTO
+          </button>
+          <p className="mt-2 text-xs font-medium text-emerald-800">
+            Não consome a cota mensal
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-slate-500">
+            Leis, súmulas e julgados já curados na FACTO. Não precisa marcar
+            tribunal.
+          </p>
+        </div>
       </div>
-      <p className="text-xs text-slate-500">
-        <strong className="font-medium text-slate-600">Tribunais:</strong>{" "}
-        selecione até {MAX_TRIBUNAIS_POR_BUSCA}. Cada um consome 1 busca externa
-        da cota mensal (
-        {cota ? `${cota.usadas}/${cota.limite}` : "15/mês"}; renova no dia 1º).{" "}
-        <strong className="font-medium text-slate-600">Base FACTO:</strong> leis,
-        súmulas e julgados curados — não usa a cota de tribunais, não chama
-        Jurisprudências.ai nem scrape ao vivo.
-      </p>
 
       {aberto && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
@@ -346,7 +354,7 @@ export function JurisSugestoesPicker({
                 </h3>
                 {cota && provedorExterno ? (
                   <span className="text-xs tabular-nums text-slate-500">
-                    {cota.usadas}/{cota.limite} neste mês
+                    Cota de tribunais: {cota.usadas}/{cota.limite}
                   </span>
                 ) : null}
               </div>
