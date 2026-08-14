@@ -5,6 +5,11 @@
 
 import { buscarConhecimentoRelacionado } from "@/lib/base-conhecimento";
 import type { PrecedenteInterno } from "@/lib/juris-provedores/jurisprudencia-service";
+import {
+  bonusAfinidadeForo,
+  inferirSlugTribunalDoTexto,
+  tribunalPorId,
+} from "@/lib/juris-provedores/tribunais-opcoes";
 import { buscarTjsp } from "@/lib/scrapers/tjsp";
 import { MAX_RESULTADOS_SCRAPE } from "@/lib/scrapers/types";
 
@@ -44,36 +49,55 @@ function deScrape(j: {
 async function fallbackBaseFacto(
   query: string,
   excluirTitulos: Set<string>,
-  faltam: number
+  faltam: number,
+  ufForo?: string | null
 ): Promise<PrecedenteInterno[]> {
   if (faltam <= 0) return [];
-  const trechos = await buscarConhecimentoRelacionado(query, 12, query);
-  const out: PrecedenteInterno[] = [];
+  const trechos = await buscarConhecimentoRelacionado(query, 20, query);
+  const candidatos: { p: PrecedenteInterno; bonus: number }[] = [];
   const vistos = new Set(excluirTitulos);
 
   for (const t of trechos) {
-    if (out.length >= faltam) break;
     const cat = t.categoria.toLowerCase();
     if (!(cat.includes("juris") || cat.includes("jurisprud"))) continue;
     if (cat.includes("súmula") || cat.includes("sumula")) continue;
     const key = t.titulo.toLowerCase().trim();
     if (vistos.has(key)) continue;
     vistos.add(key);
-    out.push({
-      origem: "base_conhecimento",
-      tribunal: "Base FACTO",
-      titulo: t.titulo,
-      ementa: t.texto,
-      tipo: "acordao",
+    const slug = inferirSlugTribunalDoTexto(t.titulo, t.categoria, t.texto);
+    const rotulo = slug
+      ? tribunalPorId(slug)?.rotulo ?? slug.toUpperCase()
+      : "Base FACTO";
+    candidatos.push({
+      bonus: bonusAfinidadeForo({
+        titulo: t.titulo,
+        categoria: t.categoria,
+        texto: t.texto,
+        ufForo,
+      }),
+      p: {
+        origem: "base_conhecimento",
+        tribunal: rotulo,
+        titulo: t.titulo,
+        ementa: t.texto,
+        tipo: "acordao",
+      },
     });
   }
-  return out;
+
+  candidatos.sort((a, b) => b.bonus - a.bonus);
+  return candidatos.slice(0, faltam).map((c) => c.p);
 }
 
 export async function buscarJulgadosProvedorSecundario(
   query: string,
   excluirTitulos?: Set<string>,
-  opcoes?: { incluirTjsp?: boolean; min?: number; max?: number }
+  opcoes?: {
+    incluirTjsp?: boolean;
+    min?: number;
+    max?: number;
+    ufForo?: string | null;
+  }
 ): Promise<ResultadoProvedorSecundario> {
   const q = query.trim();
   if (q.length < 4) {
@@ -119,7 +143,12 @@ export async function buscarJulgadosProvedorSecundario(
 
   if (out.length < minAlvo) {
     usandoFallbackLocal = true;
-    const extra = await fallbackBaseFacto(q, excluir, maxAlvo - out.length);
+    const extra = await fallbackBaseFacto(
+      q,
+      excluir,
+      maxAlvo - out.length,
+      opcoes?.ufForo
+    );
     out.push(...extra);
   }
 

@@ -141,6 +141,7 @@ export function JurisSugestoesPicker({
         body: JSON.stringify({
           consulta,
           somenteBase,
+          ufForo: ufForo ?? null,
           tribunais: somenteBase ? [] : tribunaisSel,
           uploads: uploads
             .filter((u) => (u.texto ?? "").trim().length > 20 || u.titulo)
@@ -330,8 +331,10 @@ export function JurisSugestoesPicker({
             Não consome a cota mensal
           </p>
           <p className="mt-1 text-xs leading-relaxed text-slate-500">
-            Leis, súmulas e julgados já curados na FACTO. Não precisa marcar
-            tribunal.
+            {ufForo
+              ? `Prefere julgados do TJ do foro (${ufForo}) quando o título indica o tribunal. Súmulas e leis federais entram sempre.`
+              : "Julgados curados por afinidade com o caso. Informe a UF no foro para preferir o TJ local."}{" "}
+            Os marcadores acima valem só para “Buscar nos tribunais”.
           </p>
         </div>
       </div>

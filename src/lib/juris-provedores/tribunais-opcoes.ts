@@ -117,3 +117,63 @@ export function normalizarTribunaisEscolhidos(
   }
   return { ok: true, ids };
 }
+
+function blobTribunal(partes: (string | undefined)[]): string {
+  return partes
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "");
+}
+
+/** Lê STF/STJ/TJXX no título, categoria ou início da ementa (seed: "TJSP — 0001234-…"). */
+export function inferirSlugTribunalDoTexto(
+  titulo: string,
+  categoria?: string,
+  texto?: string
+): string | null {
+  const t = blobTribunal([titulo, categoria, (texto ?? "").slice(0, 500)]);
+  if (!t.trim()) return null;
+  if (/\bstf\b|supremo tribunal federal/.test(t)) return "stf";
+  if (/\bstj\b|superior tribunal de justica/.test(t)) return "stj";
+  for (const op of TRIBUNAIS_ESTADUAIS) {
+    const uf = (op.uf ?? "").toLowerCase();
+    const re = new RegExp(
+      `\\b${op.id}\\b|\\btj[\\s\\-/]?${uf}\\b`,
+      "i"
+    );
+    if (re.test(t)) return op.id;
+  }
+  return null;
+}
+
+/**
+ * Preferência (não trava): TJ do foro e cortes federais sobem;
+ * outro TJ estadual desce. Sem metadado de tribunal = 0 (fica no meio).
+ * Súmulas/leis federais sempre sobem um pouco.
+ */
+export function bonusAfinidadeForo(opcoes: {
+  titulo: string;
+  categoria?: string;
+  texto?: string;
+  ufForo?: string | null;
+}): number {
+  const uf = (opcoes.ufForo ?? "").trim().toUpperCase();
+  if (!uf) return 0;
+  const cat = blobTribunal([opcoes.categoria]);
+  if (cat.includes("sumula") || (cat.includes("lei") && !cat.includes("juris"))) {
+    return 4;
+  }
+  const slug = inferirSlugTribunalDoTexto(
+    opcoes.titulo,
+    opcoes.categoria,
+    opcoes.texto
+  );
+  if (!slug) return 0;
+  if (slug === "stf" || slug === "stj") return 3;
+  const tjLocal = tjPorUf(uf);
+  if (tjLocal && slug === tjLocal.id) return 10;
+  if (TRIBUNAIS_ESTADUAIS.some((x) => x.id === slug)) return -5;
+  return 0;
+}

@@ -74,6 +74,7 @@ export async function POST(request: Request) {
     uploads?: UploadIn[];
     tribunais?: unknown;
     somenteBase?: boolean;
+    ufForo?: string | null;
   };
   try {
     body = await request.json();
@@ -90,6 +91,10 @@ export async function POST(request: Request) {
   }
 
   const somenteBase = Boolean(body.somenteBase);
+  const ufForo = String(body.ufForo ?? "")
+    .trim()
+    .toUpperCase()
+    .slice(0, 2) || null;
 
   const tribunaisNorm = somenteBase
     ? { ok: true as const, ids: [] as string[] }
@@ -154,7 +159,9 @@ export async function POST(request: Request) {
 
   if (somenteBase) {
     avisoExterno =
-      "Busca só na base FACTO (leis, súmulas e julgados curados). Não consome a cota de tribunais.";
+      ufForo
+        ? `Busca só na base FACTO. Prefere o TJ do foro (${ufForo}) quando o julgado indica o tribunal; súmulas e leis federais entram sempre. Não consome a cota de tribunais.`
+        : "Busca só na base FACTO (leis, súmulas e julgados curados). Não consome a cota de tribunais.";
   } else if (provedorExternoAtivo) {
     const cotaAntes = await obterCotaJurisUsuario(user.id);
     cotaUsadas = cotaAntes.usadas;
@@ -222,6 +229,7 @@ export async function POST(request: Request) {
       incluirTjsp: querTjsp,
       min: somenteBase ? 5 : undefined,
       max: somenteBase ? 8 : undefined,
+      ufForo,
     });
     secundarios = r.precedentes;
     usandoFallbackSecundario = r.usandoFallbackLocal;
