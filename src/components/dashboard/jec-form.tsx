@@ -1792,8 +1792,8 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
               </h3>
               <p className="mb-3 text-xs leading-relaxed text-slate-500">
                 Marque só o que deve constar no texto gerado. A declaração de
-                hipossuficiência e o MLE (documento) você junta em Provas ou no
-                checklist de protocolo no final — não nesta seção.
+                hipossuficiência e os documentos do MLE o FACTO não recebe:
+                você junta depois, no protocolo (e-proc, ESAJ ou presencial).
               </p>
             </div>
 
@@ -1809,8 +1809,8 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
                   Pedir justiça gratuita (hipossuficiência)
                 </span>
                 <span className="mt-0.5 block text-xs text-slate-500">
-                  Inclui subtítulo e pedido de JG na peça. Fundamente nos fatos
-                  e anexe a declaração em Provas / checklist.
+                  Inclui subtítulo e pedido de JG na peça. A declaração de
+                  hipossuficiência você junta no protocolo, não aqui.
                 </span>
               </span>
             </label>
@@ -1828,7 +1828,7 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
                 </span>
                 <span className="mt-0.5 block text-xs text-slate-500">
                   Inclui pedido de expedição/utilização do MLE, quando cabível.
-                  O documento do MLE vai em Provas / checklist.
+                  Os documentos do MLE você junta no protocolo, não aqui.
                 </span>
               </span>
             </label>
