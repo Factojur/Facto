@@ -48,11 +48,11 @@ export function rotuloAreaJudiciaria(areaId: string = "jec"): string {
  * Tenta extrair município/UF do texto do foro (ex.: "... de Campinas/SP",
  * "... de Campinas - SP") para fechamento e OAB.
  */
-export function extrairCidadeUfDoForo(foro: string): {
+export function extrairCidadeUfDoForo(foro: string | null | undefined): {
   cidade: string;
   uf: string;
 } {
-  const t = foro.trim();
+  const t = String(foro ?? "").trim();
   if (!t) return { cidade: "", uf: "" };
 
   const m =
@@ -113,8 +113,8 @@ export function ufValida(uf: string): boolean {
 }
 
 /** Petição inicial (e sucedâneos sem processo) → vara em branco. */
-export function ehPeticaoInicial(tipoAcao: string): boolean {
-  const t = tipoAcao.toLowerCase();
+export function ehPeticaoInicial(tipoAcao: string | null | undefined): boolean {
+  const t = String(tipoAcao ?? "").toLowerCase();
   if (
     /contesta[cç][aã]o|embargos|recurso|agravo|impugna[cç][aã]o|r[eé]plica|contrarraz/i.test(
       t

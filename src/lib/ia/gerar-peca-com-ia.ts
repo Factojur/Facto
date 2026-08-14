@@ -57,8 +57,9 @@ export type InstrucoesDeterministicas = {
   midiasArquivos?: string[];
   /** Qualificação completa após "em face de" (sem o prefixo). */
   qualificacaoReus?: string | null;
-  /** Bloco da parte autora até "propor a presente". */
+  /** Bloco da parte autora até "propor a presente" ou "Vossa Excelência". */
   qualificacaoAutor?: string | null;
+  partesJaQualificadas?: boolean;
 };
 
 export type AnaliseEstrategica = {
@@ -203,16 +204,28 @@ function montarUserPromptRedacao(params: {
   if (params.instrucoes?.qualificacaoAutor?.trim()) {
     partes.push(
       "",
-      "QUALIFICAÇÃO DA PARTE AUTORA DETERMINÍSTICA (usar literalmente após o endereçamento):",
+      params.instrucoes.partesJaQualificadas
+        ? "INTRODUÇÃO DAS PARTES JÁ QUALIFICADAS (usar literalmente; NÃO acrescente CPF, RG, CNPJ, estado civil nem endereço das partes):"
+        : "QUALIFICAÇÃO DA PARTE AUTORA DETERMINÍSTICA (usar literalmente após o endereçamento):",
       params.instrucoes.qualificacaoAutor.trim()
     );
   }
 
-  if (params.instrucoes?.qualificacaoReus?.trim()) {
+  if (
+    !params.instrucoes?.partesJaQualificadas &&
+    params.instrucoes?.qualificacaoReus?.trim()
+  ) {
     partes.push(
       "",
       "QUALIFICAÇÃO DO(S) RÉU(S) DETERMINÍSTICA (após o nome da ação, usar literalmente):",
       `em face de ${params.instrucoes.qualificacaoReus.trim()}, pelos fatos e fundamentos jurídicos a seguir expostos.`
+    );
+  }
+
+  if (params.instrucoes?.partesJaQualificadas) {
+    partes.push(
+      "",
+      "Esta peça é INCIDENTAL (não é petição inicial). Depois do bloco de introdução, 1 linha em branco, NOME DA PEÇA em caixa alta, 2 linhas em branco, primeiro tópico romano. NÃO repita 'em face de' com qualificação completa."
     );
   }
 

@@ -266,6 +266,39 @@ export function normalizarEspeciePeca(
 }
 
 /**
+ * Nome da peça a protocolar agora — não o nome da ação originária
+ * nem o rótulo do arquivo enviado.
+ */
+export function tituloPecaCabivel(
+  especie: EspeciePecaJec,
+  tipoSugerido?: string | null,
+  contexto?: string | null
+): string {
+  const blob = `${tipoSugerido ?? ""} ${contexto ?? ""}`.toLowerCase();
+  switch (especie) {
+    case "embargos":
+      if (/à execu|a execu|embargos do devedor/.test(blob)) {
+        return "Embargos à Execução";
+      }
+      return "Embargos de Declaração";
+    case "recurso":
+      if (/agravo de instrumento/.test(blob)) return "Agravo de Instrumento";
+      if (/\bagravo\b/.test(blob)) return "Agravo de Instrumento";
+      if (/contrarraz/.test(blob)) return "Contrarrazões ao Recurso Inominado";
+      return "Recurso Inominado";
+    case "contestacao":
+      return "Contestação";
+    case "replica":
+      return "Réplica";
+    case "execucao":
+      if (/cumprimento/.test(blob)) return "Cumprimento de Sentença";
+      return "Execução de Título Extrajudicial";
+    default:
+      return String(tipoSugerido ?? "").trim();
+  }
+}
+
+/**
  * Infere a espécie a partir do nome da ação / fatos.
  * Preferir `especieExplicita` quando o usuário escolheu no formulário.
  */
@@ -277,7 +310,7 @@ export function inferirEspeciePeca(
   const explicita = normalizarEspeciePeca(especieExplicita);
   if (explicita) return explicita;
 
-  const t = `${tipoAcao} ${fatos ?? ""}`.toLowerCase();
+  const t = `${tipoAcao ?? ""} ${fatos ?? ""}`.toLowerCase();
 
   if (/contrarraz|contrarraz[oõ]es/.test(t) || /recurso inominado|agravo|recurso\b/.test(t)) {
     if (/embargos de declara/.test(t)) return "embargos";
@@ -332,6 +365,7 @@ export function blocoEstruturaPrompt(especie: EspeciePecaJec): string {
     );
   } else if (especie === "recurso") {
     extras.push(
+      "   Abertura: partes já qualificadas nos autos (só nomes); não invente CPF/CNPJ/endereço.",
       "   Histórico: sentença/acórdão recorrido em síntese objetiva.",
       "   Razões: erros de fato/direito com subsunção; pedidos = reforma/anulação + eventual efeito."
     );

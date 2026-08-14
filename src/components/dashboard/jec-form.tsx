@@ -35,8 +35,14 @@ import {
   inferirEspeciePeca,
   metaEspecie,
   normalizarEspeciePeca,
+  tituloPecaCabivel,
   type EspeciePecaJec,
 } from "@/lib/jec-especie-peca";
+import {
+  autoresAPartirDosNomes,
+  pecaUsaPartesJaQualificadas,
+  reusAPartirDosNomes,
+} from "@/lib/partes-ja-qualificadas";
 import type { FaseCasoJec } from "@/lib/jec-caso-types";
 import { metaFase } from "@/lib/jec-caso-types";
 import {
@@ -729,6 +735,15 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
 
   const tituloAcaoCompleto = useMemo(() => {
     if (!tipoAcaoDefinido) return "";
+    if (pecaUsaPartesJaQualificadas(especiePeca)) {
+      return formatarNomeAcaoForense(
+        tituloPecaCabivel(
+          especiePeca,
+          tipoAcaoDefinido,
+          justificativaAssistente ?? ""
+        )
+      );
+    }
     return montarTituloAcaoCompleto(tipoAcaoDefinido, {
       danosMorais: cumuloDanosMorais,
       danosMateriais: cumuloDanosMateriais,
@@ -736,6 +751,8 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
     });
   }, [
     tipoAcaoDefinido,
+    especiePeca,
+    justificativaAssistente,
     cumuloDanosMorais,
     cumuloDanosMateriais,
     tutelaUrgencia,
@@ -753,6 +770,7 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
       (modoAcao === "livre" && tipoAcaoTexto.trim().length < 8),
     processoPendenteConfirmacao:
       isProcesso && Boolean(analiseProcesso) && !processoConfirmado,
+    partesJaQualificadas: pecaUsaPartesJaQualificadas(especiePeca),
   });
 
   const podeGerar = podeGerarPeca(checklistItens) && !bloqueadoTetoLeigo;
@@ -805,7 +823,9 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
     setProcessoConfirmado(false);
     setModoAcao("processo");
     const peca = analise.pecaCandidata;
-    const titulo = peca.tituloCompleto || peca.tipoAcao;
+    const titulo = pecaUsaPartesJaQualificadas(peca.especiePeca)
+      ? peca.tituloCompleto || peca.tipoAcao
+      : peca.tituloCompleto || peca.tipoAcao;
     setTipoAcaoTexto(titulo);
     setEspeciePeca(peca.especiePeca);
     setEspecieManual(true);
@@ -822,6 +842,12 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
         ...c,
         numeroProcesso: analise.ficha.numeroProcesso.trim(),
       }));
+    }
+    if (analise.ficha.partesAutor.trim()) {
+      setAutores(autoresAPartirDosNomes(analise.ficha.partesAutor));
+    }
+    if (analise.ficha.partesReu.trim()) {
+      setReus(reusAPartirDosNomes(analise.ficha.partesReu));
     }
   }
 
@@ -1155,6 +1181,8 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
     const payload = {
       tipoAcao,
       especiePeca,
+      dispositivoSentenca:
+        analiseProcesso?.ficha.dispositivo?.trim() || undefined,
       tutelaUrgencia,
       pedirJusticaGratuita,
       temMle,
@@ -1373,8 +1401,20 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
                 name="especiePeca"
                 value={especiePeca}
                 onChange={(e) => {
-                  setEspeciePeca(e.target.value as EspeciePecaJec);
+                  const proxima = e.target.value as EspeciePecaJec;
+                  setEspeciePeca(proxima);
                   setEspecieManual(true);
+                  if (pecaUsaPartesJaQualificadas(proxima)) {
+                    setTipoAcaoTexto(
+                      tituloPecaCabivel(
+                        proxima,
+                        tipoAcaoTexto,
+                        justificativaAssistente ??
+                          analiseProcesso?.pecaCandidata.justificativa ??
+                          ""
+                      )
+                    );
+                  }
                 }}
                 className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-stone-500 focus:outline-none focus:ring-1 focus:ring-stone-500"
               >
@@ -1693,7 +1733,11 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
 
         <ComarcaSection value={comarca} onChange={setComarca} />
 
-        <AutorSection value={autores} onChange={setAutores}>
+        <AutorSection
+          value={autores}
+          onChange={setAutores}
+          jaQualificado={pecaUsaPartesJaQualificadas(especiePeca)}
+        >
           <div className="space-y-4">
             <div>
               <h3 className="mb-1 text-sm font-semibold text-slate-800">
@@ -1745,7 +1789,11 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
         </AutorSection>
 
         <div id="secao-reus" className="scroll-mt-24">
-          <ReusSection value={reus} onChange={setReus} />
+          <ReusSection
+            value={reus}
+            onChange={setReus}
+            jaQualificado={pecaUsaPartesJaQualificadas(especiePeca)}
+          />
         </div>
 
         <section

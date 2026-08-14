@@ -100,13 +100,13 @@ export function formatarRgComUf(numero: string, uf: string): string {
 }
 
 function formatarEnderecoAutor(a: AutorValue): string | null {
-  const log = a.logradouro.trim();
-  const num = a.numero.trim();
-  const comp = a.complemento.trim();
-  const bairro = a.bairro.trim();
-  const cidade = a.cidade.trim();
-  const uf = a.uf.trim().toUpperCase();
-  const cep = a.cep.trim() ? formatarCep(a.cep) : "";
+  const log = String(a.logradouro ?? "").trim();
+  const num = String(a.numero ?? "").trim();
+  const comp = String(a.complemento ?? "").trim();
+  const bairro = String(a.bairro ?? "").trim();
+  const cidade = String(a.cidade ?? "").trim();
+  const uf = String(a.uf ?? "").trim().toUpperCase();
+  const cep = String(a.cep ?? "").trim() ? formatarCep(a.cep) : "";
   if (!log && !cidade) return null;
   const partes: string[] = [];
   if (log) {
@@ -122,8 +122,8 @@ function formatarEnderecoAutor(a: AutorValue): string | null {
 
 export function autorTemDadosMinimos(a: AutorValue | null | undefined): boolean {
   if (!a) return false;
-  const nome = a.nomeCompleto.trim().length >= 5;
-  const cpfOk = apenasDigitos(a.cpf).length === 11;
+  const nome = String(a.nomeCompleto ?? "").trim().length >= 5;
+  const cpfOk = apenasDigitos(a.cpf ?? "").length === 11;
   return nome || cpfOk;
 }
 
@@ -155,23 +155,28 @@ export { formatarCpf, cpfValido };
 /**
  * Trecho de um autor (sem advogado).
  */
+function t(v: string | null | undefined): string {
+  return String(v ?? "").trim();
+}
+
 export function formatarUmAutor(a: AutorValue): string {
-  const nome = a.nomeCompleto.trim() || "[NOME COMPLETO DO(A) AUTOR(A)]";
-  const nac = a.nacionalidade.trim() || "brasileiro(a)";
-  const civil = a.estadoCivil.trim() || "[estado civil]";
-  const prof = a.profissao.trim() || "[profissão]";
+  const nome = t(a.nomeCompleto) || "[NOME COMPLETO DO(A) AUTOR(A)]";
+  const nac = t(a.nacionalidade) || "brasileiro(a)";
+  const civil = t(a.estadoCivil) || "[estado civil]";
+  const prof = t(a.profissao) || "[profissão]";
   const cpf =
-    apenasDigitos(a.cpf).length === 11 ? formatarCpf(a.cpf) : "[CPF]";
+    apenasDigitos(a.cpf ?? "").length === 11 ? formatarCpf(a.cpf) : "[CPF]";
   const rg = formatarRgComUf(
-    a.rgNumero.trim() ? formatarRgNumero(a.rgNumero) : "[RG]",
-    a.rgUf
+    t(a.rgNumero) ? formatarRgNumero(a.rgNumero) : "[RG]",
+    a.rgUf ?? ""
   );
   const end = formatarEnderecoAutor(a);
   const dom = end
     ? `residente e domiciliado(a) na ${end}`
     : "residente e domiciliado(a) na [endereço completo]";
-  const email = a.email.trim()
-    ? `endereço eletrônico ${a.email.trim()}`
+  const emailTxt = t(a.email);
+  const email = emailTxt
+    ? `endereço eletrônico ${emailTxt}`
     : "endereço eletrônico [e-mail]";
 
   return (
@@ -223,10 +228,10 @@ export function formatarBlocoQualificacaoAutor(opcoes: {
   const qtd = (lista ?? []).filter(autorTemDadosMinimos).length;
   const pronomeAdv = qtd > 1 ? "seu advogado comum" : "seu advogado";
 
-  const adv = opcoes.advogadoNome.trim() || "[NOME DO(A) ADVOGADO(A)]";
-  const oab = opcoes.oabQualificacao.trim() || "OAB/[UF] [Número]";
+  const adv = t(opcoes.advogadoNome) || "[NOME DO(A) ADVOGADO(A)]";
+  const oab = t(opcoes.oabQualificacao) || "OAB/[UF] [Número]";
   const endAdv =
-    opcoes.enderecoAdvogado?.trim() || "[endereço do advogado]";
+    t(opcoes.enderecoAdvogado) || "[endereço do advogado]";
 
   return (
     `${parte}, por ${pronomeAdv} que esta subscreve ` +
@@ -253,6 +258,12 @@ export function injetarQualificacaoAutor(
     substituto
   );
   if (comPlaceholder !== texto) return comPlaceholder;
+
+  const jaQualificado = texto.replace(
+    /^.+?já qualificado(?:a|os|as)? no processo em ep[ií]grafe[\s\S]*?à presença de Vossa Excelência/im,
+    substituto
+  );
+  if (jaQualificado !== texto) return jaQualificado;
 
   return texto.replace(
     /^.+?por seu advogado(?: comum)? que esta subscreve[\s\S]*?propor a presente/im,

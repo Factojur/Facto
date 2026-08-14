@@ -21,6 +21,8 @@ export function montarChecklistJec(opcoes: {
   assistentePendente?: boolean;
   /** true enquanto a peça sugerida pelos autos não foi confirmada. */
   processoPendenteConfirmacao?: boolean;
+  /** Recurso, contestação etc.: basta o nome; CPF/endereço não são exigidos. */
+  partesJaQualificadas?: boolean;
 }): ItemChecklistJec[] {
   const fatosOk = opcoes.fatos.trim().length >= 40;
   const tipoOk =
@@ -51,13 +53,17 @@ export function montarChecklistJec(opcoes: {
     },
     {
       id: "autor",
-      label: "Pelo menos um autor qualificado",
+      label: opcoes.partesJaQualificadas
+        ? "Nome do autor (já qualificado nos autos)"
+        : "Pelo menos um autor qualificado",
       ok: autorOk,
       bloqueante: true,
     },
     {
       id: "reus",
-      label: "Pelo menos um réu qualificado",
+      label: opcoes.partesJaQualificadas
+        ? "Nome do réu (já qualificado nos autos)"
+        : "Pelo menos um réu qualificado",
       ok: reusOk,
       bloqueante: true,
     },

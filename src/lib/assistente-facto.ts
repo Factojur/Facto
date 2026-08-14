@@ -36,8 +36,8 @@ function contemAlgum(texto: string, termos: string[]): boolean {
  * "Ação de Inexigibilidade de Débito (JEC)"
  * (sem prefixo "Petição Inicial —" — a peça já é a petição).
  */
-export function formatarNomeAcaoForense(bruto: string): string {
-  let t = bruto
+export function formatarNomeAcaoForense(bruto: string | null | undefined): string {
+  let t = String(bruto ?? "")
     .trim()
     .replace(/\s+/g, " ")
     .replace(/[–—-]+/g, "—")

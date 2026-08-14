@@ -42,6 +42,10 @@ import {
   formatarBlocoQualificacaoAutor,
   type AutorValue,
 } from "@/lib/autor-types";
+import {
+  formatarBlocoPartesJaQualificadas,
+  pecaUsaPartesJaQualificadas,
+} from "@/lib/partes-ja-qualificadas";
 import { normalizarTextoFatos } from "@/lib/peca-paragrafos";
 import { montarFundamentosDireitoJec } from "@/lib/peca-do-direito-jec";
 import {
@@ -92,6 +96,8 @@ export type GerarPecaJecInput = {
   comarca?: ComarcaInfo;
   valoresCausa?: Record<CategoriaValorId, ItemValor[]>;
   baseConhecimento?: TrechoConhecimento[];
+  /** Dispositivo da sentença (análise de autos / recurso). */
+  dispositivoSentenca?: string | null;
 };
 
 export type GerarPecaJecOutput = {
@@ -510,6 +516,24 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     formatarQualificacaoReus(input.reus ?? []) ??
     "[NOME COMPLETO DO(A) RÉU(RÉ)], [qualificação completa do(a) réu(ré)]";
 
+  const jaQualificadas = pecaUsaPartesJaQualificadas(especie);
+  const blocoPartes = jaQualificadas
+    ? formatarBlocoPartesJaQualificadas({
+        autores: input.autores ?? (input.autor ? [input.autor] : []),
+        reus: input.reus ?? [],
+        advogadoNome: autor,
+        oabQualificacao,
+        enderecoAdvogado: null,
+        especie,
+        dispositivoSentenca: input.dispositivoSentenca,
+      })
+    : formatarBlocoQualificacaoAutor({
+        autores: input.autores ?? (input.autor ? [input.autor] : []),
+        advogadoNome: autor,
+        oabQualificacao,
+        enderecoAdvogado: null,
+      });
+
   const fatosNormalizados = normalizarTextoFatos(input.fatos);
   const fatosLinhas = fatosNormalizados.split("\n").filter(Boolean);
 
@@ -566,17 +590,16 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
   const pecaBruta = [
     enderecamento,
     montarMarcadorEspaco6(ehInicial ? null : numeroProcesso),
-    formatarBlocoQualificacaoAutor({
-      autores: input.autores ?? (input.autor ? [input.autor] : []),
-      advogadoNome: autor,
-      oabQualificacao,
-      enderecoAdvogado: null,
-    }),
+    blocoPartes,
     MARCADOR_ESPACO_1,
     `${tipoAcao.toUpperCase()}`,
-    MARCADOR_ESPACO_1,
-    `em face de ${qualificacaoReus}, ${metaEsp.conectivoPartes}`,
-    MARCADOR_ESPACO_2,
+    ...(jaQualificadas
+      ? [MARCADOR_ESPACO_2]
+      : [
+          MARCADOR_ESPACO_1,
+          `em face de ${qualificacaoReus}, ${metaEsp.conectivoPartes}`,
+          MARCADOR_ESPACO_2,
+        ]),
     ...corpoSecoes,
     "Nestes termos,",
     "pede deferimento.",
@@ -587,14 +610,20 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     oabAssinatura,
   ].join("\n");
 
-  const pecaComProvas = injetarQualificacaoReus(
-    injetarProvasELinkNuvem(pecaBruta, {
-      linkNuvem,
-      provas: [...input.provas, ...input.fotos],
-      midias: input.midias,
-    }),
-    formatarQualificacaoReus(input.reus ?? [])
-  );
+  const pecaComProvas = jaQualificadas
+    ? injetarProvasELinkNuvem(pecaBruta, {
+        linkNuvem,
+        provas: [...input.provas, ...input.fotos],
+        midias: input.midias,
+      })
+    : injetarQualificacaoReus(
+        injetarProvasELinkNuvem(pecaBruta, {
+          linkNuvem,
+          provas: [...input.provas, ...input.fotos],
+          midias: input.midias,
+        }),
+        formatarQualificacaoReus(input.reus ?? [])
+      );
   const peca = aplicarFormatacaoTextoJuridico(pecaComProvas);
   const { pecaHtml } = gerarDocumentoTimbrado(
     peca,

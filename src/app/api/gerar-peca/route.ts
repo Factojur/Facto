@@ -48,6 +48,10 @@ import {
   injetarQualificacaoAutor,
 } from "@/lib/autor-types";
 import {
+  formatarBlocoPartesJaQualificadas,
+  pecaUsaPartesJaQualificadas,
+} from "@/lib/partes-ja-qualificadas";
+import {
   MAX_JURIS_CASO,
   truncarTextoJuris,
   type BlocoJurisCaso,
@@ -208,17 +212,33 @@ function finalizarTextoPeca(
     provas: [...(body.provas ?? []), ...(body.fotos ?? [])],
     midias: body.midias ?? [],
   });
-  const comReus = injetarQualificacaoReus(
-    comProvas,
-    formatarQualificacaoReus(body.reus ?? [])
-  );
   const autores =
     body.autores ?? (body.autor ? [body.autor] : []);
-  const blocoAutor = formatarBlocoQualificacaoAutor({
-    autores,
-    advogadoNome: opcoes?.advogadoNome ?? "",
-    oabQualificacao: opcoes?.oabQualificacao ?? "",
-  });
+  const especie = inferirEspeciePeca(
+    body.tipoAcao,
+    body.fatos,
+    body.especiePeca
+  );
+  const blocoAutor = pecaUsaPartesJaQualificadas(especie)
+    ? formatarBlocoPartesJaQualificadas({
+        autores,
+        reus: body.reus ?? [],
+        advogadoNome: opcoes?.advogadoNome ?? "",
+        oabQualificacao: opcoes?.oabQualificacao ?? "",
+        especie,
+        dispositivoSentenca: body.dispositivoSentenca,
+      })
+    : formatarBlocoQualificacaoAutor({
+        autores,
+        advogadoNome: opcoes?.advogadoNome ?? "",
+        oabQualificacao: opcoes?.oabQualificacao ?? "",
+      });
+  const comReus = pecaUsaPartesJaQualificadas(especie)
+    ? comProvas
+    : injetarQualificacaoReus(
+        comProvas,
+        formatarQualificacaoReus(body.reus ?? [])
+      );
   return injetarQualificacaoAutor(comReus, blocoAutor);
 }
 
@@ -386,10 +406,23 @@ async function postGerarPeca(request: Request) {
   };
   const autoresBody =
     body.autores ?? (body.autor ? [body.autor] : []);
-  const blocoQualificacaoAutor = formatarBlocoQualificacaoAutor({
-    autores: autoresBody,
-    ...opcoesAdvogadoQualificacao,
-  });
+  const especieParaPartes = inferirEspeciePeca(
+    body.tipoAcao,
+    body.fatos,
+    body.especiePeca
+  );
+  const blocoQualificacaoAutor = pecaUsaPartesJaQualificadas(especieParaPartes)
+    ? formatarBlocoPartesJaQualificadas({
+        autores: autoresBody,
+        reus: body.reus ?? [],
+        ...opcoesAdvogadoQualificacao,
+        especie: especieParaPartes,
+        dispositivoSentenca: body.dispositivoSentenca,
+      })
+    : formatarBlocoQualificacaoAutor({
+        autores: autoresBody,
+        ...opcoesAdvogadoQualificacao,
+      });
 
   const scaffold = gerarPecaJec({
     ...body,
@@ -485,9 +518,14 @@ async function postGerarPeca(request: Request) {
       linkNuvem: body.linkNuvem,
       provasArquivos: [...(body.provas ?? []), ...(body.fotos ?? [])],
       midiasArquivos: body.midias ?? [],
-      qualificacaoReus: formatarQualificacaoReus(body.reus ?? []),
+      qualificacaoReus: pecaUsaPartesJaQualificadas(especieResolvida)
+        ? null
+        : formatarQualificacaoReus(body.reus ?? []),
       qualificacaoAutor: blocoQualificacaoAutor,
-      pedidosUsuario: body.pedidosUsuario?.filter((p) => p.trim()),
+      partesJaQualificadas: pecaUsaPartesJaQualificadas(especieResolvida),
+      pedidosUsuario: body.pedidosUsuario
+        ?.map((p) => String(p ?? "").trim())
+        .filter(Boolean),
     },
   });
 

@@ -415,7 +415,8 @@ export function inserirEspacoAntesNomeAcao(texto: string): string {
     const b = linhas[i]!;
     saida.push(b);
 
-    if (!/\bpropor a presente\.?\s*$/i.test(b.trim())) {
+    if (!/\bpropor a presente\.?\s*$/i.test(b.trim()) &&
+      !/\bà presença de Vossa Excelência\.?\s*$/i.test(b.trim())) {
       continue;
     }
 

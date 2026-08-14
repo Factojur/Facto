@@ -16,8 +16,10 @@ import { ROTULOS_DOC_PROCESSO } from "@/lib/analisar-processo-types";
 import {
   ESPECIES_PECA_JEC,
   inferirEspeciePeca,
+  tituloPecaCabivel,
   type EspeciePecaJec,
 } from "@/lib/jec-especie-peca";
+import { pecaUsaPartesJaQualificadas } from "@/lib/partes-ja-qualificadas";
 import {
   gerarTextoComGemini,
   geminiConfigurado,
@@ -115,8 +117,9 @@ const SYSTEM = [
   "2) Montar uma FICHA PROCESSUAL objetiva (sem inventar números/datas ausentes — use string vazia).",
   "3) Sugerir a PEÇA CABÍVEL agora (peticao-inicial | contestacao | embargos | recurso | replica | execucao)",
   "   com nome forense, confiança 0–1 e justificativa curta.",
-  "4) Em pecaCandidata.tipoAcao use padrão forense JEC (sem prefixo Petição Inicial quando for ação).",
+  "4) pecaCandidata.tipoAcao = nome da PEÇA A PROTOCOLAR AGORA (Embargos de Declaração, Recurso Inominado, Agravo de Instrumento, Contestação, Réplica…). NUNCA copie o nome da ação originária nem o nome do arquivo enviado (ex.: cumprimento de sentença).",
   "5) fatosSugeridos: narrativa em 3ª pessoa pronta para o campo Fatos do formulário (8–20 linhas).",
+  "6) dispositivo: resuma o julgamento da sentença em uma das formas: procedente, improcedente, parcialmente procedente, extinto. Vazio se não houver sentença.",
   "",
   "Responda SOMENTE JSON válido (sem markdown):",
   "{",
@@ -124,7 +127,8 @@ const SYSTEM = [
   '  "ficha": {',
   '    "orgao":"", "numeroProcesso":"", "comarca":"",',
   '    "partesAutor":"", "partesReu":"", "dataDecisao":"",',
-  '    "dispositivo":"", "pedidosResumo":"", "fundamentosResumo":"",',
+  '    "dispositivo":"procedente|improcedente|parcialmente procedente|extinto|",',
+  '    "pedidosResumo":"", "fundamentosResumo":"",',
   '    "faseProcessual":"", "fatosSugeridos":""',
   "  },",
   '  "pecaCandidata": {',
@@ -215,21 +219,29 @@ export async function analisarProcessoComGemini(
   });
 
   const pecaRaw = (json.pecaCandidata ?? {}) as Record<string, unknown>;
-  const tipoBruto = str(pecaRaw.tipoAcao, "Ação cível (JEC)");
-  const tipoAcao = formatarNomeAcaoForense(tipoBruto) || tipoBruto;
+  const justificativa = str(pecaRaw.justificativa);
+  const tipoBruto = str(pecaRaw.tipoAcao);
   const danosMorais = bool(pecaRaw.danosMorais);
   const danosMateriais = bool(pecaRaw.danosMateriais);
   const tutelaUrgencia = bool(pecaRaw.tutelaUrgencia);
   const especiePeca = normalizarEspecie(
     pecaRaw.especiePeca,
-    tipoAcao,
+    tipoBruto || justificativa,
     ficha.fatosSugeridos
   );
-  const tituloCompleto = montarTituloAcaoCompleto(tipoAcao, {
-    danosMorais,
-    danosMateriais,
-    tutelaUrgencia,
-  });
+  const contextoTitulo = `${justificativa} ${ficha.fatosSugeridos} ${tipoBruto}`;
+  const tipoAcao = pecaUsaPartesJaQualificadas(especiePeca)
+    ? formatarNomeAcaoForense(
+        tituloPecaCabivel(especiePeca, tipoBruto, contextoTitulo)
+      )
+    : formatarNomeAcaoForense(tipoBruto) || tipoBruto || "Ação cível (JEC)";
+  const tituloCompleto = pecaUsaPartesJaQualificadas(especiePeca)
+    ? tipoAcao
+    : montarTituloAcaoCompleto(tipoAcao, {
+        danosMorais,
+        danosMateriais,
+        tutelaUrgencia,
+      });
 
   const avisosRaw = Array.isArray(json.avisos) ? json.avisos : [];
   const avisos = avisosRaw

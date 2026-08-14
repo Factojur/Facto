@@ -115,9 +115,9 @@ function enderecoFormatado(r: ReuValue): string {
 
 export function reuTemDadosMinimos(r: ReuValue): boolean {
   if (r.tipo === "pj") {
-    return Boolean(r.razaoSocial.trim() || cnpjValido(r.cnpj));
+    return Boolean(String(r.razaoSocial ?? "").trim() || cnpjValido(r.cnpj));
   }
-  return Boolean(r.nomeCompleto.trim() || cpfValido(r.cpf));
+  return Boolean(String(r.nomeCompleto ?? "").trim() || cpfValido(r.cpf));
 }
 
 /** Linha curta para checklist (nome + documento + cidade). */
@@ -148,25 +148,29 @@ export function resumoReu(r: ReuValue): { titulo: string; detalhe: string } {
   return { titulo, detalhe: partes.join(" · ") };
 }
 
+function t(v: string | null | undefined): string {
+  return String(v ?? "").trim();
+}
+
 export function formatarUmReu(r: ReuValue): string {
   const end = enderecoFormatado(r);
   if (r.tipo === "pj") {
     const nome =
-      r.razaoSocial.trim() ||
-      r.nomeFantasia.trim() ||
+      t(r.razaoSocial) ||
+      t(r.nomeFantasia) ||
       "[RAZÃO SOCIAL DO RÉU]";
     const cnpj = cnpjValido(r.cnpj)
       ? formatarCnpj(r.cnpj)
       : "[CNPJ]";
     const fantasia =
-      r.nomeFantasia.trim() &&
-      r.nomeFantasia.trim().toLowerCase() !== r.razaoSocial.trim().toLowerCase()
-        ? `, nome fantasia ${r.nomeFantasia.trim()}`
+      t(r.nomeFantasia) &&
+      t(r.nomeFantasia).toLowerCase() !== t(r.razaoSocial).toLowerCase()
+        ? `, nome fantasia ${t(r.nomeFantasia)}`
         : "";
     const sede = end ? `, com sede na ${end}` : ", com sede em [endereço completo]";
     const contato = [
-      r.email.trim() ? `e-mail ${r.email.trim()}` : null,
-      r.telefone.trim() ? `telefone ${r.telefone.trim()}` : null,
+      t(r.email) ? `e-mail ${t(r.email)}` : null,
+      t(r.telefone) ? `telefone ${t(r.telefone)}` : null,
     ]
       .filter(Boolean)
       .join(", ");
@@ -176,20 +180,20 @@ export function formatarUmReu(r: ReuValue): string {
     );
   }
 
-  const nome = r.nomeCompleto.trim() || "[NOME COMPLETO DO(A) RÉU(RÉ)]";
+  const nome = t(r.nomeCompleto) || "[NOME COMPLETO DO(A) RÉU(RÉ)]";
   const cpf =
-    apenasDigitos(r.cpf).length === 11
+    apenasDigitos(r.cpf ?? "").length === 11
       ? formatarCpf(r.cpf)
       : "[CPF]";
-  const nac = r.nacionalidade.trim() || "brasileiro(a)";
-  const civil = r.estadoCivil.trim() || "[estado civil]";
-  const prof = r.profissao.trim() || "[profissão]";
+  const nac = t(r.nacionalidade) || "brasileiro(a)";
+  const civil = t(r.estadoCivil) || "[estado civil]";
+  const prof = t(r.profissao) || "[profissão]";
   const dom = end
     ? `residente e domiciliado(a) na ${end}`
     : "residente e domiciliado(a) na [endereço completo]";
   const contato = [
-    r.email.trim() ? `e-mail ${r.email.trim()}` : null,
-    r.telefone.trim() ? `telefone ${r.telefone.trim()}` : null,
+    t(r.email) ? `e-mail ${t(r.email)}` : null,
+    t(r.telefone) ? `telefone ${t(r.telefone)}` : null,
   ]
     .filter(Boolean)
     .join(", ");

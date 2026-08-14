@@ -471,9 +471,11 @@ function ReuChecklistItem({
 export function ReusSection({
   value,
   onChange,
+  jaQualificado = false,
 }: {
   value: ReuValue[];
   onChange: (reus: ReuValue[]) => void;
+  jaQualificado?: boolean;
 }) {
   const [rascunho, setRascunho] = useState<ReuValue | null>(null);
   const [editandoId, setEditandoId] = useState<string | null>(null);
@@ -513,11 +515,14 @@ export function ReusSection({
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="mb-1 text-lg font-semibold text-slate-800">
-        Qualificação do(s) réu(s)
+        {jaQualificado
+          ? "Réu (já qualificado nos autos)"
+          : "Qualificação do(s) réu(s)"}
       </h2>
       <p className="mb-4 text-sm text-slate-500">
-        Preencha e salve cada réu na checklist. CNPJ busca razão social
-        (BrasilAPI); CEP completa o endereço (ViaCEP).
+        {jaQualificado
+          ? "Basta o nome ou a razão social. CNPJ e endereço são opcionais nesta peça."
+          : "Preencha e salve cada réu na checklist. CNPJ busca razão social (BrasilAPI); CEP completa o endereço (ViaCEP)."}
       </p>
 
       {value.length > 0 ? (

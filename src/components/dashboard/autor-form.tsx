@@ -383,10 +383,12 @@ export function AutorSection({
   value,
   onChange,
   children,
+  jaQualificado = false,
 }: {
   value: AutorValue[];
   onChange: (autores: AutorValue[]) => void;
   children?: ReactNode;
+  jaQualificado?: boolean;
 }) {
   const [rascunho, setRascunho] = useState<AutorValue | null>(null);
   const [editandoId, setEditandoId] = useState<string | null>(null);
@@ -429,13 +431,12 @@ export function AutorSection({
       className="scroll-mt-24 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
     >
       <h2 className="mb-1 text-lg font-semibold text-slate-800">
-        Dados do autor
+        {jaQualificado ? "Autor (já qualificado nos autos)" : "Dados do autor"}
       </h2>
       <p className="mb-4 text-sm text-slate-500">
-        Cadastre e salve cada autor na lista abaixo. Nome e OAB do advogado
-        saem do seu{" "}
-        <span className="font-medium text-slate-600">Perfil</span> — não
-        precisam ser digitados aqui.
+        {jaQualificado
+          ? "Nesta peça as partes já constam do processo. Basta o nome (a análise dos autos preenche quando possível). CPF e endereço são opcionais."
+          : "Cadastre e salve cada autor na lista abaixo. Nome e OAB do advogado saem do seu Perfil — não precisam ser digitados aqui."}
       </p>
 
       {value.length > 0 ? (
