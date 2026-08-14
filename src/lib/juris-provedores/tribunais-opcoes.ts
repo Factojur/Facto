@@ -112,7 +112,7 @@ export function normalizarTribunaisEscolhidos(
   if (ids.length > MAX_TRIBUNAIS_POR_BUSCA) {
     return {
       ok: false,
-      erro: `Selecione no máximo ${MAX_TRIBUNAIS_POR_BUSCA} tribunais por busca (cada um consome cota da API).`,
+      erro: `Selecione no máximo ${MAX_TRIBUNAIS_POR_BUSCA} tribunais por busca.`,
     };
   }
   return { ok: true, ids };
@@ -149,31 +149,33 @@ export function inferirSlugTribunalDoTexto(
 }
 
 /**
- * Preferência (não trava): TJ do foro e cortes federais sobem;
- * outro TJ estadual desce. Sem metadado de tribunal = 0 (fica no meio).
- * Súmulas/leis federais sempre sobem um pouco.
+ * Preferência pelos tribunais que o usuário marcou.
+ * Slug na seleção sobe; outro TJ desce. Sem metadado = 0.
+ * Súmula/lei: sobe se STF/STJ estiverem marcados.
  */
-export function bonusAfinidadeForo(opcoes: {
+export function bonusAfinidadeTribunais(opcoes: {
   titulo: string;
   categoria?: string;
   texto?: string;
-  ufForo?: string | null;
+  tribunais: string[];
 }): number {
-  const uf = (opcoes.ufForo ?? "").trim().toUpperCase();
-  if (!uf) return 0;
+  const ids = opcoes.tribunais.map((s) => s.trim().toLowerCase()).filter(Boolean);
+  if (!ids.length) return 0;
   const cat = blobTribunal([opcoes.categoria]);
-  if (cat.includes("sumula") || (cat.includes("lei") && !cat.includes("juris"))) {
-    return 4;
-  }
   const slug = inferirSlugTribunalDoTexto(
     opcoes.titulo,
     opcoes.categoria,
     opcoes.texto
   );
+  const querFederal = ids.includes("stf") || ids.includes("stj");
+  if (cat.includes("sumula")) {
+    if (slug && ids.includes(slug)) return 8;
+    return querFederal ? 5 : -4;
+  }
+  if (cat.includes("lei") && !cat.includes("juris")) {
+    return querFederal ? 3 : 1;
+  }
   if (!slug) return 0;
-  if (slug === "stf" || slug === "stj") return 3;
-  const tjLocal = tjPorUf(uf);
-  if (tjLocal && slug === tjLocal.id) return 10;
-  if (TRIBUNAIS_ESTADUAIS.some((x) => x.id === slug)) return -5;
-  return 0;
+  if (ids.includes(slug)) return 12;
+  return -8;
 }

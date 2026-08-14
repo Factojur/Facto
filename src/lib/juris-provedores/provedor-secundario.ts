@@ -6,7 +6,7 @@
 import { buscarConhecimentoRelacionado } from "@/lib/base-conhecimento";
 import type { PrecedenteInterno } from "@/lib/juris-provedores/jurisprudencia-service";
 import {
-  bonusAfinidadeForo,
+  bonusAfinidadeTribunais,
   inferirSlugTribunalDoTexto,
   tribunalPorId,
 } from "@/lib/juris-provedores/tribunais-opcoes";
@@ -50,7 +50,7 @@ async function fallbackBaseFacto(
   query: string,
   excluirTitulos: Set<string>,
   faltam: number,
-  ufForo?: string | null
+  tribunais?: string[]
 ): Promise<PrecedenteInterno[]> {
   if (faltam <= 0) return [];
   const trechos = await buscarConhecimentoRelacionado(query, 20, query);
@@ -69,11 +69,11 @@ async function fallbackBaseFacto(
       ? tribunalPorId(slug)?.rotulo ?? slug.toUpperCase()
       : "Base FACTO";
     candidatos.push({
-      bonus: bonusAfinidadeForo({
+      bonus: bonusAfinidadeTribunais({
         titulo: t.titulo,
         categoria: t.categoria,
         texto: t.texto,
-        ufForo,
+        tribunais: tribunais ?? [],
       }),
       p: {
         origem: "base_conhecimento",
@@ -86,7 +86,9 @@ async function fallbackBaseFacto(
   }
 
   candidatos.sort((a, b) => b.bonus - a.bonus);
-  return candidatos.slice(0, faltam).map((c) => c.p);
+  const alinhados = candidatos.filter((c) => c.bonus >= 0);
+  const fonte = alinhados.length > 0 ? alinhados : candidatos;
+  return fonte.slice(0, faltam).map((c) => c.p);
 }
 
 export async function buscarJulgadosProvedorSecundario(
@@ -96,7 +98,7 @@ export async function buscarJulgadosProvedorSecundario(
     incluirTjsp?: boolean;
     min?: number;
     max?: number;
-    ufForo?: string | null;
+    tribunais?: string[];
   }
 ): Promise<ResultadoProvedorSecundario> {
   const q = query.trim();
@@ -147,7 +149,7 @@ export async function buscarJulgadosProvedorSecundario(
       q,
       excluir,
       maxAlvo - out.length,
-      opcoes?.ufForo
+      opcoes?.tribunais
     );
     out.push(...extra);
   }

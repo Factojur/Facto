@@ -125,7 +125,7 @@ export function JurisSugestoesPicker({
   }
 
   async function abrirEBuscar(somenteBase = false) {
-    if (!somenteBase && tribunaisSel.length < 1) {
+    if (tribunaisSel.length < 1) {
       setErro("Selecione ao menos um tribunal.");
       return;
     }
@@ -141,8 +141,7 @@ export function JurisSugestoesPicker({
         body: JSON.stringify({
           consulta,
           somenteBase,
-          ufForo: ufForo ?? null,
-          tribunais: somenteBase ? [] : tribunaisSel,
+          tribunais: tribunaisSel,
           uploads: uploads
             .filter((u) => (u.texto ?? "").trim().length > 20 || u.titulo)
             .map((u) => ({
@@ -247,7 +246,7 @@ export function JurisSugestoesPicker({
         <p className="mb-2 text-xs font-medium text-slate-700">
           Tribunais da busca
           <span className="ml-1 font-normal text-slate-500">
-            (só para busca nos tribunais · mín. 1 · máx. {MAX_TRIBUNAIS_POR_BUSCA})
+            (mín. 1 · máx. {MAX_TRIBUNAIS_POR_BUSCA} · vale para os dois botões)
           </span>
         </p>
         <div className="flex flex-wrap gap-2">
@@ -322,7 +321,7 @@ export function JurisSugestoesPicker({
           <button
             type="button"
             onClick={() => void abrirEBuscar(true)}
-            disabled={consulta.trim().length < 8}
+            disabled={consulta.trim().length < 8 || tribunaisSel.length < 1}
             className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Buscar na base FACTO
@@ -331,10 +330,8 @@ export function JurisSugestoesPicker({
             Não consome a cota mensal
           </p>
           <p className="mt-1 text-xs leading-relaxed text-slate-500">
-            {ufForo
-              ? `Prefere julgados do TJ do foro (${ufForo}) quando o título indica o tribunal. Súmulas e leis federais entram sempre.`
-              : "Julgados curados por afinidade com o caso. Informe a UF no foro para preferir o TJ local."}{" "}
-            Os marcadores acima valem só para “Buscar nos tribunais”.
+            Usa os mesmos tribunais marcados acima. Não consome a cota — só a
+            base curada da FACTO.
           </p>
         </div>
       </div>

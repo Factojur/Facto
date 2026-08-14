@@ -19,6 +19,7 @@ import {
 } from "@/lib/juris-provedores/types";
 import {
   MAX_TRIBUNAIS_POR_BUSCA,
+  inferirSlugTribunalDoTexto,
   normalizarTribunaisEscolhidos,
 } from "@/lib/juris-provedores/tribunais-opcoes";
 import type { TipoFonteJurisCaso } from "@/lib/juris-caso-types";
@@ -74,7 +75,6 @@ export async function POST(request: Request) {
     uploads?: UploadIn[];
     tribunais?: unknown;
     somenteBase?: boolean;
-    ufForo?: string | null;
   };
   try {
     body = await request.json();
@@ -91,14 +91,8 @@ export async function POST(request: Request) {
   }
 
   const somenteBase = Boolean(body.somenteBase);
-  const ufForo = String(body.ufForo ?? "")
-    .trim()
-    .toUpperCase()
-    .slice(0, 2) || null;
 
-  const tribunaisNorm = somenteBase
-    ? { ok: true as const, ids: [] as string[] }
-    : normalizarTribunaisEscolhidos(body.tribunais);
+  const tribunaisNorm = normalizarTribunaisEscolhidos(body.tribunais);
   if (!tribunaisNorm.ok) {
     return NextResponse.json({ error: tribunaisNorm.erro }, { status: 400 });
   }
@@ -125,6 +119,11 @@ export async function POST(request: Request) {
       const cat = t.categoria.toLowerCase();
       const isSumula = cat.includes("súmula") || cat.includes("sumula");
       if (!isSumula) continue;
+      const slug = inferirSlugTribunalDoTexto(t.titulo, t.categoria, t.texto);
+      const querFederal =
+        tribunais.includes("stf") || tribunais.includes("stj");
+      if (slug && !tribunais.includes(slug)) continue;
+      if (!slug && !querFederal) continue;
       melhorSumula = {
         origem: "sumula",
         tribunal: "Súmula",
@@ -138,7 +137,7 @@ export async function POST(request: Request) {
     /* segue */
   }
 
-  if (!melhorSumula) {
+  if (!melhorSumula && (tribunais.includes("stf") || tribunais.includes("stj"))) {
     const s = SUMULAS_ATIVAS_CURADAS[0];
     if (s) {
       melhorSumula = {
@@ -158,10 +157,9 @@ export async function POST(request: Request) {
   const julgadoAi: Bruto[] = [];
 
   if (somenteBase) {
-    avisoExterno =
-      ufForo
-        ? `Busca só na base FACTO. Prefere o TJ do foro (${ufForo}) quando o julgado indica o tribunal; súmulas e leis federais entram sempre. Não consome a cota de tribunais.`
-        : "Busca só na base FACTO (leis, súmulas e julgados curados). Não consome a cota de tribunais.";
+    avisoExterno = `Busca só na base FACTO nos tribunais marcados (${tribunais
+      .map((t) => t.toUpperCase())
+      .join(", ")}). Não consome a cota mensal.`;
   } else if (provedorExternoAtivo) {
     const cotaAntes = await obterCotaJurisUsuario(user.id);
     cotaUsadas = cotaAntes.usadas;
@@ -229,7 +227,7 @@ export async function POST(request: Request) {
       incluirTjsp: querTjsp,
       min: somenteBase ? 5 : undefined,
       max: somenteBase ? 8 : undefined,
-      ufForo,
+      tribunais,
     });
     secundarios = r.precedentes;
     usandoFallbackSecundario = r.usandoFallbackLocal;
