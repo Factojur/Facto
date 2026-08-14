@@ -71,6 +71,7 @@ export function JurisSugestoesPicker({
     usadas: number;
     limite: number;
     restantes: number;
+    ilimitado?: boolean;
   } | null>(null);
   const [candidatos, setCandidatos] = useState<JurisCandidato[]>([]);
   const [totais, setTotais] = useState<{
@@ -93,6 +94,7 @@ export function JurisSugestoesPicker({
           usadas: data.usadas,
           limite: data.limite,
           restantes: data.restantes,
+          ilimitado: Boolean(data.ilimitado),
         });
         setProvedorExterno(true);
       } catch {
@@ -302,7 +304,11 @@ export function JurisSugestoesPicker({
           >
             Buscar nos tribunais
           </button>
-          {cota && provedorExterno ? (
+          {cota?.ilimitado ? (
+            <p className="mt-2 text-xs font-medium text-slate-700">
+              Cota ilimitada neste perfil
+            </p>
+          ) : cota && provedorExterno ? (
             <p className="mt-2 text-xs font-medium tabular-nums text-slate-700">
               Cota deste mês: {cota.usadas}/{cota.limite}
             </p>
@@ -313,8 +319,10 @@ export function JurisSugestoesPicker({
           )}
           <p className="mt-1 text-xs leading-relaxed text-slate-500">
             Usa os tribunais marcados acima (mín. 1, máx.{" "}
-            {MAX_TRIBUNAIS_POR_BUSCA}). Cada tribunal consome 1 da cota; renova
-            no dia 1º.
+            {MAX_TRIBUNAIS_POR_BUSCA}).
+            {cota?.ilimitado
+              ? " Perfil interno: buscas externas sem limite mensal."
+              : " Cada tribunal consome 1 da cota; renova no dia 1º."}
           </p>
         </div>
         <div className="flex flex-col rounded-lg border border-slate-200 bg-white p-3">
@@ -352,7 +360,11 @@ export function JurisSugestoesPicker({
                 >
                   Escolha jurisprudência / súmula
                 </h3>
-                {cota && provedorExterno ? (
+                {cota?.ilimitado ? (
+                  <span className="text-xs text-slate-500">
+                    Cota ilimitada neste perfil
+                  </span>
+                ) : cota && provedorExterno ? (
                   <span className="text-xs tabular-nums text-slate-500">
                     Cota de tribunais: {cota.usadas}/{cota.limite}
                   </span>

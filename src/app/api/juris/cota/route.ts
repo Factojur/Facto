@@ -28,12 +28,13 @@ export async function GET() {
     });
   }
 
-  const cota = await obterCotaJurisUsuario(user.id);
+  const cota = await obterCotaJurisUsuario(user.id, user.email);
   return NextResponse.json({
     ativo: true,
     usadas: cota.usadas,
     limite: cota.limite,
     restantes: cota.restantes,
+    ilimitado: cota.ilimitado,
     ciclo: cota.ciclo,
   });
 }

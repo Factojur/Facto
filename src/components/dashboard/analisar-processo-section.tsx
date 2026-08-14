@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  LIMITE_ARQUIVO_LOCAL_BYTES,
+  MIN_CHARS_TEXTO_UTIL,
+  extrairTextoArquivoLocal,
+} from "@/lib/extrair-texto-cliente";
 import type { AnaliseProcessoResultado } from "@/lib/analisar-processo-types";
 import {
   ROTULO_DOC_LABEL,
   ROTULOS_DOC_PROCESSO,
-  type ArquivoProcessoPayload,
   type RotuloDocProcesso,
 } from "@/lib/analisar-processo-types";
 import type { ResumoCota } from "@/lib/cota-pecas";
@@ -15,19 +19,6 @@ type ArquivoLocal = {
   file: File;
   rotulo: RotuloDocProcesso;
 };
-
-function lerBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const r = String(reader.result ?? "");
-      const i = r.indexOf(",");
-      resolve(i >= 0 ? r.slice(i + 1) : r);
-    };
-    reader.onerror = () => reject(new Error("Falha ao ler arquivo."));
-    reader.readAsDataURL(file);
-  });
-}
 
 type Props = {
   onResultado: (analise: AnaliseProcessoResultado) => void;
@@ -77,25 +68,43 @@ export function AnalisarProcessoSection({ onResultado, onErro }: Props) {
       );
       return;
     }
+    const totalBytes = arquivos.reduce((s, a) => s + a.file.size, 0);
+    if (totalBytes > LIMITE_ARQUIVO_LOCAL_BYTES) {
+      onErro(
+        "Os arquivos somam mais de 40 MB. Envie as peças principais (sentença, inicial, contestação) em vez dos autos inteiros."
+      );
+      return;
+    }
     setAnalisando(true);
     onErro("");
     try {
-      const payload: ArquivoProcessoPayload[] = [];
+      const documentos: { nome: string; texto: string; rotulo: string }[] = [];
       for (const a of arquivos) {
-        payload.push({
+        const texto = await extrairTextoArquivoLocal(a.file);
+        if (texto.length < MIN_CHARS_TEXTO_UTIL) {
+          onErro(
+            `Não foi possível extrair texto de “${a.file.name}”. PDF escaneado (imagem) precisa de OCR; envie um PDF com texto selecionável.`
+          );
+          return;
+        }
+        documentos.push({
           nome: a.file.name,
-          mimeType: a.file.type || "application/pdf",
-          base64: await lerBase64(a.file),
-          rotulo:
-            modoUpload === "completos" ? "autos_completos" : a.rotulo,
+          texto,
+          rotulo: modoUpload === "completos" ? "autos_completos" : a.rotulo,
         });
       }
 
       const res = await fetch("/api/analisar-processo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ arquivos: payload }),
+        body: JSON.stringify({ documentos }),
       });
+      if (res.status === 413) {
+        onErro(
+          "O texto extraído ainda ficou grande demais para o servidor. Envie só a sentença ou a inicial."
+        );
+        return;
+      }
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
         analise?: AnaliseProcessoResultado;
@@ -105,8 +114,12 @@ export function AnalisarProcessoSection({ onResultado, onErro }: Props) {
         return;
       }
       onResultado(data.analise);
-    } catch {
-      onErro("Não foi possível analisar o processo. Tente novamente.");
+    } catch (erro) {
+      onErro(
+        erro instanceof Error
+          ? erro.message
+          : "Não foi possível analisar o processo. Tente novamente."
+      );
     } finally {
       setAnalisando(false);
     }
@@ -156,7 +169,7 @@ export function AnalisarProcessoSection({ onResultado, onErro }: Props) {
       {modoUpload === "completos" ? (
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">
-            PDF/DOCX dos autos (até 6 arquivos, 8 MB cada)
+            PDF/DOCX dos autos (até 6 arquivos, 40 MB no total)
           </label>
           <input
             type="file"
@@ -247,7 +260,8 @@ export function AnalisarProcessoSection({ onResultado, onErro }: Props) {
 
       <p className="text-[11px] text-slate-500">
         Tipos aceitos: {ROTULOS_DOC_PROCESSO.map((r) => ROTULO_DOC_LABEL[r]).join(", ")}.
-        PDF escaneado sem OCR pode falhar.
+        O texto é lido no seu computador (até 40 MB). PDF escaneado sem OCR
+        não funciona.
       </p>
     </div>
   );

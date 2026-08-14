@@ -24,7 +24,7 @@ const PADROES_CITACAO: { tipo: TipoCitacao; regex: RegExp }[] = [
   {
     tipo: "jurisprudencia",
     regex:
-      /(?:re|resp|agrg|agint|aresp|edcl|hc|adi|adpf|rext)\s*n?[ºo°.]?\s*[\d.\-\/]+/gi,
+      /\b(?:re|resp|agrg|agint|aresp|edcl|hc|adi|adpf|rext)\s*n?[ºo°.]?\s*\d[\d.\/]*/gi,
   },
   {
     tipo: "jurisprudencia",
@@ -57,7 +57,7 @@ function soDigitos(s: string): string {
 
 const CNJ_RE = /\b\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}\b/g;
 const NUMERO_JULGADO_RE =
-  /(?:re|resp|agrg|agint|aresp|edcl|hc|adi|adpf|rext|apelação|apelacao|agravo de instrumento|agravo interno|processo)\s*n?[ºo°.]?\s*[\d.\-\/]+/gi;
+  /\b(?:re|resp|agrg|agint|aresp|edcl|hc|adi|adpf|rext|apelação|apelacao|agravo de instrumento|agravo interno|processo)\s*n?[ºo°.]?\s*\d[\d.\/]*/gi;
 
 function extrairNumerosDoContexto(contexto: string): {
   cnjs: Set<string>;

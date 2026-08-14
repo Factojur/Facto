@@ -154,6 +154,7 @@ export async function POST(request: Request) {
   let avisoExterno: string | undefined;
   let cotaUsadas = 0;
   let cotaRestantes = JURIS_BUSCAS_POR_USUARIO_MES;
+  let cotaIlimitada = false;
   const julgadoAi: Bruto[] = [];
 
   if (somenteBase) {
@@ -161,9 +162,10 @@ export async function POST(request: Request) {
       .map((t) => t.toUpperCase())
       .join(", ")}). Não consome a cota mensal.`;
   } else if (provedorExternoAtivo) {
-    const cotaAntes = await obterCotaJurisUsuario(user.id);
+    const cotaAntes = await obterCotaJurisUsuario(user.id, user.email);
     cotaUsadas = cotaAntes.usadas;
     cotaRestantes = cotaAntes.restantes;
+    cotaIlimitada = cotaAntes.ilimitado;
 
     if (!cotaAntes.podeBuscarExterno) {
       avisoExterno = `Limite mensal de buscas externas atingido (${JURIS_BUSCAS_POR_USUARIO_MES}/mês). Uploads e base FACTO continuam disponíveis. A cota renova no dia 1º (horário de Brasília).`;
@@ -179,7 +181,7 @@ export async function POST(request: Request) {
       }
 
       for (const court of tribunaisParaBuscar) {
-        const consumo = await consumirCotaJurisUsuario(user.id);
+        const consumo = await consumirCotaJurisUsuario(user.id, user.email);
         cotaUsadas = consumo.usadas;
         cotaRestantes = consumo.restantes;
         if (!consumo.consumida) {
@@ -292,6 +294,7 @@ export async function POST(request: Request) {
           usadas: cotaUsadas,
           limite: JURIS_BUSCAS_POR_USUARIO_MES,
           restantes: cotaRestantes,
+          ilimitado: cotaIlimitada,
         }
       : undefined,
     aviso: partesAviso.length ? partesAviso.join(" ") : undefined,

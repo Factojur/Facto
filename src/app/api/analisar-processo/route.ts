@@ -5,7 +5,11 @@ import {
   TAMANHO_MAXIMO_ARQUIVO_BYTES,
   TIPOS_ARQUIVO_ACEITOS,
 } from "@/lib/base-conhecimento";
-import type { ArquivoProcessoPayload } from "@/lib/analisar-processo-types";
+import type {
+  ArquivoProcessoPayload,
+  DocumentoTextoPayload,
+} from "@/lib/analisar-processo-types";
+import { LIMITE_UPLOAD_ANALISE_BYTES } from "@/lib/analisar-processo-types";
 import { analisarProcessoComGemini } from "@/lib/ia/analisar-processo-gemini";
 import {
   obterResumoCotaUsuario,
@@ -16,10 +20,161 @@ export const maxDuration = 90;
 
 const MAX_ARQUIVOS = 6;
 
+type DocTexto = { nome: string; rotuloHint?: string; texto: string };
+type ArquivoBin = {
+  nome: string;
+  mime: string;
+  buffer: Buffer;
+  rotulo?: string;
+};
+
+function mimeDoArquivo(nome: string, mime: string): string {
+  const m = mime.trim();
+  if (m && m !== "application/octet-stream") return m;
+  const n = nome.toLowerCase();
+  if (n.endsWith(".docx")) {
+    return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  }
+  return "application/pdf";
+}
+
+function rotuloHint(v: unknown): string | undefined {
+  const s = String(v ?? "").trim();
+  return s || undefined;
+}
+
+function documentosDoJson(body: {
+  documentos?: DocumentoTextoPayload[];
+} | null):
+  | { ok: true; docs: DocTexto[] | null }
+  | { ok: false; error: string; codigo: string } {
+  const lista = Array.isArray(body?.documentos) ? body!.documentos : [];
+  if (lista.length === 0) return { ok: true, docs: null };
+  const docs: DocTexto[] = [];
+  for (const d of lista) {
+    const nome = String(d.nome ?? "documento").slice(0, 180);
+    const texto = String(d.texto ?? "").trim();
+    if (texto.length < 40) {
+      return {
+        ok: false,
+        codigo: "TEXTO_INSUFICIENTE",
+        error: `Não foi possível extrair texto útil de “${nome}” (PDF escaneado sem OCR?).`,
+      };
+    }
+    docs.push({ nome, texto, rotuloHint: rotuloHint(d.rotulo) });
+  }
+  return { ok: true, docs };
+}
+
+function arquivosDoBodyJson(body: {
+  arquivos?: ArquivoProcessoPayload[];
+} | null):
+  | { ok: true; itens: ArquivoBin[] }
+  | { ok: false; error: string; codigo: string } {
+  const arquivos = Array.isArray(body?.arquivos) ? body!.arquivos : [];
+  const itens: ArquivoBin[] = [];
+  let total = 0;
+  for (const arq of arquivos) {
+    const nome = String(arq.nome ?? "documento").slice(0, 180);
+    const mime = mimeDoArquivo(nome, String(arq.mimeType ?? ""));
+    const b64 = String(arq.base64 ?? "").replace(/^data:[^;]+;base64,/, "");
+    if (!b64) {
+      return { ok: false, error: `Arquivo vazio: ${nome}`, codigo: "ARQUIVO_VAZIO" };
+    }
+    const buffer = Buffer.from(b64, "base64");
+    total += buffer.length;
+    if (total > LIMITE_UPLOAD_ANALISE_BYTES) {
+      return {
+        ok: false,
+        codigo: "ARQUIVO_GRANDE",
+        error:
+          "Os arquivos somam mais de ~3,5 MB. Envie só a sentença ou a inicial, ou um PDF mais leve.",
+      };
+    }
+    itens.push({
+      nome,
+      mime,
+      buffer,
+      rotulo: rotuloHint(arq.rotulo),
+    });
+  }
+  return { ok: true, itens };
+}
+
+async function arquivosDoMultipart(request: Request): Promise<
+  | { ok: true; itens: ArquivoBin[] }
+  | { ok: false; error: string; codigo: string }
+> {
+  const form = await request.formData();
+  const files = form.getAll("arquivo");
+  const rotulos = form.getAll("rotulo");
+  const itens: ArquivoBin[] = [];
+  let total = 0;
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    if (!(f instanceof File)) continue;
+    total += f.size;
+    if (total > LIMITE_UPLOAD_ANALISE_BYTES) {
+      return {
+        ok: false,
+        codigo: "ARQUIVO_GRANDE",
+        error:
+          "Os arquivos somam mais de ~3,5 MB. A hospedagem recusa o envio (HTTP 413). Envie só a sentença ou a inicial, ou um PDF mais leve.",
+      };
+    }
+    itens.push({
+      nome: f.name.slice(0, 180),
+      mime: mimeDoArquivo(f.name, f.type),
+      buffer: Buffer.from(await f.arrayBuffer()),
+      rotulo: rotuloHint(rotulos[i]),
+    });
+  }
+  return { ok: true, itens };
+}
+
+async function textosDosArquivos(itens: ArquivoBin[]): Promise<
+  | { ok: true; docs: DocTexto[] }
+  | { ok: false; error: string; codigo: string; status: number }
+> {
+  const docs: DocTexto[] = [];
+  for (const arq of itens) {
+    if (!(arq.mime in TIPOS_ARQUIVO_ACEITOS)) {
+      return {
+        ok: false,
+        status: 400,
+        codigo: "MIME_INVALIDO",
+        error: `Formato não suportado (${arq.nome}). Use PDF ou DOCX.`,
+      };
+    }
+    if (arq.buffer.length > TAMANHO_MAXIMO_ARQUIVO_BYTES) {
+      return {
+        ok: false,
+        status: 400,
+        codigo: "ARQUIVO_GRANDE",
+        error: `${arq.nome} ultrapassa o tamanho máximo permitido.`,
+      };
+    }
+    const texto = await extrairTextoDeArquivo(arq.buffer, arq.mime);
+    if (texto.trim().length < 40) {
+      return {
+        ok: false,
+        status: 400,
+        codigo: "TEXTO_INSUFICIENTE",
+        error: `Não foi possível extrair texto útil de “${arq.nome}” (PDF escaneado sem OCR?).`,
+      };
+    }
+    docs.push({
+      nome: arq.nome,
+      rotuloHint: arq.rotulo,
+      texto,
+    });
+  }
+  return { ok: true, docs };
+}
+
 /**
  * POST /api/analisar-processo
- * Passos 1–5: extrai textos, classifica, ficha + peça candidata.
- * Não consome cota de peça; registra métrica de análises.
+ * Prefere JSON com textos já extraídos no cliente (PDF grande).
  */
 export async function POST(request: Request) {
   try {
@@ -32,12 +187,59 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    const body = (await request.json().catch(() => null)) as {
-      arquivos?: ArquivoProcessoPayload[];
-    } | null;
+    const ct = request.headers.get("content-type") ?? "";
+    let docsTexto: DocTexto[] = [];
 
-    const arquivos = Array.isArray(body?.arquivos) ? body!.arquivos : [];
-    if (arquivos.length === 0) {
+    if (ct.includes("application/json")) {
+      const body = (await request.json().catch(() => null)) as {
+        documentos?: DocumentoTextoPayload[];
+        arquivos?: ArquivoProcessoPayload[];
+      } | null;
+      const doJson = documentosDoJson(body);
+      if (!doJson.ok) {
+        return NextResponse.json(
+          { error: doJson.error, codigo: doJson.codigo },
+          { status: 400 }
+        );
+      }
+      if (doJson.docs) {
+        docsTexto = doJson.docs;
+      } else {
+        const lidos = arquivosDoBodyJson(body);
+        if (!lidos.ok) {
+          return NextResponse.json(
+            { error: lidos.error, codigo: lidos.codigo },
+            { status: 400 }
+          );
+        }
+        const extraidos = await textosDosArquivos(lidos.itens);
+        if (!extraidos.ok) {
+          return NextResponse.json(
+            { error: extraidos.error, codigo: extraidos.codigo },
+            { status: extraidos.status }
+          );
+        }
+        docsTexto = extraidos.docs;
+      }
+    } else {
+      const lidos = await arquivosDoMultipart(request);
+      if (!lidos.ok) {
+        return NextResponse.json(
+          { error: lidos.error, codigo: lidos.codigo },
+          { status: 400 }
+        );
+      }
+      const extraidos = await textosDosArquivos(lidos.itens);
+      if (!extraidos.ok) {
+        return NextResponse.json(
+          { error: extraidos.error, codigo: extraidos.codigo },
+          { status: extraidos.status }
+        );
+      }
+      docsTexto = extraidos.docs;
+    }
+
+    if (docsTexto.length === 0) {
       return NextResponse.json(
         {
           error: "Envie ao menos um PDF ou DOCX (autos ou peças selecionadas).",
@@ -46,7 +248,7 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    if (arquivos.length > MAX_ARQUIVOS) {
+    if (docsTexto.length > MAX_ARQUIVOS) {
       return NextResponse.json(
         {
           error: `No máximo ${MAX_ARQUIVOS} arquivos por análise.`,
@@ -72,58 +274,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const docsTexto: {
-      nome: string;
-      rotuloHint?: string;
-      texto: string;
-    }[] = [];
-
-    for (const arq of arquivos) {
-      const nome = String(arq.nome ?? "documento").slice(0, 180);
-      const mime = String(arq.mimeType ?? "");
-      if (!(mime in TIPOS_ARQUIVO_ACEITOS)) {
-        return NextResponse.json(
-          {
-            error: `Formato não suportado (${nome}). Use PDF ou DOCX.`,
-            codigo: "MIME_INVALIDO",
-          },
-          { status: 400 }
-        );
-      }
-      const b64 = String(arq.base64 ?? "").replace(/^data:[^;]+;base64,/, "");
-      if (!b64) {
-        return NextResponse.json(
-          { error: `Arquivo vazio: ${nome}`, codigo: "ARQUIVO_VAZIO" },
-          { status: 400 }
-        );
-      }
-      const buffer = Buffer.from(b64, "base64");
-      if (buffer.length > TAMANHO_MAXIMO_ARQUIVO_BYTES) {
-        return NextResponse.json(
-          {
-            error: `${nome} ultrapassa 8 MB.`,
-            codigo: "ARQUIVO_GRANDE",
-          },
-          { status: 400 }
-        );
-      }
-      const texto = await extrairTextoDeArquivo(buffer, mime);
-      if (texto.trim().length < 40) {
-        return NextResponse.json(
-          {
-            error: `Não foi possível extrair texto útil de “${nome}” (PDF escaneado sem OCR?).`,
-            codigo: "TEXTO_INSUFICIENTE",
-          },
-          { status: 400 }
-        );
-      }
-      docsTexto.push({
-        nome,
-        rotuloHint: arq.rotulo,
-        texto,
-      });
-    }
-
     const analise = await analisarProcessoComGemini(docsTexto);
 
     const registro = await registrarUmaAnalise({
@@ -131,7 +281,6 @@ export async function POST(request: Request) {
       email: user.email,
     });
     if (!registro.ok) {
-      // Análise ok, mas bateu limite na corrida — ainda devolve resultado
       return NextResponse.json({
         analise,
         analisesNoCiclo: registro.analises,

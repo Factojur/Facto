@@ -1439,8 +1439,8 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
                     Analisar processo
                   </span>
                   <span className="mt-0.5 block text-xs text-slate-500">
-                    Envie PDF/DOCX dos autos; sugerimos a peça cabível para você
-                    confirmar. Não gasta cota de peça.
+                    Envie PDF/DOCX dos autos (até 40 MB no total); sugerimos a
+                    peça cabível para você confirmar. Não gasta cota de peça.
                   </span>
                 </span>
               </label>

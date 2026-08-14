@@ -26,6 +26,15 @@ export const ROTULO_DOC_LABEL: Record<RotuloDocProcesso, string> = {
   outros: "Outro documento",
 };
 
+/** Fallback se ainda enviarmos o arquivo cru (teto da função na Vercel). */
+export const LIMITE_UPLOAD_ANALISE_BYTES = 3_800_000;
+
+export type DocumentoTextoPayload = {
+  nome: string;
+  texto: string;
+  rotulo?: RotuloDocProcesso | string;
+};
+
 export type ArquivoProcessoPayload = {
   nome: string;
   mimeType: string;

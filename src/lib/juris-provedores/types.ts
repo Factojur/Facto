@@ -41,6 +41,7 @@ export type RespostaSugestoesJuris = {
     usadas: number;
     limite: number;
     restantes: number;
+    ilimitado?: boolean;
   };
   /** Diagnóstico do provedor secundário TJSP. */
   fonteTjsp?: "cache" | "live" | "worker" | "off" | "erro";

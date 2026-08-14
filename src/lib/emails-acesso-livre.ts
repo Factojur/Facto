@@ -1,6 +1,7 @@
 /**
- * Contas com acesso livre à plataforma (sem plano/pacote).
- * Admin/gestor + contas de teste usadas no desenvolvimento e QA.
+ * Contas administrativas / internas: acesso à plataforma sem assinatura
+ * e sem cota mensal (peças, análises e buscas externas de juris).
+ * Inclua novos e-mails aqui, um de cada vez, quando o usuário pedir.
  */
 export const EMAILS_ACESSO_LIVRE = [
   "admin@facto.com",

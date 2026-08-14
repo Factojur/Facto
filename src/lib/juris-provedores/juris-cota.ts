@@ -5,6 +5,7 @@
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
 import { JURIS_BUSCAS_POR_USUARIO_MES } from "@/lib/juris-provedores/jurisprudencia-service";
 
 /** Primeiro dia do mês corrente em SP, como YYYY-MM-DD. */
@@ -24,15 +25,32 @@ export type StatusCotaJuris = {
   limite: number;
   restantes: number;
   podeBuscarExterno: boolean;
+  ilimitado: boolean;
   /** YYYY-MM-DD = 1º dia do mês do ciclo. */
   ciclo: string;
 };
 
+function cotaIlimitada(ciclo: string): StatusCotaJuris {
+  return {
+    usadas: 0,
+    limite: JURIS_BUSCAS_POR_USUARIO_MES,
+    restantes: JURIS_BUSCAS_POR_USUARIO_MES,
+    podeBuscarExterno: true,
+    ilimitado: true,
+    ciclo,
+  };
+}
+
 export async function obterCotaJurisUsuario(
-  userId: string
+  userId: string,
+  email?: string | null
 ): Promise<StatusCotaJuris> {
-  const admin = createAdminClient();
   const ciclo = cicloMensalSaoPaulo();
+  if (isEmailAcessoLivre(email)) {
+    return cotaIlimitada(ciclo);
+  }
+
+  const admin = createAdminClient();
   const { data } = await admin
     .from("juris_busca_cota")
     .select("consultas")
@@ -48,15 +66,20 @@ export async function obterCotaJurisUsuario(
     limite,
     restantes,
     podeBuscarExterno: restantes > 0,
+    ilimitado: false,
     ciclo,
   };
 }
 
 /** Incrementa a cota do mês. Não incrementa se já esgotou. */
 export async function consumirCotaJurisUsuario(
-  userId: string
+  userId: string,
+  email?: string | null
 ): Promise<StatusCotaJuris & { consumida: boolean }> {
-  const atual = await obterCotaJurisUsuario(userId);
+  const atual = await obterCotaJurisUsuario(userId, email);
+  if (atual.ilimitado) {
+    return { ...atual, consumida: true };
+  }
   if (!atual.podeBuscarExterno) {
     return { ...atual, consumida: false };
   }
@@ -81,6 +104,7 @@ export async function consumirCotaJurisUsuario(
       limite: atual.limite,
       restantes: atual.restantes,
       podeBuscarExterno: true,
+      ilimitado: false,
       ciclo,
       consumida: true,
     };
@@ -91,6 +115,7 @@ export async function consumirCotaJurisUsuario(
     limite: atual.limite,
     restantes: Math.max(0, atual.limite - nova),
     podeBuscarExterno: nova < atual.limite,
+    ilimitado: false,
     ciclo,
     consumida: true,
   };
