@@ -7,7 +7,7 @@ import { FactoLogo } from "@/components/brand/facto-logo";
 import { createClient } from "@/lib/supabase/client";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { validateOabMock } from "@/lib/validate-oab";
-import { TERMO_LEIGO_VERSAO, TEXTO_TERMO_LEIGO } from "@/lib/termo-leigo";
+import { TEXTO_TERMO_LEIGO } from "@/lib/termo-leigo";
 
 export function CadastroForm({
   emailConvite,
@@ -36,7 +36,6 @@ export function CadastroForm({
     const email = String(form.get("email"));
     const senha = String(form.get("senha"));
     const oabNumero = souAdvogado ? String(form.get("oabNumero")) : "";
-    let role: string | undefined;
 
     if (souAdvogado) {
       const oabValidation = validateOabMock({ email, senha, oabNumero });
@@ -45,7 +44,6 @@ export function CadastroForm({
         setLoading(false);
         return;
       }
-      role = oabValidation.role;
     } else if (!termoAceito) {
       setError(
         "Você precisa marcar que leu e concorda com os termos para continuar sem OAB."
@@ -54,33 +52,30 @@ export function CadastroForm({
       return;
     }
 
-    const userMetadata: Record<string, string> = {
-      nome_completo: nomeCompleto,
-      cpf,
-      tipo_usuario: souAdvogado ? "advogado" : "leigo",
-    };
-
-    if (souAdvogado) {
-      userMetadata.oab_numero = oabNumero;
-    }
-
-    if (role) {
-      userMetadata.role = role;
-    }
-
-    const { error: signUpError } = await supabase.auth.signUp({
-      email,
-      password: senha,
-      options: {
-        data: userMetadata,
-      },
+    const cadastroRes = await fetch("/api/cadastro", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token,
+        email,
+        senha,
+        nomeCompleto,
+        cpf,
+        souAdvogado,
+        oabNumero: souAdvogado ? oabNumero : undefined,
+        termoAceito: souAdvogado ? undefined : termoAceito,
+      }),
     });
+    const cadastroJson = (await cadastroRes.json().catch(() => null)) as {
+      error?: string;
+      codigo?: string;
+    } | null;
 
-    if (
-      signUpError &&
-      !signUpError.message.toLowerCase().includes("already registered")
-    ) {
-      setError(getAuthErrorMessage(signUpError.message));
+    if (!cadastroRes.ok) {
+      setError(
+        cadastroJson?.error ??
+          getAuthErrorMessage("Não foi possível concluir o cadastro.")
+      );
       setLoading(false);
       return;
     }
@@ -95,38 +90,6 @@ export function CadastroForm({
       setError(getAuthErrorMessage(signInError?.message ?? "Erro ao entrar"));
       setLoading(false);
       return;
-    }
-
-    const { error: profileError } = await supabase.from("profiles").upsert(
-      {
-        id: signInData.user.id,
-        nome_completo: nomeCompleto,
-        cpf,
-        email,
-        oab_numero: souAdvogado ? oabNumero : null,
-        tipo_usuario: souAdvogado ? "advogado" : "leigo",
-        termo_leigo_aceito_em: souAdvogado ? null : new Date().toISOString(),
-        termo_leigo_versao: souAdvogado ? null : TERMO_LEIGO_VERSAO,
-      },
-      { onConflict: "id" }
-    );
-
-    if (profileError) {
-      setError(profileError.message);
-      setLoading(false);
-      return;
-    }
-
-    // Marca o convite como usado — se isso falhar, não bloqueia o acesso: a
-    // conta já foi criada normalmente.
-    try {
-      await fetch("/api/convites/consumir", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
-      });
-    } catch {
-      // Ignorado de propósito.
     }
 
     setSuccess(true);

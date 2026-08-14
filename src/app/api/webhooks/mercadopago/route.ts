@@ -560,6 +560,7 @@ async function processarPayment(admin: AdminClient, id: string) {
         valor,
         mpPaymentId: String(id),
         pecas: extra.pecas,
+        analises: extra.analises,
         pacoteRotulo: pacote?.rotulo ?? extra.pacoteId,
       });
       const { enviarSmsAlertaCompra } = await import(

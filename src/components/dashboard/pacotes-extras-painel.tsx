@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PACOTES_EXTRA, type PacoteExtraId } from "@/lib/planos-facto";
+import { ehPacoteAnalises, PACOTES_EXTRA, type PacoteExtraId } from "@/lib/planos-facto";
 import type { ResumoCota } from "@/lib/cota-pecas";
 
 type Props = {
@@ -106,7 +106,8 @@ function CardPacote({
         </span>
       </div>
       <p className="mt-0.5 text-xs text-slate-500">
-        ≈ {pacote.custoPorPecaAprox} por peça
+        ≈ {pacote.custoPorPecaAprox} por{" "}
+        {ehPacoteAnalises(pacote) ? "análise" : "peça"}
       </p>
       <button
         type="button"
@@ -172,12 +173,12 @@ export function PacotesExtrasPainel({
             <p className="mt-1.5 max-w-2xl text-sm text-slate-600">
               {esgotada
                 ? "Sua cota do ciclo acabou. Escolha +50 ou +100 peças — o crédito entra após a confirmação do pagamento, sem mudar de plano."
-                : "Contrate um pacote sem alterar sua assinatura. Ideal para picos de demanda no escritório."}
+                : "Contrate um pacote sem alterar sua assinatura. Ideal para picos de demanda no escritório. Também há +10 análises por R$ 29,90."}
             </p>
             {cota && <BarraUso cota={cota} />}
           </div>
 
-          <div className="relative mt-5 grid gap-3 sm:grid-cols-2">
+          <div className="relative mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {PACOTES_EXTRA.map((p) => (
               <CardPacote
                 key={p.id}
@@ -212,8 +213,9 @@ export function PacotesExtrasPainel({
                 : "Pacotes de peças extras"}
             </h3>
             <p className="mt-1 text-sm text-slate-600">
-              +50 por R$ 39,90 ou +100 por R$ 79,90. Créditos válidos no ciclo
-              atual (compra avulsa, sem renovação).
+              +50 peças por R$ 49,90, +100 por R$ 89,90 ou +10 análises por R$
+              29,90. Créditos válidos no ciclo atual (compra avulsa, sem
+              renovação).
             </p>
           </div>
           {esgotada && (
@@ -225,7 +227,7 @@ export function PacotesExtrasPainel({
         {cota && <BarraUso cota={cota} />}
       </div>
 
-      <div className="grid gap-4 p-5 sm:grid-cols-2">
+      <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
         {PACOTES_EXTRA.map((p) => (
           <CardPacote key={p.id} pacote={p} destaque={p.id === "extra-100"} />
         ))}

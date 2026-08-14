@@ -86,10 +86,8 @@ export async function middleware(request: NextRequest) {
       return redirectResponse;
     }
 
-    // Corta o acesso de quem cancelou a assinatura (fora do prazo de
-    // arrependimento do CDC, o acesso já foi liberado até o fim do ciclo
-    // pago) ou não renovou no vencimento. Contas de acesso livre (admin/
-    // teste) e quem nunca teve assinatura registrada não são afetados.
+    // Corta quem não tem assinatura vigente (exceto e-mails de acesso livre)
+    // e quem cancelou/expirou fora da janela de acesso.
     if (!isEmailAcessoLivre(user.email)) {
       const liberado = await acessoAssinaturaLiberado(user.email);
       if (!liberado) {

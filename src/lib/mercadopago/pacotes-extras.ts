@@ -6,9 +6,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { chamarMercadoPago } from "@/lib/mercadopago/client";
 import { cicloAtualSaoPaulo } from "@/lib/cota-pecas";
-import { creditarExtras } from "@/lib/cota-pecas-server";
+import { creditarExtras, creditarExtrasAnalises } from "@/lib/cota-pecas-server";
 import { getSiteUrl } from "@/lib/site-url";
 import {
+  ehPacoteAnalises,
   montarExternalReferenceExtra,
   pacoteExtraPorId,
   pacoteExtraPorValor,
@@ -113,7 +114,13 @@ export async function processarPagamentoPacoteExtra(opcoes: {
   externalReference?: string | null;
   metadata?: Record<string, unknown> | null;
 }): Promise<
-  | { ok: true; pecas: number; pacoteId: PacoteExtraId; jaProcessado?: boolean }
+  | {
+      ok: true;
+      pecas: number;
+      analises: number;
+      pacoteId: PacoteExtraId;
+      jaProcessado?: boolean;
+    }
   | { ok: false; motivo: string }
 > {
   const identificado = identificarPacoteDoPagamento({
@@ -138,6 +145,7 @@ export async function processarPagamentoPacoteExtra(opcoes: {
     return {
       ok: true,
       pecas: identificado.pacote.pecas,
+      analises: identificado.pacote.analises ?? 0,
       pacoteId: identificado.pacote.id,
       jaProcessado: true,
     };
@@ -158,7 +166,7 @@ export async function processarPagamentoPacoteExtra(opcoes: {
     return { ok: false, motivo: "usuario_nao_encontrado" };
   }
 
-  const { error: insErr } = await admin.from("pagamentos_extras").insert({
+  const insertRow: Record<string, unknown> = {
     mp_payment_id: opcoes.mpPaymentId,
     user_id: userId,
     email: opcoes.email.trim().toLowerCase(),
@@ -166,7 +174,15 @@ export async function processarPagamentoPacoteExtra(opcoes: {
     pecas: identificado.pacote.pecas,
     valor: opcoes.valor,
     ciclo,
-  });
+    analises: identificado.pacote.analises ?? 0,
+  };
+
+  let { error: insErr } = await admin.from("pagamentos_extras").insert(insertRow);
+  if (insErr?.message?.includes("analises")) {
+    delete insertRow.analises;
+    const retry = await admin.from("pagamentos_extras").insert(insertRow);
+    insErr = retry.error;
+  }
 
   if (insErr) {
     // Corrida: outro worker inseriu o mesmo payment
@@ -174,6 +190,7 @@ export async function processarPagamentoPacoteExtra(opcoes: {
       return {
         ok: true,
         pecas: identificado.pacote.pecas,
+        analises: identificado.pacote.analises ?? 0,
         pacoteId: identificado.pacote.id,
         jaProcessado: true,
       };
@@ -182,23 +199,33 @@ export async function processarPagamentoPacoteExtra(opcoes: {
     return { ok: false, motivo: "erro_persistencia" };
   }
 
-  await creditarExtras({
-    userId,
-    email: opcoes.email,
-    quantidade: identificado.pacote.pecas,
-  });
+  if (ehPacoteAnalises(identificado.pacote)) {
+    await creditarExtrasAnalises({
+      userId,
+      email: opcoes.email,
+      quantidade: identificado.pacote.analises,
+    });
+  } else {
+    await creditarExtras({
+      userId,
+      email: opcoes.email,
+      quantidade: identificado.pacote.pecas,
+    });
+  }
 
   console.info("[pacotes-extras] crédito ok", {
     mpPaymentId: opcoes.mpPaymentId,
     userId,
     pacote: identificado.pacote.id,
     pecas: identificado.pacote.pecas,
+    analises: identificado.pacote.analises,
     ciclo,
   });
 
   return {
     ok: true,
     pecas: identificado.pacote.pecas,
+    analises: identificado.pacote.analises ?? 0,
     pacoteId: identificado.pacote.id,
   };
 }
@@ -224,9 +251,12 @@ export async function criarPreferenciaPacoteExtra(opcoes: {
     items: [
       {
         id: pacote.id,
-        title: `FACTO ${pacote.rotulo} — peças extras`,
-        description:
-          "Créditos avulsos de peças jurídicas no ciclo atual (não é assinatura).",
+        title: ehPacoteAnalises(pacote)
+          ? `FACTO ${pacote.rotulo} — análises extras`
+          : `FACTO ${pacote.rotulo} — peças extras`,
+        description: ehPacoteAnalises(pacote)
+          ? "Créditos avulsos de análises de processo no ciclo atual (não é assinatura)."
+          : "Créditos avulsos de peças jurídicas no ciclo atual (não é assinatura).",
         quantity: 1,
         currency_id: "BRL",
         unit_price: pacote.preco,
@@ -247,7 +277,7 @@ export async function criarPreferenciaPacoteExtra(opcoes: {
       pending: `${site}/dashboard/perfil?extra=pendente`,
     },
     auto_return: "approved",
-    statement_descriptor: "FACTO PECAS",
+    statement_descriptor: ehPacoteAnalises(pacote) ? "FACTO ANALISES" : "FACTO PECAS",
     notification_url: `${site}/api/webhooks/mercadopago`,
   };
 

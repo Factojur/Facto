@@ -73,7 +73,7 @@ async function fallbackBaseFacto(
 export async function buscarJulgadosProvedorSecundario(
   query: string,
   excluirTitulos?: Set<string>,
-  opcoes?: { incluirTjsp?: boolean }
+  opcoes?: { incluirTjsp?: boolean; min?: number; max?: number }
 ): Promise<ResultadoProvedorSecundario> {
   const q = query.trim();
   if (q.length < 4) {
@@ -86,6 +86,8 @@ export async function buscarJulgadosProvedorSecundario(
   let aviso: string | undefined;
   let fonteTjsp: ResultadoProvedorSecundario["fonteTjsp"] = "off";
   const incluirTjsp = opcoes?.incluirTjsp !== false;
+  const minAlvo = opcoes?.min ?? MIN;
+  const maxAlvo = opcoes?.max ?? MAX;
 
   if (incluirTjsp) {
     try {
@@ -100,7 +102,7 @@ export async function buscarJulgadosProvedorSecundario(
       if (scrape.erro) aviso = scrape.erro;
 
       for (const j of scrape.julgados) {
-        if (out.length >= MAX) break;
+        if (out.length >= maxAlvo) break;
         const key = j.titulo.toLowerCase().trim();
         if (excluir.has(key)) continue;
         excluir.add(key);
@@ -115,14 +117,14 @@ export async function buscarJulgadosProvedorSecundario(
     }
   }
 
-  if (out.length < MIN) {
+  if (out.length < minAlvo) {
     usandoFallbackLocal = true;
-    const extra = await fallbackBaseFacto(q, excluir, MAX - out.length);
+    const extra = await fallbackBaseFacto(q, excluir, maxAlvo - out.length);
     out.push(...extra);
   }
 
   return {
-    precedentes: out.slice(0, Math.max(MAX, MAX_RESULTADOS_SCRAPE)),
+    precedentes: out.slice(0, Math.max(maxAlvo, MAX_RESULTADOS_SCRAPE)),
     usandoFallbackLocal,
     aviso,
     fonteTjsp,

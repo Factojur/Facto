@@ -124,8 +124,8 @@ export function JurisSugestoesPicker({
     });
   }
 
-  async function abrirEBuscar() {
-    if (tribunaisSel.length < 1) {
+  async function abrirEBuscar(somenteBase = false) {
+    if (!somenteBase && tribunaisSel.length < 1) {
       setErro("Selecione ao menos um tribunal.");
       return;
     }
@@ -140,7 +140,8 @@ export function JurisSugestoesPicker({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           consulta,
-          tribunais: tribunaisSel,
+          somenteBase,
+          tribunais: somenteBase ? [] : tribunaisSel,
           uploads: uploads
             .filter((u) => (u.texto ?? "").trim().length > 20 || u.titulo)
             .map((u) => ({
@@ -294,11 +295,19 @@ export function JurisSugestoesPicker({
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
-          onClick={() => void abrirEBuscar()}
+          onClick={() => void abrirEBuscar(false)}
           disabled={consulta.trim().length < 8 || tribunaisSel.length < 1}
           className="rounded-lg border border-stone-700 bg-stone-800 px-4 py-2.5 text-sm font-medium text-amber-50 hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Sugerir jurisprudência / súmula
+        </button>
+        <button
+          type="button"
+          onClick={() => void abrirEBuscar(true)}
+          disabled={consulta.trim().length < 8}
+          className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Buscar na base FACTO
         </button>
         {cota && provedorExterno ? (
           <span
@@ -310,11 +319,13 @@ export function JurisSugestoesPicker({
         ) : null}
       </div>
       <p className="text-xs text-slate-500">
-        Selecione até {MAX_TRIBUNAIS_POR_BUSCA} tribunais. Cada um consome 1
-        busca externa da cota mensal (
-        {cota ? `${cota.usadas}/${cota.limite}` : "15/mês"}; renova no dia 1º).
-        Seus anexos e a base FACTO não gastam cota e continuam disponíveis
-        mesmo com a cota esgotada.
+        <strong className="font-medium text-slate-600">Tribunais:</strong>{" "}
+        selecione até {MAX_TRIBUNAIS_POR_BUSCA}. Cada um consome 1 busca externa
+        da cota mensal (
+        {cota ? `${cota.usadas}/${cota.limite}` : "15/mês"}; renova no dia 1º).{" "}
+        <strong className="font-medium text-slate-600">Base FACTO:</strong> leis,
+        súmulas e julgados curados — não usa a cota de tribunais, não chama
+        Jurisprudências.ai nem scrape ao vivo.
       </p>
 
       {aberto && (

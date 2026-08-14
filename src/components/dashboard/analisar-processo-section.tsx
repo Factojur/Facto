@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { AnaliseProcessoResultado } from "@/lib/analisar-processo-types";
 import {
   ROTULO_DOC_LABEL,
@@ -8,6 +8,7 @@ import {
   type ArquivoProcessoPayload,
   type RotuloDocProcesso,
 } from "@/lib/analisar-processo-types";
+import type { ResumoCota } from "@/lib/cota-pecas";
 
 type ArquivoLocal = {
   id: string;
@@ -39,6 +40,18 @@ export function AnalisarProcessoSection({ onResultado, onErro }: Props) {
   );
   const [arquivos, setArquivos] = useState<ArquivoLocal[]>([]);
   const [analisando, setAnalisando] = useState(false);
+  const [cota, setCota] = useState<ResumoCota | null>(null);
+
+  useEffect(() => {
+    void fetch("/api/cota")
+      .then((r) => r.json())
+      .then((d: { cota?: ResumoCota }) => {
+        if (d.cota) setCota(d.cota);
+      })
+      .catch(() => {
+        /* saldo opcional na UI */
+      });
+  }, []);
 
   function adicionarArquivos(list: FileList | null, rotulo: RotuloDocProcesso) {
     if (!list?.length) return;
@@ -56,6 +69,12 @@ export function AnalisarProcessoSection({ onResultado, onErro }: Props) {
   async function handleAnalisar() {
     if (arquivos.length === 0) {
       onErro("Selecione ao menos um PDF ou DOCX.");
+      return;
+    }
+    if (cota?.trackingAtivo && cota.esgotadaAnalises) {
+      onErro(
+        "Limite mensal de análises atingido. Compre o pacote +10 análises no perfil ou aguarde o próximo ciclo."
+      );
       return;
     }
     setAnalisando(true);
@@ -99,9 +118,14 @@ export function AnalisarProcessoSection({ onResultado, onErro }: Props) {
         <p className="text-sm font-medium text-slate-800">Analisar processo</p>
         <p className="mt-1 text-xs text-slate-500">
           Envie os autos completos ou apenas as peças relevantes. A IA monta a
-          ficha e sugere a peça cabível — você confirma antes de gerar. Não
-          consome cota de peça.
+          ficha e sugere a peça cabível — você confirma antes de gerar. Consome
+          1 análise do plano, não a cota de peça.
         </p>
+        {cota?.trackingAtivo && cota.usoLabelAnalises ? (
+          <p className="mt-2 text-xs font-medium text-slate-600">
+            {cota.usoLabelAnalises}
+          </p>
+        ) : null}
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -207,10 +231,18 @@ export function AnalisarProcessoSection({ onResultado, onErro }: Props) {
       <button
         type="button"
         onClick={() => void handleAnalisar()}
-        disabled={analisando || arquivos.length === 0}
+        disabled={
+          analisando ||
+          arquivos.length === 0 ||
+          Boolean(cota?.trackingAtivo && cota.esgotadaAnalises)
+        }
         className="rounded-lg bg-stone-700 px-4 py-2 text-sm font-medium text-amber-50 hover:bg-stone-600 disabled:opacity-60"
       >
-        {analisando ? "Analisando documentos…" : "Analisar e sugerir peça"}
+        {analisando
+          ? "Analisando documentos…"
+          : cota?.trackingAtivo && cota.esgotadaAnalises
+            ? "Cota de análises esgotada"
+            : "Analisar e sugerir peça"}
       </button>
 
       <p className="text-[11px] text-slate-500">

@@ -14,6 +14,60 @@ import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
 
 type Admin = ReturnType<typeof createAdminClient>;
 
+type LinhaCota = {
+  encontrada: boolean;
+  usadas: number;
+  extras: number;
+  analises: number;
+  extrasAnalises: number;
+};
+
+async function lerLinhaCota(
+  admin: Admin,
+  userId: string,
+  ciclo: string
+): Promise<{ ok: true } & LinhaCota | { ok: false; erro: string }> {
+  const comExtras = await admin
+    .from("cota_pecas_ciclo")
+    .select("usadas, extras, analises, extras_analises")
+    .eq("user_id", userId)
+    .eq("ciclo", ciclo)
+    .maybeSingle();
+
+  if (!comExtras.error) {
+    return {
+      ok: true,
+      encontrada: Boolean(comExtras.data),
+      usadas: Number(comExtras.data?.usadas ?? 0),
+      extras: Number(comExtras.data?.extras ?? 0),
+      analises: Number(comExtras.data?.analises ?? 0),
+      extrasAnalises: Number(
+        (comExtras.data as { extras_analises?: number } | null)?.extras_analises ?? 0
+      ),
+    };
+  }
+
+  const semExtras = await admin
+    .from("cota_pecas_ciclo")
+    .select("usadas, extras, analises")
+    .eq("user_id", userId)
+    .eq("ciclo", ciclo)
+    .maybeSingle();
+
+  if (semExtras.error) {
+    return { ok: false, erro: semExtras.error.message };
+  }
+
+  return {
+    ok: true,
+    encontrada: Boolean(semExtras.data),
+    usadas: Number(semExtras.data?.usadas ?? 0),
+    extras: Number(semExtras.data?.extras ?? 0),
+    analises: Number(semExtras.data?.analises ?? 0),
+    extrasAnalises: 0,
+  };
+}
+
 async function planoDoEmail(admin: Admin, email: string): Promise<PlanoCota> {
   const { data } = await admin
     .from("assinaturas")
@@ -69,15 +123,9 @@ export async function obterResumoCotaUsuario(opcoes: {
     const admin = createAdminClient();
     const plano = await planoDoEmail(admin, opcoes.email);
 
-    const { data, error } = await admin
-      .from("cota_pecas_ciclo")
-      .select("usadas, extras")
-      .eq("user_id", opcoes.userId)
-      .eq("ciclo", ciclo)
-      .maybeSingle();
-
-    if (error) {
-      console.warn("[cota] leitura falhou (fail-open):", error.message);
+    const linha = await lerLinhaCota(admin, opcoes.userId, ciclo);
+    if (!linha.ok) {
+      console.warn("[cota] leitura falhou (fail-open):", linha.erro);
       return montarResumoCota({
         plano,
         usadas: 0,
@@ -89,8 +137,10 @@ export async function obterResumoCotaUsuario(opcoes: {
 
     return montarResumoCota({
       plano,
-      usadas: data?.usadas ?? 0,
-      extras: data?.extras ?? 0,
+      usadas: linha.usadas,
+      extras: linha.extras,
+      analisesUsadas: linha.analises,
+      extrasAnalises: linha.extrasAnalises,
       ciclo,
       trackingAtivo: limiteDoPlano(plano) != null,
     });
@@ -239,71 +289,135 @@ export async function obterContagemAnalises(opcoes: {
   const ciclo = cicloAtualSaoPaulo();
   try {
     const admin = createAdminClient();
-    const { data, error } = await admin
-      .from("cota_pecas_ciclo")
-      .select("analises")
-      .eq("user_id", opcoes.userId)
-      .eq("ciclo", ciclo)
-      .maybeSingle();
-    if (error) return 0;
-    return Number(data?.analises ?? 0);
+    const linha = await lerLinhaCota(admin, opcoes.userId, ciclo);
+    if (!linha.ok) return 0;
+    return linha.analises;
   } catch {
     return 0;
   }
 }
 
-/**
- * Registra 1 análise de processo no ciclo (métrica operacional).
- * Não consome cota de peça. Fail-open se a coluna ainda não existir.
- * Rate-limit suave: ~60 análises/mês por usuário (anti-abuso).
- */
-export const LIMITE_ANALISES_CICLO = 60;
+/** Credita pacote extra de análises (webhook MP). */
+export async function creditarExtrasAnalises(opcoes: {
+  userId: string;
+  email: string;
+  quantidade: number;
+}): Promise<ResumoCota> {
+  const admin = createAdminClient();
+  const ciclo = cicloAtualSaoPaulo();
+  const q = Math.max(0, Math.floor(opcoes.quantidade));
+  const linha = await lerLinhaCota(admin, opcoes.userId, ciclo);
 
+  if (!linha.ok || !linha.encontrada) {
+    const insertCom = await admin.from("cota_pecas_ciclo").insert({
+      user_id: opcoes.userId,
+      ciclo,
+      usadas: 0,
+      extras: 0,
+      analises: 0,
+      extras_analises: q,
+    });
+    if (insertCom.error) {
+      await admin.from("cota_pecas_ciclo").insert({
+        user_id: opcoes.userId,
+        ciclo,
+        usadas: 0,
+        extras: 0,
+        analises: 0,
+      });
+      console.warn(
+        "[analises] extras_analises ausente na insert; rode migration-extras-analises.sql"
+      );
+    }
+    return obterResumoCotaUsuario(opcoes);
+  }
+
+  const upd = await admin
+    .from("cota_pecas_ciclo")
+    .update({
+      extras_analises: linha.extrasAnalises + q,
+      atualizado_em: new Date().toISOString(),
+    })
+    .eq("user_id", opcoes.userId)
+    .eq("ciclo", ciclo);
+
+  if (upd.error) {
+    console.warn("[analises] crédito extras falhou:", upd.error.message);
+  }
+
+  return obterResumoCotaUsuario(opcoes);
+}
+
+/**
+ * Consome 1 análise de processo no ciclo (cota do plano + extras).
+ * Não consome cota de peça. Fail-open se a coluna ainda não existir.
+ */
 export async function registrarUmaAnalise(opcoes: {
   userId: string;
   email: string;
 }): Promise<
-  | { ok: true; analises: number }
-  | { ok: false; motivo: "limite"; analises: number }
+  | { ok: true; analises: number; cota: ResumoCota }
+  | { ok: false; motivo: "limite"; analises: number; cota: ResumoCota }
 > {
-  if (isEmailAcessoLivre(opcoes.email)) {
-    return { ok: true, analises: 0 };
+  const cota = await obterResumoCotaUsuario(opcoes);
+  if (isEmailAcessoLivre(opcoes.email) || !cota.trackingAtivo) {
+    return { ok: true, analises: cota.analisesUsadas, cota };
   }
 
-  const ciclo = cicloAtualSaoPaulo();
+  if (cota.esgotadaAnalises) {
+    return {
+      ok: false,
+      motivo: "limite",
+      analises: cota.analisesUsadas,
+      cota,
+    };
+  }
+
+  const ciclo = cota.ciclo;
 
   try {
     const admin = createAdminClient();
-    const { data: atual, error } = await admin
-      .from("cota_pecas_ciclo")
-      .select("usadas, extras, analises")
-      .eq("user_id", opcoes.userId)
-      .eq("ciclo", ciclo)
-      .maybeSingle();
-
-    if (error) {
-      console.warn("[analises] leitura falhou (fail-open):", error.message);
-      return { ok: true, analises: 0 };
+    const linha = await lerLinhaCota(admin, opcoes.userId, ciclo);
+    if (!linha.ok) {
+      console.warn("[analises] leitura falhou (fail-open):", linha.erro);
+      return { ok: true, analises: 0, cota };
     }
 
-    const usadasAnalises = Number(atual?.analises ?? 0);
-    if (usadasAnalises >= LIMITE_ANALISES_CICLO) {
-      return { ok: false, motivo: "limite", analises: usadasAnalises };
+    const usadasAnalises = linha.analises;
+    const limite = cota.limiteAnalisesTotal ?? usadasAnalises;
+    if (usadasAnalises >= limite) {
+      return {
+        ok: false,
+        motivo: "limite",
+        analises: usadasAnalises,
+        cota,
+      };
     }
 
-    if (!atual) {
+    if (!linha.encontrada) {
       const { error: insErr } = await admin.from("cota_pecas_ciclo").insert({
         user_id: opcoes.userId,
         ciclo,
         usadas: 0,
         extras: 0,
         analises: 1,
+        extras_analises: 0,
       });
       if (insErr) {
-        console.warn("[analises] insert falhou (fail-open):", insErr.message);
-        return { ok: true, analises: 0 };
+        const retry = await admin.from("cota_pecas_ciclo").insert({
+          user_id: opcoes.userId,
+          ciclo,
+          usadas: 0,
+          extras: 0,
+          analises: 1,
+        });
+        if (retry.error) {
+          console.warn("[analises] insert falhou (fail-open):", retry.error.message);
+          return { ok: true, analises: 0, cota };
+        }
       }
-      return { ok: true, analises: 1 };
+      const depois = await obterResumoCotaUsuario(opcoes);
+      return { ok: true, analises: 1, cota: depois };
     }
 
     const { error: updErr } = await admin
@@ -317,12 +431,13 @@ export async function registrarUmaAnalise(opcoes: {
 
     if (updErr) {
       console.warn("[analises] update falhou (fail-open):", updErr.message);
-      return { ok: true, analises: usadasAnalises };
+      return { ok: true, analises: usadasAnalises, cota };
     }
 
-    return { ok: true, analises: usadasAnalises + 1 };
+    const depois = await obterResumoCotaUsuario(opcoes);
+    return { ok: true, analises: usadasAnalises + 1, cota: depois };
   } catch (erro) {
     console.warn("[analises] exceção (fail-open):", erro);
-    return { ok: true, analises: 0 };
+    return { ok: true, analises: 0, cota };
   }
 }

@@ -296,8 +296,8 @@ export function LandingPage() {
                   {PLANO_JEC.rotulo}
                 </h3>
                 <p className="mt-1 text-sm text-stone-500">
-                  Para quem vive o Juizado: 40 minutas/mês com lastro e padrão
-                  forense.
+                  Para leigos e quem atua só no Juizado, sem OAB: 40 minutas/mês
+                  com lastro e padrão forense.
                 </p>
                 <div className="mt-6 flex items-baseline gap-1">
                   <span className="text-4xl font-bold text-white">
@@ -330,7 +330,7 @@ export function LandingPage() {
                   {PLANO_MENSAL.rotulo}
                 </h3>
                 <p className="mt-1 text-sm text-stone-500">
-                  Todas as áreas · 100 minutas/mês.
+                  Para advogados (OAB) · todas as áreas · 100 minutas/mês.
                 </p>
                 <div className="mt-6 flex items-baseline gap-1">
                   <span className="text-4xl font-bold text-white">
@@ -366,7 +366,7 @@ export function LandingPage() {
                   {PLANO_ANUAL.rotulo}
                 </h3>
                 <p className="mt-1 text-sm text-stone-400">
-                  Completo o ano todo · 110 minutas/mês ·{" "}
+                  Completo o ano todo · {PLANO_ANUAL.pecasPorMes} minutas/mês ·{" "}
                   {PLANO_ANUAL.rotuloEquivalenteMensal}/mês.
                 </p>
                 <div className="mt-6 flex items-baseline gap-1">
@@ -376,7 +376,8 @@ export function LandingPage() {
                   <span className="text-stone-400">{PLANO_ANUAL.rotuloPeriodo}</span>
                 </div>
                 <p className="mt-1 text-sm font-medium text-facto-gold">
-                  Economize {PLANO_ANUAL.rotuloEconomia}/ano · +10 peças vs mensal
+                  Economize {PLANO_ANUAL.rotuloEconomia}/ano · mesma cota do
+                  mensal
                 </p>
                 <p className="mt-1 text-xs text-stone-500">
                   ≈ {PLANO_ANUAL.custoPorPecaAprox} por peça na cota anual
@@ -405,8 +406,7 @@ export function LandingPage() {
                   {PLANO_PRO.rotulo}
                 </h3>
                 <p className="mt-1 text-sm text-stone-500">
-                  180 minutas/mês com prioridade na fila — para quem não pode
-                  esperar.
+                  Para advogados (OAB) · 180 minutas/mês com prioridade na fila.
                 </p>
                 <div className="mt-6 flex items-baseline gap-1">
                   <span className="text-4xl font-bold text-white">
@@ -442,7 +442,7 @@ export function LandingPage() {
                   {PLANO_PRO_ANUAL.rotulo}
                 </h3>
                 <p className="mt-1 text-sm text-stone-400">
-                  200 minutas/mês o ano todo ·{" "}
+                  {PLANO_PRO_ANUAL.pecasPorMes} minutas/mês o ano todo ·{" "}
                   {PLANO_PRO_ANUAL.rotuloEquivalenteMensal}/mês — prioridade e
                   pesquisa reforçada.
                 </p>
@@ -455,7 +455,7 @@ export function LandingPage() {
                   </span>
                 </div>
                 <p className="mt-1 text-sm font-medium text-amber-300">
-                  Economize {PLANO_PRO_ANUAL.rotuloEconomia}/ano · +20 peças vs
+                  Economize {PLANO_PRO_ANUAL.rotuloEconomia}/ano · mesma cota do
                   Pro mensal
                 </p>
                 <p className="mt-1 text-xs text-stone-500">

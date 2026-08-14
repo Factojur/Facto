@@ -1,17 +1,32 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
 
+function assinaturaAindaVale(status: string, acessoValidoAte: number | null): boolean {
+  const agora = Date.now();
+  const st = status.toLowerCase();
+
+  if (st === "canceled" || st === "cancelled") {
+    return acessoValidoAte !== null && acessoValidoAte > agora;
+  }
+
+  // Primeira cobrança ainda processando.
+  if (st === "authorized" && acessoValidoAte === null) {
+    return true;
+  }
+
+  return acessoValidoAte !== null && acessoValidoAte > agora;
+}
+
 /**
- * Verifica se o e-mail tem acesso liberado ao FACTO com base no histórico de
- * assinaturas. Contas de acesso livre (admin/teste) passam sempre. Quem nunca
- * teve nenhuma assinatura registrada (convites avulsos) continua liberado —
- * o bloqueio só entra em ação para quem já teve uma assinatura registrada e
- * ela expirou ou foi cancelada.
+ * Acesso ao dashboard: e-mails livres (admin/teste) ou assinatura vigente.
+ * Sem linha em `assinaturas` = sem acesso (não vale cadastro avulso).
+ * Convite pago para o mesmo e-mail libera enquanto o webhook/sync do MP
+ * ainda não gravou a assinatura — prova de pagamento, não de “conta grátis”.
  */
 export async function acessoAssinaturaLiberado(
   email: string | null | undefined
 ): Promise<boolean> {
-  if (!email) return true;
+  if (!email) return false;
   if (isEmailAcessoLivre(email)) return true;
 
   try {
@@ -23,32 +38,29 @@ export async function acessoAssinaturaLiberado(
       .ilike("email", emailNorm)
       .order("criado_em", { ascending: false });
 
-    if (error || !data || data.length === 0) return true;
+    if (error) {
+      return true;
+    }
 
-    const agora = Date.now();
+    if (data?.length) {
+      return data.some((assinatura) => {
+        const acessoValidoAte = assinatura.acesso_valido_ate
+          ? new Date(assinatura.acesso_valido_ate).getTime()
+          : null;
+        return assinaturaAindaVale(String(assinatura.status ?? ""), acessoValidoAte);
+      });
+    }
 
-    return data.some((assinatura) => {
-      const acessoValidoAte = assinatura.acesso_valido_ate
-        ? new Date(assinatura.acesso_valido_ate).getTime()
-        : null;
+    const { data: convite } = await admin
+      .from("convites_pagos")
+      .select("id")
+      .ilike("email", emailNorm)
+      .limit(1)
+      .maybeSingle();
 
-      // Cancelada sem janela de acesso restante: nao libera.
-      if (assinatura.status === "canceled") {
-        return acessoValidoAte !== null && acessoValidoAte > agora;
-      }
-
-      // Assinatura ativa mas ainda sem nenhum ciclo confirmado (ex.: primeira
-      // cobrança processando) — não bloqueia por segurança.
-      if (assinatura.status === "authorized" && acessoValidoAte === null) {
-        return true;
-      }
-
-      return acessoValidoAte !== null && acessoValidoAte > agora;
-    });
+    return Boolean(convite?.id);
   } catch {
-    // Tabela ainda não existe ou serviço indisponível: não bloqueia por
-    // segurança, para não derrubar o acesso de todo mundo por um problema
-    // de infraestrutura.
+    // Infra indisponível: não derruba o site inteiro.
     return true;
   }
 }

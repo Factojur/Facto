@@ -69,7 +69,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
   }
 
-  let body: { consulta?: string; uploads?: UploadIn[]; tribunais?: unknown };
+  let body: {
+    consulta?: string;
+    uploads?: UploadIn[];
+    tribunais?: unknown;
+    somenteBase?: boolean;
+  };
   try {
     body = await request.json();
   } catch {
@@ -84,7 +89,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const tribunaisNorm = normalizarTribunaisEscolhidos(body.tribunais);
+  const somenteBase = Boolean(body.somenteBase);
+
+  const tribunaisNorm = somenteBase
+    ? { ok: true as const, ids: [] as string[] }
+    : normalizarTribunaisEscolhidos(body.tribunais);
   if (!tribunaisNorm.ok) {
     return NextResponse.json({ error: tribunaisNorm.erro }, { status: 400 });
   }
@@ -143,7 +152,10 @@ export async function POST(request: Request) {
   let cotaRestantes = JURIS_BUSCAS_POR_USUARIO_MES;
   const julgadoAi: Bruto[] = [];
 
-  if (provedorExternoAtivo) {
+  if (somenteBase) {
+    avisoExterno =
+      "Busca só na base FACTO (leis, súmulas e julgados curados). Não usa a cota de tribunais nem Jurisprudências.ai.";
+  } else if (provedorExternoAtivo) {
     const cotaAntes = await obterCotaJurisUsuario(user.id);
     cotaUsadas = cotaAntes.usadas;
     cotaRestantes = cotaAntes.restantes;
@@ -204,11 +216,12 @@ export async function POST(request: Request) {
   let usandoFallbackSecundario = true;
   let avisoSecundario: string | undefined;
   let fonteTjsp: RespostaSugestoesJuris["fonteTjsp"] = "off";
-  const querTjsp = tribunais.includes("tjsp");
+  const querTjsp = !somenteBase && tribunais.includes("tjsp");
   try {
-    // Scraper/cache TJSP só quando o usuário pediu TJSP; senão só base FACTO no secundário
     const r = await buscarJulgadosProvedorSecundario(consulta, excluir, {
       incluirTjsp: querTjsp,
+      min: somenteBase ? 5 : undefined,
+      max: somenteBase ? 8 : undefined,
     });
     secundarios = r.precedentes;
     usandoFallbackSecundario = r.usandoFallbackLocal;

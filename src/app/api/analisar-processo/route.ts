@@ -8,11 +8,9 @@ import {
 import type { ArquivoProcessoPayload } from "@/lib/analisar-processo-types";
 import { analisarProcessoComGemini } from "@/lib/ia/analisar-processo-gemini";
 import {
-  LIMITE_ANALISES_CICLO,
-  obterContagemAnalises,
+  obterResumoCotaUsuario,
   registrarUmaAnalise,
 } from "@/lib/cota-pecas-server";
-import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
 
 export const maxDuration = 90;
 
@@ -58,16 +56,17 @@ export async function POST(request: Request) {
       );
     }
 
-    const analisesAntes = await obterContagemAnalises({ userId: user.id });
-    if (
-      analisesAntes >= LIMITE_ANALISES_CICLO &&
-      !isEmailAcessoLivre(user.email)
-    ) {
+    const cotaAntes = await obterResumoCotaUsuario({
+      userId: user.id,
+      email: user.email,
+    });
+    if (cotaAntes.trackingAtivo && cotaAntes.esgotadaAnalises) {
       return NextResponse.json(
         {
-          error: `Limite mensal de análises atingido (${LIMITE_ANALISES_CICLO}/mês). A contagem é só anti-abuso — não consome peça.`,
+          error: `Limite mensal de análises atingido (${cotaAntes.limiteAnalisesTotal}/mês). Compre o pacote +10 análises ou aguarde o próximo ciclo. Não consome cota de peça.`,
           codigo: "LIMITE_ANALISES",
-          analises: analisesAntes,
+          analises: cotaAntes.analisesUsadas,
+          limite: cotaAntes.limiteAnalisesTotal,
         },
         { status: 429 }
       );

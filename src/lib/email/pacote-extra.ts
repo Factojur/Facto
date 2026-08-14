@@ -30,8 +30,13 @@ function htmlAvisoInterno(opcoes: {
   valor: number | null | undefined;
   mpPaymentId: string;
   pecas: number;
+  analises?: number;
   pacoteRotulo: string;
 }): string {
+  const credito =
+    (opcoes.analises ?? 0) > 0
+      ? `+${opcoes.analises} análises`
+      : `+${opcoes.pecas} peças`;
   return `<!DOCTYPE html>
 <html lang="pt-BR">
   <body style="margin:0;padding:24px;background:#f5f5f4;font-family:Arial,Helvetica,sans-serif;color:#1c1917;">
@@ -40,7 +45,7 @@ function htmlAvisoInterno(opcoes: {
       <h1 style="margin:12px 0 0;font-size:18px;">Pacote extra aprovado</h1>
       <p style="margin:16px 0 8px;font-size:14px;line-height:1.5;">
         <strong>Cliente:</strong> ${escaparHtml(opcoes.emailCliente)}<br />
-        <strong>Pacote:</strong> ${escaparHtml(opcoes.pacoteRotulo)} (+${opcoes.pecas} peças)<br />
+        <strong>Pacote:</strong> ${escaparHtml(opcoes.pacoteRotulo)} (${credito})<br />
         <strong>Valor:</strong> ${escaparHtml(formatarValor(opcoes.valor))}<br />
         <strong>ID Mercado Pago:</strong> ${escaparHtml(opcoes.mpPaymentId)}
       </p>
@@ -55,9 +60,17 @@ function htmlAvisoInterno(opcoes: {
 function htmlConfirmacaoCliente(opcoes: {
   valor: number | null | undefined;
   pecas: number;
+  analises?: number;
   pacoteRotulo: string;
 }): string {
   const ano = new Date().getFullYear();
+  const ehAnalises = (opcoes.analises ?? 0) > 0;
+  const titulo = ehAnalises
+    ? "Compra de análises extras confirmada"
+    : "Compra de peças extras confirmada";
+  const credito = ehAnalises
+    ? `+${opcoes.analises} análises`
+    : `+${opcoes.pecas} peças`;
   return `<!DOCTYPE html>
 <html lang="pt-BR">
   <body style="margin:0;padding:0;background-color:#1c1c16;font-family:Arial, Helvetica, sans-serif;">
@@ -80,7 +93,7 @@ function htmlConfirmacaoCliente(opcoes: {
             <tr>
               <td style="padding:24px 40px 0;text-align:center;">
                 <h1 style="margin:0;color:#ffffff;font-size:22px;line-height:1.35;">
-                  Compra de peças extras confirmada
+                  ${titulo}
                 </h1>
               </td>
             </tr>
@@ -94,7 +107,7 @@ function htmlConfirmacaoCliente(opcoes: {
                       : ""
                   }
                   referente ao pacote <strong style="color:#e7e5e4;">${escaparHtml(opcoes.pacoteRotulo)}</strong>.
-                  Em seguida, <strong style="color:#e7e5e4;">+${opcoes.pecas} peças</strong> serão creditadas na sua conta no ciclo atual.
+                  Em seguida, <strong style="color:#e7e5e4;">${credito}</strong> serão creditadas na sua conta no ciclo atual.
                 </p>
               </td>
             </tr>
@@ -135,6 +148,7 @@ export async function enviarEmailsFinanceiroPacoteExtra(opcoes: {
   valor?: number | null;
   mpPaymentId: string;
   pecas: number;
+  analises?: number;
   pacoteRotulo: string;
 }): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
@@ -181,6 +195,7 @@ export async function enviarEmailsFinanceiroPacoteExtra(opcoes: {
         valor: opcoes.valor ?? null,
         mpPaymentId: opcoes.mpPaymentId,
         pecas: opcoes.pecas,
+        analises: opcoes.analises,
         pacoteRotulo: opcoes.pacoteRotulo,
       }),
     });
@@ -194,10 +209,14 @@ export async function enviarEmailsFinanceiroPacoteExtra(opcoes: {
   if (!clienteJa) {
     envios.push({
       destinatario: opcoes.emailCliente,
-      subject: "Peças extras confirmadas — FACTO",
+      subject:
+        (opcoes.analises ?? 0) > 0
+          ? "Análises extras confirmadas — FACTO"
+          : "Peças extras confirmadas — FACTO",
       html: htmlConfirmacaoCliente({
         valor: opcoes.valor ?? null,
         pecas: opcoes.pecas,
+        analises: opcoes.analises,
         pacoteRotulo: opcoes.pacoteRotulo,
       }),
       replyTo: DESTINO_FINANCEIRO,

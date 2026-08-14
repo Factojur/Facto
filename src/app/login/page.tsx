@@ -37,7 +37,7 @@ function LoginForm() {
     async function preparar() {
       // Se chegamos aqui por conflito de sessão, garante limpeza do auth
       // residual (cookie antigo de outro domínio/aba) antes de tentar de novo.
-      if (sessaoEncerrada) {
+      if (sessaoEncerrada || acessoExpirado) {
         await supabase.auth.signOut();
         setCheckingSession(false);
         return;
@@ -73,7 +73,7 @@ function LoginForm() {
 
     void preparar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router, sessaoEncerrada]);
+  }, [router, sessaoEncerrada, acessoExpirado]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -144,8 +144,8 @@ function LoginForm() {
 
           {acessoExpirado && (
             <div className="mb-4 rounded-lg border border-amber-800/60 bg-amber-950/40 px-4 py-3 text-sm text-amber-200">
-              Sua assinatura do FACTO expirou ou foi cancelada. Renove para
-              continuar acessando a plataforma.{" "}
+              Sua assinatura do FACTO expirou, foi cancelada ou esta conta não
+              tem plano ativo. Renove ou pague um plano para continuar.{" "}
               <Link href="/#precos" className="font-semibold underline">
                 Ver planos
               </Link>
