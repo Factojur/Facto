@@ -12,10 +12,11 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { config } from "dotenv";
 import { resolve } from "path";
 import {
+  completarEmentaPorLookup,
   tokensDoPool,
   type PrecedenteInterno,
 } from "../src/lib/juris-provedores/jurisprudencia-service";
-import { termosDoLote, type TermoSeed } from "./seed-juris-termos";
+import { termosDoLote, type TermoSeed, LOTE_MAX } from "./seed-juris-termos";
 
 config({ path: resolve(process.cwd(), ".env.local") });
 
@@ -25,8 +26,25 @@ const POR_TEMA = Math.max(
   Number(process.env.SEED_JURIS_POR_TEMA ?? 10) || 10
 );
 const TRIBUNAL = (process.env.SEED_JURIS_TRIBUNAL ?? "tjsp").toLowerCase();
-const LOTE = Math.max(1, Number(process.env.SEED_JURIS_LOTE ?? 1) || 1);
+/** Publicação mínima (YYYY-MM-DD). Use SEED_JURIS_PUB_FROM=off para desligar. */
+const PUB_FROM = (() => {
+  const v = (process.env.SEED_JURIS_PUB_FROM ?? "2023-01-01").trim();
+  if (!v || v === "0" || /^off|nao|não$/i.test(v)) return "";
+  return v;
+})();
+const USAR_LOOKUP = process.env.SEED_JURIS_LOOKUP !== "0";
+const LOTE = Math.max(
+  1,
+  Number(process.env.SEED_JURIS_LOTE ?? process.argv[2] ?? 1) || 1
+);
 const TERMOS: TermoSeed[] = termosDoLote(LOTE);
+
+if (!TERMOS.length || LOTE > LOTE_MAX) {
+  console.error(
+    `Lote ${LOTE} sem termos. Use 1–${LOTE_MAX} (ex.: npm run seed:juris-ai -- 31).`
+  );
+  process.exit(1);
+}
 
 type DecisaoAi = {
   process_number?: string;
@@ -80,11 +98,13 @@ function montarTexto(p: PrecedenteInterno): string {
 async function buscarPagina(
   court: string,
   q: string,
-  token: string
+  token: string,
+  pubFrom?: string
 ): Promise<{ decisoes: DecisaoAi[]; status: number; erro?: string }> {
   const url = new URL(`${BASE}/courts/${court}/decisions`);
   url.searchParams.set("q", q.slice(0, 200));
   url.searchParams.set("page", "0");
+  if (pubFrom) url.searchParams.set("pub_from", pubFrom);
   const res = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -213,7 +233,7 @@ async function main() {
   if (removidos) console.log(`Removidos (lixo): ${removidos}\n`);
 
   console.log(
-    `Lote ${LOTE} Jurisprudências.ai · ${TERMOS.length} consultas · até ${POR_TEMA}/consulta · tribunal default ${TRIBUNAL.toUpperCase()}\n`
+    `Lote ${LOTE} Jurisprudências.ai · ${TERMOS.length} consultas · até ${POR_TEMA}/consulta · tribunal default ${TRIBUNAL.toUpperCase()}${PUB_FROM ? ` · pub_from ${PUB_FROM}` : ""}${USAR_LOOKUP ? " · lookup ementa" : ""}\n`
   );
 
   let inseridos = 0;
@@ -221,6 +241,8 @@ async function main() {
   let falhas = 0;
   let chamadas = 0;
   let tokenIdx = 0;
+
+  let lookupEsgotado = false;
 
   for (const termo of TERMOS) {
     const court = (termo.tribunal ?? TRIBUNAL).toLowerCase();
@@ -234,7 +256,7 @@ async function main() {
     for (let t = 0; t < tokens.length; t++) {
       const token = tokens[(tokenIdx + t) % tokens.length]!;
       chamadas++;
-      const r = await buscarPagina(court, query, token);
+      const r = await buscarPagina(court, query, token, PUB_FROM || undefined);
       if (r.status === 429 || r.status === 401 || r.status === 403) {
         console.log(`token esgotado/negado (${r.status}), tentando outro…`);
         continue;
@@ -254,7 +276,23 @@ async function main() {
     if (!okHttp) {
       console.log("sem token disponível");
       falhas++;
-      continue;
+      console.log("Cota diária esgotada — interrompendo o lote.");
+      break;
+    }
+
+    if (PUB_FROM && decisoes.length === 0 && okHttp) {
+      const token = tokens[tokenIdx]!;
+      chamadas++;
+      const r2 = await buscarPagina(court, query, token);
+      if (r2.status === 429 || r2.status === 401 || r2.status === 403) {
+        console.log("fallback sem data: token esgotado — interrompendo o lote.");
+        falhas++;
+        console.log("Cota diária esgotada — interrompendo o lote.");
+        break;
+      }
+      if (!r2.erro && r2.decisoes.length) {
+        decisoes = r2.decisoes;
+      }
     }
 
     const vistos = new Set<string>();
@@ -273,7 +311,13 @@ async function main() {
 
     let i = 0;
     let s = 0;
-    for (const p of formatados) {
+    for (const p0 of formatados) {
+      let p = p0;
+      if (USAR_LOOKUP && !lookupEsgotado && (p.numeroProcesso || p.titulo)) {
+        const hyd = await completarEmentaPorLookup(p);
+        if (hyd.esgotado) lookupEsgotado = true;
+        else if (hyd.lookup) p = hyd.precedente;
+      }
       const r = await upsertPrecedente(supabase, p);
       if (r === "insert") {
         i++;

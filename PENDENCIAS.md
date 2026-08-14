@@ -2,24 +2,31 @@
 
 Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou só parcialmente feitos.
 
-## Alerta — próximo lote (cota diária Juris.ai)
+**Juris / seed:** depois de cada lote ou dia de cota, atualizar a seção **Lacunas da base (áreas falhas)** abaixo — tribunal errado, 0 insert, ou API sem aquele tribunal. Não deixar falha só no chat.
 
-Quando pedir **“próximo lote”** (cota reset ~horário de Brasília):
+## Alerta — próximo seed (cota Juris.ai ~meia-noite BRT)
 
-1. **Seguir no lote 9** (`npm run seed:juris-ai -- 9` → pejotização/vínculo). Lotes 1–8 na base; 8 ficou sem o último termo JECRIM.
-2. **Não misturar com e-SAJ.** Seed usa Jurisprudências.ai, **não** o scraper TJSP. Cota nova ≠ cache aquecido.
-3. **e-SAJ (14/08):** `juris_scrape_cache` **vazio**. Reaquecer local: **0/15** (captcha/layout). Base curada **intacta**. Worker Chromium em prod é o refill — não bloquear o lote 9 por isso.
+1. **Amanhã:** `npx tsx scripts/seed-juris-ai-faixa.ts 40 64`  
+   - 40–56 = restante da faixa original (cota 14/08 esgotou no **lote 40**).  
+   - 57–64 = lacunas no tribunal certo (TRF3/4, TST, STJ eleitoral, CARF).  
+   Já inclui `pub_from=2023-01-01` + lookup de ementa.
+2. Se parar no meio: retomar `npx tsx scripts/seed-juris-ai-faixa.ts <lote> 64`.
+3. Depois: `npm run reindex:embeddings`.
+4. Seed = Jurisprudências.ai, **não** e-SAJ. Tribunais da API: `stf stj tst trf3 trf4 tjce tjgo tjma tjmg tjmt tjpr tjrj tjrs tjsc tjsp carf`. **Sem TSE, TRE-SP, TRF1/2/5/6, TNU.**
 
 ---
 
 ## Prioridade sugerida (próximos passos)
 
+0. **[P0] Seed juris** — amanhã `npx tsx scripts/seed-juris-ai-faixa.ts 40 64` + reindex. Atualizar **Lacunas da base** se algum lote 40–64 vier vazio.
+
 1. **[P0] Qualidade da peça JEC (lastro + anti-alucinação)** — _parcial_
    - [x] Anotar jurisprudência sem lastro com `[NÃO ENCONTRADO NA BASE]`
+   - [x] Auditor: não marcar `socorre-se` como REsp (falso positivo `re` + hífen) — 14/08
    - [x] Conferência de citações reforçada
-   - [x] Suite casos-ouro (`npm run test:casos-ouro` — **33 casos + catálogo**, 0 tokens): 9 temas JEC inicial, 5 espécies JEC, **19 áreas** (incl. fechadas), asserts estruturais
+   - [x] Suite casos-ouro (`npm run test:casos-ouro` — **0 tokens**): JEC inicial + espécies + **peça completa em todas as áreas** (módulo aberto = JEC; fechadas já prontas)
    - [x] Lastro **não** usa a estratégia da triagem; CNJ/REsp batem número inteiro (não “sopa” de dígitos)
-   - [ ] Ampliar casos-ouro com peças completas por área quando cada módulo abrir
+   - [x] Ampliar casos-ouro com peças completas por área (14/08): cada `AREAS_ATUACAO` tem peça com endereçamento/fatos/direito/pedidos + lastro; JEC ganhou estacionamento, cartão e revisão contratual. Ao abrir módulo, só ligar `available` — a suíte já cobre.
 
 2. **[P0] Embeddings / busca semântica** — _feito_
    - [x] Migration + reindex + retrieve híbrido + deploy
@@ -285,7 +292,35 @@ Se contribuição &lt; 40–50% (stress), **não** dá meta líquida em escala n
 
 ## Jurisprudência
 
-_Estratégia:_ base curada primeiro (lotes 5–56); worker multi-TJ como complemento — detalhes e disco na seção **Supabase Free vs Pro**.
+_Estratégia:_ esgotar Jurisprudências.ai nos tribunais que ela tem; lacunas (TRE/TSE, TRFs ausentes, TNU…) → **outra API depois**, mesma `base_conhecimento`. Lookup (10 mil) = só ementa, não inteiro teor. Cliente na peça usa a base; lookup some se cancelar o plano.
+
+### Lacunas da base (áreas falhas) — atualizar após cada seed
+
+API **não tem:** TSE, TRE-SP (nem outro TRE), TRF1/2/5/6, TNU, STM. Listagem 14/08: `stf stj tst trf3 trf4 tjce tjgo tjma tjmg tjmt tjpr tjrj tjrs tjsc tjsp carf`.
+
+| Área | Evidência | Status |
+|------|-----------|--------|
+| **Eleitoral** | Lote 22: **0** insert (TJSP). TRE/TSE fora da API. | Lote **63** pronto (STJ). Segunda API depois. |
+| **Previdenciário** | Lote 7 STJ fraco (+5); lote 36 STJ: **0**. | Lotes **57–59** prontos (TRF3/TRF4). |
+| **Trabalhista** | Lotes 9 e 32 no TJSP fracos (11+11); muitos termos 0 úteis. | Lotes **60–62** prontos (TST). |
+| **Tributário** | Lote 12 +5 (STJ/municipal misturado). | Lote **64** pronto (CARF). ICMS/IPTU estadual/municipal podem continuar rasos. |
+| **Internacional** | Lote 24 +5. | Sem tribunal extra na API. Segunda fonte depois. |
+| **Lote 40** | Cota 429 no 1º termo (14/08). | Retomar amanhã no 40. |
+
+Critério de “falha”: lote com **0** insert, ou &lt;10 insert em tema que deveria ter acórdão no tribunal usado, ou tribunal inexistente na API.
+
+### Seed (progresso)
+
+- [x] Lotes 1–8 (ver histórico abaixo).
+- [x] Lotes **9–39** (14/08, chave paga) — **+770 insert**; `reindex` +770. Cota busca esgotou no **40**.
+- [x] Lookup ementas curtas (14/08) — **696** completadas / 356 skip / 0 falha; reindex em seguida.
+- [ ] Lotes **40–56** — amanhã na faixa.
+- [ ] Lotes **57–64** — lacunas (arquivo `scripts/seed-juris-termos-lotes-57-64.ts`).
+- [ ] Após cada dia de seed: `npm run reindex:embeddings`.
+- [ ] Segunda API quando 40–64 fechar: priorizar **eleitoral (TRE/TSE)** e o que ainda estiver na tabela de lacunas.
+- [ ] Reaquecer cache TJSP (`npm run aquecer:cache-tjsp`) — 14/08 cache vazio; scrape 0/15 (captcha). Base_conhecimento intacta.
+- [ ] **7º token** Jurisprudências.ai — menos urgente com plano pago no `.env.local` (não precisa ir à Vercel se o plano for cancelado pós-seed).
+- [ ] Provedor secundário STJ estável em prod.
 
 - [x] Migration scrape-cache aplicada.
 - [x] Aquecer cache JEC (`npm run aquecer:cache-tjsp`) — 15 termos.
@@ -297,12 +332,6 @@ _Estratégia:_ base curada primeiro (lotes 5–56); worker multi-TJ como complem
 - [x] Lote 6 multiárea (`npm run seed:juris-ai-lote-6`, 13/08) — **+12 insert / 0 skip**; assédio moral, guarda compartilhada, condomínio, marca; ICMS/lavagem/união estável 0 úteis; **execução 2 termos falharam** (pool 429 no fim). `reindex:embeddings` +12. Retomar execução quando a cota liberar.
 - [x] Lote 7 previdenciário (`npm run seed:juris-ai -- 7`, 14/08) — **+5 insert / 0 skip**; STJ rendeu pouco (aposentadoria tempo, rural, pensão); BPC/revisão/auxílio/salário-maternidade 0 úteis; 429 parcial. `reindex:embeddings` +5.
 - [x] Lote 8 JECRIM (`npm run seed:juris-ai -- 8`, 14/08) — **+13 insert / 0 skip**; lesão corporal leve e vias de fato; interrompido no último termo (recurso inominado) por 429. `reindex:embeddings` +13.
-- [ ] Lotes **9–30 prontos** (`npm run seed:juris-ai -- <N>`). **Lote 9 tentado 14/08:** 0 insert — pool 429 (cota diária esgotada após o lote 8).
-- [ ] Lotes **31–56 prontos** — reforço principais (31–40) + recortes (41–52: marítimo, aeronáutico, desportivo, urbanístico, militar, ECA, prev. complementar, CVM, energia/telecom, conselhos, processo do trabalho, STF) + reforço rasos (53–56).
-- [ ] Após cada lote: `npm run reindex:embeddings`.
-- [ ] Reaquecer cache TJSP (`npm run aquecer:cache-tjsp`) — 14/08 cache vazio; scrape 0/15 (captcha). Base_conhecimento intacta.
-- [ ] **7º token** Jurisprudências.ai.
-- [ ] Provedor secundário STJ estável em prod.
 - [x] UX: multiseleção de tribunais no “Sugerir juris” (mín. 1, máx. 3; nenhum pré-marcado; 1 cota API por tribunal).
 - [x] UI sem nome do provedor externo (só “busca externa” / cota).
 - [x] Janela temporal de julgados no scraper TJSP: **manter 4 anos** (decisão alinhada).

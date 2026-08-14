@@ -234,6 +234,116 @@ OAB/SP 777888
     `.trim(),
   },
   {
+    id: "estacionamento-furto",
+    tema: "Furto em estacionamento / responsabilidade objetiva",
+    fatosChave: ["estacionamento", "furto", "veículo"],
+    tipoAcao: "Ação de Indenização por Danos Materiais e Morais",
+    valorCausaBloco: "Dá-se à causa o valor de R$ 18.000,00 (dezoito mil reais).",
+    jurisComLastro: ["1011101-11.2024.8.26.0100"],
+    jurisSemLastro: ["1011102-22.2024.8.26.0100"],
+    contextoLastro: `
+CDC art. 14. Responsabilidade objetiva do estacionamento pelo furto de veículo.
+TJSP Processo nº 1011101-11.2024.8.26.0100 — furto em estacionamento e dever de indenizar.
+    `.trim(),
+    pecaIaBruta: `
+EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DE DIREITO DO JUIZADO ESPECIAL CÍVEL DA COMARCA DE SÃO PAULO - SP
+
+CONSUMIDOR FICTO propõe
+
+AÇÃO DE INDENIZAÇÃO POR DANOS MATERIAIS E MORAIS
+
+em face de ESTACIONAMENTO FICTO LTDA.
+
+I - DOS FATOS
+O autor deixou o veículo no estacionamento mediante pagamento e, ao retornar, constatou o furto do automóvel.
+
+II - DO DIREITO
+Aplica-se o art. 14 do CDC. Cita-se o Processo nº 1011101-11.2024.8.26.0100 e o Processo nº 1011102-22.2024.8.26.0100.
+
+III - DOS PEDIDOS
+a) Indenização correspondente ao valor do veículo;
+b) Danos morais.
+
+Nestes termos,
+pede deferimento.
+
+São Paulo/SP, 14 de agosto de 2026.
+OAB/SP 909090
+    `.trim(),
+  },
+  {
+    id: "cartao-fatura-inexistente",
+    tema: "Cobrança de fatura de cartão inexistente",
+    fatosChave: ["cartão", "fatura", "cobrança"],
+    tipoAcao: "Ação Declaratória de Inexistência de Débito c/c Danos Morais",
+    valorCausaBloco: "Dá-se à causa o valor de R$ 12.000,00 (doze mil reais).",
+    jurisComLastro: ["1011201-33.2025.8.26.0100"],
+    jurisSemLastro: ["REsp 1919191"],
+    contextoLastro: `
+CDC. Súmula 479 do STJ.
+TJSP Processo nº 1011201-33.2025.8.26.0100 — cobrança de fatura de cartão não contratado.
+    `.trim(),
+    pecaIaBruta: `
+EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DE DIREITO DO JUIZADO ESPECIAL CÍVEL
+
+TITULAR FICTO propõe ação em face de BANCO EMISSOR FICTO S.A.
+
+I - DOS FATOS
+O autor passou a receber cobrança de fatura de cartão de crédito que jamais contratou.
+
+II - DO DIREITO
+Aplica-se o CDC e a Súmula 479 do STJ. Cita-se o Processo nº 1011201-33.2025.8.26.0100 e o REsp nº 1919191.
+
+III - DOS PEDIDOS
+a) Inexistência do débito;
+b) Danos morais.
+
+Nestes termos,
+pede deferimento.
+
+São Paulo/SP, 14 de agosto de 2026.
+OAB/SP 919191
+    `.trim(),
+  },
+  {
+    id: "revisao-contratual-onerosidade",
+    tema: "Revisão contratual / onerosidade excessiva",
+    fatosChave: ["revisão contratual", "onerosidade"],
+    tipoAcao: "Ação Revisional de Contrato",
+    valorCausaBloco: "Dá-se à causa o valor de R$ 25.000,00 (vinte e cinco mil reais).",
+    jurisComLastro: ["1011301-44.2023.8.26.0100"],
+    jurisSemLastro: ["1011302-55.2023.8.26.0100"],
+    contextoLastro: `
+Código Civil art. 478. CDC — cláusulas abusivas.
+TJSP Processo nº 1011301-44.2023.8.26.0100 — revisão contratual por onerosidade excessiva.
+    `.trim(),
+    pecaIaBruta: `
+EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DE DIREITO DO JUIZADO ESPECIAL CÍVEL
+
+CONTRATANTE FICTO propõe
+
+AÇÃO REVISIONAL DE CONTRATO
+
+em face de FORNECEDORA FICTA S.A.
+
+I - DOS FATOS
+O contrato de adesão sofreu revisão contratual necessária diante da onerosidade excessiva e cláusula penal desproporcional.
+
+II - DO DIREITO
+Incidem o art. 478 do Código Civil e o CDC. Cita-se o Processo nº 1011301-44.2023.8.26.0100 e o Processo nº 1011302-55.2023.8.26.0100.
+
+III - DOS PEDIDOS
+a) Revisão das cláusulas abusivas;
+b) Redução equitativa da cláusula penal.
+
+Nestes termos,
+pede deferimento.
+
+São Paulo/SP, 14 de agosto de 2026.
+OAB/SP 929292
+    `.trim(),
+  },
+  {
     id: "lastro-vazio",
     tema: "CNJ sem qualquer lastro no contexto",
     fatosChave: ["PIX", "banco"],

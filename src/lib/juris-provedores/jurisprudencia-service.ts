@@ -6,6 +6,8 @@
  * - 1 chamada HTTP bem-sucedida por busca do usuário → 1 precedente
  * - Pool de tokens (várias contas): se uma esgota (429), troca para a próxima
  * - Cota mensal por usuário FACTO (15/mês) é aplicada na rota, não aqui
+ * - Lookup por número (`/decisions/lookup`) consome a cota de consultas (10 mil),
+ *   não a de buscas (500). Só ementa — nunca inteiro teor/voto.
  *
  * Env:
  * - JURISPRUDENCIAS_AI_API_KEY — token principal
@@ -43,7 +45,28 @@ type DecisaoAi = {
   summary?: string;
   ementa?: string;
   url?: string;
+  court?: string;
 };
+
+/** Lookup 429 é cota distinta da busca — não mistura com tokensEsgotadosAte. */
+const tokensLookupEsgotadosAte = new Map<string, number>();
+
+const SLUGS_API_EXTRA = [
+  "tst",
+  "trf1",
+  "trf2",
+  "trf3",
+  "trf4",
+  "trf5",
+  "trf6",
+  "carf",
+];
+
+const CNJ_RE =
+  /\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/;
+
+/** Teto da ementa gravada (evita voto/relatório colados no campo summary). */
+const EMENTA_MAX_CHARS = 4000;
 
 /** Tokens marcados esgotados até este instante (ms). Evita bater de novo no mesmo cold start. */
 const tokensEsgotadosAte = new Map<string, number>();
@@ -62,20 +85,34 @@ function tokenDisponivel(token: string): boolean {
   return false;
 }
 
+function tokenLookupDisponivel(token: string): boolean {
+  const ate = tokensLookupEsgotadosAte.get(fingerprint(token));
+  if (!ate) return true;
+  if (Date.now() >= ate) {
+    tokensLookupEsgotadosAte.delete(fingerprint(token));
+    return true;
+  }
+  return false;
+}
+
 /** Marca token esgotado até a próxima meia-noite em America/Sao_Paulo. */
 function marcarTokenEsgotado(token: string): void {
-  const agora = new Date();
-  // Próxima meia-noite SP ≈ +1 dia civil SP
+  tokensEsgotadosAte.set(fingerprint(token), meiaNoiteSpMs());
+}
+
+function meiaNoiteSpMs(): number {
   const spDate = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Sao_Paulo",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).format(agora);
+  }).format(new Date());
   const [y, m, d] = spDate.split("-").map(Number);
-  // 03:00 UTC ≈ meia-noite SP no horário de Brasília padrão; usamos +24h a partir de agora como teto seguro
-  const amanhaSp = new Date(Date.UTC(y!, m! - 1, d! + 1, 3, 0, 0));
-  tokensEsgotadosAte.set(fingerprint(token), amanhaSp.getTime());
+  return new Date(Date.UTC(y!, m! - 1, d! + 1, 3, 0, 0)).getTime();
+}
+
+function marcarTokenLookupEsgotado(token: string): void {
+  tokensLookupEsgotadosAte.set(fingerprint(token), meiaNoiteSpMs());
 }
 
 export function tokensDoPool(): string[] {
@@ -122,11 +159,59 @@ export function escolherTribunal(query: string): string {
   return "stj";
 }
 
+/** Slug aceito em `/courts/:id/` (TJSP → tjsp). */
+export function slugTribunalParaApi(tribunal: string): string | null {
+  const bruto = tribunal.trim();
+  const head =
+    bruto.match(/^(stf|stj|tst|trf[1-6]|carf|tj[a-z]{2,3})\b/i)?.[1] ||
+    bruto.split(/[\s—–-]+/)[0] ||
+    bruto;
+  const s = head
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/[^a-z0-9]/g, "");
+  if (!s) return null;
+  if (s === "tjdft" || s === "tjd" || s === "tjdf") return "tjdft";
+  if (
+    /^(stf|stj|tst|tjsp|tjrj|tjmg|tjrs|tjpr|tjsc|tjba|tjpe|tjce|tjgo|tjes|tjmt|tjms|tjma)$/.test(
+      s
+    ) ||
+    SLUGS_API_EXTRA.includes(s)
+  ) {
+    return s;
+  }
+  if (s.startsWith("tj") && s.length >= 4 && s.length <= 6) return s;
+  return null;
+}
+
+export function numeroProcessoDeTitulo(titulo: string): string | null {
+  const m = titulo.match(CNJ_RE);
+  return m?.[0] ?? null;
+}
+
+function cortarEmenta(texto: string): string {
+  let t = texto.trim();
+  const corte = t.search(
+    /\n\s*(RELAT[ÓO]RIO|VOTO\b|AC[ÓO]RD[ÃA]O\s*\n|É O RELAT[ÓO]RIO)/i
+  );
+  if (corte > 80) t = t.slice(0, corte).trim();
+  if (t.length > EMENTA_MAX_CHARS) {
+    t = t.slice(0, EMENTA_MAX_CHARS).replace(/\s+\S*$/, "").trim();
+  }
+  return t;
+}
+
+/** Só ementa/summary. Ignora inteiro teor se a API mandar outros campos. */
+export function ementaDeDecisaoAi(d: DecisaoAi): string {
+  return cortarEmenta(d.summary || d.ementa || d.excerpt || "");
+}
+
 function formatarDecisao(
   d: DecisaoAi,
   court: string
 ): PrecedenteInterno | null {
-  const ementa = (d.summary || d.excerpt || d.ementa || "").trim();
+  const ementa = ementaDeDecisaoAi(d);
   if (!ementa) return null;
   const data = d.publication_date || d.trial_date;
   return {
@@ -169,6 +254,109 @@ async function fetchDecisoes(
   }
   const json = (await res.json()) as { data?: DecisaoAi[] };
   return { decisoes: json.data ?? [], status: res.status };
+}
+
+function tokensOrdenadosParaLookup(): string[] {
+  const todos = tokensDoPool();
+  if (todos.length <= 1) return todos;
+  const disponiveis = todos.filter(tokenLookupDisponivel);
+  const base = disponiveis.length > 0 ? disponiveis : todos;
+  const start = Math.floor(Date.now() / 3_600_000) % base.length;
+  return [...base.slice(start), ...base.slice(0, start)];
+}
+
+export type ResultadoLookupEmenta = {
+  ementa?: string;
+  data?: string;
+  relator?: string;
+  url?: string;
+  numeroProcesso?: string;
+  status: number;
+  esgotado?: boolean;
+  erro?: string;
+};
+
+/**
+ * Cota de consultas (10 mil/dia), não de buscas.
+ * Devolve só ementa estruturada.
+ */
+export async function lookupEmentaPorNumero(
+  court: string,
+  numeroProcesso: string
+): Promise<ResultadoLookupEmenta> {
+  const slug = slugTribunalParaApi(court);
+  const n = numeroProcesso.trim();
+  if (!slug || n.length < 5) {
+    return { status: 0, erro: "Tribunal ou número inválido." };
+  }
+
+  const tokens = tokensOrdenadosParaLookup();
+  if (!tokens.length) {
+    return { status: 0, erro: "API não configurada." };
+  }
+
+  let lastStatus = 0;
+  for (const token of tokens) {
+    const url = new URL(`${BASE}/courts/${slug}/decisions/lookup`);
+    url.searchParams.set("n", n);
+    const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    lastStatus = res.status;
+    if (res.status === 429 || res.status === 401 || res.status === 403) {
+      marcarTokenLookupEsgotado(token);
+      continue;
+    }
+    if (res.status === 404) {
+      return { status: 404, erro: "Decisão não encontrada." };
+    }
+    if (!res.ok) {
+      return { status: res.status, erro: `HTTP ${res.status}` };
+    }
+    const json = (await res.json()) as { data?: DecisaoAi };
+    const d = json.data;
+    if (!d) return { status: 200, erro: "Resposta sem dados." };
+    const ementa = ementaDeDecisaoAi(d);
+    if (!ementa) return { status: 200, erro: "Sem ementa." };
+    return {
+      status: 200,
+      ementa,
+      data: d.publication_date || d.trial_date,
+      relator: d.rapporteur,
+      url: d.url,
+      numeroProcesso: d.process_number || n,
+    };
+  }
+
+  return { status: lastStatus || 429, esgotado: true, erro: "Cota de consultas esgotada." };
+}
+
+export async function completarEmentaPorLookup(
+  p: PrecedenteInterno
+): Promise<{ precedente: PrecedenteInterno; lookup: boolean; esgotado?: boolean }> {
+  const numero =
+    p.numeroProcesso?.trim() || numeroProcessoDeTitulo(p.titulo) || "";
+  const court = slugTribunalParaApi(p.tribunal) || slugTribunalParaApi(p.titulo);
+  if (!numero || !court) {
+    return { precedente: p, lookup: false };
+  }
+  const r = await lookupEmentaPorNumero(court, numero);
+  if (r.esgotado) return { precedente: p, lookup: false, esgotado: true };
+  if (!r.ementa) return { precedente: p, lookup: false };
+  if (r.ementa.length <= p.ementa.trim().length + 40) {
+    return { precedente: p, lookup: false };
+  }
+  return {
+    lookup: true,
+    precedente: {
+      ...p,
+      ementa: r.ementa,
+      data: r.data || p.data,
+      relator: r.relator || p.relator,
+      url: r.url || p.url,
+      numeroProcesso: r.numeroProcesso || p.numeroProcesso,
+    },
+  };
 }
 
 /**

@@ -9,7 +9,10 @@
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { PrecedenteInterno } from "@/lib/juris-provedores/jurisprudencia-service";
+import {
+  completarEmentaPorLookup,
+  type PrecedenteInterno,
+} from "@/lib/juris-provedores/jurisprudencia-service";
 import {
   analisarDuplicidade,
   type ParComparacao,
@@ -94,11 +97,19 @@ export async function enviarParaVerificacao(
 ): Promise<ResultadoSalvarPrecedente> {
   const admin = createAdminClient();
   const titulo = tituloDedup(precedente);
-  const ementa = montarTexto(precedente);
 
   if (!titulo || !precedente.ementa.trim()) {
     return { inserido: false, jaExistia: false, erro: "Precedente incompleto." };
   }
+
+  let hidratado = precedente;
+  try {
+    const hyd = await completarEmentaPorLookup(precedente);
+    if (hyd.lookup) hidratado = hyd.precedente;
+  } catch {
+    /* lookup opcional — segue com a ementa da busca */
+  }
+  const ementa = montarTexto(hidratado);
 
   let existentes: ParComparacao[] = [];
   try {
@@ -110,9 +121,9 @@ export async function enviarParaVerificacao(
   const dup = analisarDuplicidade(
     {
       titulo,
-      ementa: precedente.ementa,
-      url: precedente.url,
-      numeroProcesso: precedente.numeroProcesso,
+      ementa: hidratado.ementa,
+      url: hidratado.url,
+      numeroProcesso: hidratado.numeroProcesso,
     },
     existentes
   );
@@ -131,11 +142,11 @@ export async function enviarParaVerificacao(
     .insert({
       titulo,
       ementa,
-      tribunal: precedente.tribunal,
-      data_julgado: precedente.data ?? null,
-      url: precedente.url ?? null,
-      numero_processo: precedente.numeroProcesso ?? null,
-      relator: precedente.relator ?? null,
+      tribunal: hidratado.tribunal,
+      data_julgado: hidratado.data ?? null,
+      url: hidratado.url ?? null,
+      numero_processo: hidratado.numeroProcesso ?? null,
+      relator: hidratado.relator ?? null,
       fonte:
         precedente.origem === "jurisprudencias_ai"
           ? "jurisprudencias.ai"
@@ -155,7 +166,7 @@ export async function enviarParaVerificacao(
   if (error) {
     // Fallback: se a fila ainda não existe, tenta insert antigo na base
     if (/juris_verificacao|relation|does not exist/i.test(error.message)) {
-      return salvarDiretoNaBaseFallback(admin, precedente, usuarioId, titulo, ementa);
+      return salvarDiretoNaBaseFallback(admin, hidratado, usuarioId, titulo, ementa);
     }
     return { inserido: false, jaExistia: false, erro: error.message };
   }

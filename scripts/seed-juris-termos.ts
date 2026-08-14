@@ -1,7 +1,21 @@
 /**
  * Termos de busca para seed de jurisprudência (Jurisprudências.ai).
- * Lotes 1–2: JEC. Lotes 3+: multiárea, pares autor × réu.
+ * Lotes 1–2: JEC. Lotes 3–6: multiárea inicial.
+ * Lotes 7–30: ver seed-juris-termos-lotes-7-30.ts.
+ * Lotes 31–56: reforço + recortes — seed-juris-termos-lotes-31-56.ts.
+ * Lotes 57–64: lacunas no tribunal certo — seed-juris-termos-lotes-57-64.ts.
  */
+
+import { LOTES_7_A_30, ROTULO_LOTE as ROTULO_7_30 } from "./seed-juris-termos-lotes-7-30";
+import {
+  LOTES_31_A_56,
+  ROTULO_LOTE_31_56,
+} from "./seed-juris-termos-lotes-31-56";
+import {
+  LOTES_57_A_64,
+  ROTULO_LOTE_57_64,
+  LOTE_MAX_LACUNAS,
+} from "./seed-juris-termos-lotes-57-64";
 
 export type TermoSeed = {
   q: string;
@@ -314,10 +328,117 @@ export const TERMOS_MULTIAREA_LOTE_5: TermoSeed[] = [
   },
 ];
 
+/**
+ * Lote 6 — complementar: tributário fino, trabalhista, família, penal
+ * econômico, condomínio, PI, execução civil e eleitoral.
+ * Pronto para `npm run seed:juris-ai-lote-6` quando a cota liberar.
+ */
+export const TERMOS_MULTIAREA_LOTE_6: TermoSeed[] = [
+  // Tributário fino
+  {
+    lado: "autor",
+    tribunal: "stj",
+    q: "ICMS base de cálculo PIS COFINS exclusão Tema 69 STF procedência",
+  },
+  {
+    lado: "reu",
+    tribunal: "stj",
+    q: "ICMS exclusão PIS COFINS improcedência crédito presumido ausência prova",
+  },
+  // Trabalhista complementar
+  {
+    lado: "autor",
+    q: "assédio moral ambiente trabalho dano moral indenização procedência",
+  },
+  {
+    lado: "reu",
+    q: "assédio moral improcedência rigor gerencial ausência prova testemunhal",
+  },
+  // Família — guarda / união estável
+  {
+    lado: "autor",
+    q: "guarda compartilhada melhor interesse da criança procedência",
+  },
+  {
+    lado: "reu",
+    q: "guarda compartilhada improcedência alienação parental convivência inviável",
+  },
+  {
+    lado: "autor",
+    q: "união estável reconhecimento partilha bens convivência pública procedência",
+  },
+  {
+    lado: "reu",
+    q: "união estável improcedência namoro qualificado ausência affectio maritalis",
+  },
+  // Penal econômico
+  {
+    lado: "autor",
+    tribunal: "stj",
+    q: "lavagem de dinheiro tipicidade ocultação dissimulação procedência",
+  },
+  {
+    lado: "reu",
+    tribunal: "stj",
+    q: "lavagem de dinheiro absolvição crime antecedente não comprovado atipicidade",
+  },
+  // Condomínio
+  {
+    lado: "autor",
+    q: "condomínio cobrança taxas ordinárias inadimplência procedência",
+  },
+  {
+    lado: "reu",
+    q: "condomínio cobrança improcedência taxa extraordinária sem assembleia",
+  },
+  // Propriedade intelectual
+  {
+    lado: "autor",
+    tribunal: "stj",
+    q: "marca registrada contrafação concorrência desleal indenização procedência",
+  },
+  {
+    lado: "reu",
+    tribunal: "stj",
+    q: "marca registrada improcedência uso descritivo ausência confusão consumidor",
+  },
+  // Execução civil
+  {
+    lado: "autor",
+    q: "execução título extrajudicial penhora online SISBAJUD procedência",
+  },
+  {
+    lado: "reu",
+    q: "execução título extrajudicial improcedência excesso de execução iliquidez",
+  },
+];
+
 export function termosDoLote(lote: number): TermoSeed[] {
+  if (lote >= 57 && lote <= LOTE_MAX_LACUNAS) {
+    return LOTES_57_A_64[lote] ?? [];
+  }
+  if (lote >= 31 && lote <= 56) {
+    return LOTES_31_A_56[lote] ?? [];
+  }
+  if (lote >= 7 && lote <= 30) {
+    return LOTES_7_A_30[lote] ?? [];
+  }
+  if (lote === 6) return TERMOS_MULTIAREA_LOTE_6;
   if (lote === 5) return TERMOS_MULTIAREA_LOTE_5;
   if (lote === 4) return TERMOS_MULTIAREA_LOTE_4;
   if (lote === 3) return TERMOS_MULTIAREA_LOTE_3;
   if (lote === 2) return TERMOS_JEC_LOTE_2;
   return TERMOS_JEC_LOTE_1.map((q) => ({ q, lado: "neutro" as const }));
 }
+
+export const ROTULO_LOTE: Record<number, string> = {
+  ...ROTULO_7_30,
+  ...ROTULO_LOTE_31_56,
+  ...ROTULO_LOTE_57_64,
+};
+
+export { LOTES_7_A_30 } from "./seed-juris-termos-lotes-7-30";
+export { LOTES_31_A_56 } from "./seed-juris-termos-lotes-31-56";
+export { LOTES_57_A_64 } from "./seed-juris-termos-lotes-57-64";
+
+export const LOTE_MAX = LOTE_MAX_LACUNAS;

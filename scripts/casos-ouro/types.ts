@@ -13,16 +13,19 @@ export type CasoOuroJec = {
   tutelaUrgencia?: boolean;
 };
 
-/** Lastro de citações para áreas ainda sem geração de peça (0 tokens). */
+/** Lastro + peça completa por área (0 tokens). Fechadas já ficam prontas para quando `available` virar true. */
 export type CasoOuroArea = {
   id: string;
   areaId: string;
   tema: string;
-  textoPeca: string;
+  /** Peça sintética completa (endereçamento, fatos, direito, pedidos). */
+  pecaIaBruta: string;
   contextoLastro: string;
   jurisComLastro: string[];
   jurisSemLastro: string[];
   leisComLastro?: string[];
+  fatosChave?: string[];
+  secoesObrigatorias?: string[];
 };
 
 /** Espécies JEC além da petição inicial — normalização + lastro. */

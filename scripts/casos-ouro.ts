@@ -2,9 +2,9 @@
  * Suite casos-ouro FACTO — regressão local sem Gemini (0 tokens).
  *
  * Cobertura:
- * - JEC petição inicial (9 temas + híbrido)
- * - JEC demais espécies (contestação, embargos, recurso, réplica, execução)
- * - Lastro multiárea (todas as áreas de atuação, inclusive fechadas)
+ * - JEC petição inicial (temas + híbrido)
+ * - JEC demais espécies
+ * - Peça completa + lastro em todas as áreas de atuação (abertas e fechadas)
  *
  * Uso: npm run test:casos-ouro
  */
@@ -19,7 +19,11 @@ import {
   normalizarPecaGerada,
   pecaTemFundamentacaoGenerica,
 } from "../src/lib/ia/normalizar-peca-gerada";
-import { verificarCitacoes } from "../src/lib/ia/verificacao-citacoes";
+import {
+  MARCADOR_NAO_ENCONTRADO,
+  anotarJurisprudenciasSemLastro,
+  verificarCitacoes,
+} from "../src/lib/ia/verificacao-citacoes";
 import { CASOS_OURO_AREAS } from "./casos-ouro/fixtures-areas";
 import { CASOS_OURO_ESPECIES } from "./casos-ouro/fixtures-especies";
 import { CASOS_OURO_JEC } from "./casos-ouro/fixtures";
@@ -94,9 +98,40 @@ function rodarCasoArea(caso: CasoOuroArea) {
   const { assert, stats } = createSuite();
   console.log(`\n▸ ÁREA · ${caso.areaId} · ${caso.id} — ${caso.tema}`);
 
+  const normalizada = normalizarPecaGerada(caso.pecaIaBruta);
+  assert(
+    (normalizada.match(/\n/g)?.length ?? 0) > 8,
+    "peça completa multilinha"
+  );
+  assert(
+    /EXCELENT[IÍ]SSIMO/i.test(normalizada),
+    "endereçamento presente"
+  );
+  const secoes = caso.secoesObrigatorias ?? [
+    "DOS FATOS",
+    "DO DIREITO",
+    "DOS PEDIDOS",
+  ];
+  for (const secao of secoes) {
+    assert(
+      new RegExp(secao.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(
+        normalizada
+      ),
+      `seção: ${secao}`
+    );
+  }
+  for (const chave of caso.fatosChave ?? []) {
+    assert(
+      new RegExp(chave.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(
+        normalizada
+      ),
+      `preserva fato: “${chave}”`
+    );
+  }
+
   rodarAssertsLastro({
     assert,
-    texto: caso.textoPeca,
+    texto: normalizada,
     contextoLastro: caso.contextoLastro,
     jurisComLastro: caso.jurisComLastro,
     jurisSemLastro: caso.jurisSemLastro,
@@ -177,6 +212,19 @@ a) Procedência.
     "controle: se a estratégia fosse lastro, o REsp passaria (regressão do furo)"
   );
 
+  const socorre =
+    "O autor socorre-se do Poder Judiciário ante a negativação indevida.";
+  const citSocorre = verificarCitacoes(socorre, "CDC. Súmula 479.");
+  assert(
+    !citSocorre.some((c) => c.tipo === "jurisprudencia"),
+    "não trata “socorre-se” como julgado (falso positivo RE)"
+  );
+  const anotadaSocorre = anotarJurisprudenciasSemLastro(socorre, citSocorre);
+  assert(
+    !anotadaSocorre.includes(MARCADOR_NAO_ENCONTRADO),
+    "não insere marcador no meio de socorre-se"
+  );
+
   return stats();
 }
 
@@ -185,13 +233,21 @@ function rodarCatalogoCobertura() {
   console.log("\n▸ catálogo — cobertura de áreas e espécies");
 
   const areasComFixture = new Set<string>(["jec"]);
+  const areasCompletas = new Set<string>(["jec"]);
   for (const c of CASOS_OURO_AREAS) {
     areasComFixture.add(c.areaId);
+    if (c.pecaIaBruta && /EXCELENT[IÍ]SSIMO/i.test(c.pecaIaBruta)) {
+      areasCompletas.add(c.areaId);
+    }
   }
   for (const area of AREAS_ATUACAO) {
     assert(
       areasComFixture.has(area.id),
       `cobertura área: ${area.id} (${area.title})`
+    );
+    assert(
+      areasCompletas.has(area.id),
+      `peça completa área: ${area.id} (${area.title})`
     );
   }
 
