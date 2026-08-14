@@ -2152,7 +2152,6 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
         </div>
 
         <PedidosSection value={pedidos} onChange={setPedidos} />
-        </div>
 
         <section
           id="secao-gerar"
@@ -2257,6 +2256,7 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
             </button>
           </div>
         </section>
+        </div>
       </form>
 
       {resultado && (

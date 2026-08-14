@@ -69,7 +69,7 @@ export function montarChecklistJec(opcoes: {
     },
     {
       id: "valores",
-      label: "Valores da causa (recomendado)",
+      label: "Valores da causa",
       ok: opcoes.temValor,
       bloqueante: false,
     },
