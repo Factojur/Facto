@@ -632,6 +632,7 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
   const [faseVinculo, setFaseVinculo] = useState<FaseCasoJec | null>(null);
   const [msgCaso, setMsgCaso] = useState<string | null>(null);
   const [guiaAtiva, setGuiaAtiva] = useState<GuiaJec>("identificacao");
+  const [modoAcao, setModoAcao] = useState<ModoDefinicaoAcao>("assistente");
   const [tipoAcaoTexto, setTipoAcaoTexto] = useState("");
   const [especiePeca, setEspeciePeca] =
     useState<EspeciePecaJec>("peticao-inicial");
