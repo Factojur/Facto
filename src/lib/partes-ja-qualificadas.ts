@@ -4,9 +4,9 @@
  */
 
 import type { AutorValue } from "@/lib/autor-types";
-import { autorVazio } from "@/lib/autor-types";
+import { autorVazio, autoresTemDadosMinimos } from "@/lib/autor-types";
 import type { ReuValue } from "@/lib/reu-types";
-import { reuVazio } from "@/lib/reu-types";
+import { reuTemDadosMinimos, reuVazio } from "@/lib/reu-types";
 import {
   ehPeticaoInicialPorEspecie,
   type EspeciePecaJec,
@@ -77,6 +77,35 @@ export function nomesReusCurto(reus: ReuValue[] | null | undefined): string {
   if (nomes.length === 1) return nomes[0]!;
   const ultimo = nomes.pop()!;
   return `${nomes.join(", ")} e ${ultimo}`;
+}
+
+/** Petição inicial: qualificação mínima. Peça incidental: só o nome nos autos. */
+export function autorOkParaChecklist(
+  autores: AutorValue[] | null | undefined,
+  jaQualificadas: boolean,
+  nomeNosAutos?: string | null
+): boolean {
+  if (jaQualificadas) {
+    return (
+      nomesAutoresCurto(autores).length >= 3 ||
+      String(nomeNosAutos ?? "").trim().length >= 3
+    );
+  }
+  return autoresTemDadosMinimos(autores);
+}
+
+export function reuOkParaChecklist(
+  reus: ReuValue[] | null | undefined,
+  jaQualificadas: boolean,
+  nomeNosAutos?: string | null
+): boolean {
+  if (jaQualificadas) {
+    return (
+      nomesReusCurto(reus).length >= 2 ||
+      String(nomeNosAutos ?? "").trim().length >= 2
+    );
+  }
+  return (reus ?? []).some(reuTemDadosMinimos);
 }
 
 export function fraseAnteSentenca(

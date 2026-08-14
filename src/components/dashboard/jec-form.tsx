@@ -40,7 +40,9 @@ import {
 } from "@/lib/jec-especie-peca";
 import {
   autoresAPartirDosNomes,
+  autorOkParaChecklist,
   pecaUsaPartesJaQualificadas,
+  reuOkParaChecklist,
   reusAPartirDosNomes,
 } from "@/lib/partes-ja-qualificadas";
 import type { FaseCasoJec } from "@/lib/jec-caso-types";
@@ -95,19 +97,16 @@ import { AnalisarProcessoSection } from "@/components/dashboard/analisar-process
 import type { AnaliseProcessoResultado } from "@/lib/analisar-processo-types";
 import { ROTULO_DOC_LABEL } from "@/lib/analisar-processo-types";
 
-const NAV_SECOES = [
-  { id: "secao-acao", label: "Peça e ação" },
-  { id: "secao-comarca", label: "Comarca" },
-  { id: "secao-autor", label: "Dados do Autor" },
-  { id: "secao-reus", label: "Réus" },
-  { id: "secao-fatos", label: "Fatos" },
-  { id: "secao-fundamentos", label: "Fundamentos" },
-  { id: "secao-provas", label: "Provas" },
-  { id: "secao-valores", label: "Valores" },
-  { id: "secao-pedidos", label: "Pedidos" },
-  { id: "secao-protocolo", label: "Protocolar" },
-  { id: "secao-gerar", label: "Gerar" },
-] as const;
+type GuiaJec = "identificacao" | "fatos" | "pedidos";
+
+const GUIAS_JEC: {
+  id: GuiaJec;
+  label: string;
+}[] = [
+  { id: "identificacao", label: "Identificação" },
+  { id: "fatos", label: "Fatos e fundamentos" },
+  { id: "pedidos", label: "Pedidos" },
+];
 
 const LOADING_STAGES = [
   "Maestro: montando o plano…",
@@ -166,9 +165,9 @@ function ProtocoloDocsChecklist() {
         Conferência de documentos
       </h2>
       <p className="mt-1 text-sm text-slate-500">
-        Lista orientativa para você conferir antes de protocolar. Não entra na
-        redação da peça e não substitui o edital ou as exigências do juízo /
-        sistema (e-proc, ESAJ, presencial).
+        Orientação para juntar os documentos no protocolo. Não entra na
+        redação da peça e não substitui as exigências do juízo ou do sistema
+        (e-proc, ESAJ, presencial).
       </p>
       <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-950">
         Cada caso pode precisar de documentos próprios. Confira sempre o que a
@@ -632,7 +631,7 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
   const [casoVinculoId, setCasoVinculoId] = useState<string | null>(null);
   const [faseVinculo, setFaseVinculo] = useState<FaseCasoJec | null>(null);
   const [msgCaso, setMsgCaso] = useState<string | null>(null);
-  const [modoAcao, setModoAcao] = useState<ModoDefinicaoAcao>("assistente");
+  const [guiaAtiva, setGuiaAtiva] = useState<GuiaJec>("identificacao");
   const [tipoAcaoTexto, setTipoAcaoTexto] = useState("");
   const [especiePeca, setEspeciePeca] =
     useState<EspeciePecaJec>("peticao-inicial");
@@ -758,11 +757,20 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
     tutelaUrgencia,
   ]);
 
+  const jaQualificadas = pecaUsaPartesJaQualificadas(especiePeca);
   const checklistItens = montarChecklistJec({
     tipoSelecionado: tipoAcaoDefinido || (assistentePendente ? ASSISTENTE_FACTO : ""),
     fatos,
-    reusCount: reus.length,
-    autoresCount: autores.length,
+    autorOk: autorOkParaChecklist(
+      autores,
+      jaQualificadas,
+      analiseProcesso?.ficha.partesAutor
+    ),
+    reusOk: reuOkParaChecklist(
+      reus,
+      jaQualificadas,
+      analiseProcesso?.ficha.partesReu
+    ),
     comarcaForo: comarca.foro ?? "",
     temValor: resumoValores.totalCentavos > 0,
     assistentePendente:
@@ -770,10 +778,19 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
       (modoAcao === "livre" && tipoAcaoTexto.trim().length < 8),
     processoPendenteConfirmacao:
       isProcesso && Boolean(analiseProcesso) && !processoConfirmado,
-    partesJaQualificadas: pecaUsaPartesJaQualificadas(especiePeca),
+    partesJaQualificadas: jaQualificadas,
   });
 
   const podeGerar = podeGerarPeca(checklistItens) && !bloqueadoTetoLeigo;
+
+  const itemOk = (id: string) =>
+    Boolean(checklistItens.find((i) => i.id === id)?.ok);
+  const guiaIdentificacaoOk =
+    itemOk("tipo") && itemOk("autor") && itemOk("reus");
+  const guiaFatosOk = itemOk("fatos");
+  const guiaPedidosOk =
+    itemOk("valores") ||
+    pedidos.some((p) => p.descricao.trim().length > 0);
 
   useEffect(() => {
     setEscritorio(carregarEscritorioConfig());
@@ -1355,18 +1372,46 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
         ) : null}
 
         <nav
-          aria-label="Seções do formulário"
-          className="sticky top-0 z-20 -mx-1 flex gap-1 overflow-x-auto border-b border-slate-200 bg-white/95 px-1 py-2 backdrop-blur"
+          aria-label="Etapas do formulário"
+          className="sticky top-0 z-20 -mx-1 flex gap-1 border-b border-slate-200 bg-white/95 px-1 py-2 backdrop-blur"
         >
-          {NAV_SECOES.map((item) => (
-            <a
-              key={item.id}
-              href={`#${item.id}`}
-              className="shrink-0 rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-stone-100 hover:text-stone-900 sm:text-sm"
-            >
-              {item.label}
-            </a>
-          ))}
+          {GUIAS_JEC.map((guia) => {
+            const ok =
+              guia.id === "identificacao"
+                ? guiaIdentificacaoOk
+                : guia.id === "fatos"
+                  ? guiaFatosOk
+                  : guiaPedidosOk;
+            const ativa = guiaAtiva === guia.id;
+            return (
+              <button
+                key={guia.id}
+                type="button"
+                onClick={() => setGuiaAtiva(guia.id)}
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition sm:text-sm ${
+                  ativa
+                    ? "bg-stone-800 text-amber-50"
+                    : "text-slate-600 hover:bg-stone-100 hover:text-stone-900"
+                }`}
+              >
+                <span
+                  aria-hidden
+                  className={
+                    ok
+                      ? ativa
+                        ? "text-emerald-300"
+                        : "text-emerald-600"
+                      : ativa
+                        ? "text-amber-100/70"
+                        : "text-slate-300"
+                  }
+                >
+                  {ok ? "✓" : "○"}
+                </span>
+                {guia.label}
+              </button>
+            );
+          })}
         </nav>
 
         {error && (
@@ -1375,6 +1420,7 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
           </div>
         )}
 
+        <div className={guiaAtiva === "identificacao" ? "space-y-6" : "hidden"}>
         <section
           id="secao-acao"
           className="scroll-mt-24 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
@@ -1795,7 +1841,18 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
             jaQualificado={pecaUsaPartesJaQualificadas(especiePeca)}
           />
         </div>
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setGuiaAtiva("fatos")}
+            className="rounded-lg bg-stone-700 px-4 py-2 text-sm font-medium text-amber-50 hover:bg-stone-600"
+          >
+            Continuar para fatos e fundamentos
+          </button>
+        </div>
+        </div>
 
+        <div className={guiaAtiva === "fatos" ? "space-y-6" : "hidden"}>
         <section
           id="secao-fatos"
           className="scroll-mt-24 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
@@ -2073,7 +2130,18 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
             </div>
           </div>
         </section>
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setGuiaAtiva("pedidos")}
+            className="rounded-lg bg-stone-700 px-4 py-2 text-sm font-medium text-amber-50 hover:bg-stone-600"
+          >
+            Continuar para pedidos
+          </button>
+        </div>
+        </div>
 
+        <div className={guiaAtiva === "pedidos" ? "space-y-6" : "hidden"}>
         <div id="secao-valores" className="scroll-mt-24">
           <ValoresCausaSection
             value={valoresCausa}
@@ -2083,10 +2151,7 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
         </div>
 
         <PedidosSection value={pedidos} onChange={setPedidos} />
-
-        <section id="secao-protocolo" className="scroll-mt-24">
-          <ProtocoloDocsChecklist />
-        </section>
+        </div>
 
         <section
           id="secao-gerar"
@@ -2261,6 +2326,10 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
             escritorio={escritorio}
             onFechar={() => setResultado(null)}
           />
+
+          <div className="mt-8">
+            <ProtocoloDocsChecklist />
+          </div>
         </div>
       )}
 

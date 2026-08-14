@@ -12,16 +12,12 @@ export type ItemChecklistJec = {
 export function montarChecklistJec(opcoes: {
   tipoSelecionado: string;
   fatos: string;
-  reusCount: number;
-  /** Pelo menos um autor com nome ou CPF mínimos. */
-  autoresCount: number;
+  autorOk: boolean;
+  reusOk: boolean;
   comarcaForo: string;
   temValor: boolean;
-  /** true enquanto o tipo de ação ainda não foi definido. */
   assistentePendente?: boolean;
-  /** true enquanto a peça sugerida pelos autos não foi confirmada. */
   processoPendenteConfirmacao?: boolean;
-  /** Recurso, contestação etc.: basta o nome; CPF/endereço não são exigidos. */
   partesJaQualificadas?: boolean;
 }): ItemChecklistJec[] {
   const fatosOk = opcoes.fatos.trim().length >= 40;
@@ -30,8 +26,6 @@ export function montarChecklistJec(opcoes: {
     opcoes.tipoSelecionado !== "assistente-facto" &&
     !opcoes.assistentePendente &&
     !opcoes.processoPendenteConfirmacao;
-  const reusOk = opcoes.reusCount > 0;
-  const autorOk = opcoes.autoresCount > 0;
   const comarcaOk = opcoes.comarcaForo.trim().length >= 12;
 
   return [
@@ -56,7 +50,7 @@ export function montarChecklistJec(opcoes: {
       label: opcoes.partesJaQualificadas
         ? "Nome do autor (já qualificado nos autos)"
         : "Pelo menos um autor qualificado",
-      ok: autorOk,
+      ok: opcoes.autorOk,
       bloqueante: true,
     },
     {
@@ -64,7 +58,7 @@ export function montarChecklistJec(opcoes: {
       label: opcoes.partesJaQualificadas
         ? "Nome do réu (já qualificado nos autos)"
         : "Pelo menos um réu qualificado",
-      ok: reusOk,
+      ok: opcoes.reusOk,
       bloqueante: true,
     },
     {
