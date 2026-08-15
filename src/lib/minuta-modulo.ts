@@ -47,6 +47,14 @@ export const MODULO_JEC: AreaModuloConfig = {
   idsPeticaoInicial: ["peticao-inicial"],
 };
 
+export const MODULO_CIVIL: AreaModuloConfig = {
+  id: "civil",
+  tituloDashboard: "Geração de Peça — Direito Civil (justiça comum)",
+  leiResumo: "Código Civil · CPC",
+  href: "/dashboard/civil",
+  idsPeticaoInicial: ["peticao-inicial", "execucao-titulo"],
+};
+
 export const MODULO_CONSUMIDOR: AreaModuloConfig = {
   id: "consumidor",
   tituloDashboard: "Geração de Peça — Direito do Consumidor (justiça comum)",

@@ -30,13 +30,19 @@ function contemAlgum(texto: string, termos: string[]): boolean {
   return termos.some((t) => texto.includes(t));
 }
 
+function sufixoRitoAcao(areaId: string = "jec"): string {
+  if (areaId === "consumidor" || areaId === "civil") return "";
+  return " (JEC)";
+}
+
 /**
- * Normaliza texto livre / saída da IA para o padrão forense do JEC.
- * Ex.: "inexigibilidade de débito" →
- * "Ação de Inexigibilidade de Débito (JEC)"
- * (sem prefixo "Petição Inicial —" — a peça já é a petição).
+ * Normaliza texto livre / saída da IA para o padrão forense.
+ * No JEC acrescenta "(JEC)"; na justiça comum (civil/consumidor) não.
  */
-export function formatarNomeAcaoForense(bruto: string | null | undefined): string {
+export function formatarNomeAcaoForense(
+  bruto: string | null | undefined,
+  areaId: string = "jec"
+): string {
   let t = String(bruto ?? "")
     .trim()
     .replace(/\s+/g, " ")
@@ -85,7 +91,7 @@ export function formatarNomeAcaoForense(bruto: string | null | undefined): strin
     .replace(/\bC\/c\b/g, "c/c")
     .replace(/\bJec\b/g, "JEC");
 
-  return `${t} (JEC)`;
+  return `${t}${sufixoRitoAcao(areaId)}`;
 }
 
 /**
@@ -93,9 +99,10 @@ export function formatarNomeAcaoForense(bruto: string | null | undefined): strin
  */
 export function montarTituloAcaoCompleto(
   tipoBase: string,
-  cumulos: CumulosAcao
+  cumulos: CumulosAcao,
+  areaId: string = "jec"
 ): string {
-  const formatado = formatarNomeAcaoForense(tipoBase);
+  const formatado = formatarNomeAcaoForense(tipoBase, areaId);
   if (!formatado) return "";
 
   let nucleo = formatado.replace(/\s*\(JEC\)\s*$/i, "").trim();
@@ -122,7 +129,7 @@ export function montarTituloAcaoCompleto(
     partes.push("Tutela de Urgência");
   }
 
-  if (partes.length === 0) return `${nucleo} (JEC)`;
+  if (partes.length === 0) return `${nucleo}${sufixoRitoAcao(areaId)}`;
 
   if (/\bc\/c\b/i.test(nucleo)) {
     nucleo = `${nucleo}, ${partes.join(", ")}`;
@@ -130,7 +137,7 @@ export function montarTituloAcaoCompleto(
     nucleo = `${nucleo} c/c ${partes.join(", ")}`;
   }
 
-  return `${nucleo} (JEC)`;
+  return `${nucleo}${sufixoRitoAcao(areaId)}`;
 }
 
 export function cumulosDeDecisao(d: DecisaoAssistente): CumulosAcao {
@@ -147,14 +154,21 @@ export function cumulosDeDecisao(d: DecisaoAssistente): CumulosAcao {
 export function analisarCaseAssistente(input: {
   fatos: string;
   totalArquivos?: number;
+  areaId?: string;
 }): DecisaoAssistente {
   const fatos = input.fatos.toLowerCase();
+  const areaId = input.areaId ?? "jec";
+  const foro =
+    areaId === "civil"
+      ? "na justiça comum cível (Código Civil e CPC)"
+      : areaId === "consumidor"
+        ? "na justiça comum consumerista (CDC e CPC)"
+        : "no Juizado Especial Cível";
 
-  let tipoAcao =
-    "Ação de Indenização por Danos Materiais e Morais (JEC)";
+  let tipoAcao = "Ação de Indenização por Danos Materiais e Morais";
   let motivoAcao =
     "Os fatos narrados indicam lesão a direito patrimonial ou extrapatrimonial, "
-    + "compatível com pedido indenizatório no Juizado Especial Cível.";
+    + `compatível com pedido indenizatório ${foro}.`;
 
   if (
     contemAlgum(fatos, [
@@ -167,9 +181,9 @@ export function analisarCaseAssistente(input: {
     ]) &&
     !contemAlgum(fatos, ["golpe", "fraude", "pix", "clonag"])
   ) {
-    tipoAcao = "Execução de Título Extrajudicial (JEC)";
+    tipoAcao = "Execução de Título Extrajudicial";
     motivoAcao =
-      "Há indícios de título executivo extrajudicial, enquadrando-se em execução no JEC.";
+      `Há indícios de título executivo extrajudicial, enquadrando-se em execução ${foro}.`;
   } else if (
     contemAlgum(fatos, [
       "despejo",
@@ -180,7 +194,7 @@ export function analisarCaseAssistente(input: {
       "locador",
     ])
   ) {
-    tipoAcao = "Ação de Despejo para Fim de Locação (JEC)";
+    tipoAcao = "Ação de Despejo para Fim de Locação";
     motivoAcao =
       "A narrativa envolve relação locatícia, sugerindo ação de despejo para fim de locação.";
   } else if (
@@ -197,7 +211,7 @@ export function analisarCaseAssistente(input: {
     ])
   ) {
     tipoAcao =
-      "Ação Declaratória de Inexistência / Inexigibilidade de Débito (JEC)";
+      "Ação Declaratória de Inexistência / Inexigibilidade de Débito";
     motivoAcao =
       "Os fatos apontam cobrança ou apontamento indevido, cabendo declaração de inexigibilidade/inexistência do débito.";
   } else if (
@@ -211,7 +225,7 @@ export function analisarCaseAssistente(input: {
       "saldo devedor",
     ])
   ) {
-    tipoAcao = "Ação de Cobrança (JEC)";
+    tipoAcao = "Ação de Cobrança";
     motivoAcao =
       "Os fatos descrevem inadimplemento ou débito líquido, indicando ação de cobrança.";
   } else if (
@@ -224,7 +238,7 @@ export function analisarCaseAssistente(input: {
       "substituir",
     ])
   ) {
-    tipoAcao = "Ação de Obrigação de Fazer (JEC)";
+    tipoAcao = "Ação de Obrigação de Fazer";
     motivoAcao =
       "O caso envolve prestação específica a ser cumprida, compatível com obrigação de fazer.";
   }
@@ -287,7 +301,7 @@ export function analisarCaseAssistente(input: {
     cumulos.danosMateriais = danosMateriais;
   }
 
-  const tipoFormatado = formatarNomeAcaoForense(tipoAcao);
+  const tipoFormatado = formatarNomeAcaoForense(tipoAcao, areaId);
   const justificativa = [
     motivoAcao,
     tutelaUrgencia
@@ -301,7 +315,7 @@ export function analisarCaseAssistente(input: {
     danosMorais: cumulos.danosMorais,
     danosMateriais: cumulos.danosMateriais,
     justificativa,
-    tituloCompleto: montarTituloAcaoCompleto(tipoFormatado, cumulos),
+    tituloCompleto: montarTituloAcaoCompleto(tipoFormatado, cumulos, areaId),
     fonte: "regras",
   };
 }

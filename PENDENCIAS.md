@@ -70,8 +70,8 @@ Fonte viva também em `src/lib/abertura-areas.ts`. Trabalhar **uma de cada vez**
 
 **Preview interno (15/08):** `admin@facto.com` e `factoassessoria.jur@gmail.com` entram nos cards ainda `available: false` via `/dashboard/preview/<id>`. Clientes continuam vendo “Em breve”. Não ligar `available` no catálogo até o checklist da área fechar.
 
-1. **Consumidor (justiça comum)** — _em implementação (15/08, preview admin)_ — espécies CPC (inicial, contestação, réplica, ED, apelação, agravo, cumprimento, execução de título); endereçamento Vara Cível; CDC+CPC; sem teto 20 SM e sem recurso inominado. Catálogo ainda `available: false`.
-2. **Civil** — Cobrança/indenização comum; prazos CPC (aviso); Vara Cível; separar do consumidor e do JEC.
+1. **Consumidor (justiça comum)** — _preview admin (15/08)_ — espécies CPC; Vara Cível; CDC+CPC; sem teto 20 SM e sem recurso inominado. Catálogo `available: false`.
+2. **Civil (justiça comum)** — _em implementação (15/08, preview admin)_ — `/dashboard/civil`; espécies CPC (inicial, contestação, réplica, ED, apelação, agravo, cumprimento, execução de título); Vara Cível; CC+CPC; **sem CDC** (inversão/relação de consumo fica no módulo Consumidor); sem teto 20 SM e sem recurso inominado. Catálogo `available: false`.
 3. **Trabalhista** — JT; reclamação, defesa, RO 8d; polos reclamante/reclamado; CLT.
 4. **Família** — Guarda/divórcio/alimentos/inventário; sigilo; polos do rito.
 5. **Imobiliário / contratual** — Decidir módulo vs. tema em civil; só então espécies.

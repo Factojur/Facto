@@ -20,9 +20,14 @@ export async function POST(request: Request) {
 
     const body = (await request.json().catch(() => null)) as {
       fatos?: string;
+      areaId?: string;
     } | null;
 
     const fatos = String(body?.fatos ?? "").trim();
+    const areaId =
+      body?.areaId === "consumidor" || body?.areaId === "civil"
+        ? body.areaId
+        : "jec";
     if (fatos.length < 40) {
       return NextResponse.json(
         {
@@ -34,7 +39,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const decisao = await analisarCaseComGemini({ fatos });
+    const decisao = await analisarCaseComGemini({ fatos, areaId });
 
     return NextResponse.json({ decisao });
   } catch (erro) {

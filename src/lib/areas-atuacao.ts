@@ -58,8 +58,9 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     id: "civil",
     title: "Direito Civil",
     description:
-      "Ações de cobrança, indenização, obrigações e responsabilidade civil com base no Código Civil.",
-    law: "Código Civil",
+      "Cobrança, indenização e obrigações na justiça comum (Código Civil e CPC) — distinto do Juizado e do módulo Consumidor.",
+    law: "Código Civil · CPC",
+    href: "/dashboard/civil",
     available: false,
     icon: "📜",
   },

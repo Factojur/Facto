@@ -69,9 +69,11 @@ export function montarSystemPromptAnaliseEstrategica(
   const rito =
     areaId === "consumidor"
       ? "justiça comum consumerista (CDC e CPC). NÃO use Lei 9.099/95 nem recurso inominado."
-      : "juizados especiais cíveis brasileiros (Lei 9.099/95).";
+      : areaId === "civil"
+        ? "justiça comum cível (Código Civil e CPC). NÃO use Lei 9.099/95, recurso inominado nem CDC como tese principal."
+        : "juizados especiais cíveis brasileiros (Lei 9.099/95).";
   const nomePeca =
-    areaId === "consumidor"
+    areaId === "consumidor" || areaId === "civil"
       ? "Nome técnico da peça na justiça comum (apelação, contestação, cumprimento etc. — NÃO recurso inominado)"
       : "Nome técnico da peça/ação cabível no JEC (SEM prefixo \"Petição Inicial —\"; só o nome forense)";
   return [
@@ -80,11 +82,11 @@ export function montarSystemPromptAnaliseEstrategica(
     "",
     "1. Fatos em ordem cronológica (REESCRITOS em linguagem objetiva — NÃO copie o relato literalmente);",
     "2. Identificação clara das partes (autor/réu conforme a espécie);",
-    "3. A tese jurídica principal a ser aplicada (CDC, CPC, súmulas, conforme o rito);",
+    "3. A tese jurídica principal a ser aplicada (leis e súmulas do rito — CC/CDC/CPC conforme o módulo);",
     `4. ${nomePeca};`,
     meta
       ? `5. Confirme a espécie da peça: ${meta.rotulo} (${especiePeca}) — adapte teses e pedidos a essa espécie;`
-      : areaId === "consumidor"
+      : areaId === "consumidor" || areaId === "civil"
         ? "5. Indique a espécie (petição inicial, contestação, réplica, apelação, agravo, cumprimento ou execução);"
         : "5. Indique a espécie da peça (petição inicial, contestação, embargos, recurso, réplica ou execução);",
     "6. Pedidos essenciais sugeridos (lista curta, adequados à espécie);",
@@ -123,10 +125,19 @@ export function montarSystemPromptRedacaoTier1(
   const ritoLinha =
     areaId === "consumidor"
       ? "Atue na justiça comum brasileira em demanda de consumo (CDC + CPC). NÃO aplique Lei 9.099/95, teto do Juizado, recurso inominado nem Turma Recursal. Honorários: art. 85 do CPC."
-      : "Atue no Juizado Especial Cível brasileiro (Lei 9.099/95).";
+      : areaId === "civil"
+        ? "Atue na justiça comum cível (Código Civil + CPC). NÃO aplique Lei 9.099/95 nem recurso inominado. NÃO fundamente em CDC (inversão do ônus, relação de consumo) — se o caso for consumerista, o módulo é Consumidor. Honorários: art. 85 do CPC. Responsabilidade: arts. 186 e 927 do CC quando couber."
+        : "Atue no Juizado Especial Cível brasileiro (Lei 9.099/95).";
+
+  const especialidade =
+    areaId === "civil"
+      ? "contencioso cível (obrigações, responsabilidade civil, contratos entre particulares)"
+      : areaId === "consumidor"
+        ? "direito do consumidor na justiça comum (CDC e CPC)"
+        : "contencioso cível e direito do consumidor";
 
   return [
-    `Você é um Advogado Sênior de elite, especialista em contencioso cível e direito do consumidor, conhecido por redigir peças forenses impecáveis (${meta.rotulo}).`,
+    `Você é um Advogado Sênior de elite, especialista em ${especialidade}, conhecido por redigir peças forenses impecáveis (${meta.rotulo}).`,
     ritoLinha,
     "",
     `Missão: redigir a peça completa da espécie "${meta.rotulo}", utilizando os Fatos fornecidos pelo usuário e a Estratégia Jurídica (Teses e Leis) mapeada pelo Agente 1 (Paralegal).`,

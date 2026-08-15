@@ -320,7 +320,10 @@ async function postGerarPeca(request: Request) {
     );
   }
 
-  const areaId = body.areaId === "consumidor" ? "consumidor" : "jec";
+  const areaId =
+    body.areaId === "consumidor" || body.areaId === "civil"
+      ? body.areaId
+      : "jec";
   if (areaId !== "jec" && !isEmailPreviewAreas(email)) {
     return NextResponse.json(
       { error: "Este módulo ainda não está disponível." },

@@ -266,6 +266,7 @@ export function DashboardHome({
   const [salvando, setSalvando] = useState(false);
   const [erroSalvar, setErroSalvar] = useState(false);
   const [filtro, setFiltro] = useState<Filtro>("todas");
+  const [buscaArea, setBuscaArea] = useState("");
 
   useEffect(() => {
     const locais = carregarFavoritosLocal(userId);
@@ -314,18 +315,31 @@ export function DashboardHome({
   } as const;
 
   const areasVisiveis = useMemo(() => {
+    let lista = AREAS_ATUACAO;
     if (filtro === "favoritas") {
-      return AREAS_ATUACAO.filter((a) => favoritos.includes(a.id));
-    }
-    if (filtro === "disponiveis") {
-      return AREAS_ATUACAO.filter(
+      lista = AREAS_ATUACAO.filter((a) => favoritos.includes(a.id));
+    } else if (filtro === "disponiveis") {
+      lista = AREAS_ATUACAO.filter(
         (a) =>
           hrefModuloArea(a, previewAreas) &&
           areaEstaLiberada(a.id, gateAreas)
       );
     }
-    return AREAS_ATUACAO;
-  }, [filtro, favoritos, plano, leigo, acessoLivre, previewAreas]);
+    const q = buscaArea.trim().toLowerCase();
+    if (!q) return lista;
+    return lista.filter((a) => {
+      const tema = getAreaTema(a.id);
+      const blob = [
+        a.title,
+        a.description,
+        a.law ?? "",
+        ...tema.tags,
+      ]
+        .join(" ")
+        .toLowerCase();
+      return blob.includes(q);
+    });
+  }, [filtro, favoritos, plano, leigo, acessoLivre, previewAreas, buscaArea]);
 
   const areaJec = getAreaById("jec");
 
@@ -431,9 +445,32 @@ export function DashboardHome({
 
             {/* Áreas de atuação */}
             <section className="relative">
-              <div className="relative z-10 mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative z-10 mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <h2 className="text-lg font-semibold text-white">Áreas de atuação</h2>
-                <div className="flex rounded-xl border border-white/10 bg-white/5 p-1">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <label className="relative min-w-0 flex-1 sm:w-64 lg:w-72">
+                    <span className="sr-only">Pesquisar área</span>
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      aria-hidden
+                    >
+                      <circle cx="11" cy="11" r="6.5" />
+                      <path d="M16.2 16.2L21 21" strokeLinecap="round" />
+                    </svg>
+                    <input
+                      type="search"
+                      value={buscaArea}
+                      onChange={(e) => setBuscaArea(e.target.value)}
+                      placeholder="Pesquisar área…"
+                      autoComplete="off"
+                      className="w-full rounded-xl border border-white/10 bg-white/5 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/40 outline-none transition focus:border-facto-gold/50 focus:bg-white/10"
+                    />
+                  </label>
+                  <div className="flex shrink-0 rounded-xl border border-white/10 bg-white/5 p-1">
                   {(
                     [
                       ["todas", "Todas"],
@@ -454,6 +491,7 @@ export function DashboardHome({
                       {label}
                     </button>
                   ))}
+                  </div>
                 </div>
               </div>
 
@@ -481,10 +519,13 @@ export function DashboardHome({
                 </div>
               ) : (
                 <div className="rounded-xl border border-white/10 bg-white/5 px-6 py-10 text-center text-stone-400">
-                  Nenhuma área neste filtro.{" "}
+                  Nenhuma área com esse filtro ou pesquisa.{" "}
                   <button
                     type="button"
-                    onClick={() => setFiltro("todas")}
+                    onClick={() => {
+                      setFiltro("todas");
+                      setBuscaArea("");
+                    }}
                     className="text-facto-gold underline-offset-2 hover:underline"
                   >
                     Ver todas

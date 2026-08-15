@@ -57,33 +57,89 @@ function boolField(v: unknown, fallback = false): boolean {
   return fallback;
 }
 
-const SYSTEM_CLASSIFICACAO = [
-  "Você é o Assistente Facto, paralegal especialista em Juizado Especial Cível brasileiro (Lei 9.099/95).",
-  "Analise os FATOS e NOMEIE a ação processual cabível no padrão forense.",
-  "",
-  "REGRAS DE NOMENCLATURA:",
-  '- Use o formato: "Ação de [NOME] c/c [Cúmulos] (JEC)" — SEM prefixo "Petição Inicial".',
-  "- Exemplos válidos:",
-  '  • "Ação Declaratória de Inexistência / Inexigibilidade de Débito c/c Danos Morais (JEC)"',
-  '  • "Ação de Indenização por Danos Materiais e Morais (JEC)"',
-  '  • "Ação de Obrigação de Fazer c/c Danos Morais e Tutela de Urgência (JEC)"',
-  '  • "Execução de Título Extrajudicial (JEC)"',
-  '- PROIBIDO começar com "Petição Inicial" — a peça já é a petição; o nome é só o da ação.',
-  "- NÃO escolha de uma lista fechada: invente o nome técnico correto e usual na praxe forense brasileira.",
-  "- Se tiver busca/Google disponível, confira nomenclatura usual de petições no JEC/CDC compatível com os fatos.",
-  "- Golpe/fraude/PIX/cartão/falsa central → indenização ou inexigibilidade + danos; NÃO execução de título.",
-  "- Tutela de urgência só com urgência real (corte, bloqueio, risco iminente).",
-  "- Justificativa objetiva em português (2 a 4 frases), sem inventar fatos.",
-  "",
-  "Responda SOMENTE com JSON válido (sem markdown), neste formato:",
-  "{",
-  '  "tipoAcao": "<nome forense completo da ação>",',
-  '  "tutelaUrgencia": true|false,',
-  '  "danosMorais": true|false,',
-  '  "danosMateriais": true|false,',
-  '  "justificativa": "<texto>"',
-  "}",
-].join("\n");
+function systemClassificacao(areaId: string): string {
+  if (areaId === "civil") {
+    return [
+      "Você é o Assistente Facto, paralegal especialista em contencioso cível na justiça comum (Código Civil e CPC).",
+      "Analise os FATOS e NOMEIE a ação processual cabível no padrão forense.",
+      "",
+      "REGRAS DE NOMENCLATURA:",
+      '- Use o formato: "Ação de [NOME] c/c [Cúmulos]" — SEM prefixo "Petição Inicial" e SEM "(JEC)".',
+      "- Exemplos válidos:",
+      '  • "Ação de Cobrança c/c Danos Morais"',
+      '  • "Ação de Indenização por Danos Materiais e Morais"',
+      '  • "Ação de Obrigação de Fazer c/c Tutela de Urgência"',
+      '  • "Execução de Título Extrajudicial"',
+      "- NÃO use Lei 9.099/95, recurso inominado nem CDC (relação de consumo / inversão do ônus) — se for consumo, o módulo é Consumidor.",
+      "- Honorários: art. 85 do CPC. Responsabilidade: arts. 186 e 927 do CC quando couber.",
+      "- NÃO escolha de uma lista fechada: invente o nome técnico correto e usual na praxe forense brasileira.",
+      "- Tutela de urgência só com urgência real (art. 300 do CPC).",
+      "- Justificativa objetiva em português (2 a 4 frases), sem inventar fatos.",
+      "",
+      "Responda SOMENTE com JSON válido (sem markdown), neste formato:",
+      "{",
+      '  "tipoAcao": "<nome forense completo da ação>",',
+      '  "tutelaUrgencia": true|false,',
+      '  "danosMorais": true|false,',
+      '  "danosMateriais": true|false,',
+      '  "justificativa": "<texto>"',
+      "}",
+    ].join("\n");
+  }
+  if (areaId === "consumidor") {
+    return [
+      "Você é o Assistente Facto, paralegal especialista em direito do consumidor na justiça comum (CDC e CPC).",
+      "Analise os FATOS e NOMEIE a ação processual cabível no padrão forense.",
+      "",
+      "REGRAS DE NOMENCLATURA:",
+      '- Use o formato: "Ação de [NOME] c/c [Cúmulos]" — SEM prefixo "Petição Inicial" e SEM "(JEC)".',
+      "- Exemplos válidos:",
+      '  • "Ação Declaratória de Inexistência / Inexigibilidade de Débito c/c Danos Morais"',
+      '  • "Ação de Indenização por Danos Materiais e Morais"',
+      '  • "Ação de Obrigação de Fazer c/c Danos Morais e Tutela de Urgência"',
+      "- NÃO use Lei 9.099/95 nem recurso inominado. Este módulo NÃO é Juizado.",
+      "- Golpe/fraude/PIX/cartão/falsa central → indenização ou inexigibilidade + danos; NÃO execução de título.",
+      "- Tutela de urgência só com urgência real (art. 300 do CPC).",
+      "- Justificativa objetiva em português (2 a 4 frases), sem inventar fatos.",
+      "",
+      "Responda SOMENTE com JSON válido (sem markdown), neste formato:",
+      "{",
+      '  "tipoAcao": "<nome forense completo da ação>",',
+      '  "tutelaUrgencia": true|false,',
+      '  "danosMorais": true|false,',
+      '  "danosMateriais": true|false,',
+      '  "justificativa": "<texto>"',
+      "}",
+    ].join("\n");
+  }
+  return [
+    "Você é o Assistente Facto, paralegal especialista em Juizado Especial Cível brasileiro (Lei 9.099/95).",
+    "Analise os FATOS e NOMEIE a ação processual cabível no padrão forense.",
+    "",
+    "REGRAS DE NOMENCLATURA:",
+    '- Use o formato: "Ação de [NOME] c/c [Cúmulos] (JEC)" — SEM prefixo "Petição Inicial".',
+    "- Exemplos válidos:",
+    '  • "Ação Declaratória de Inexistência / Inexigibilidade de Débito c/c Danos Morais (JEC)"',
+    '  • "Ação de Indenização por Danos Materiais e Morais (JEC)"',
+    '  • "Ação de Obrigação de Fazer c/c Danos Morais e Tutela de Urgência (JEC)"',
+    '  • "Execução de Título Extrajudicial (JEC)"',
+    '- PROIBIDO começar com "Petição Inicial" — a peça já é a petição; o nome é só o da ação.',
+    "- NÃO escolha de uma lista fechada: invente o nome técnico correto e usual na praxe forense brasileira.",
+    "- Se tiver busca/Google disponível, confira nomenclatura usual de petições no JEC/CDC compatível com os fatos.",
+    "- Golpe/fraude/PIX/cartão/falsa central → indenização ou inexigibilidade + danos; NÃO execução de título.",
+    "- Tutela de urgência só com urgência real (corte, bloqueio, risco iminente).",
+    "- Justificativa objetiva em português (2 a 4 frases), sem inventar fatos.",
+    "",
+    "Responda SOMENTE com JSON válido (sem markdown), neste formato:",
+    "{",
+    '  "tipoAcao": "<nome forense completo da ação>",',
+    '  "tutelaUrgencia": true|false,',
+    '  "danosMorais": true|false,',
+    '  "danosMateriais": true|false,',
+    '  "justificativa": "<texto>"',
+    "}",
+  ].join("\n");
+}
 
 /** Modelos com melhor suporte a Google Search grounding. */
 const MODELOS_ASSISTENTE_BUSCA = [
@@ -96,9 +152,11 @@ const MODELOS_ASSISTENTE_BUSCA = [
  */
 export async function analisarCaseComGemini(input: {
   fatos: string;
+  areaId?: string;
 }): Promise<DecisaoAssistente> {
   const fatos = input.fatos.trim();
-  const fallback = () => analisarCaseAssistente({ fatos });
+  const areaId = input.areaId ?? "jec";
+  const fallback = () => analisarCaseAssistente({ fatos, areaId });
 
   if (fatos.length < 40) {
     return fallback();
@@ -109,13 +167,17 @@ export async function analisarCaseComGemini(input: {
   }
 
   const res = await gerarTextoComGemini({
-    systemPrompt: SYSTEM_CLASSIFICACAO,
+    systemPrompt: systemClassificacao(areaId),
     userPrompt: [
       "<FATOS_DO_CASO>",
       fatos.slice(0, 12_000),
       "</FATOS_DO_CASO>",
       "",
-      "Com base nos fatos (e em busca geral sobre nomenclatura forense no JEC, se disponível),",
+      areaId === "civil"
+        ? "Com base nos fatos (nomenclatura da justiça comum cível / CPC, se disponível),"
+        : areaId === "consumidor"
+          ? "Com base nos fatos (nomenclatura consumerista na justiça comum / CDC+CPC, se disponível),"
+          : "Com base nos fatos (e em busca geral sobre nomenclatura forense no JEC, se disponível),",
       "nomeie a ação cabível e indique cúmulos.",
     ].join("\n"),
     modelos: MODELOS_ASSISTENTE_BUSCA,
@@ -137,7 +199,7 @@ export async function analisarCaseComGemini(input: {
 
   const tipoBruto = String(json.tipoAcao ?? json.tipo_acao ?? "").trim();
   const tipoAcao =
-    formatarNomeAcaoForense(tipoBruto) || fallback().tipoAcao;
+    formatarNomeAcaoForense(tipoBruto, areaId) || fallback().tipoAcao;
 
   const tutelaUrgencia = boolField(json.tutelaUrgencia ?? json.tutela_urgencia);
   const danosMorais = boolField(json.danosMorais ?? json.danos_morais);
@@ -156,7 +218,7 @@ export async function analisarCaseComGemini(input: {
     danosMorais,
     danosMateriais,
     justificativa,
-    tituloCompleto: montarTituloAcaoCompleto(tipoAcao, cumulos),
+    tituloCompleto: montarTituloAcaoCompleto(tipoAcao, cumulos, areaId),
     fonte: "gemini",
   };
 }

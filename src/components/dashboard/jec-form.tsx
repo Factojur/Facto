@@ -44,7 +44,14 @@ import {
   metaEspecieDaArea,
   tituloPecaDaArea,
 } from "@/lib/peca-especie-area";
-import { MODULO_CONSUMIDOR } from "@/lib/minuta-modulo";
+import {
+  GUIAS_MINUTA,
+  LOADING_STAGES_GERACAO,
+  MODULO_CIVIL,
+  MODULO_CONSUMIDOR,
+  MODULO_JEC,
+  type GuiaMinuta,
+} from "@/lib/minuta-modulo";
 import {
   autoresAPartirDosNomes,
   autorOkParaChecklist,
@@ -103,13 +110,6 @@ import { PacotesExtrasPainel } from "@/components/dashboard/pacotes-extras-paine
 import { AnalisarProcessoSection } from "@/components/dashboard/analisar-processo-section";
 import type { AnaliseProcessoResultado } from "@/lib/analisar-processo-types";
 import { ROTULO_DOC_LABEL } from "@/lib/analisar-processo-types";
-
-import {
-  GUIAS_MINUTA,
-  LOADING_STAGES_GERACAO,
-  MODULO_JEC,
-  type GuiaMinuta,
-} from "@/lib/minuta-modulo";
 
 type GuiaJec = GuiaMinuta;
 const GUIAS_JEC = GUIAS_MINUTA;
@@ -625,7 +625,7 @@ export function JecForm({
   areaId = "jec",
 }: {
   leigo?: boolean;
-  areaId?: "jec" | "consumidor";
+  areaId?: "jec" | "consumidor" | "civil";
 }) {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -679,7 +679,7 @@ export function JecForm({
   const isProcesso = modoAcao === "processo";
   const assistentePendente =
     (isAssistente || isProcesso) && tipoAcaoTexto.trim().length < 8;
-  const tipoAcaoDefinido = formatarNomeAcaoForense(tipoAcaoTexto);
+  const tipoAcaoDefinido = formatarNomeAcaoForense(tipoAcaoTexto, areaId);
 
   useEffect(() => {
     let cancelado = false;
@@ -739,7 +739,12 @@ export function JecForm({
     ultrapassaTetoJec(resumoValores.totalCentavos, false);
   const idsInicial = idsPeticaoInicialDaArea(areaId);
   const especiesOpcoes = listaEspeciesDaArea(areaId) ?? ESPECIES_PECA_JEC;
-  const moduloUi = areaId === "consumidor" ? MODULO_CONSUMIDOR : MODULO_JEC;
+  const moduloUi =
+    areaId === "consumidor"
+      ? MODULO_CONSUMIDOR
+      : areaId === "civil"
+        ? MODULO_CIVIL
+        : MODULO_JEC;
 
   const tituloAcaoCompleto = useMemo(() => {
     if (!tipoAcaoDefinido) return "";
@@ -750,14 +755,19 @@ export function JecForm({
           especiePeca,
           tipoAcaoDefinido,
           justificativaAssistente ?? ""
-        )
+        ),
+        areaId
       );
     }
-    return montarTituloAcaoCompleto(tipoAcaoDefinido, {
-      danosMorais: cumuloDanosMorais,
-      danosMateriais: cumuloDanosMateriais,
-      tutelaUrgencia,
-    });
+    return montarTituloAcaoCompleto(
+      tipoAcaoDefinido,
+      {
+        danosMorais: cumuloDanosMorais,
+        danosMateriais: cumuloDanosMateriais,
+        tutelaUrgencia,
+      },
+      areaId
+    );
   }, [
     tipoAcaoDefinido,
     especiePeca,
@@ -906,7 +916,7 @@ export function JecForm({
       const response = await fetch("/api/assistente-facto", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fatos: fatos.trim() }),
+        body: JSON.stringify({ fatos: fatos.trim(), areaId }),
       });
       const texto = await response.text();
       let data: {
@@ -926,7 +936,7 @@ export function JecForm({
 
       if (!response.ok || !data.decisao) {
         // Fallback local se a API falhar
-        const local = analisarCaseAssistente({ fatos });
+        const local = analisarCaseAssistente({ fatos, areaId });
         aplicarDecisaoAssistente(local);
         setError(
           data.error
@@ -938,7 +948,7 @@ export function JecForm({
 
       aplicarDecisaoAssistente(data.decisao);
     } catch {
-      const local = analisarCaseAssistente({ fatos });
+        const local = analisarCaseAssistente({ fatos, areaId });
       aplicarDecisaoAssistente(local);
       setError(
         "Não foi possível falar com a IA agora. Aplicamos a análise local — revise o tipo sugerido."
@@ -1147,7 +1157,7 @@ export function JecForm({
     const form = e.currentTarget;
     const formData = new FormData(form);
 
-    const tipoAcaoRaw = tituloAcaoCompleto || formatarNomeAcaoForense(tipoAcaoTexto);
+    const tipoAcaoRaw = tituloAcaoCompleto || formatarNomeAcaoForense(tipoAcaoTexto, areaId);
     if (!tipoAcaoRaw || tipoAcaoRaw === ASSISTENTE_FACTO) {
       setError(
         modoAcao === "assistente"
@@ -1341,7 +1351,9 @@ export function JecForm({
           <p className="mt-1 text-sm text-slate-500">
             {areaId === "consumidor"
               ? "Peças consumeristas na justiça comum (CDC e CPC). Não use este módulo para o Juizado — lá o rito é a Lei 9.099/95. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar."
-              : `Peças para o Juizado Especial Cível (${moduloUi.leiResumo}). Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.`}
+              : areaId === "civil"
+                ? "Peças cíveis na justiça comum (Código Civil e CPC): cobrança, indenização, obrigações. Não use para Juizado (9.099) nem para relação de consumo (módulo Consumidor). Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar."
+                : `Peças para o Juizado Especial Cível (${moduloUi.leiResumo}). Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.`}
           </p>
           {cota?.trackingAtivo && cota.usoLabel && !cota.esgotada && (
             <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
