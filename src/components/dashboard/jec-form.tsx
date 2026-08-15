@@ -39,6 +39,13 @@ import {
   type EspeciePecaJec,
 } from "@/lib/jec-especie-peca";
 import {
+  idsPeticaoInicialDaArea,
+  listaEspeciesDaArea,
+  metaEspecieDaArea,
+  tituloPecaDaArea,
+} from "@/lib/peca-especie-area";
+import { MODULO_CONSUMIDOR } from "@/lib/minuta-modulo";
+import {
   autoresAPartirDosNomes,
   autorOkParaChecklist,
   pecaUsaPartesJaQualificadas,
@@ -613,7 +620,13 @@ function estadoInicialFormulario() {
   };
 }
 
-export function JecForm({ leigo = false }: { leigo?: boolean }) {
+export function JecForm({
+  leigo = false,
+  areaId = "jec",
+}: {
+  leigo?: boolean;
+  areaId?: "jec" | "consumidor";
+}) {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [loadingStage, setLoadingStage] = useState(0);
@@ -625,8 +638,7 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
   const [guiaAtiva, setGuiaAtiva] = useState<GuiaJec>("identificacao");
   const [modoAcao, setModoAcao] = useState<ModoDefinicaoAcao>("assistente");
   const [tipoAcaoTexto, setTipoAcaoTexto] = useState("");
-  const [especiePeca, setEspeciePeca] =
-    useState<EspeciePecaJec>("peticao-inicial");
+  const [especiePeca, setEspeciePeca] = useState("peticao-inicial");
   const [especieManual, setEspecieManual] = useState(false);
   const [fatos, setFatos] = useState("");
   const [tutelaUrgencia, setTutelaUrgencia] = useState(false);
@@ -722,13 +734,19 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
 
   const comAdvogado = !leigo;
   const bloqueadoTetoLeigo =
-    leigo && ultrapassaTetoJec(resumoValores.totalCentavos, false);
+    areaId === "jec" &&
+    leigo &&
+    ultrapassaTetoJec(resumoValores.totalCentavos, false);
+  const idsInicial = idsPeticaoInicialDaArea(areaId);
+  const especiesOpcoes = listaEspeciesDaArea(areaId) ?? ESPECIES_PECA_JEC;
+  const moduloUi = areaId === "consumidor" ? MODULO_CONSUMIDOR : MODULO_JEC;
 
   const tituloAcaoCompleto = useMemo(() => {
     if (!tipoAcaoDefinido) return "";
-    if (pecaUsaPartesJaQualificadas(especiePeca)) {
+    if (pecaUsaPartesJaQualificadas(especiePeca, idsInicial)) {
       return formatarNomeAcaoForense(
-        tituloPecaCabivel(
+        tituloPecaDaArea(
+          areaId,
           especiePeca,
           tipoAcaoDefinido,
           justificativaAssistente ?? ""
@@ -743,13 +761,15 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
   }, [
     tipoAcaoDefinido,
     especiePeca,
+    areaId,
+    idsInicial,
     justificativaAssistente,
     cumuloDanosMorais,
     cumuloDanosMateriais,
     tutelaUrgencia,
   ]);
 
-  const jaQualificadas = pecaUsaPartesJaQualificadas(especiePeca);
+  const jaQualificadas = pecaUsaPartesJaQualificadas(especiePeca, idsInicial);
   const checklistItens = montarChecklistJec({
     tipoSelecionado: tipoAcaoDefinido || (assistentePendente ? ASSISTENTE_FACTO : ""),
     fatos,
@@ -832,7 +852,10 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
     setProcessoConfirmado(false);
     setModoAcao("processo");
     const peca = analise.pecaCandidata;
-    const titulo = pecaUsaPartesJaQualificadas(peca.especiePeca)
+    const titulo = pecaUsaPartesJaQualificadas(
+      peca.especiePeca,
+      idsInicial
+    )
       ? peca.tituloCompleto || peca.tipoAcao
       : peca.tituloCompleto || peca.tipoAcao;
     setTipoAcaoTexto(titulo);
@@ -1109,7 +1132,11 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
     e.preventDefault();
     if (!podeGerar) return;
 
-    if (leigo && ultrapassaTetoJec(resumoValores.totalCentavos, false)) {
+    if (
+      areaId === "jec" &&
+      leigo &&
+      ultrapassaTetoJec(resumoValores.totalCentavos, false)
+    ) {
       setError(mensagemBloqueioTetoLeigo(resumoValores.totalCentavos));
       return;
     }
@@ -1190,6 +1217,7 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
     const payload = {
       tipoAcao,
       especiePeca,
+      areaId,
       dispositivoSentenca:
         analiseProcesso?.ficha.dispositivo?.trim() || undefined,
       tutelaUrgencia,
@@ -1308,12 +1336,12 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
             </button>
           </div>
           <h1 className="text-2xl font-semibold text-slate-800">
-            {MODULO_JEC.tituloDashboard}
+            {moduloUi.tituloDashboard}
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Peças para o Juizado Especial Cível ({MODULO_JEC.leiResumo}). Três
-            etapas: identificação, fatos e pedidos. Revise sempre antes de
-            protocolar.
+            {areaId === "consumidor"
+              ? "Peças consumeristas na justiça comum (CDC e CPC). Não use este módulo para o Juizado — lá o rito é a Lei 9.099/95. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar."
+              : `Peças para o Juizado Especial Cível (${moduloUi.leiResumo}). Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.`}
           </p>
           {cota?.trackingAtivo && cota.usoLabel && !cota.esgotada && (
             <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
@@ -1440,12 +1468,13 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
                 name="especiePeca"
                 value={especiePeca}
                 onChange={(e) => {
-                  const proxima = e.target.value as EspeciePecaJec;
+                  const proxima = e.target.value;
                   setEspeciePeca(proxima);
                   setEspecieManual(true);
-                  if (pecaUsaPartesJaQualificadas(proxima)) {
+                  if (pecaUsaPartesJaQualificadas(proxima, idsInicial)) {
                     setTipoAcaoTexto(
-                      tituloPecaCabivel(
+                      tituloPecaDaArea(
+                        areaId,
                         proxima,
                         tipoAcaoTexto,
                         justificativaAssistente ??
@@ -1457,17 +1486,27 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
                 }}
                 className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-stone-500 focus:outline-none focus:ring-1 focus:ring-stone-500"
               >
-                {ESPECIES_PECA_JEC.map((esp) => (
+                {especiesOpcoes.map((esp) => (
                   <option key={esp.id} value={esp.id}>
                     {esp.rotulo}
                   </option>
                 ))}
               </select>
               <p className="mt-1.5 text-xs text-slate-500">
-                {metaEspecie(especiePeca).descricao}
-                {metaEspecie(especiePeca).exigeProcesso
-                  ? " Informe o nº do processo na Comarca."
-                  : ""}
+                {(() => {
+                  const meta = metaEspecieDaArea(areaId, especiePeca);
+                  const prazo =
+                    "prazoAviso" in meta
+                      ? String(
+                          (meta as { prazoAviso?: string }).prazoAviso ?? ""
+                        )
+                      : "";
+                  return `${meta.descricao}${
+                    meta.exigeProcesso
+                      ? " Informe o nº do processo na Comarca."
+                      : ""
+                  }${prazo ? ` ${prazo}` : ""}`;
+                })()}
               </p>
             </div>
 
@@ -1572,7 +1611,10 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
                 </p>
                 <p className="text-sm text-slate-700">
                   <span className="font-semibold">Espécie:</span>{" "}
-                  {metaEspecie(analiseProcesso.pecaCandidata.especiePeca).rotulo}
+                  {metaEspecieDaArea(
+                    areaId,
+                    analiseProcesso.pecaCandidata.especiePeca
+                  ).rotulo}
                   {" · "}
                   <span className="font-semibold">Confiança:</span>{" "}
                   {Math.round(analiseProcesso.pecaCandidata.confianca * 100)}%
@@ -1775,7 +1817,7 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
         <AutorSection
           value={autores}
           onChange={setAutores}
-          jaQualificado={pecaUsaPartesJaQualificadas(especiePeca)}
+          jaQualificado={pecaUsaPartesJaQualificadas(especiePeca, idsInicial)}
         >
           <div className="space-y-4">
             <div>
@@ -1831,7 +1873,7 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
           <ReusSection
             value={reus}
             onChange={setReus}
-            jaQualificado={pecaUsaPartesJaQualificadas(especiePeca)}
+            jaQualificado={pecaUsaPartesJaQualificadas(especiePeca, idsInicial)}
           />
         </div>
         <div className="flex justify-end">

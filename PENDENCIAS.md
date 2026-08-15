@@ -47,20 +47,22 @@ O catálogo (`AREAS_ATUACAO`) + ilustração + tags + **casos-ouro** (teste de l
 
 **Contrato compartilhado (15/08):** `src/lib/minuta-modulo.ts` + `docs-conferencia-protocolo.ts` + regra Cursor `jec-base-dashboard`. JEC continua a base; o genérico não fica só no `jec-form`.
 
-**Reaproveitar do JEC (todas as áreas):** já qualificado, JG/MLE só texto, provas do fato ≠ protocolo, 3 etapas, justificado, timbre/Gerar no fim, cotas, busca juris.
+**Reaproveitar do JEC (estrutura, todas as áreas):** já qualificado, JG/MLE só texto, provas do fato ≠ protocolo, 3 etapas, justificado, timbre/Gerar no fim, cotas, busca juris.
 
-**Não reaproveitar cego:** endereçamento (“Juiz de Direito” / JEC), espécies 9.099, teto 20 SM, prazos do Juizado, prompt do Redator amarrado a `jec-especie-peca.ts`.
+**Não reaproveitar cego (rito):** espécies 9.099, teto 20 SM, “Juiz de Direito” do Juizado, polos e prazos do JEC, prompt amarrado a `jec-especie-peca.ts`. Cada área ganha tabela própria de peças (ex. penal: resposta à acusação, HC — sem contestação cível). Incluir ou remover campos inúteis àquele rito. Pesquisar leis/códigos da área na implementação.
+
+**Seed vs. dashboard:** independentes por enquanto. Upload/juris não trava o esqueleto; `available` para cliente espera lastro mínimo da área da vez.
 
 Checklist **por área** antes de `available` + `href`:
 
-1. Rota `/dashboard/<area>` + formulário (pode começar como clone JEC, depois especializar).
-2. Tabela de **espécies** (inicial, defesa, recurso, cumprimento…) com esqueleto romano.
+1. Rota `/dashboard/<area>` + formulário na **estrutura** compartilhada (não clone cego do JEC).
+2. Tabela de **espécies do rito** (não copiar contestação/embargos do JEC se o juízo não usa esses nomes).
 3. **Endereçamento** certo (JT, JECRIM, JF, TRE, cartório, etc.).
-4. **Prazos** no Assistente/checklist (alertar, não protocolar): recurso, defesa, cumprimento.
+4. **Prazos** no Assistente/checklist (alertar, não protocolar).
 5. Polo/qualificação do rito (reclamante, querelante, impetrante, executado…).
-6. Prompt + lastro (leis/súmulas da área; seed no tribunal certo).
+6. Prompt + fundamentação (leis/códigos da área) + lastro no tribunal certo.
 7. Gate: Completo/Pro + OAB; leigo continua só JEC.
-8. Casos-ouro da área com endereçamento **real** (hoje vários fixtures ainda dizem Juiz de Direito).
+8. Casos-ouro da área com endereçamento **real**.
 
 ### Sequência de implementação (área a área)
 
@@ -68,7 +70,7 @@ Fonte viva também em `src/lib/abertura-areas.ts`. Trabalhar **uma de cada vez**
 
 **Preview interno (15/08):** `admin@facto.com` e `factoassessoria.jur@gmail.com` entram nos cards ainda `available: false` via `/dashboard/preview/<id>`. Clientes continuam vendo “Em breve”. Não ligar `available` no catálogo até o checklist da área fechar.
 
-1. **Consumidor (justiça comum)** — Distinguir do JEC (CDC + rito CPC). Rota, espécies CPC, endereçamento comum, copy valor/honorários/recurso (sem teto 20 SM), lastro, gate OAB, casos-ouro.
+1. **Consumidor (justiça comum)** — _em implementação (15/08, preview admin)_ — espécies CPC (inicial, contestação, réplica, ED, apelação, agravo, cumprimento, execução de título); endereçamento Vara Cível; CDC+CPC; sem teto 20 SM e sem recurso inominado. Catálogo ainda `available: false`.
 2. **Civil** — Cobrança/indenização comum; prazos CPC (aviso); Vara Cível; separar do consumidor e do JEC.
 3. **Trabalhista** — JT; reclamação, defesa, RO 8d; polos reclamante/reclamado; CLT.
 4. **Família** — Guarda/divórcio/alimentos/inventário; sigilo; polos do rito.

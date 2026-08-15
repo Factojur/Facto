@@ -8,9 +8,11 @@ import {
 } from "@/lib/gerar-peca-jec";
 import { formatarEnderecamentoPadrao, extrairCidadeUfDoForo, ehPeticaoInicial, rotuloAreaJudiciaria, ufValida } from "@/lib/endereco-comarca";
 import {
-  ehPeticaoInicialPorEspecie,
-  inferirEspeciePeca,
-} from "@/lib/jec-especie-peca";
+  inferirEspecieDaArea,
+  idsPeticaoInicialDaArea,
+  especieParaScaffoldJec,
+} from "@/lib/peca-especie-area";
+import { isEmailPreviewAreas } from "@/lib/emails-preview-areas";
 import {
   buscarConhecimentoRelacionado,
   extrairTextoDeArquivo,
@@ -77,6 +79,7 @@ type GerarPecaBody = GerarPecaJecInput & {
   leiMunicipal?: LeiMunicipalPayload | null;
   jurisDoCaso?: JurisCasoPayload[] | null;
   pedidosUsuario?: string[];
+  areaId?: string;
 };
 
 const LIMITE_TEXTO_LEI_MUNICIPAL = 40_000;
@@ -205,7 +208,8 @@ async function extrairJurisDoCaso(
 function finalizarTextoPeca(
   texto: string,
   body: GerarPecaBody,
-  opcoes?: { advogadoNome?: string; oabQualificacao?: string }
+  opcoes?: { advogadoNome?: string; oabQualificacao?: string },
+  areaId: string = "jec"
 ): string {
   const comProvas = injetarProvasELinkNuvem(normalizarPecaGerada(texto), {
     linkNuvem: body.linkNuvem,
@@ -214,12 +218,14 @@ function finalizarTextoPeca(
   });
   const autores =
     body.autores ?? (body.autor ? [body.autor] : []);
-  const especie = inferirEspeciePeca(
+  const especie = inferirEspecieDaArea(
+    areaId,
     body.tipoAcao,
     body.fatos,
     body.especiePeca
   );
-  const blocoAutor = pecaUsaPartesJaQualificadas(especie)
+  const idsInicial = idsPeticaoInicialDaArea(areaId);
+  const blocoAutor = pecaUsaPartesJaQualificadas(especie, idsInicial)
     ? formatarBlocoPartesJaQualificadas({
         autores,
         reus: body.reus ?? [],
@@ -233,7 +239,7 @@ function finalizarTextoPeca(
         advogadoNome: opcoes?.advogadoNome ?? "",
         oabQualificacao: opcoes?.oabQualificacao ?? "",
       });
-  const comReus = pecaUsaPartesJaQualificadas(especie)
+  const comReus = pecaUsaPartesJaQualificadas(especie, idsInicial)
     ? comProvas
     : injetarQualificacaoReus(
         comProvas,
@@ -314,6 +320,14 @@ async function postGerarPeca(request: Request) {
     );
   }
 
+  const areaId = body.areaId === "consumidor" ? "consumidor" : "jec";
+  if (areaId !== "jec" && !isEmailPreviewAreas(email)) {
+    return NextResponse.json(
+      { error: "Este módulo ainda não está disponível." },
+      { status: 403 }
+    );
+  }
+
   if (body.tipoAcao === "assistente-facto") {
     return NextResponse.json(
       {
@@ -325,8 +339,8 @@ async function postGerarPeca(request: Request) {
     );
   }
 
-  // Teto JEC para leigos (sem OAB): 20 SM — contas de acesso livre não sofrem o bloqueio
-  if (!isEmailAcessoLivre(email)) {
+  // Teto JEC para leigos (sem OAB): 20 SM — só no módulo JEC
+  if (areaId === "jec" && !isEmailAcessoLivre(email)) {
     let tipoUsuario =
       (user.user_metadata?.tipo_usuario as string | undefined) ?? "advogado";
     try {
@@ -406,12 +420,17 @@ async function postGerarPeca(request: Request) {
   };
   const autoresBody =
     body.autores ?? (body.autor ? [body.autor] : []);
-  const especieParaPartes = inferirEspeciePeca(
+  const idsInicial = idsPeticaoInicialDaArea(areaId);
+  const especieParaPartes = inferirEspecieDaArea(
+    areaId,
     body.tipoAcao,
     body.fatos,
     body.especiePeca
   );
-  const blocoQualificacaoAutor = pecaUsaPartesJaQualificadas(especieParaPartes)
+  const blocoQualificacaoAutor = pecaUsaPartesJaQualificadas(
+    especieParaPartes,
+    idsInicial
+  )
     ? formatarBlocoPartesJaQualificadas({
         autores: autoresBody,
         reus: body.reus ?? [],
@@ -426,6 +445,7 @@ async function postGerarPeca(request: Request) {
 
   const scaffold = gerarPecaJec({
     ...body,
+    especiePeca: especieParaScaffoldJec(areaId, especieParaPartes),
     autorNome: user.user_metadata?.nome_completo,
     autorOab: oabBruta,
     baseConhecimento,
@@ -437,7 +457,12 @@ async function postGerarPeca(request: Request) {
     scaffold.decisaoAssistente?.tutelaUrgencia ?? body.tutelaUrgencia;
 
   if (!geminiConfigurado()) {
-    const peca = finalizarTextoPeca(scaffold.peca, body, opcoesAdvogadoQualificacao);
+    const peca = finalizarTextoPeca(
+      scaffold.peca,
+      body,
+      opcoesAdvogadoQualificacao,
+      areaId
+    );
     const { pecaHtml } = gerarDocumentoTimbrado(
       peca,
       body.escritorio?.usarTimbre ? body.escritorio : undefined
@@ -471,16 +496,18 @@ async function postGerarPeca(request: Request) {
     );
   })();
 
-  const especieResolvida = inferirEspeciePeca(
+  const especieResolvida = inferirEspecieDaArea(
+    areaId,
     tipoResolvido,
     body.fatos,
     body.especiePeca
   );
   const enderecamento = formatarEnderecamentoPadrao({
     comarca: body.comarca ?? { cidade: "", uf: "" },
-    areaJudiciaria: rotuloAreaJudiciaria("jec"),
+    areaJudiciaria: rotuloAreaJudiciaria(areaId),
+    areaId,
     varaEmBranco:
-      ehPeticaoInicialPorEspecie(especieResolvida) ||
+      idsPeticaoInicialDaArea(areaId).includes(especieResolvida) ||
       ehPeticaoInicial(tipoResolvido),
   });
   const extraidoForo = body.comarca?.foro
@@ -496,6 +523,7 @@ async function postGerarPeca(request: Request) {
     tipoAcao: tipoResolvido,
     fatos: body.fatos,
     especiePeca: body.especiePeca,
+    areaId,
     itensConhecimento: baseConhecimento,
     leiMunicipal,
     jurisDoCaso,
@@ -518,11 +546,17 @@ async function postGerarPeca(request: Request) {
       linkNuvem: body.linkNuvem,
       provasArquivos: [...(body.provas ?? []), ...(body.fotos ?? [])],
       midiasArquivos: body.midias ?? [],
-      qualificacaoReus: pecaUsaPartesJaQualificadas(especieResolvida)
+      qualificacaoReus: pecaUsaPartesJaQualificadas(
+        especieResolvida,
+        idsInicial
+      )
         ? null
         : formatarQualificacaoReus(body.reus ?? []),
       qualificacaoAutor: blocoQualificacaoAutor,
-      partesJaQualificadas: pecaUsaPartesJaQualificadas(especieResolvida),
+      partesJaQualificadas: pecaUsaPartesJaQualificadas(
+        especieResolvida,
+        idsInicial
+      ),
       pedidosUsuario: body.pedidosUsuario
         ?.map((p) => String(p ?? "").trim())
         .filter(Boolean),
@@ -530,7 +564,12 @@ async function postGerarPeca(request: Request) {
   });
 
   if (!ia.ok) {
-    const fallbackNorm = finalizarTextoPeca(scaffold.peca, body, opcoesAdvogadoQualificacao);
+    const fallbackNorm = finalizarTextoPeca(
+      scaffold.peca,
+      body,
+      opcoesAdvogadoQualificacao,
+      areaId
+    );
     const { pecaHtml } = gerarDocumentoTimbrado(
       fallbackNorm,
       body.escritorio?.usarTimbre ? body.escritorio : undefined
@@ -570,7 +609,12 @@ async function postGerarPeca(request: Request) {
       })),
       blocoValorCausa: blocoValor,
     });
-    const peca = finalizarTextoPeca(hibrida, body, opcoesAdvogadoQualificacao);
+    const peca = finalizarTextoPeca(
+      hibrida,
+      body,
+      opcoesAdvogadoQualificacao,
+      areaId
+    );
     const citacoesHibrida = ia.contextoVerificacao
       ? verificarCitacoes(peca, ia.contextoVerificacao)
       : ia.citacoes;
@@ -603,7 +647,12 @@ async function postGerarPeca(request: Request) {
     pecaBrutaIa,
     montarSecaoValorCausa(valorCausaResumo).join("\n")
   );
-  const peca = finalizarTextoPeca(pecaComValor, body, opcoesAdvogadoQualificacao);
+  const peca = finalizarTextoPeca(
+    pecaComValor,
+    body,
+    opcoesAdvogadoQualificacao,
+    areaId
+  );
   const { pecaHtml } = gerarDocumentoTimbrado(
     peca,
     body.escritorio?.usarTimbre ? body.escritorio : undefined

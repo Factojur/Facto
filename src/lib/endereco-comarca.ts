@@ -38,7 +38,7 @@ export function rotuloAreaJudiciaria(areaId: string = "jec"): string {
     case "familia":
       return "VARA DE FAMÍLIA E SUCESSÕES";
     case "consumidor":
-      return "JUIZADO ESPECIAL CÍVEL";
+      return "CÍVEL";
     default:
       return "JUÍZO COMPETENTE";
   }
@@ -116,7 +116,7 @@ export function ufValida(uf: string): boolean {
 export function ehPeticaoInicial(tipoAcao: string | null | undefined): boolean {
   const t = String(tipoAcao ?? "").toLowerCase();
   if (
-    /contesta[cç][aã]o|embargos|recurso|agravo|impugna[cç][aã]o|r[eé]plica|contrarraz/i.test(
+    /contesta[cç][aã]o|embargos|recurso|apelac|agravo|impugna[cç][aã]o|r[eé]plica|contrarraz|cumprimento/i.test(
       t
     )
   ) {
@@ -134,6 +134,8 @@ export function formatarEnderecamentoPadrao(opcoes: {
   areaJudiciaria?: string;
   /** Se true (petição inicial), força "___" na vara. */
   varaEmBranco?: boolean;
+  /** Módulo do dashboard — define a fórmula da linha. */
+  areaId?: string;
 }): string {
   const info = opcoes.comarca ?? {};
   const area = (opcoes.areaJudiciaria ?? "JUIZADO ESPECIAL CÍVEL")
@@ -159,6 +161,14 @@ export function formatarEnderecamentoPadrao(opcoes: {
   const vara = varaEmBranco
     ? "___"
     : info.numeroJuizado!.trim().replace(/[ªº°]/g, "");
+
+  const areaId = opcoes.areaId ?? "";
+  if (areaId === "consumidor" || areaId === "civil") {
+    return (
+      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA ${vara} ` +
+      `VARA CÍVEL DO FÓRUM DA COMARCA DE ${comarcaTxt}`
+    );
+  }
 
   return (
     `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA ${vara} VARA ` +

@@ -35,4 +35,8 @@ Se alterar a dashboard JEC e **não** for específico do JEC, extrair/atualizar 
 
 ## Próximas áreas
 
-Não ligar `available` só no catálogo. Cada área precisa de rito, espécies, prazos, endereçamento e rota próprios (ver PENDENCIAS). Preencher `AreaModuloConfig` e reusar o compartilhado.
+Seed de juris **independente** da implementação da dashboard: não esperar a base inteira; lastro da área da vez antes de `available` para o cliente.
+
+Cada área tem **rito, espécies, polos, prazos, leis/códigos e endereçamento próprios**. Reusar a **estrutura** do JEC (3 etapas, já qualificado, JG/MLE, provas ≠ protocolo, justificado, timbre/Gerar no fim). **Não** copiar a lista de peças do JEC. Ex.: penal = resposta à acusação (não contestação); trabalhista = reclamação (não petição inicial do Juizado). Incluir o que o rito usa; remover o que não cabe. Pesquisar o rito da área **antes** de fechar espécies e prompt.
+
+Não ligar `available` só no catálogo. Preencher `AreaModuloConfig` + tabela de espécies da área.

@@ -15,6 +15,8 @@ Exemplos compartilhados: 3 etapas, timbre/Gerar só em Pedidos, já qualificado,
 
 ## Não copiar cego para outras áreas
 
-Endereçamento “Juiz de Direito” / JEC, espécies `jec-especie-peca.ts`, teto 20 SM, prazos do Juizado, polo específico do rito.
+A estrutura da dashboard (etapas, checklist genérico, export) replica. **Espécies, polos, prazos, leis e endereçamento nascem do rito da área**, com pesquisa — não da lista `jec-especie-peca.ts`. Penal não ganha “contestação”; trabalhista não ganha “petição inicial JEC”. Incluir ou tirar campos que não servem àquele juízo.
 
-Não ligar `available: true` no catálogo sem rota, espécies, endereçamento e lastro da área (PENDENCIAS — abertura de áreas).
+Teto 20 SM, Lei 9.099, “Juiz de Direito” do Juizado ficam no módulo JEC.
+
+Seed de jurisprudência segue em paralelo (cota da API), sem travar o esqueleto da área. `available: true` para o cliente só com rito + lastro mínimo daquela área.

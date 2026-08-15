@@ -46,3 +46,11 @@ export const MODULO_JEC: AreaModuloConfig = {
   hrefCasos: "/dashboard/jec/casos",
   idsPeticaoInicial: ["peticao-inicial"],
 };
+
+export const MODULO_CONSUMIDOR: AreaModuloConfig = {
+  id: "consumidor",
+  tituloDashboard: "Geração de Peça — Direito do Consumidor (justiça comum)",
+  leiResumo: "CDC · CPC",
+  href: "/dashboard/consumidor",
+  idsPeticaoInicial: ["peticao-inicial", "execucao-titulo"],
+};

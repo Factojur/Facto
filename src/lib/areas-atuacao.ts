@@ -120,8 +120,9 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     id: "consumidor",
     title: "Direito do Consumidor",
     description:
-      "Reclamações, indenizações e defesas com base no Código de Defesa do Consumidor.",
-    law: "CDC",
+      "Ações, defesas e recursos consumeristas na justiça comum (CDC e CPC) — distinto do Juizado Especial Cível.",
+    law: "CDC · CPC",
+    href: "/dashboard/consumidor",
     available: false,
     icon: "🛒",
   },
@@ -200,7 +201,8 @@ export function hrefModuloArea(
   area: AreaAtuacao,
   previewInterno: boolean
 ): string | undefined {
-  if (area.href) return area.href;
+  if (area.available && area.href) return area.href;
+  if (previewInterno && area.href) return area.href;
   if (previewInterno) return `/dashboard/preview/${area.id}`;
   return undefined;
 }

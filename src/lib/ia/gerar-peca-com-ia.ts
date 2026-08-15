@@ -32,9 +32,8 @@ import {
   type EtapaEquipeFacto,
 } from "@/lib/ia/agentes-facto";
 import {
-  inferirEspeciePeca,
-  type EspeciePecaJec,
-} from "@/lib/jec-especie-peca";
+  inferirEspecieDaArea,
+} from "@/lib/peca-especie-area";
 import { formatarOabAssinatura } from "@/lib/formatar-oab";
 import {
   contextoVerificacaoJurisCaso,
@@ -317,7 +316,8 @@ export { normalizarPecaGerada as markdownLeveParaTexto } from "@/lib/ia/normaliz
 export async function gerarPecaComIA(params: {
   tipoAcao: string;
   fatos: string;
-  especiePeca?: EspeciePecaJec | string | null;
+  especiePeca?: string | null;
+  areaId?: string;
   itensConhecimento?: TrechoConhecimento[];
   leiMunicipal?: BlocoLeiMunicipal | null;
   jurisDoCaso?: BlocoJurisCaso[] | null;
@@ -332,7 +332,9 @@ export async function gerarPecaComIA(params: {
   }
 
   const casoReal = params.casoReal ?? true;
-  const especie = inferirEspeciePeca(
+  const areaId = params.areaId ?? "jec";
+  const especie = inferirEspecieDaArea(
+    areaId,
     params.tipoAcao,
     params.fatos,
     params.especiePeca
@@ -378,7 +380,8 @@ export async function gerarPecaComIA(params: {
       contextoBase,
       leiMunicipal,
       jurisDoCaso,
-      especie
+      especie,
+      areaId
     ),
     userPrompt: montarUserPromptTriagem({
       tipoAcao: params.tipoAcao,
@@ -484,7 +487,8 @@ export async function gerarPecaComIA(params: {
       contextoRedacao,
       leiMunicipal,
       jurisDoCaso,
-      especie
+      especie,
+      areaId
     ),
     userPrompt: montarUserPromptRedacao({
       tipoAcao: analiseEstrategica.nomeAcao || params.tipoAcao,

@@ -5,12 +5,14 @@
  * Usado com Gemini no sandbox + /api/gerar-peca.
  */
 
-import { MARCADOR_NAO_ENCONTRADO } from "@/lib/ia/verificacao-citacoes";
 import {
-  blocoEstruturaPrompt,
-  metaEspecie,
-  type EspeciePecaJec,
-} from "@/lib/jec-especie-peca";
+  MARCADOR_NAO_ENCONTRADO,
+} from "@/lib/ia/verificacao-citacoes";
+import {
+  blocoEstruturaDaArea,
+  inferirEspecieDaArea,
+  metaEspecieDaArea,
+} from "@/lib/peca-especie-area";
 import {
   montarBlocoPromptJurisCaso,
   type BlocoJurisCaso,
@@ -57,20 +59,34 @@ export function montarSystemPromptAnaliseEstrategica(
   contextoBase: string,
   leiMunicipal?: BlocoLeiMunicipal | null,
   jurisDoCaso?: BlocoJurisCaso[] | null,
-  especiePeca?: EspeciePecaJec | null
+  especiePeca?: string | null,
+  areaId: string = "jec"
 ): string {
-  const meta = especiePeca ? metaEspecie(especiePeca) : null;
+  const especie = especiePeca
+    ? inferirEspecieDaArea(areaId, "", "", especiePeca)
+    : null;
+  const meta = especie ? metaEspecieDaArea(areaId, especie) : null;
+  const rito =
+    areaId === "consumidor"
+      ? "justiça comum consumerista (CDC e CPC). NÃO use Lei 9.099/95 nem recurso inominado."
+      : "juizados especiais cíveis brasileiros (Lei 9.099/95).";
+  const nomePeca =
+    areaId === "consumidor"
+      ? "Nome técnico da peça na justiça comum (apelação, contestação, cumprimento etc. — NÃO recurso inominado)"
+      : "Nome técnico da peça/ação cabível no JEC (SEM prefixo \"Petição Inicial —\"; só o nome forense)";
   return [
-    "Você é um Paralegal Especialista em juizados especiais cíveis brasileiros.",
+    `Você é um Paralegal Especialista em ${rito}`,
     "Receba o relato do cliente (pode estar bagunçado, coloquial ou muito longo) e devolva APENAS um resumo estruturado contendo:",
     "",
     "1. Fatos em ordem cronológica (REESCRITOS em linguagem objetiva — NÃO copie o relato literalmente);",
-    "2. Identificação clara das partes (autor/réu ou embargante/embargado, conforme a espécie);",
-    "3. A tese jurídica principal a ser aplicada (ex: CDC, Súmulas aplicáveis);",
-    "4. Nome técnico da peça/ação cabível no JEC (SEM prefixo \"Petição Inicial —\"; só o nome forense);",
+    "2. Identificação clara das partes (autor/réu conforme a espécie);",
+    "3. A tese jurídica principal a ser aplicada (CDC, CPC, súmulas, conforme o rito);",
+    `4. ${nomePeca};`,
     meta
       ? `5. Confirme a espécie da peça: ${meta.rotulo} (${especiePeca}) — adapte teses e pedidos a essa espécie;`
-      : "5. Indique a espécie da peça (petição inicial, contestação, embargos, recurso, réplica ou execução);",
+      : areaId === "consumidor"
+        ? "5. Indique a espécie (petição inicial, contestação, réplica, apelação, agravo, cumprimento ou execução);"
+        : "5. Indique a espécie da peça (petição inicial, contestação, embargos, recurso, réplica ou execução);",
     "6. Pedidos essenciais sugeridos (lista curta, adequados à espécie);",
     "7. Súmulas/artigos-chave pertinentes (só se realmente aplicáveis);",
     "8. Se houver <JURISPRUDENCIA_DO_CASO>, liste quais fontes usar e a tese de cada uma (sem inventar);",
@@ -98,14 +114,20 @@ export function montarSystemPromptRedacaoTier1(
   contextoBase: string,
   leiMunicipal?: BlocoLeiMunicipal | null,
   jurisDoCaso?: BlocoJurisCaso[] | null,
-  especiePeca: EspeciePecaJec = "peticao-inicial"
+  especiePeca: string = "peticao-inicial",
+  areaId: string = "jec"
 ): string {
-  const meta = metaEspecie(especiePeca);
-  const estrutura = blocoEstruturaPrompt(especiePeca);
+  const especie = inferirEspecieDaArea(areaId, "", "", especiePeca);
+  const meta = metaEspecieDaArea(areaId, especie);
+  const estrutura = blocoEstruturaDaArea(areaId, especie);
+  const ritoLinha =
+    areaId === "consumidor"
+      ? "Atue na justiça comum brasileira em demanda de consumo (CDC + CPC). NÃO aplique Lei 9.099/95, teto do Juizado, recurso inominado nem Turma Recursal. Honorários: art. 85 do CPC."
+      : "Atue no Juizado Especial Cível brasileiro (Lei 9.099/95).";
 
   return [
     `Você é um Advogado Sênior de elite, especialista em contencioso cível e direito do consumidor, conhecido por redigir peças forenses impecáveis (${meta.rotulo}).`,
-    "Atue no Juizado Especial Cível brasileiro (Lei 9.099/95).",
+    ritoLinha,
     "",
     `Missão: redigir a peça completa da espécie "${meta.rotulo}", utilizando os Fatos fornecidos pelo usuário e a Estratégia Jurídica (Teses e Leis) mapeada pelo Agente 1 (Paralegal).`,
     "Escreva em 3ª pessoa. Não inclua saudações nem o resumo estratégico — apenas a peça.",

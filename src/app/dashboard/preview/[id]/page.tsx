@@ -25,6 +25,9 @@ export default async function PreviewAreaPage({
   if (id === "jec") {
     redirect("/dashboard/jec");
   }
+  if (id === "consumidor") {
+    redirect("/dashboard/consumidor");
+  }
 
   const area = getAreaById(id);
   if (!area) notFound();
