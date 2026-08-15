@@ -11,6 +11,8 @@ const s = {
 };
 
 export type MenuIconName =
+  | "home"
+  | "scales"
   | "pencil"
   | "chat"
   | "file"
@@ -61,6 +63,23 @@ export function MenuIcon({
   className?: string;
 }) {
   switch (name) {
+    case "home":
+      return (
+        <Svg className={className}>
+          <path d="M4 11.5L12 5l8 6.5" {...s} />
+          <path d="M6.5 10.5V19h4.2v-5h2.6v5H17.5v-8.5" {...s} />
+        </Svg>
+      );
+    case "scales":
+      return (
+        <Svg className={className}>
+          <path d="M12 4v13" {...s} />
+          <path d="M8 17h8" {...s} />
+          <path d="M6 8h12" {...s} />
+          <path d="M6 8l-3 5.5c0 1.4 1.3 2.5 3 2.5s3-1.1 3-2.5L6 8z" {...s} />
+          <path d="M18 8l-3 5.5c0 1.4 1.3 2.5 3 2.5s3-1.1 3-2.5L18 8z" {...s} />
+        </Svg>
+      );
     case "pencil":
       return (
         <Svg className={className}>

@@ -3,30 +3,36 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FactoLogo } from "@/components/brand/facto-logo";
+import { MenuIcon, type MenuIconName } from "@/components/dashboard/menu-icons";
 import { areaIdFromPathname, moduloDaArea } from "@/lib/minuta-modulo";
 
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const modulo = moduloDaArea(areaIdFromPathname(pathname));
 
-  const navItems = [
+  const navItems: {
+    href: string;
+    label: string;
+    icon: MenuIconName;
+    match: (path: string) => boolean;
+  }[] = [
     {
       href: "/dashboard",
       label: "Início",
-      icon: "⌂",
+      icon: "home",
       match: (path: string) => path === "/dashboard",
     },
     {
       href: modulo.href,
       label: modulo.rotuloNav,
-      icon: "⚖️",
+      icon: "scales",
       match: (path: string) =>
         path === modulo.href || path.startsWith(`${modulo.href}/`),
     },
     {
       href: "/dashboard/suporte",
       label: "Suporte",
-      icon: "💬",
+      icon: "chat",
       match: (path: string) => path.startsWith("/dashboard/suporte"),
     },
   ];
@@ -57,7 +63,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                       : "text-stone-300 hover:bg-stone-800 hover:text-white"
                   }`}
                 >
-                  <span aria-hidden>{item.icon}</span>
+                  <MenuIcon name={item.icon} />
                   {item.label}
                 </Link>
               </li>
