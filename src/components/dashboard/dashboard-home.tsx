@@ -328,16 +328,19 @@ export function DashboardHome({
             {saudacao()}, {primeiroNome}
           </h1>
           <p className="mt-5 max-w-2xl text-2xl font-bold leading-[1.15] tracking-tight text-facto-gold md:text-[1.75rem] lg:text-3xl">
-            Você advoga. O FACTO redige.
+            {leigo
+              ? "Você relata o caso. O FACTO redige a minuta."
+              : "Você advoga. O FACTO redige."}
           </p>
           <p className="mt-3 max-w-lg text-sm leading-relaxed text-stone-400 md:text-base">
-            Peças completas no padrão forense — revise e protocole no ritmo
-            do seu escritório.
+            {leigo
+              ? "Peças do Juizado no padrão forense — revise, baixe e protocole."
+              : "Peças completas no padrão forense — revise e protocole no ritmo do seu escritório."}
           </p>
         </div>
       </section>
 
-      <AssistenteFactoDestaque />
+      <AssistenteFactoDestaque leigo={leigo} />
 
       {!leigo && (
         <div className="mx-auto max-w-7xl px-6 pt-6 md:px-10">
@@ -385,7 +388,7 @@ export function DashboardHome({
                     {salvando
                       ? "Salvando..."
                       : erroSalvar
-                        ? "Salvo localmente — rode a migration no Supabase para sincronizar."
+                        ? "Favoritos salvos neste aparelho. Sincronize o perfil para usá-los em outros dispositivos."
                         : "Suas áreas favoritas ficam sempre visíveis aqui."}
                   </p>
                 </div>
@@ -476,7 +479,7 @@ export function DashboardHome({
           </>
         )}
 
-        <FluxoFactoSection />
+        <FluxoFactoSection leigo={leigo} />
       </div>
       </div>
 

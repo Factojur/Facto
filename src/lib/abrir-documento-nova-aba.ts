@@ -67,6 +67,10 @@ export function abrirPreviewHtmlEmNovaAba(
     .folha {
       max-width: 21cm; margin: 24px auto; background: #fff;
       box-shadow: 0 1px 8px rgba(0,0,0,.12); padding: 0;
+      width: calc(100% - 16px);
+    }
+    @media (max-width: 720px) {
+      .folha { max-width: 100%; margin: 8px auto; width: 100%; box-shadow: none; }
     }
     @media print {
       body { background: #fff; }

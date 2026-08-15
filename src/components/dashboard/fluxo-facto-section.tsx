@@ -15,7 +15,7 @@ const PASSOS = [
     passo: "02",
     titulo: "Informe o caso",
     texto:
-      "Partes, pedidos, fatos e provas em formulário guiado — sem começar do zero.",
+      "Identificação, fatos e pedidos em três etapas — sem começar do zero.",
     icone: (
       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
         <path d="M8 4h8l2 4v14H6V4h2z" strokeLinejoin="round" />
@@ -27,7 +27,7 @@ const PASSOS = [
     passo: "03",
     titulo: "Assistente Facto (IA)",
     texto:
-      "A IA estrutura fundamentos, cláusulas e redação jurídica com rigor em cada área.",
+      "A equipe FACTO estrutura fundamentos e a redação forense — você revisa antes de protocolar.",
     destaque: true,
     icone: (
       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
@@ -49,7 +49,7 @@ const PASSOS = [
   },
 ] as const;
 
-export function FluxoFactoSection() {
+export function FluxoFactoSection({ leigo = false }: { leigo?: boolean }) {
   return (
     <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
       <div
@@ -62,11 +62,12 @@ export function FluxoFactoSection() {
           Como funciona
         </p>
         <h2 className="mt-2 text-xl font-semibold text-white md:text-2xl">
-          Do caso ao protocolo em 4 passos
+          Do caso à minuta em 3 etapas, depois o protocolo
         </h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-500 md:text-base">
-          Um fluxo pensado para a rotina do advogado — simples, rápido e com
-          rigor jurídico do início ao fim.
+          {leigo
+            ? "Fluxo pensado para o Juizado: identifique as partes, narre os fatos e feche os pedidos — o FACTO redige a minuta."
+            : "Fluxo pensado para a bancada do advogado e para quem atua no Juizado: identifique, fundamente e peça — o FACTO redige."}
         </p>
 
         <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">

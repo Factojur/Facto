@@ -322,7 +322,7 @@ export function JurisSugestoesPicker({
             {MAX_TRIBUNAIS_POR_BUSCA}).
             {cota?.ilimitado
               ? " Perfil interno: buscas externas sem limite mensal."
-              : " Cada tribunal consome 1 da cota; renova no dia 1º."}
+              : " Cada tribunal marcado consome 1 das 15 buscas do mês. Renova no dia 1º."}
           </p>
         </div>
         <div className="flex flex-col rounded-lg border border-slate-200 bg-white p-3">
@@ -371,9 +371,8 @@ export function JurisSugestoesPicker({
                 ) : null}
               </div>
               <p className="mt-1 text-sm text-slate-500">
-                Marque as que quiser usar na peça. Seus anexos já entram na
-                geração; aqui servem para conferência. Julgados de busca externa
-                e de tribunal vão para fila de verificação do admin.
+                Marque as que quiser usar na minuta. Anexos que você já enviou
+                entram na geração; aqui é só para conferir e escolher.
               </p>
               {totais && !carregando ? (
                 <p className="mt-2 text-xs text-slate-600">

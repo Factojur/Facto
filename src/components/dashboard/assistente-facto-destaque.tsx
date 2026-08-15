@@ -24,7 +24,7 @@ function IconeIA({ className }: { className?: string }) {
   );
 }
 
-export function AssistenteFactoDestaque() {
+export function AssistenteFactoDestaque({ leigo = false }: { leigo?: boolean }) {
   return (
     <section className="relative px-6 md:px-10">
       <div className="relative mx-auto max-w-7xl overflow-hidden rounded-2xl border border-facto-gold/35 bg-gradient-to-br from-facto-gold/[0.14] via-white/[0.04] to-transparent shadow-lg shadow-black/20">
@@ -47,9 +47,9 @@ export function AssistenteFactoDestaque() {
               <span className="text-facto-gold">(IA)</span>
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-stone-400 md:text-base">
-              Inteligência jurídica presente em todas as áreas — orienta a
-              redação, sugere fundamentos e acelera cada peça do início ao
-              protocolo.
+              {leigo
+                ? "Orienta a redação no Juizado Especial Cível — sugere fundamentos e acelera a minuta do início ao protocolo."
+                : "No módulo disponível hoje (JEC); as demais áreas entram com o mesmo Assistente. Orienta a redação, sugere fundamentos e acelera cada peça."}
             </p>
           </div>
 
@@ -58,9 +58,13 @@ export function AssistenteFactoDestaque() {
               <IconeIA className="h-9 w-9" />
             </div>
             <div className="hidden sm:block">
-              <p className="text-sm font-semibold text-white">Em todas as áreas</p>
+              <p className="text-sm font-semibold text-white">
+                {leigo ? "Módulo JEC" : "JEC agora · demais em breve"}
+              </p>
               <p className="mt-0.5 text-xs text-stone-500">
-                Em todas as especialidades
+                {leigo
+                  ? "Lei 9.099/95"
+                  : "O mesmo Assistente em cada especialidade"}
               </p>
             </div>
           </div>

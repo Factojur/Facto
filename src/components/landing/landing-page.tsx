@@ -76,7 +76,7 @@ const BENEFICIOS = [
     icone: IconeBalanca,
     titulo: "Fundamentos com lastro",
     texto:
-      "Súmulas do STF e do STJ da base curada entram na peça. Sem inventar acórdão: o que a IA cita está lastreado no material do FACTO.",
+      "Súmulas e julgados da base FACTO ou upload de sua preferência; o que não tiver lastro não é inventado.",
   },
   {
     icone: IconeDocumento,
@@ -88,7 +88,7 @@ const BENEFICIOS = [
     icone: IconeCadeado,
     titulo: "Seus dados, sua confidencialidade",
     texto:
-      "Ambiente seguro e privado para tratar informações sensíveis de clientes e processos.",
+      "Ambiente privado para tratar o caso. O FACTO não armazena a peça gerada: baixe o Word ou PDF e guarde na sua pasta ou nuvem — a preservação é sua.",
   },
 ] as const;
 
@@ -97,7 +97,7 @@ const PASSOS = [
     passo: "01",
     titulo: "Descreva o caso em minutos",
     texto:
-      "Partes, fatos, pedidos e provas no formulário guiado. Você organiza o essencial — sem minuta em branco e sem perder a manhã montando estrutura.",
+      "Descreva o caso, analise o processo ou deixe o Assistente indicar a peça. Partes, fatos e pedidos no formulário guiado — sem minuta em branco.",
   },
   {
     passo: "02",
@@ -147,7 +147,7 @@ export function LandingPage() {
           <FactoLogo variant="horizontal" size="sm" />
           <nav className="hidden items-center gap-8 text-sm font-medium text-stone-300 md:flex">
             <a href="#beneficios" className="transition hover:text-white">
-              Método de assistência
+              Por que o FACTO
             </a>
             <a href="#como-funciona" className="transition hover:text-white">
               Como funciona
@@ -190,19 +190,25 @@ export function LandingPage() {
               minuta para você revisar e protocolar.
             </p>
 
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center">
-              <a
-                href="#precos"
-                className="rounded-lg bg-facto-gold px-8 py-3.5 font-semibold text-facto-dark shadow-lg shadow-facto-gold/20 transition hover:bg-[#a39a78]"
-              >
-                Ver planos
-              </a>
-              <Link
-                href="/cadastro"
-                className="rounded-lg border border-white/15 px-8 py-3.5 font-semibold text-white transition hover:border-facto-gold/50 hover:bg-white/5"
-              >
-                Criar conta
-              </Link>
+            <div className="mt-10 flex flex-col items-center gap-3">
+              <div className="flex w-full flex-col gap-4 sm:w-auto sm:flex-row sm:justify-center">
+                <a
+                  href="#precos"
+                  className="rounded-lg bg-facto-gold px-8 py-3.5 font-semibold text-facto-dark shadow-lg shadow-facto-gold/20 transition hover:bg-[#a39a78]"
+                >
+                  Ver planos
+                </a>
+                <Link
+                  href="/login"
+                  className="rounded-lg border border-white/15 px-8 py-3.5 font-semibold text-white transition hover:border-facto-gold/50 hover:bg-white/5"
+                >
+                  Já tenho conta
+                </Link>
+              </div>
+              <p className="max-w-md text-center text-xs leading-relaxed text-stone-500">
+                A conta é liberada depois do pagamento: você recebe um e-mail
+                com o link de cadastro.
+              </p>
             </div>
           </div>
         </section>
@@ -281,8 +287,9 @@ export function LandingPage() {
                 Escolha o ritmo da sua bancada
               </h2>
               <p className="mt-4 text-stone-400">
-                Cotas claras, equipe FACTO e base curada em todos os planos.
-                Cancele quando quiser — sem fidelidade.
+                Cotas claras de minutas, análises de processo e 15 buscas
+                externas de jurisprudência por mês. Equipe FACTO e base curada
+                em todos os planos. Cancele quando quiser — sem fidelidade.
               </p>
             </div>
 
@@ -478,9 +485,9 @@ export function LandingPage() {
             </div>
 
             <p className="mt-8 text-center text-xs leading-relaxed text-stone-600">
-              Cotas renovam a cada ciclo. Precisou de mais? Pacotes extras (+50
-              ou +100) ficam na conta após o login — sem trocar de plano.
-              Pagamento seguro via Mercado Pago.
+              Cotas renovam a cada ciclo. Precisou de mais? Pacotes extras de
+              peças (+50 ou +100) e de análises (+10) ficam na conta após o
+              login — sem trocar de plano. Pagamento seguro via Mercado Pago.
             </p>
 
             <MetodosPagamento />

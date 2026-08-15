@@ -165,9 +165,9 @@ function ProtocoloDocsChecklist() {
         Conferência de documentos
       </h2>
       <p className="mt-1 text-sm text-slate-500">
-        Orientação para juntar os documentos no protocolo. Não entra na
-        redação da peça e não substitui as exigências do juízo ou do sistema
-        (e-proc, ESAJ, presencial).
+        Lembrete do que você junta no protocolo (e-proc, ESAJ ou presencial).
+        O FACTO não envia esses arquivos ao juízo e a lista não entra na
+        redação da peça.
       </p>
       <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-950">
         Cada caso pode precisar de documentos próprios. Confira sempre o que a
@@ -1320,8 +1320,8 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
             Geração de Peça — Juizado Especial Cível
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Peças para o Juizado Especial Cível (Lei nº 9.099/95). Revise sempre
-            antes de protocolar.
+            Peças para o Juizado Especial Cível (Lei nº 9.099/95). Três etapas:
+            identificação, fatos e pedidos. Revise sempre antes de protocolar.
           </p>
           {cota?.trackingAtivo && cota.usoLabel && !cota.esgotada && (
             <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
@@ -2070,10 +2070,12 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
           className="scroll-mt-24 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
         >
           <h2 className="mb-1 text-lg font-semibold text-slate-800">
-            Provas e mídias
+            Provas do fato
           </h2>
           <p className="mb-4 text-sm text-slate-500">
-            Anexe provas e, se quiser, o link da pasta na nuvem.
+            Contratos, prints, notas e fotos que a IA usa para fundamentar a
+            minuta. Não substitui a juntada no protocolo: o FACTO não envia
+            arquivos ao juízo.
           </p>
 
           <div className="space-y-5">

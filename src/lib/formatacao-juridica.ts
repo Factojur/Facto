@@ -154,11 +154,15 @@ export function gerarDocumentoTimbrado(
       line-height: ${FORMATACAO_FORENSE.entrelinhas};
       color: #000;
       max-width: 21cm;
+      width: 100%;
       margin: 0 auto;
       background: #fff;
       padding: ${FORMATACAO_FORENSE.margemSuperiorCm}cm ${FORMATACAO_FORENSE.margemDireitaCm}cm ${FORMATACAO_FORENSE.margemInferiorCm}cm ${FORMATACAO_FORENSE.margemEsquerdaCm}cm;
       box-sizing: border-box;
       text-align: justify;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
     }
     .documento-juridico .espaco-enderecamento,
     .documento-juridico .espaco-linhas {
@@ -323,6 +327,36 @@ export function gerarDocumentoTimbrado(
       padding: 0.35rem 0.5rem;
       margin: 0 0 1rem;
     }
+    @media screen and (max-width: 720px) {
+      .documento-juridico {
+        padding: 1.1rem 1rem 1.5rem;
+        max-width: 100%;
+        font-size: 12pt;
+      }
+      .documento-juridico p,
+      .documento-juridico .paragrafo,
+      .documento-juridico .item-pedido,
+      .documento-juridico .subtopico {
+        text-indent: 1.6em;
+        text-align: justify;
+        hyphens: auto;
+      }
+      .documento-juridico .citacao-juris {
+        padding-left: 1.25rem;
+        font-size: 10pt;
+      }
+      .documento-juridico .prova-item {
+        padding-left: 0.75rem;
+      }
+      .documento-juridico .enderecamento,
+      .documento-juridico .nome-acao,
+      .documento-juridico .minuta-aviso,
+      .documento-juridico .fechamento {
+        text-indent: 0;
+        padding-left: 0;
+        padding-right: 0;
+      }
+    }
     @media print {
       body { margin: 0; }
       .no-print { display: none !important; }
@@ -337,7 +371,7 @@ export function gerarDocumentoTimbrado(
 
   const pecaHtml = `
     <style>${cssImpressao}</style>
-    <article class="documento-juridico">
+    <article class="documento-juridico" lang="pt-BR">
       ${marcaDagua}
       <div class="documento-conteudo">
         <p class="minuta-aviso">Minuta FACTO — revise antes de protocolar</p>

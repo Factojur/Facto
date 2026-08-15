@@ -4,15 +4,22 @@ Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou
 
 **Juris / seed:** depois de cada lote ou dia de cota, atualizar a seção **Lacunas da base (áreas falhas)** abaixo — tribunal errado, 0 insert, ou API sem aquele tribunal. Não deixar falha só no chat.
 
-## Alerta — próximo seed (cota Juris.ai ~meia-noite BRT)
+## Alerta — próximo seed (15/08)
 
-1. **Amanhã:** `npx tsx scripts/seed-juris-ai-faixa.ts 40 64`  
+1. **Agora:** `npx tsx scripts/seed-juris-ai-faixa.ts 40 64`  
    - 40–56 = restante da faixa original (cota 14/08 esgotou no **lote 40**).  
    - 57–64 = lacunas no tribunal certo (TRF3/4, TST, STJ eleitoral, CARF).  
    Já inclui `pub_from=2023-01-01` + lookup de ementa.
 2. Se parar no meio: retomar `npx tsx scripts/seed-juris-ai-faixa.ts <lote> 64`.
 3. Depois: `npm run reindex:embeddings`.
 4. Seed = Jurisprudências.ai, **não** e-SAJ. Tribunais da API: `stf stj tst trf3 trf4 tjce tjgo tjma tjmg tjmt tjpr tjrj tjrs tjsc tjsp carf`. **Sem TSE, TRE-SP, TRF1/2/5/6, TNU.**
+
+### Depois de 40–64 — próximos lotes (rascunho 15/08)
+
+- **TJSP (qualidade JEC):** novos termos só de temas fracos na tabela de lacunas (execução, juros, vício, veículo, ICMS municipal) — não repetir lote 1.
+- **Áreas falhas:** eleitoral (precisa TRE/TSE = segunda API); previdenciário após 57–59; trabalhista após TST 60–62.
+- **Próximos TJs na API (sem scrape):** TJRJ, TJMG, TJPR, TJRS — lotes curtos de temas JEC + consumerista, um tribunal por vez.
+- **Scrape:** TJSP worker/captcha primeiro; STJ/TJRJ/TJMG só depois de Supabase Pro.
 
 ---
 

@@ -105,7 +105,7 @@ export function PecaDocumentoView({
     <div>
       <div
         ref={ref}
-        className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-inner"
+        className="w-full overflow-x-hidden rounded-lg border border-slate-200 bg-white shadow-inner [&_.documento-juridico]:max-w-full"
         dangerouslySetInnerHTML={{ __html: pecaHtml }}
       />
 

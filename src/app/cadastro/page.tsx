@@ -57,5 +57,11 @@ export default async function CadastroPage({
     );
   }
 
-  return <CadastroForm emailConvite={convite.email} token={token} />;
+  return (
+    <CadastroForm
+      emailConvite={convite.email}
+      token={token}
+      plano={convite.plano}
+    />
+  );
 }

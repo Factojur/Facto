@@ -8,13 +8,17 @@ import { createClient } from "@/lib/supabase/client";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { validateOabMock } from "@/lib/validate-oab";
 import { TEXTO_TERMO_LEIGO } from "@/lib/termo-leigo";
+import { rotuloPlano } from "@/lib/assinatura-format";
+import type { PlanoId } from "@/lib/planos-facto";
 
 export function CadastroForm({
   emailConvite,
   token,
+  plano = null,
 }: {
   emailConvite: string;
   token: string;
+  plano?: PlanoId | null;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -22,7 +26,7 @@ export function CadastroForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [souAdvogado, setSouAdvogado] = useState(true);
+  const [souAdvogado, setSouAdvogado] = useState(plano !== "jec");
   const [termoAceito, setTermoAceito] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -111,9 +115,18 @@ export function CadastroForm({
         <div className="mb-8 flex flex-col items-center">
           <FactoLogo variant="stacked" size="md" />
           <h1 className="mt-6 text-3xl font-bold text-white">Criar conta</h1>
-          <p className="mt-2 text-sm text-stone-400">
-            Gerador de peças jurídicas para advogados
+          <p className="mt-2 text-center text-sm text-stone-400">
+            Para advogados e para quem atua no Juizado sem OAB
           </p>
+          {plano ? (
+            <p className="mt-2 text-center text-xs text-stone-500">
+              Convite do {rotuloPlano(plano)} · e-mail do pagamento
+            </p>
+          ) : (
+            <p className="mt-2 text-center text-xs text-stone-500">
+              Convite vinculado ao e-mail do pagamento
+            </p>
+          )}
         </div>
 
         <form
@@ -144,7 +157,7 @@ export function CadastroForm({
                 name="nomeCompleto"
                 required
                 className="w-full rounded-lg border border-stone-700 bg-stone-800 px-4 py-2.5 text-white placeholder-stone-500 outline-none focus:border-facto-gold focus:ring-1 focus:ring-facto-gold"
-                placeholder="Dr. João Silva"
+                placeholder="Nome completo"
               />
             </div>
 
@@ -213,7 +226,7 @@ export function CadastroForm({
                 className="mt-0.5 h-4 w-4 shrink-0 rounded border-stone-600 bg-stone-800 text-facto-gold focus:ring-facto-gold"
               />
               <label htmlFor="souAdvogado" className="text-sm text-stone-300">
-                Sou advogado(a)
+                Sou advogado(a) e tenho OAB
               </label>
             </div>
 
