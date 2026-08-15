@@ -23,6 +23,57 @@ Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou
 
 ---
 
+## Skills Cursor (15/08)
+
+Só para o agente no Cursor — **o cliente não vê**.
+
+- [x] `facto-peca` — minuta, abas, já qualificado, JG/MLE, provas, justificado (regras gerais + JEC hoje).
+- [x] `facto-juris-seed` — lotes, 429, reindex, o que não commitar.
+- [ ] **`facto-ship`** (quando fizer falta): o que entra no `main`/Vercel, copy PT-BR, convite pós-pagamento, cotas, não misturar seed/diag no deploy. Não implementar agora.
+
+## Abertura de áreas (auditoria 15/08) — **não estão prontas para ligar**
+
+Hoje **só o JEC** tem produto: rota `/dashboard/jec`, formulário, espécies, teto leigo, análise de autos, Assistente, lastro no fluxo real.
+
+O catálogo (`AREAS_ATUACAO`) + ilustração + tags + **casos-ouro** (teste de lastro, 0 tokens) **não** são módulo. Ligar `available: true` sem o restante gera Completo/Pro caindo num card morto (sem `href`, exceto JEC).
+
+**Reaproveitar do JEC (todas as áreas):** já qualificado, JG/MLE só texto, provas do fato ≠ protocolo, 3 etapas, justificado, timbre/Gerar no fim, cotas, busca juris.
+
+**Não reaproveitar cego:** endereçamento (“Juiz de Direito” / JEC), espécies 9.099, teto 20 SM, prazos do Juizado, prompt do Redator amarrado a `jec-especie-peca.ts`.
+
+Checklist **por área** antes de `available` + `href`:
+
+1. Rota `/dashboard/<area>` + formulário (pode começar como clone JEC, depois especializar).
+2. Tabela de **espécies** (inicial, defesa, recurso, cumprimento…) com esqueleto romano.
+3. **Endereçamento** certo (JT, JECRIM, JF, TRE, cartório, etc.).
+4. **Prazos** no Assistente/checklist (alertar, não protocolar): recurso, defesa, cumprimento.
+5. Polo/qualificação do rito (reclamante, querelante, impetrante, executado…).
+6. Prompt + lastro (leis/súmulas da área; seed no tribunal certo).
+7. Gate: Completo/Pro + OAB; leigo continua só JEC.
+8. Casos-ouro da área com endereçamento **real** (hoje vários fixtures ainda dizem Juiz de Direito).
+
+### Ordem sugerida para os próximos dias (não abrir 19 de uma vez)
+
+| Ordem | Área | Por quê | Bloqueio principal |
+|------|------|---------|-------------------|
+| 1 | **Consumidor (justiça comum)** | Sobreposição com JEC; mesma tese, rito CPC | Distinguir JEC vs comum (valor, recurso, honorários) |
+| 2 | **Civil** | Cobrança/indenização comum | Espécies CPC + prazos (contestação 15d, apelação 15d) |
+| 3 | **Trabalhista** | Demanda alta; seed TST 60–62 ainda pendente | Endereçamento JT; reclamação, defesa, recurso ordinário (8d); CLT |
+| 4 | **Família** | Peças distintas | Guarda/divórcio/alimentos; prazos CPC; sigilo |
+| 5 | **Imobiliário / contratual** | Muito cruzado com civil | Decidir se é módulo ou *tema* dentro de civil |
+| 6 | **JECRIM** | Já tem Lei 9.099 no catálogo | TCO, transação, composição; não copiar JEC cível |
+| 7 | **Penal comum** | Depois do JECRIM | HC, resposta à acusação, prazos CPP |
+| 8 | **Previdenciário** | Seed TRF 57–59 pendente | JEF/INSS; prazos e petição inicial previdenciária |
+| 9 | **Tributário / administrativo** | Execução fiscal, MS | CARF/TRF; mandado de segurança (120d) |
+| 10 | **Empresarial** | Notificação vs ação | Extrajudicial + judicial |
+| — | Digital, ambiental, PI, internacional, médico, agrário, eleitoral | Mais tarde | Eleitoral **sem TRE/TSE na API**; médico/consumidor cruzam CDC |
+
+Sobreposição a resolver no produto (senão o advogado não sabe onde clicar): **consumidor × JEC × civil × médico**; **contratual × civil × empresarial**.
+
+Prazos: o FACTO **não conta prazo processual sozinho** hoje. Abrir área implica pelo menos **avisar o prazo típico da espécie** (copy + Assistente), não um calendário jurídico completo na v1.
+
+---
+
 ## Prioridade sugerida (próximos passos)
 
 0. **[P0] Seed juris** — amanhã `npx tsx scripts/seed-juris-ai-faixa.ts 40 64` + reindex. Atualizar **Lacunas da base** se algum lote 40–64 vier vazio.
@@ -33,7 +84,7 @@ Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou
    - [x] Conferência de citações reforçada
    - [x] Suite casos-ouro (`npm run test:casos-ouro` — **0 tokens**): JEC inicial + espécies + **peça completa em todas as áreas** (módulo aberto = JEC; fechadas já prontas)
    - [x] Lastro **não** usa a estratégia da triagem; CNJ/REsp batem número inteiro (não “sopa” de dígitos)
-   - [x] Ampliar casos-ouro com peças completas por área (14/08): cada `AREAS_ATUACAO` tem peça com endereçamento/fatos/direito/pedidos + lastro; JEC ganhou estacionamento, cartão e revisão contratual. Ao abrir módulo, só ligar `available` — a suíte já cobre.
+   - [x] Ampliar casos-ouro com peças completas por área (14/08). **Não** basta ligar `available`: falta rito/espécie/prazo/rota (ver **Abertura de áreas** abaixo).
 
 2. **[P0] Embeddings / busca semântica** — _feito_
    - [x] Migration + reindex + retrieve híbrido + deploy
@@ -321,8 +372,8 @@ Critério de “falha”: lote com **0** insert, ou &lt;10 insert em tema que de
 - [x] Lotes 1–8 (ver histórico abaixo).
 - [x] Lotes **9–39** (14/08, chave paga) — **+770 insert**; `reindex` +770. Cota busca esgotou no **40**.
 - [x] Lookup ementas curtas (14/08) — **696** completadas / 356 skip / 0 falha; reindex em seguida.
-- [ ] Lotes **40–56** — amanhã na faixa.
-- [ ] Lotes **57–64** — lacunas (arquivo `scripts/seed-juris-termos-lotes-57-64.ts`).
+- [x] Lotes **40–55** (15/08) — faixa rodou; **~180 insert** até o 56 (cota 429 no lote 56). Vazios: 41, 43, 50, 54.
+- [ ] Lote **56** (retomar) + **57–64** — `npx tsx scripts/seed-juris-ai-faixa.ts 56 64`.
 - [ ] Após cada dia de seed: `npm run reindex:embeddings`.
 - [ ] Segunda API quando 40–64 fechar: priorizar **eleitoral (TRE/TSE)** e o que ainda estiver na tabela de lacunas.
 - [ ] Reaquecer cache TJSP (`npm run aquecer:cache-tjsp`) — 14/08 cache vazio; scrape 0/15 (captcha). Base_conhecimento intacta.

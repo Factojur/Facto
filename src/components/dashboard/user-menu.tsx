@@ -7,52 +7,53 @@ import { createClient } from "@/lib/supabase/client";
 import type { PerfilResumo } from "@/lib/perfil-types";
 
 import { EMAIL_ADMIN } from "@/lib/admin-auth";
+import { MenuIcon } from "@/components/dashboard/menu-icons";
 
 const LINKS_ADMIN = [
-  { label: "Aceites (Termos)", href: "/admin/aceites", icon: "☑️" },
-  { label: "Financeiro", href: "/admin", icon: "📊" },
-  { label: "Uso de peças", href: "/admin/uso-pecas", icon: "📄" },
-  { label: "Convites", href: "/admin/convites", icon: "✉️" },
-  { label: "Log de e-mails", href: "/admin/emails", icon: "📡" },
-  { label: "Base de Conhecimento", href: "/admin/conhecimento", icon: "📚" },
+  { label: "Aceites (Termos)", href: "/admin/aceites", icon: "check" as const },
+  { label: "Financeiro", href: "/admin", icon: "chart" as const },
+  { label: "Uso de peças", href: "/admin/uso-pecas", icon: "doc" as const },
+  { label: "Convites", href: "/admin/convites", icon: "mail" as const },
+  { label: "Log de e-mails", href: "/admin/emails", icon: "broadcast" as const },
+  { label: "Base de Conhecimento", href: "/admin/conhecimento", icon: "layers" as const },
   {
     label: "Verificação de julgados",
     href: "/admin/juris-verificacao",
-    icon: "🔎",
+    icon: "search" as const,
   },
-  { label: "Teste de IA (sandbox)", href: "/admin/teste-ia", icon: "🧪" },
+  { label: "Teste de IA (sandbox)", href: "/admin/teste-ia", icon: "flask" as const },
 ] as const;
 
 const LINKS_DESENVOLVIMENTO = [
-  { label: "GitHub", href: "https://github.com/Factojur/Facto", icon: "🐙" },
-  { label: "Vercel", href: "https://vercel.com/dashboard", icon: "▲" },
+  { label: "GitHub", href: "https://github.com/Factojur/Facto", icon: "github" as const },
+  { label: "Vercel", href: "https://vercel.com/dashboard", icon: "triangle" as const },
   {
     label: "Supabase",
     href: "https://supabase.com/dashboard/project/jnlhbrwrirbjpnhymauu",
-    icon: "🗄️",
+    icon: "database" as const,
   },
-  { label: "Node.js", href: "https://nodejs.org", icon: "🟢" },
-  { label: "Resend", href: "https://resend.com/overview", icon: "✉️" },
+  { label: "Node.js", href: "https://nodejs.org", icon: "node" as const },
+  { label: "Resend", href: "https://resend.com/overview", icon: "mail" as const },
   {
     label: "Sentry",
     href: "https://us.sentry.io/issues/?project=4511847845068800",
-    icon: "🩺",
+    icon: "target" as const,
   },
   {
     label: "Google AI Studio",
     href: "https://aistudio.google.com/api-keys",
-    icon: "✨",
+    icon: "spark" as const,
   },
-  { label: "Registro.br", href: "https://registro.br/painel", icon: "🌐" },
+  { label: "Registro.br", href: "https://registro.br/painel", icon: "globe" as const },
   {
     label: "Cloudflare",
     href: "https://dash.cloudflare.com",
-    icon: "☁️",
+    icon: "cloud" as const,
   },
   {
     label: "Mercado Pago",
     href: "https://www.mercadopago.com.br/developers/panel",
-    icon: "💳",
+    icon: "card" as const,
   },
 ] as const;
 
@@ -128,7 +129,7 @@ export function UserMenu({ perfil }: { perfil: PerfilResumo }) {
               onClick={() => setAberto(false)}
               className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
             >
-              <span aria-hidden>✏️</span>
+              <MenuIcon name="pencil" />
               Alterar dados
             </Link>
             <Link
@@ -136,7 +137,7 @@ export function UserMenu({ perfil }: { perfil: PerfilResumo }) {
               onClick={() => setAberto(false)}
               className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
             >
-              <span aria-hidden>💬</span>
+              <MenuIcon name="chat" />
               Suporte
             </Link>
             <Link
@@ -146,7 +147,7 @@ export function UserMenu({ perfil }: { perfil: PerfilResumo }) {
               onClick={() => setAberto(false)}
               className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
             >
-              <span aria-hidden>📄</span>
+              <MenuIcon name="file" />
               Termos de uso
             </Link>
             <Link
@@ -156,7 +157,7 @@ export function UserMenu({ perfil }: { perfil: PerfilResumo }) {
               onClick={() => setAberto(false)}
               className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
             >
-              <span aria-hidden>🔒</span>
+              <MenuIcon name="lock" />
               Privacidade
             </Link>
             {isAdmin && (
@@ -184,7 +185,7 @@ export function UserMenu({ perfil }: { perfil: PerfilResumo }) {
                       onClick={() => setAberto(false)}
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
                     >
-                      <span aria-hidden>{link.icon}</span>
+                      <MenuIcon name={link.icon} />
                       {link.label}
                     </Link>
                   ))}
@@ -212,7 +213,7 @@ export function UserMenu({ perfil }: { perfil: PerfilResumo }) {
                       rel="noopener noreferrer"
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white"
                     >
-                      <span aria-hidden>{link.icon}</span>
+                      <MenuIcon name={link.icon} />
                       {link.label}
                     </a>
                   ))}
@@ -223,7 +224,7 @@ export function UserMenu({ perfil }: { perfil: PerfilResumo }) {
               onClick={() => setAberto(false)}
               className="mt-1 flex items-center gap-3 border-t border-stone-800 px-4 py-2.5 text-sm font-medium text-facto-gold transition hover:bg-stone-800 hover:text-[#c4bc8f]"
             >
-              <span aria-hidden>✦</span>
+              <MenuIcon name="star" />
               Gerenciar assinatura
             </Link>
             <button
@@ -231,7 +232,7 @@ export function UserMenu({ perfil }: { perfil: PerfilResumo }) {
               onClick={sair}
               className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-red-400 transition hover:bg-stone-800"
             >
-              <span aria-hidden>⎋</span>
+              <MenuIcon name="logout" className="h-4 w-4 shrink-0 text-red-400/90" />
               Sair do FACTO
             </button>
           </nav>
