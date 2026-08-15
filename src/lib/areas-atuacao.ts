@@ -69,8 +69,9 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     id: "familia",
     title: "Direito de Família e Sucessões",
     description:
-      "Divórcio, guarda, pensão, inventário, partilha e demais peças do direito de família e sucessões.",
+      "Divórcio, guarda, alimentos, inventário e partilha na Vara de Família (Código Civil e CPC) — distinto do Civil genérico e do Juizado.",
     law: "Código Civil · CPC",
+    href: "/dashboard/familia",
     available: false,
     icon: "👨‍👩‍👧",
   },

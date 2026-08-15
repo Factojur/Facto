@@ -73,10 +73,14 @@ export function montarSystemPromptAnaliseEstrategica(
         ? "justiça comum cível (Código Civil e CPC). NÃO use Lei 9.099/95, recurso inominado nem CDC como tese principal."
         : areaId === "trabalhista"
           ? "Justiça do Trabalho (CLT). NÃO use Lei 9.099/95, apelação do CPC nem CDC."
+          : areaId === "familia"
+            ? "Vara de Família e Sucessões (CC, CPC, ECA, Lei 5.478/64). NÃO use 9.099 nem CLT. Segredo de justiça quando couber."
           : "juizados especiais cíveis brasileiros (Lei 9.099/95).";
   const nomePeca =
     areaId === "trabalhista"
       ? "Nome técnico da peça na JT (reclamação, defesa, recurso ordinário, agravo de petição — NÃO apelação nem contestação cível)"
+      : areaId === "familia"
+        ? "Nome técnico da peça de família (divórcio, guarda, alimentos, inventário, apelação — NÃO recurso inominado)"
       : areaId === "consumidor" || areaId === "civil"
         ? "Nome técnico da peça na justiça comum (apelação, contestação, cumprimento etc. — NÃO recurso inominado)"
         : "Nome técnico da peça/ação cabível no JEC (SEM prefixo \"Petição Inicial —\"; só o nome forense)";
@@ -92,6 +96,8 @@ export function montarSystemPromptAnaliseEstrategica(
       ? `5. Confirme a espécie da peça: ${meta.rotulo} (${especiePeca}) — adapte teses e pedidos a essa espécie;`
       : areaId === "trabalhista"
         ? "5. Indique a espécie (reclamação, defesa, manifestação, embargos, recurso ordinário, agravo ou execução);"
+      : areaId === "familia"
+        ? "5. Indique a espécie (inicial de família, contestação, apelação, cumprimento de alimentos ou inventário);"
       : areaId === "consumidor" || areaId === "civil"
         ? "5. Indique a espécie (petição inicial, contestação, réplica, apelação, agravo, cumprimento ou execução);"
         : "5. Indique a espécie da peça (petição inicial, contestação, embargos, recurso, réplica ou execução);",
@@ -135,6 +141,8 @@ export function montarSystemPromptRedacaoTier1(
         ? "Atue na justiça comum cível (Código Civil + CPC). NÃO aplique Lei 9.099/95 nem recurso inominado. NÃO fundamente em CDC (inversão do ônus, relação de consumo) — se o caso for consumerista, o módulo é Consumidor. Honorários: art. 85 do CPC. Responsabilidade: arts. 186 e 927 do CC quando couber."
         : areaId === "trabalhista"
           ? "Atue na Justiça do Trabalho (CLT). Polos: reclamante e reclamado. NÃO aplique Lei 9.099/95, apelação do CPC, Vara Cível nem CDC. Recurso da sentença: ordinário (art. 895 da CLT, 8 dias). Honorários: art. 791-A da CLT. Endereçamento: Juiz do Trabalho."
+          : areaId === "familia"
+            ? "Atue na Vara de Família e Sucessões (Código Civil, CPC, ECA e Lei 5.478/64). NÃO aplique Lei 9.099/95 nem CLT. Peça segredo de justiça (art. 189 do CPC) quando os fatos envolverem casamento, filiação, alimentos ou guarda. Honorários: art. 85 do CPC. Endereçamento: Juiz de Direito da Vara de Família."
           : "Atue no Juizado Especial Cível brasileiro (Lei 9.099/95).";
 
   const especialidade =
@@ -144,6 +152,8 @@ export function montarSystemPromptRedacaoTier1(
         ? "direito do consumidor na justiça comum (CDC e CPC)"
         : areaId === "trabalhista"
           ? "Direito do Trabalho e processo do trabalho (CLT, TST)"
+          : areaId === "familia"
+            ? "Direito de Família e Sucessões"
           : "contencioso cível e direito do consumidor";
 
   return [

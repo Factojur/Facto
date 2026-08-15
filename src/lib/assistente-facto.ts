@@ -31,7 +31,7 @@ function contemAlgum(texto: string, termos: string[]): boolean {
 }
 
 function sufixoRitoAcao(areaId: string = "jec"): string {
-  if (areaId === "consumidor" || areaId === "civil" || areaId === "trabalhista") return "";
+  if (areaId !== "jec") return "";
   return " (JEC)";
 }
 
@@ -60,7 +60,7 @@ export function formatarNomeAcaoForense(
     .trim();
 
   if (!/^a[cç][aã]o\b/i.test(t) &&
-    !/^(execução|execucao|embargos|recurso|contestação|contestacao|pedido de|impugnação|impugnacao|agravo|mandado)/i.test(
+    !/^(execução|execucao|embargos|recurso|contestação|contestacao|pedido de|impugnação|impugnacao|agravo|mandado|inventário|inventario|divórcio|divorcio|alimentos|guarda)/i.test(
       t
     )
   ) {
@@ -165,11 +165,15 @@ export function analisarCaseAssistente(input: {
         ? "na justiça comum consumerista (CDC e CPC)"
         : areaId === "trabalhista"
           ? "na Justiça do Trabalho (CLT)"
+          : areaId === "familia"
+            ? "na Vara de Família e Sucessões"
           : "no Juizado Especial Cível";
 
   let tipoAcao =
     areaId === "trabalhista"
       ? "Reclamação Trabalhista"
+      : areaId === "familia"
+        ? "Ação de Alimentos"
       : "Ação de Indenização por Danos Materiais e Morais";
   let motivoAcao =
     "Os fatos narrados indicam lesão a direito patrimonial ou extrapatrimonial, "

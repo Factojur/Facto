@@ -3,30 +3,33 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FactoLogo } from "@/components/brand/facto-logo";
-
-const navItems = [
-  {
-    href: "/dashboard",
-    label: "Início",
-    icon: "⌂",
-    match: (path: string) => path === "/dashboard",
-  },
-  {
-    href: "/dashboard/jec",
-    label: "Gerar peça JEC",
-    icon: "⚖️",
-    match: (path: string) => path.startsWith("/dashboard/jec"),
-  },
-  {
-    href: "/dashboard/suporte",
-    label: "Suporte",
-    icon: "💬",
-    match: (path: string) => path.startsWith("/dashboard/suporte"),
-  },
-] as const;
+import { areaIdFromPathname, moduloDaArea } from "@/lib/minuta-modulo";
 
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const modulo = moduloDaArea(areaIdFromPathname(pathname));
+
+  const navItems = [
+    {
+      href: "/dashboard",
+      label: "Início",
+      icon: "⌂",
+      match: (path: string) => path === "/dashboard",
+    },
+    {
+      href: modulo.href,
+      label: modulo.rotuloNav,
+      icon: "⚖️",
+      match: (path: string) =>
+        path === modulo.href || path.startsWith(`${modulo.href}/`),
+    },
+    {
+      href: "/dashboard/suporte",
+      label: "Suporte",
+      icon: "💬",
+      match: (path: string) => path.startsWith("/dashboard/suporte"),
+    },
+  ];
 
   return (
     <>

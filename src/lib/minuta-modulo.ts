@@ -39,6 +39,8 @@ export type AreaModuloConfig = {
   fundamentoQualificacao: string;
   rotuloPoloAtivo: string;
   rotuloPoloPassivo: string;
+  /** Item do menu lateral (nunca “JEC” fora do Juizado). */
+  rotuloNav: string;
 };
 
 export const MODULO_JEC: AreaModuloConfig = {
@@ -53,6 +55,7 @@ export const MODULO_JEC: AreaModuloConfig = {
   fundamentoQualificacao: "na Lei nº 9.099/95",
   rotuloPoloAtivo: "autor",
   rotuloPoloPassivo: "réu",
+  rotuloNav: "Gerar peça JEC",
 };
 
 export const MODULO_CIVIL: AreaModuloConfig = {
@@ -66,6 +69,7 @@ export const MODULO_CIVIL: AreaModuloConfig = {
   fundamentoQualificacao: "no Código Civil e no CPC",
   rotuloPoloAtivo: "autor",
   rotuloPoloPassivo: "réu",
+  rotuloNav: "Gerar peça Civil",
 };
 
 export const MODULO_CONSUMIDOR: AreaModuloConfig = {
@@ -79,6 +83,7 @@ export const MODULO_CONSUMIDOR: AreaModuloConfig = {
   fundamentoQualificacao: "no CDC e no CPC",
   rotuloPoloAtivo: "autor",
   rotuloPoloPassivo: "réu",
+  rotuloNav: "Gerar peça Consumidor",
 };
 
 export const MODULO_TRABALHISTA: AreaModuloConfig = {
@@ -92,15 +97,51 @@ export const MODULO_TRABALHISTA: AreaModuloConfig = {
   fundamentoQualificacao: "na CLT e na legislação processual trabalhista",
   rotuloPoloAtivo: "reclamante",
   rotuloPoloPassivo: "reclamado",
+  rotuloNav: "Gerar peça Trabalhista",
 };
 
-export type AreaIdMinuta = "jec" | "consumidor" | "civil" | "trabalhista";
+export const MODULO_FAMILIA: AreaModuloConfig = {
+  id: "familia",
+  tituloDashboard: "Geração de Peça — Família e Sucessões",
+  leiResumo: "CC · CPC · rito de família",
+  href: "/dashboard/familia",
+  idsPeticaoInicial: ["peticao-inicial", "inventario"],
+  copyCabecalho:
+    "Peças de família e sucessões (Código Civil e CPC): divórcio, guarda, alimentos, inventário. Tramitação em segredo de justiça (art. 189 do CPC) quando couber. Não use Juizado nem CLT. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+  fundamentoQualificacao: "no Código Civil, no CPC e na legislação de família",
+  rotuloPoloAtivo: "autor",
+  rotuloPoloPassivo: "réu",
+  rotuloNav: "Gerar peça Família",
+};
+
+export type AreaIdMinuta =
+  | "jec"
+  | "consumidor"
+  | "civil"
+  | "trabalhista"
+  | "familia";
+
+const IDS_MINUTA = new Set<string>([
+  "jec",
+  "consumidor",
+  "civil",
+  "trabalhista",
+  "familia",
+]);
 
 export function normalizarAreaIdMinuta(raw?: string | null): AreaIdMinuta {
-  if (raw === "consumidor" || raw === "civil" || raw === "trabalhista") {
-    return raw;
-  }
+  const id = String(raw ?? "").trim();
+  if (IDS_MINUTA.has(id) && id !== "jec") return id as AreaIdMinuta;
   return "jec";
+}
+
+export function areaIdFromPathname(pathname: string): AreaIdMinuta {
+  const partes = pathname.split("/").filter(Boolean);
+  const i = partes.indexOf("dashboard");
+  if (i < 0) return "jec";
+  const prox = partes[i + 1];
+  if (prox === "preview") return normalizarAreaIdMinuta(partes[i + 2]);
+  return normalizarAreaIdMinuta(prox);
 }
 
 export function moduloDaArea(areaId: string): AreaModuloConfig {
@@ -111,6 +152,8 @@ export function moduloDaArea(areaId: string): AreaModuloConfig {
       return MODULO_CIVIL;
     case "trabalhista":
       return MODULO_TRABALHISTA;
+    case "familia":
+      return MODULO_FAMILIA;
     default:
       return MODULO_JEC;
   }

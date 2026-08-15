@@ -579,7 +579,7 @@ function PecasResultado({
 
       <section className="rounded-lg border border-amber-200 bg-amber-50 p-4">
         <h3 className="mb-2 text-sm font-semibold text-stone-800">
-          Fundamentação legal aplicável (JEC)
+          Fundamentação legal aplicável
         </h3>
         <ul className="list-inside list-disc space-y-1 text-sm text-stone-700">
           {resultado.fundamentoLegal.map((item) => (
@@ -1376,12 +1376,12 @@ export function JecForm({
           />
         )}
 
-        {casoVinculoId ? (
+        {casoVinculoId && moduloUi.hrefCasos ? (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm">
             <p className="text-slate-600">
               Gerando para o caso{" "}
               <Link
-                href={`/dashboard/jec/casos/${casoVinculoId}`}
+                href={`${moduloUi.hrefCasos}/${casoVinculoId}`}
                 className="font-medium text-stone-800 underline-offset-2 hover:underline"
               >
                 {obterCasoJec(casoVinculoId)?.titulo ?? "aberto"}
@@ -2319,7 +2319,7 @@ export function JecForm({
             </p>
           </div>
 
-          {casoVinculoId && (
+          {casoVinculoId && moduloUi.hrefCasos && (
             <div className="mb-4 rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-800">
               <p className="font-medium">Vincular esta peça ao caso?</p>
               <p className="mt-1 text-xs text-stone-500">
@@ -2352,7 +2352,7 @@ export function JecForm({
                   Vincular ao caso
                 </button>
                 <Link
-                  href={`/dashboard/jec/casos/${casoVinculoId}`}
+                  href={`${moduloUi.hrefCasos}/${casoVinculoId}`}
                   className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
                 >
                   Abrir caso

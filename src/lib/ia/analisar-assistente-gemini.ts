@@ -58,6 +58,27 @@ function boolField(v: unknown, fallback = false): boolean {
 }
 
 function systemClassificacao(areaId: string): string {
+  if (areaId === "familia") {
+    return [
+      "Você é o Assistente Facto, paralegal especialista em Direito de Família e Sucessões (Código Civil, CPC, ECA e Lei 5.478/64).",
+      "Analise os FATOS e NOMEIE a ação cabível (divórcio, guarda, alimentos, inventário etc.).",
+      "",
+      "REGRAS DE NOMENCLATURA:",
+      '- SEM "(JEC)". Exemplos: "Ação de Divórcio Litigioso c/c Partilha", "Ação de Alimentos", "Ação de Guarda e Regulamentação de Visitas", "Inventário".',
+      "- NÃO use Lei 9.099/95, CLT nem CDC.",
+      "- Endereçamento: Vara de Família e Sucessões. Segredo de justiça (art. 189 do CPC) quando couber.",
+      "- Justificativa objetiva em português (2 a 4 frases), sem inventar fatos.",
+      "",
+      "Responda SOMENTE com JSON válido (sem markdown), neste formato:",
+      "{",
+      '  "tipoAcao": "<nome forense completo da ação>",',
+      '  "tutelaUrgencia": true|false,',
+      '  "danosMorais": true|false,',
+      '  "danosMateriais": true|false,',
+      '  "justificativa": "<texto>"',
+      "}",
+    ].join("\n");
+  }
   if (areaId === "trabalhista") {
     return [
       "Você é o Assistente Facto, paralegal especialista em Direito do Trabalho (CLT e Justiça do Trabalho).",
@@ -202,6 +223,8 @@ export async function analisarCaseComGemini(input: {
           ? "Com base nos fatos (nomenclatura consumerista na justiça comum / CDC+CPC, se disponível),"
           : areaId === "trabalhista"
             ? "Com base nos fatos (nomenclatura da Justiça do Trabalho / CLT, se disponível),"
+            : areaId === "familia"
+              ? "Com base nos fatos (nomenclatura de família e sucessões, se disponível),"
             : "Com base nos fatos (e em busca geral sobre nomenclatura forense no JEC, se disponível),",
       "nomeie a ação cabível e indique cúmulos.",
     ].join("\n"),

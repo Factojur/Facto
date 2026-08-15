@@ -169,6 +169,12 @@ export function formatarEnderecamentoPadrao(opcoes: {
       `VARA DO TRABALHO DE ${comarcaTxt}`
     );
   }
+  if (areaId === "familia") {
+    return (
+      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA ${vara} ` +
+      `VARA DE FAMÍLIA E SUCESSÕES DO FÓRUM DA COMARCA DE ${comarcaTxt}`
+    );
+  }
   if (areaId === "consumidor" || areaId === "civil") {
     return (
       `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA ${vara} ` +
