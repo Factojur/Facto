@@ -26,19 +26,21 @@ import {
   type EspeciePecaCivil,
 } from "@/lib/civil-especie-peca";
 import {
-  MODULO_CIVIL,
-  MODULO_CONSUMIDOR,
-  MODULO_JEC,
-} from "@/lib/minuta-modulo";
+  blocoEstruturaPromptTrabalhista,
+  ESPECIES_PECA_TRABALHISTA,
+  inferirEspecieTrabalhista,
+  metaEspecieTrabalhista,
+  tituloPecaTrabalhista,
+  type EspeciePecaTrabalhista,
+} from "@/lib/trabalhista-especie-peca";
+import { moduloDaArea } from "@/lib/minuta-modulo";
 
 export function ehJusticaComumCpc(areaId: string): boolean {
   return areaId === "consumidor" || areaId === "civil";
 }
 
 export function idsPeticaoInicialDaArea(areaId: string): readonly string[] {
-  if (areaId === "consumidor") return MODULO_CONSUMIDOR.idsPeticaoInicial;
-  if (areaId === "civil") return MODULO_CIVIL.idsPeticaoInicial;
-  return MODULO_JEC.idsPeticaoInicial;
+  return moduloDaArea(areaId).idsPeticaoInicial;
 }
 
 export function inferirEspecieDaArea(
@@ -53,6 +55,9 @@ export function inferirEspecieDaArea(
   if (areaId === "civil") {
     return inferirEspecieCivil(tipoAcao, fatos, especieExplicita);
   }
+  if (areaId === "trabalhista") {
+    return inferirEspecieTrabalhista(tipoAcao, fatos, especieExplicita);
+  }
   return inferirEspeciePeca(tipoAcao, fatos, especieExplicita);
 }
 
@@ -63,12 +68,16 @@ export function blocoEstruturaDaArea(areaId: string, especie: string): string {
   if (areaId === "civil") {
     return blocoEstruturaPromptCivil(especie as EspeciePecaCivil);
   }
+  if (areaId === "trabalhista") {
+    return blocoEstruturaPromptTrabalhista(especie as EspeciePecaTrabalhista);
+  }
   return blocoEstruturaPrompt(especie as EspeciePecaJec);
 }
 
 export function metaEspecieDaArea(areaId: string, especie: string) {
   if (areaId === "consumidor") return metaEspecieConsumidor(especie);
   if (areaId === "civil") return metaEspecieCivil(especie);
+  if (areaId === "trabalhista") return metaEspecieTrabalhista(especie);
   return metaEspecie(especie as EspeciePecaJec);
 }
 
@@ -84,6 +93,9 @@ export function tituloPecaDaArea(
   if (areaId === "civil") {
     return tituloPecaCivil(especie as EspeciePecaCivil, tipoSugerido);
   }
+  if (areaId === "trabalhista") {
+    return tituloPecaTrabalhista(especie as EspeciePecaTrabalhista, tipoSugerido);
+  }
   return tituloPecaCabivel(especie as EspeciePecaJec, tipoSugerido, contexto);
 }
 
@@ -91,6 +103,26 @@ export function especieParaScaffoldJec(
   areaId: string,
   especie: string
 ): string {
+  if (areaId === "trabalhista") {
+    switch (especie) {
+      case "reclamacao":
+        return "peticao-inicial";
+      case "defesa":
+        return "contestacao";
+      case "manifestacao":
+        return "replica";
+      case "recurso-ordinario":
+      case "agravo-instrumento":
+      case "agravo-peticao":
+        return "recurso";
+      case "embargos-declaracao":
+        return "embargos";
+      case "execucao-titulo":
+        return "execucao";
+      default:
+        return especie;
+    }
+  }
   if (!ehJusticaComumCpc(areaId)) return especie;
   switch (especie) {
     case "apelacao":
@@ -109,5 +141,6 @@ export function especieParaScaffoldJec(
 export function listaEspeciesDaArea(areaId: string) {
   if (areaId === "consumidor") return ESPECIES_PECA_CONSUMIDOR;
   if (areaId === "civil") return ESPECIES_PECA_CIVIL;
+  if (areaId === "trabalhista") return ESPECIES_PECA_TRABALHISTA;
   return null;
 }

@@ -71,21 +71,27 @@ export function montarSystemPromptAnaliseEstrategica(
       ? "justiça comum consumerista (CDC e CPC). NÃO use Lei 9.099/95 nem recurso inominado."
       : areaId === "civil"
         ? "justiça comum cível (Código Civil e CPC). NÃO use Lei 9.099/95, recurso inominado nem CDC como tese principal."
-        : "juizados especiais cíveis brasileiros (Lei 9.099/95).";
+        : areaId === "trabalhista"
+          ? "Justiça do Trabalho (CLT). NÃO use Lei 9.099/95, apelação do CPC nem CDC."
+          : "juizados especiais cíveis brasileiros (Lei 9.099/95).";
   const nomePeca =
-    areaId === "consumidor" || areaId === "civil"
-      ? "Nome técnico da peça na justiça comum (apelação, contestação, cumprimento etc. — NÃO recurso inominado)"
-      : "Nome técnico da peça/ação cabível no JEC (SEM prefixo \"Petição Inicial —\"; só o nome forense)";
+    areaId === "trabalhista"
+      ? "Nome técnico da peça na JT (reclamação, defesa, recurso ordinário, agravo de petição — NÃO apelação nem contestação cível)"
+      : areaId === "consumidor" || areaId === "civil"
+        ? "Nome técnico da peça na justiça comum (apelação, contestação, cumprimento etc. — NÃO recurso inominado)"
+        : "Nome técnico da peça/ação cabível no JEC (SEM prefixo \"Petição Inicial —\"; só o nome forense)";
   return [
     `Você é um Paralegal Especialista em ${rito}`,
     "Receba o relato do cliente (pode estar bagunçado, coloquial ou muito longo) e devolva APENAS um resumo estruturado contendo:",
     "",
     "1. Fatos em ordem cronológica (REESCRITOS em linguagem objetiva — NÃO copie o relato literalmente);",
-    "2. Identificação clara das partes (autor/réu conforme a espécie);",
+    "2. Identificação clara das partes (autor/réu ou reclamante/reclamado conforme o módulo);",
     "3. A tese jurídica principal a ser aplicada (leis e súmulas do rito — CC/CDC/CPC conforme o módulo);",
     `4. ${nomePeca};`,
     meta
       ? `5. Confirme a espécie da peça: ${meta.rotulo} (${especiePeca}) — adapte teses e pedidos a essa espécie;`
+      : areaId === "trabalhista"
+        ? "5. Indique a espécie (reclamação, defesa, manifestação, embargos, recurso ordinário, agravo ou execução);"
       : areaId === "consumidor" || areaId === "civil"
         ? "5. Indique a espécie (petição inicial, contestação, réplica, apelação, agravo, cumprimento ou execução);"
         : "5. Indique a espécie da peça (petição inicial, contestação, embargos, recurso, réplica ou execução);",
@@ -127,14 +133,18 @@ export function montarSystemPromptRedacaoTier1(
       ? "Atue na justiça comum brasileira em demanda de consumo (CDC + CPC). NÃO aplique Lei 9.099/95, teto do Juizado, recurso inominado nem Turma Recursal. Honorários: art. 85 do CPC."
       : areaId === "civil"
         ? "Atue na justiça comum cível (Código Civil + CPC). NÃO aplique Lei 9.099/95 nem recurso inominado. NÃO fundamente em CDC (inversão do ônus, relação de consumo) — se o caso for consumerista, o módulo é Consumidor. Honorários: art. 85 do CPC. Responsabilidade: arts. 186 e 927 do CC quando couber."
-        : "Atue no Juizado Especial Cível brasileiro (Lei 9.099/95).";
+        : areaId === "trabalhista"
+          ? "Atue na Justiça do Trabalho (CLT). Polos: reclamante e reclamado. NÃO aplique Lei 9.099/95, apelação do CPC, Vara Cível nem CDC. Recurso da sentença: ordinário (art. 895 da CLT, 8 dias). Honorários: art. 791-A da CLT. Endereçamento: Juiz do Trabalho."
+          : "Atue no Juizado Especial Cível brasileiro (Lei 9.099/95).";
 
   const especialidade =
     areaId === "civil"
       ? "contencioso cível (obrigações, responsabilidade civil, contratos entre particulares)"
       : areaId === "consumidor"
         ? "direito do consumidor na justiça comum (CDC e CPC)"
-        : "contencioso cível e direito do consumidor";
+        : areaId === "trabalhista"
+          ? "Direito do Trabalho e processo do trabalho (CLT, TST)"
+          : "contencioso cível e direito do consumidor";
 
   return [
     `Você é um Advogado Sênior de elite, especialista em ${especialidade}, conhecido por redigir peças forenses impecáveis (${meta.rotulo}).`,

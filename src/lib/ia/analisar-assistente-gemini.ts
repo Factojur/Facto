@@ -58,6 +58,29 @@ function boolField(v: unknown, fallback = false): boolean {
 }
 
 function systemClassificacao(areaId: string): string {
+  if (areaId === "trabalhista") {
+    return [
+      "Você é o Assistente Facto, paralegal especialista em Direito do Trabalho (CLT e Justiça do Trabalho).",
+      "Analise os FATOS e NOMEIE a reclamação ou peça cabível no padrão forense da JT.",
+      "",
+      "REGRAS DE NOMENCLATURA:",
+      '- Use "Reclamação Trabalhista" ou o nome da peça (Defesa, Recurso Ordinário, Agravo de Petição) — SEM "(JEC)" e SEM apelação/contestação da justiça comum.',
+      "- Polos: reclamante e reclamado.",
+      "- NÃO use Lei 9.099/95, recurso inominado, Vara Cível nem CDC.",
+      "- Recurso contra sentença da Vara: recurso ordinário (8 dias, art. 895 da CLT), não apelação.",
+      "- Honorários: art. 791-A da CLT.",
+      "- Justificativa objetiva em português (2 a 4 frases), sem inventar fatos.",
+      "",
+      "Responda SOMENTE com JSON válido (sem markdown), neste formato:",
+      "{",
+      '  "tipoAcao": "<nome forense completo da ação>",',
+      '  "tutelaUrgencia": true|false,',
+      '  "danosMorais": true|false,',
+      '  "danosMateriais": true|false,',
+      '  "justificativa": "<texto>"',
+      "}",
+    ].join("\n");
+  }
   if (areaId === "civil") {
     return [
       "Você é o Assistente Facto, paralegal especialista em contencioso cível na justiça comum (Código Civil e CPC).",
@@ -177,7 +200,9 @@ export async function analisarCaseComGemini(input: {
         ? "Com base nos fatos (nomenclatura da justiça comum cível / CPC, se disponível),"
         : areaId === "consumidor"
           ? "Com base nos fatos (nomenclatura consumerista na justiça comum / CDC+CPC, se disponível),"
-          : "Com base nos fatos (e em busca geral sobre nomenclatura forense no JEC, se disponível),",
+          : areaId === "trabalhista"
+            ? "Com base nos fatos (nomenclatura da Justiça do Trabalho / CLT, se disponível),"
+            : "Com base nos fatos (e em busca geral sobre nomenclatura forense no JEC, se disponível),",
       "nomeie a ação cabível e indique cúmulos.",
     ].join("\n"),
     modelos: MODELOS_ASSISTENTE_BUSCA,

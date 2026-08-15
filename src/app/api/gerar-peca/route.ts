@@ -12,6 +12,7 @@ import {
   idsPeticaoInicialDaArea,
   especieParaScaffoldJec,
 } from "@/lib/peca-especie-area";
+import { moduloDaArea, normalizarAreaIdMinuta } from "@/lib/minuta-modulo";
 import { isEmailPreviewAreas } from "@/lib/emails-preview-areas";
 import {
   buscarConhecimentoRelacionado,
@@ -225,6 +226,7 @@ function finalizarTextoPeca(
     body.especiePeca
   );
   const idsInicial = idsPeticaoInicialDaArea(areaId);
+  const modulo = moduloDaArea(areaId);
   const blocoAutor = pecaUsaPartesJaQualificadas(especie, idsInicial)
     ? formatarBlocoPartesJaQualificadas({
         autores,
@@ -233,11 +235,14 @@ function finalizarTextoPeca(
         oabQualificacao: opcoes?.oabQualificacao ?? "",
         especie,
         dispositivoSentenca: body.dispositivoSentenca,
+        rotuloPoloAtivo: modulo.rotuloPoloAtivo,
+        rotuloPoloPassivo: modulo.rotuloPoloPassivo,
       })
     : formatarBlocoQualificacaoAutor({
         autores,
         advogadoNome: opcoes?.advogadoNome ?? "",
         oabQualificacao: opcoes?.oabQualificacao ?? "",
+        fundamentoLei: modulo.fundamentoQualificacao,
       });
   const comReus = pecaUsaPartesJaQualificadas(especie, idsInicial)
     ? comProvas
@@ -320,10 +325,7 @@ async function postGerarPeca(request: Request) {
     );
   }
 
-  const areaId =
-    body.areaId === "consumidor" || body.areaId === "civil"
-      ? body.areaId
-      : "jec";
+  const areaId = normalizarAreaIdMinuta(body.areaId);
   if (areaId !== "jec" && !isEmailPreviewAreas(email)) {
     return NextResponse.json(
       { error: "Este módulo ainda não está disponível." },
@@ -424,6 +426,7 @@ async function postGerarPeca(request: Request) {
   const autoresBody =
     body.autores ?? (body.autor ? [body.autor] : []);
   const idsInicial = idsPeticaoInicialDaArea(areaId);
+  const modulo = moduloDaArea(areaId);
   const especieParaPartes = inferirEspecieDaArea(
     areaId,
     body.tipoAcao,
@@ -440,10 +443,13 @@ async function postGerarPeca(request: Request) {
         ...opcoesAdvogadoQualificacao,
         especie: especieParaPartes,
         dispositivoSentenca: body.dispositivoSentenca,
+        rotuloPoloAtivo: modulo.rotuloPoloAtivo,
+        rotuloPoloPassivo: modulo.rotuloPoloPassivo,
       })
     : formatarBlocoQualificacaoAutor({
         autores: autoresBody,
         ...opcoesAdvogadoQualificacao,
+        fundamentoLei: modulo.fundamentoQualificacao,
       });
 
   const scaffold = gerarPecaJec({

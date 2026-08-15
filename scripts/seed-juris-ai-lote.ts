@@ -224,6 +224,10 @@ async function main() {
     process.exit(1);
   }
 
+  console.log(
+    `Pool Jurisprudências.ai: ${tokens.length} conta(s) (JURISPRUDENCIAS_AI_API_KEY + _KEYS). Usa todas; 429 troca de token.`
+  );
+
   const supabase = createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
   });

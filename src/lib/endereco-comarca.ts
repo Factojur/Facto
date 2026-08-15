@@ -163,6 +163,12 @@ export function formatarEnderecamentoPadrao(opcoes: {
     : info.numeroJuizado!.trim().replace(/[ªº°]/g, "");
 
   const areaId = opcoes.areaId ?? "";
+  if (areaId === "trabalhista") {
+    return (
+      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DO TRABALHO DA ${vara} ` +
+      `VARA DO TRABALHO DE ${comarcaTxt}`
+    );
+  }
   if (areaId === "consumidor" || areaId === "civil") {
     return (
       `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA ${vara} ` +

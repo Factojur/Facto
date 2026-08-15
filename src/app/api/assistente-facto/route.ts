@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { analisarCaseComGemini } from "@/lib/ia/analisar-assistente-gemini";
+import { normalizarAreaIdMinuta } from "@/lib/minuta-modulo";
 
 export const maxDuration = 30;
 
@@ -24,10 +25,7 @@ export async function POST(request: Request) {
     } | null;
 
     const fatos = String(body?.fatos ?? "").trim();
-    const areaId =
-      body?.areaId === "consumidor" || body?.areaId === "civil"
-        ? body.areaId
-        : "jec";
+    const areaId = normalizarAreaIdMinuta(body?.areaId);
     if (fatos.length < 40) {
       return NextResponse.json(
         {

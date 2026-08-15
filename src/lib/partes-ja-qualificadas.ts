@@ -111,7 +111,7 @@ export function fraseAnteSentenca(
   especie: string | null | undefined,
   dispositivo: string | null | undefined
 ): string | null {
-  if (especie === "contestacao" || especie === "replica") return null;
+  if (especie === "contestacao" || especie === "replica" || especie === "defesa" || especie === "manifestacao") return null;
   const d = String(dispositivo ?? "").replace(/\s+/g, " ").trim();
   if (!d) return null;
   const low = d.toLowerCase();
@@ -139,10 +139,14 @@ export function formatarBlocoPartesJaQualificadas(opcoes: {
   enderecoAdvogado?: string | null;
   especie?: string | null;
   dispositivoSentenca?: string | null;
+  rotuloPoloAtivo?: string;
+  rotuloPoloPassivo?: string;
 }): string {
+  const ativo = opcoes.rotuloPoloAtivo ?? "autor";
+  const passivo = opcoes.rotuloPoloPassivo ?? "réu";
   const autor =
-    nomesAutoresCurto(opcoes.autores) || "[NOME DO(A) AUTOR(A)]";
-  const reu = nomesReusCurto(opcoes.reus) || "[NOME DO(A) RÉU(RÉ)]";
+    nomesAutoresCurto(opcoes.autores) || `[NOME DO(A) ${ativo.toUpperCase()}]`;
+  const reu = nomesReusCurto(opcoes.reus) || `[NOME DO(A) ${passivo.toUpperCase()}]`;
   const ante = fraseAnteSentenca(
     opcoes.especie,
     opcoes.dispositivoSentenca

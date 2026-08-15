@@ -19,7 +19,7 @@
     "seed:juris-ai-lote-4": "cross-env SEED_JURIS_LOTE=4 npx tsx scripts/seed-juris-ai-lote.ts",
     "seed:juris-ai-lote-5": "cross-env SEED_JURIS_LOTE=5 npx tsx scripts/seed-juris-ai-lote.ts",
     "seed:juris-ai-lote-6": "cross-env SEED_JURIS_LOTE=6 npx tsx scripts/seed-juris-ai-lote.ts",
-    "seed:juris-ai": "npx tsx scripts/seed-juris-ai-lote.ts",
+    "seed:juris-diario": "npx tsx scripts/seed-juris-diario.ts",
     "enriquecer:juris-ementas": "npx tsx scripts/enriquecer-juris-ementas.ts",
     "reindex:embeddings": "npx tsx scripts/reindex-embeddings.ts",
     "corrigir-metadados": "node scripts/limpar-metadados-perfil.mjs"

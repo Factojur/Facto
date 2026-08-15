@@ -215,6 +215,7 @@ export function formatarBlocoQualificacaoAutor(opcoes: {
   advogadoNome: string;
   oabQualificacao: string;
   enderecoAdvogado?: string | null;
+  fundamentoLei?: string;
 }): string {
   const lista =
     opcoes.autores ??
@@ -233,11 +234,14 @@ export function formatarBlocoQualificacaoAutor(opcoes: {
   const endAdv =
     t(opcoes.enderecoAdvogado) || "[endereço do advogado]";
 
+  const fundamento =
+    t(opcoes.fundamentoLei) || "na Lei nº 9.099/95";
+
   return (
     `${parte}, por ${pronomeAdv} que esta subscreve ` +
     `(procuração anexa), ${adv}, inscrito na ${oab}, ` +
     `com escritório profissional na ${endAdv}, onde recebe intimações, ` +
-    "vem, respeitosamente, à presença de Vossa Excelência, com fundamento na Lei nº 9.099/95, " +
+    `vem, respeitosamente, à presença de Vossa Excelência, com fundamento ${fundamento}, ` +
     "propor a presente"
   );
 }

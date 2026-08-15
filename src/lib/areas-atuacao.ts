@@ -32,8 +32,9 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     id: "trabalhista",
     title: "Direito Trabalhista",
     description:
-      "Reclamações, recursos e acordos na Justiça do Trabalho, com fundamentação na CLT.",
+      "Reclamações, defesa e recurso ordinário na Justiça do Trabalho (CLT) — distinto da justiça comum e do Juizado.",
     law: "CLT",
+    href: "/dashboard/trabalhista",
     available: false,
     icon: "👷",
   },

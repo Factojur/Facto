@@ -31,7 +31,7 @@ function contemAlgum(texto: string, termos: string[]): boolean {
 }
 
 function sufixoRitoAcao(areaId: string = "jec"): string {
-  if (areaId === "consumidor" || areaId === "civil") return "";
+  if (areaId === "consumidor" || areaId === "civil" || areaId === "trabalhista") return "";
   return " (JEC)";
 }
 
@@ -163,9 +163,14 @@ export function analisarCaseAssistente(input: {
       ? "na justiça comum cível (Código Civil e CPC)"
       : areaId === "consumidor"
         ? "na justiça comum consumerista (CDC e CPC)"
-        : "no Juizado Especial Cível";
+        : areaId === "trabalhista"
+          ? "na Justiça do Trabalho (CLT)"
+          : "no Juizado Especial Cível";
 
-  let tipoAcao = "Ação de Indenização por Danos Materiais e Morais";
+  let tipoAcao =
+    areaId === "trabalhista"
+      ? "Reclamação Trabalhista"
+      : "Ação de Indenização por Danos Materiais e Morais";
   let motivoAcao =
     "Os fatos narrados indicam lesão a direito patrimonial ou extrapatrimonial, "
     + `compatível com pedido indenizatório ${foro}.`;

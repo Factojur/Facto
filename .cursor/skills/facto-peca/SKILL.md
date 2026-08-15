@@ -11,7 +11,7 @@ description: >-
 
 Não redesenhar o que já fechamos. Skill só para o agente no Cursor; o cliente não vê isto.
 
-Módulo aberto hoje: **JEC** — **base de desenvolvimento** da dashboard. Contrato compartilhado: `src/lib/minuta-modulo.ts`. Preview admin: Consumidor e Civil (`available: false`). Regras gerais valem nas próximas áreas; o bloco JEC só se a tarefa for rito/espécie/teto/endereçamento do Juizado.
+Módulo aberto hoje: **JEC** — **base de desenvolvimento** da dashboard. Contrato compartilhado: `src/lib/minuta-modulo.ts`. Preview admin: Consumidor, Civil e Trabalhista (`available: false`). Regras gerais valem nas próximas áreas; o bloco JEC só se a tarefa for rito/espécie/teto/endereçamento do Juizado.
 
 Se alterar a dashboard JEC e **não** for específico do JEC, extrair/atualizar o compartilhado (e replicar nas áreas que já tiverem rota). Não duplicar só no `jec-form`.
 

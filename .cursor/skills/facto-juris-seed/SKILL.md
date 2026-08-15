@@ -13,6 +13,8 @@ Não muda a minuta sozinho. Alimenta a base que a Pesquisa usa.
 ## Como rodar
 
 - Faixa: `npx tsx scripts/seed-juris-ai-faixa.ts <de> <ate>`
+- Diário 01h (PC ligado): `npm run seed:juris-diario` + tarefa `scripts/instalar-tarefa-seed-juris.ps1`. Estado em `scripts/seed-juris-estado.json`.
+- Pool: `JURISPRUDENCIAS_AI_API_KEY` **e** `JURISPRUDENCIAS_AI_API_KEYS` (todas as contas, pagas e grátis). 429 troca de token; o lote imprime só a **quantidade**.
 - Parou no 429: retomar **do lote que falhou**, não do 1.
 - Depois de cada dia de insert: `npm run reindex:embeddings` (senão a busca FACTO não acha).
 - API: `stf stj tst trf3 trf4 tjce tjgo tjma tjmg tjmt tjpr tjrj tjrs tjsc tjsp carf`. Sem TSE, TRE, TRF1/2/5/6, TNU.

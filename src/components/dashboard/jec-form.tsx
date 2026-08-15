@@ -47,9 +47,8 @@ import {
 import {
   GUIAS_MINUTA,
   LOADING_STAGES_GERACAO,
-  MODULO_CIVIL,
-  MODULO_CONSUMIDOR,
-  MODULO_JEC,
+  moduloDaArea,
+  type AreaIdMinuta,
   type GuiaMinuta,
 } from "@/lib/minuta-modulo";
 import {
@@ -625,7 +624,7 @@ export function JecForm({
   areaId = "jec",
 }: {
   leigo?: boolean;
-  areaId?: "jec" | "consumidor" | "civil";
+  areaId?: AreaIdMinuta;
 }) {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -638,7 +637,9 @@ export function JecForm({
   const [guiaAtiva, setGuiaAtiva] = useState<GuiaJec>("identificacao");
   const [modoAcao, setModoAcao] = useState<ModoDefinicaoAcao>("assistente");
   const [tipoAcaoTexto, setTipoAcaoTexto] = useState("");
-  const [especiePeca, setEspeciePeca] = useState("peticao-inicial");
+  const [especiePeca, setEspeciePeca] = useState(
+    () => idsPeticaoInicialDaArea(areaId)[0] ?? "peticao-inicial"
+  );
   const [especieManual, setEspecieManual] = useState(false);
   const [fatos, setFatos] = useState("");
   const [tutelaUrgencia, setTutelaUrgencia] = useState(false);
@@ -739,12 +740,7 @@ export function JecForm({
     ultrapassaTetoJec(resumoValores.totalCentavos, false);
   const idsInicial = idsPeticaoInicialDaArea(areaId);
   const especiesOpcoes = listaEspeciesDaArea(areaId) ?? ESPECIES_PECA_JEC;
-  const moduloUi =
-    areaId === "consumidor"
-      ? MODULO_CONSUMIDOR
-      : areaId === "civil"
-        ? MODULO_CIVIL
-        : MODULO_JEC;
+  const moduloUi = moduloDaArea(areaId);
 
   const tituloAcaoCompleto = useMemo(() => {
     if (!tipoAcaoDefinido) return "";
@@ -1349,11 +1345,7 @@ export function JecForm({
             {moduloUi.tituloDashboard}
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            {areaId === "consumidor"
-              ? "Peças consumeristas na justiça comum (CDC e CPC). Não use este módulo para o Juizado — lá o rito é a Lei 9.099/95. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar."
-              : areaId === "civil"
-                ? "Peças cíveis na justiça comum (Código Civil e CPC): cobrança, indenização, obrigações. Não use para Juizado (9.099) nem para relação de consumo (módulo Consumidor). Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar."
-                : `Peças para o Juizado Especial Cível (${moduloUi.leiResumo}). Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.`}
+            {moduloUi.copyCabecalho}
           </p>
           {cota?.trackingAtivo && cota.usoLabel && !cota.esgotada && (
             <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
@@ -1830,6 +1822,7 @@ export function JecForm({
           value={autores}
           onChange={setAutores}
           jaQualificado={pecaUsaPartesJaQualificadas(especiePeca, idsInicial)}
+          rotuloPolo={moduloUi.rotuloPoloAtivo}
         >
           <div className="space-y-4">
             <div>
@@ -1886,6 +1879,7 @@ export function JecForm({
             value={reus}
             onChange={setReus}
             jaQualificado={pecaUsaPartesJaQualificadas(especiePeca, idsInicial)}
+            rotuloPolo={moduloUi.rotuloPoloPassivo}
           />
         </div>
         <div className="flex justify-end">
