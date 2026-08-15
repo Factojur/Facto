@@ -97,25 +97,16 @@ import { AnalisarProcessoSection } from "@/components/dashboard/analisar-process
 import type { AnaliseProcessoResultado } from "@/lib/analisar-processo-types";
 import { ROTULO_DOC_LABEL } from "@/lib/analisar-processo-types";
 
-type GuiaJec = "identificacao" | "fatos" | "pedidos";
+import {
+  GUIAS_MINUTA,
+  LOADING_STAGES_GERACAO,
+  MODULO_JEC,
+  type GuiaMinuta,
+} from "@/lib/minuta-modulo";
 
-const GUIAS_JEC: {
-  id: GuiaJec;
-  label: string;
-}[] = [
-  { id: "identificacao", label: "Identificação" },
-  { id: "fatos", label: "Fatos e fundamentos" },
-  { id: "pedidos", label: "Pedidos" },
-];
-
-const LOADING_STAGES = [
-  "Maestro: montando o plano…",
-  "Analista Facto: estudando o caso…",
-  "Pesquisa & súmulas: buscando fundamentos…",
-  "Estrategista: definindo a tese…",
-  "Redator forense: escrevendo a peça…",
-  "Auditor: conferindo citações…",
-];
+type GuiaJec = GuiaMinuta;
+const GUIAS_JEC = GUIAS_MINUTA;
+const LOADING_STAGES = LOADING_STAGES_GERACAO;
 
 function getFileNames(input: HTMLInputElement | null): string[] {
   if (!input?.files?.length) return [];
@@ -1317,11 +1308,12 @@ export function JecForm({ leigo = false }: { leigo?: boolean }) {
             </button>
           </div>
           <h1 className="text-2xl font-semibold text-slate-800">
-            Geração de Peça — Juizado Especial Cível
+            {MODULO_JEC.tituloDashboard}
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Peças para o Juizado Especial Cível (Lei nº 9.099/95). Três etapas:
-            identificação, fatos e pedidos. Revise sempre antes de protocolar.
+            Peças para o Juizado Especial Cível ({MODULO_JEC.leiResumo}). Três
+            etapas: identificação, fatos e pedidos. Revise sempre antes de
+            protocolar.
           </p>
           {cota?.trackingAtivo && cota.usoLabel && !cota.esgotada && (
             <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">

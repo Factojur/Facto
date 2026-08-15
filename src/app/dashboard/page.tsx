@@ -4,6 +4,7 @@ import { filtrarFavoritosValidos } from "@/lib/areas-atuacao";
 import { DashboardHome } from "@/components/dashboard/dashboard-home";
 import type { PlanoId } from "@/lib/planos-facto";
 import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
+import { isEmailPreviewAreas } from "@/lib/emails-preview-areas";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -84,6 +85,7 @@ export default async function DashboardPage() {
       leigo={tipoUsuario === "leigo" && !acessoLivre}
       plano={plano}
       acessoLivre={acessoLivre}
+      previewAreas={isEmailPreviewAreas(user?.email)}
     />
   );
 }

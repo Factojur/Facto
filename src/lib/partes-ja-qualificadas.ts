@@ -7,16 +7,15 @@ import type { AutorValue } from "@/lib/autor-types";
 import { autorVazio, autoresTemDadosMinimos } from "@/lib/autor-types";
 import type { ReuValue } from "@/lib/reu-types";
 import { reuTemDadosMinimos, reuVazio } from "@/lib/reu-types";
-import {
-  ehPeticaoInicialPorEspecie,
-  type EspeciePecaJec,
-} from "@/lib/jec-especie-peca";
+import { MODULO_JEC } from "@/lib/minuta-modulo";
 
+/** Incidentais: só nome. Petição inicial: qualificação mínima. */
 export function pecaUsaPartesJaQualificadas(
-  especie: EspeciePecaJec | string | null | undefined
+  especie: string | null | undefined,
+  idsPeticaoInicial: readonly string[] = MODULO_JEC.idsPeticaoInicial
 ): boolean {
   if (!especie) return false;
-  return !ehPeticaoInicialPorEspecie(especie as EspeciePecaJec);
+  return !idsPeticaoInicial.includes(especie);
 }
 
 export function partirNomesPartes(texto: string | null | undefined): string[] {

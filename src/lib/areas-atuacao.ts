@@ -195,6 +195,16 @@ export function getAreaById(id: string): AreaAtuacao | undefined {
   return AREAS_ATUACAO.find((a) => a.id === id);
 }
 
+/** Rota do módulo: catálogo público ou preview interno (admins). */
+export function hrefModuloArea(
+  area: AreaAtuacao,
+  previewInterno: boolean
+): string | undefined {
+  if (area.href) return area.href;
+  if (previewInterno) return `/dashboard/preview/${area.id}`;
+  return undefined;
+}
+
 export function filtrarFavoritosValidos(favoritos: string[] | null | undefined): string[] {
   if (!favoritos?.length) return [];
   return favoritos.filter((id) => IDS_AREAS_VALIDAS.has(id));

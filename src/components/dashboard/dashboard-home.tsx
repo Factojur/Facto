@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   AREAS_ATUACAO,
   getAreaById,
+  hrefModuloArea,
   type AreaAtuacao,
 } from "@/lib/areas-atuacao";
 import { getAreaTema } from "@/lib/area-temas";
@@ -74,6 +75,7 @@ function AreaPortalCard({
   index,
   liberadaNoPlano = true,
   rotuloBloqueio = "Upgrade de plano",
+  previewInterno = false,
 }: {
   area: AreaAtuacao;
   favorito: boolean;
@@ -81,9 +83,11 @@ function AreaPortalCard({
   index: number;
   liberadaNoPlano?: boolean;
   rotuloBloqueio?: string;
+  previewInterno?: boolean;
 }) {
   const tema = getAreaTema(area.id);
-  const disponivel = area.available && area.href && liberadaNoPlano;
+  const href = hrefModuloArea(area, previewInterno);
+  const disponivel = Boolean(href && liberadaNoPlano);
 
   const cardInner = (
     <>
@@ -119,7 +123,12 @@ function AreaPortalCard({
       </div>
 
       <div className="relative mt-4">
-        {!area.available && (
+        {!area.available && previewInterno && (
+          <span className="mb-2 inline-block rounded-full bg-amber-400/20 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200">
+            Preview interno
+          </span>
+        )}
+        {!area.available && !previewInterno && (
           <span className="mb-2 inline-block rounded-full bg-white/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white/70">
             Em breve
           </span>
@@ -165,9 +174,9 @@ function AreaPortalCard({
 
   const style = { animationDelay: `${index * 80}ms` };
 
-  if (disponivel) {
+  if (disponivel && href) {
     return (
-      <Link href={area.href!} className={`${classes} animate-fade-up`} style={style}>
+      <Link href={href} className={`${classes} animate-fade-up`} style={style}>
         {cardInner}
       </Link>
     );
@@ -184,10 +193,12 @@ function FavoritoRapido({
   area,
   onRemover,
   liberadaNoPlano = true,
+  previewInterno = false,
 }: {
   area: AreaAtuacao;
   onRemover: () => void;
   liberadaNoPlano?: boolean;
+  previewInterno?: boolean;
 }) {
   const tema = getAreaTema(area.id);
   const inner = (
@@ -222,9 +233,9 @@ function FavoritoRapido({
   const cls =
     "flex min-w-[240px] shrink-0 items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur-sm transition hover:border-facto-gold/40 hover:bg-white/10";
 
-  if (area.available && area.href && liberadaNoPlano) {
+  if (hrefModuloArea(area, previewInterno) && liberadaNoPlano) {
     return (
-      <Link href={area.href} className={cls}>
+      <Link href={hrefModuloArea(area, previewInterno)!} className={cls}>
         {inner}
       </Link>
     );
@@ -240,6 +251,7 @@ export function DashboardHome({
   leigo = false,
   plano = null,
   acessoLivre = false,
+  previewAreas = false,
 }: {
   nome: string;
   userId: string;
@@ -247,6 +259,7 @@ export function DashboardHome({
   leigo?: boolean;
   plano?: PlanoId | null;
   acessoLivre?: boolean;
+  previewAreas?: boolean;
 }) {
   const primeiroNome = nome.split(" ")[0];
   const [favoritos, setFavoritos] = useState(favoritosIniciais);
@@ -306,11 +319,13 @@ export function DashboardHome({
     }
     if (filtro === "disponiveis") {
       return AREAS_ATUACAO.filter(
-        (a) => a.available && areaEstaLiberada(a.id, gateAreas)
+        (a) =>
+          hrefModuloArea(a, previewAreas) &&
+          areaEstaLiberada(a.id, gateAreas)
       );
     }
     return AREAS_ATUACAO;
-  }, [filtro, favoritos, plano, leigo, acessoLivre]);
+  }, [filtro, favoritos, plano, leigo, acessoLivre, previewAreas]);
 
   const areaJec = getAreaById("jec");
 
@@ -402,6 +417,7 @@ export function DashboardHome({
                       area={area}
                       onRemover={() => toggleFavorito(area.id)}
                       liberadaNoPlano={areaEstaLiberada(area.id, gateAreas)}
+                      previewInterno={previewAreas}
                     />
                   ))}
                 </div>
@@ -451,6 +467,7 @@ export function DashboardHome({
                       favorito={favoritos.includes(area.id)}
                       onToggleFavorito={() => toggleFavorito(area.id)}
                       index={i}
+                      previewInterno={previewAreas}
                       liberadaNoPlano={areaEstaLiberada(area.id, gateAreas)}
                       rotuloBloqueio={
                         leigo && !acessoLivre

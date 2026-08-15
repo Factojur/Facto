@@ -1,0 +1,20 @@
+---
+description: JEC é a base da dashboard de minuta; mudanças genéricas replicam nas outras áreas.
+alwaysApply: true
+---
+
+# Dashboard de minuta — JEC é a base
+
+O módulo **JEC** (`/dashboard/jec`, `jec-form.tsx`) é o ambiente de desenvolvimento da geração de peça.
+
+## Replicar sempre (se não for regra do JEC)
+
+Qualquer alteração na dashboard JEC que **não** seja rito 9.099, espécie JEC, teto leigo, endereçamento do Juizado ou copy/prompt só do JEC deve ser feita no **contrato compartilhado** (`src/lib/minuta-modulo.ts` e libs sem prefixo `jec-`) e **valida nas demais áreas** quando existirem rotas.
+
+Exemplos compartilhados: 3 etapas, timbre/Gerar só em Pedidos, já qualificado, JG/MLE só texto, provas do fato ≠ protocolo, corpo justificado, cotas, busca juris, preview/export, checklist de conferência genérico.
+
+## Não copiar cego para outras áreas
+
+Endereçamento “Juiz de Direito” / JEC, espécies `jec-especie-peca.ts`, teto 20 SM, prazos do Juizado, polo específico do rito.
+
+Não ligar `available: true` no catálogo sem rota, espécies, endereçamento e lastro da área (PENDENCIAS — abertura de áreas).
