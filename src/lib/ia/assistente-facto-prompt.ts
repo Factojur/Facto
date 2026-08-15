@@ -75,12 +75,16 @@ export function montarSystemPromptAnaliseEstrategica(
           ? "Justiça do Trabalho (CLT). NÃO use Lei 9.099/95, apelação do CPC nem CDC."
           : areaId === "familia"
             ? "Vara de Família e Sucessões (CC, CPC, ECA, Lei 5.478/64). NÃO use 9.099 nem CLT. Segredo de justiça quando couber."
+          : areaId === "imobiliario"
+            ? "contencioso imobiliário (Lei 8.245/91, CC, condomínio, CPC). NÃO use 9.099 nem CLT."
           : "juizados especiais cíveis brasileiros (Lei 9.099/95).";
   const nomePeca =
     areaId === "trabalhista"
       ? "Nome técnico da peça na JT (reclamação, defesa, recurso ordinário, agravo de petição — NÃO apelação nem contestação cível)"
       : areaId === "familia"
         ? "Nome técnico da peça de família (divórcio, guarda, alimentos, inventário, apelação — NÃO recurso inominado)"
+      : areaId === "imobiliario"
+        ? "Nome técnico da peça imobiliária (despejo, usucapião, consignação, condomínio, apelação — NÃO recurso inominado)"
       : areaId === "consumidor" || areaId === "civil"
         ? "Nome técnico da peça na justiça comum (apelação, contestação, cumprimento etc. — NÃO recurso inominado)"
         : "Nome técnico da peça/ação cabível no JEC (SEM prefixo \"Petição Inicial —\"; só o nome forense)";
@@ -98,6 +102,8 @@ export function montarSystemPromptAnaliseEstrategica(
         ? "5. Indique a espécie (reclamação, defesa, manifestação, embargos, recurso ordinário, agravo ou execução);"
       : areaId === "familia"
         ? "5. Indique a espécie (inicial de família, contestação, apelação, cumprimento de alimentos ou inventário);"
+      : areaId === "imobiliario"
+        ? "5. Indique a espécie (despejo, usucapião, consignação, condomínio, contestação, apelação ou cumprimento);"
       : areaId === "consumidor" || areaId === "civil"
         ? "5. Indique a espécie (petição inicial, contestação, réplica, apelação, agravo, cumprimento ou execução);"
         : "5. Indique a espécie da peça (petição inicial, contestação, embargos, recurso, réplica ou execução);",
@@ -143,6 +149,8 @@ export function montarSystemPromptRedacaoTier1(
           ? "Atue na Justiça do Trabalho (CLT). Polos: reclamante e reclamado. NÃO aplique Lei 9.099/95, apelação do CPC, Vara Cível nem CDC. Recurso da sentença: ordinário (art. 895 da CLT, 8 dias). Honorários: art. 791-A da CLT. Endereçamento: Juiz do Trabalho."
           : areaId === "familia"
             ? "Atue na Vara de Família e Sucessões (Código Civil, CPC, ECA e Lei 5.478/64). NÃO aplique Lei 9.099/95 nem CLT. Peça segredo de justiça (art. 189 do CPC) quando os fatos envolverem casamento, filiação, alimentos ou guarda. Honorários: art. 85 do CPC. Endereçamento: Juiz de Direito da Vara de Família."
+          : areaId === "imobiliario"
+            ? "Atue no contencioso imobiliário (Lei 8.245/91, Código Civil, condomínio e CPC). NÃO aplique Lei 9.099/95 nem CLT. Despejo ≠ cobrança cível. Usucapião exige posse e tempo nos FATOS. Honorários: art. 85 do CPC. Endereçamento: Vara Cível."
           : "Atue no Juizado Especial Cível brasileiro (Lei 9.099/95).";
 
   const especialidade =
@@ -154,6 +162,8 @@ export function montarSystemPromptRedacaoTier1(
           ? "Direito do Trabalho e processo do trabalho (CLT, TST)"
           : areaId === "familia"
             ? "Direito de Família e Sucessões"
+          : areaId === "imobiliario"
+            ? "Direito Imobiliário (locação, usucapião, condomínio)"
           : "contencioso cível e direito do consumidor";
 
   return [

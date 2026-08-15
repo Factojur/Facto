@@ -65,20 +65,21 @@ export const SEQUENCIA_ABERTURA_AREAS: ItemAberturaArea[] = [
     id: "imobiliario",
     ordem: 5,
     titulo: "Imobiliário",
-    porQue: "Cruzado com civil — decidir módulo vs. tema.",
+    porQue: "Rito e leis próprios (8.245, usucapião, condomínio) — não misturar com cobrança cível.",
     especifico: [
-      "Decisão de produto: módulo próprio ou tema em civil",
-      "Se módulo: despejo, usucapião, condomínio",
+      "Módulo próprio /dashboard/imobiliario (preview admin)",
+      "Despejo, usucapião, consignação de aluguéis, cotas de condomínio",
+      "Vara Cível; sem 9.099",
     ],
   },
   {
     id: "contratual",
     ordem: 5,
     titulo: "Contratual",
-    porQue: "Cruzado com civil e empresarial.",
+    porQue: "Tema no Civil nesta rodada — não é módulo próprio.",
     especifico: [
-      "Decisão de produto: módulo próprio ou tema em civil",
-      "Se módulo: revisão e litígio contratual",
+      "Revisão e litígio contratual no módulo Civil",
+      "Não abrir /dashboard/contratual agora",
     ],
   },
   {

@@ -167,6 +167,8 @@ export function analisarCaseAssistente(input: {
           ? "na Justiça do Trabalho (CLT)"
           : areaId === "familia"
             ? "na Vara de Família e Sucessões"
+          : areaId === "imobiliario"
+            ? "no contencioso imobiliário (Lei 8.245/91 e CC)"
           : "no Juizado Especial Cível";
 
   let tipoAcao =
@@ -174,6 +176,8 @@ export function analisarCaseAssistente(input: {
       ? "Reclamação Trabalhista"
       : areaId === "familia"
         ? "Ação de Alimentos"
+      : areaId === "imobiliario"
+        ? "Ação de Despejo"
       : "Ação de Indenização por Danos Materiais e Morais";
   let motivoAcao =
     "Os fatos narrados indicam lesão a direito patrimonial ou extrapatrimonial, "

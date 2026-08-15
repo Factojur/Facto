@@ -58,6 +58,26 @@ function boolField(v: unknown, fallback = false): boolean {
 }
 
 function systemClassificacao(areaId: string): string {
+  if (areaId === "imobiliario") {
+    return [
+      "Você é o Assistente Facto, paralegal especialista em Direito Imobiliário (Lei 8.245/91, CC, condomínio).",
+      "Analise os FATOS e NOMEIE a ação (despejo, usucapião, consignação de aluguéis, cobrança condominial, adjudicação etc.).",
+      "",
+      "REGRAS DE NOMENCLATURA:",
+      '- SEM "(JEC)". Não chame despejo de ação de cobrança genérica.',
+      "- NÃO use Lei 9.099/95 nem CLT.",
+      "- Justificativa objetiva em português (2 a 4 frases), sem inventar matrícula nem valores.",
+      "",
+      "Responda SOMENTE com JSON válido (sem markdown), neste formato:",
+      "{",
+      '  "tipoAcao": "<nome forense completo da ação>",',
+      '  "tutelaUrgencia": true|false,',
+      '  "danosMorais": true|false,',
+      '  "danosMateriais": true|false,',
+      '  "justificativa": "<texto>"',
+      "}",
+    ].join("\n");
+  }
   if (areaId === "familia") {
     return [
       "Você é o Assistente Facto, paralegal especialista em Direito de Família e Sucessões (Código Civil, CPC, ECA e Lei 5.478/64).",
@@ -225,6 +245,8 @@ export async function analisarCaseComGemini(input: {
             ? "Com base nos fatos (nomenclatura da Justiça do Trabalho / CLT, se disponível),"
             : areaId === "familia"
               ? "Com base nos fatos (nomenclatura de família e sucessões, se disponível),"
+            : areaId === "imobiliario"
+              ? "Com base nos fatos (nomenclatura imobiliária / locação / usucapião, se disponível),"
             : "Com base nos fatos (e em busca geral sobre nomenclatura forense no JEC, se disponível),",
       "nomeie a ação cabível e indique cúmulos.",
     ].join("\n"),

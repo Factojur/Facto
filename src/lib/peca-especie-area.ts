@@ -41,10 +41,23 @@ import {
   tituloPecaFamilia,
   type EspeciePecaFamilia,
 } from "@/lib/familia-especie-peca";
+import {
+  blocoEstruturaPromptImobiliario,
+  ESPECIES_PECA_IMOBILIARIO,
+  inferirEspecieImobiliario,
+  metaEspecieImobiliario,
+  tituloPecaImobiliario,
+  type EspeciePecaImobiliario,
+} from "@/lib/imobiliario-especie-peca";
 import { moduloDaArea } from "@/lib/minuta-modulo";
 
 export function ehJusticaComumCpc(areaId: string): boolean {
-  return areaId === "consumidor" || areaId === "civil" || areaId === "familia";
+  return (
+    areaId === "consumidor" ||
+    areaId === "civil" ||
+    areaId === "familia" ||
+    areaId === "imobiliario"
+  );
 }
 
 export function idsPeticaoInicialDaArea(areaId: string): readonly string[] {
@@ -69,6 +82,9 @@ export function inferirEspecieDaArea(
   if (areaId === "familia") {
     return inferirEspecieFamilia(tipoAcao, fatos, especieExplicita);
   }
+  if (areaId === "imobiliario") {
+    return inferirEspecieImobiliario(tipoAcao, fatos, especieExplicita);
+  }
   return inferirEspeciePeca(tipoAcao, fatos, especieExplicita);
 }
 
@@ -85,6 +101,9 @@ export function blocoEstruturaDaArea(areaId: string, especie: string): string {
   if (areaId === "familia") {
     return blocoEstruturaPromptFamilia(especie as EspeciePecaFamilia);
   }
+  if (areaId === "imobiliario") {
+    return blocoEstruturaPromptImobiliario(especie as EspeciePecaImobiliario);
+  }
   return blocoEstruturaPrompt(especie as EspeciePecaJec);
 }
 
@@ -93,6 +112,7 @@ export function metaEspecieDaArea(areaId: string, especie: string) {
   if (areaId === "civil") return metaEspecieCivil(especie);
   if (areaId === "trabalhista") return metaEspecieTrabalhista(especie);
   if (areaId === "familia") return metaEspecieFamilia(especie);
+  if (areaId === "imobiliario") return metaEspecieImobiliario(especie);
   return metaEspecie(especie as EspeciePecaJec);
 }
 
@@ -113,6 +133,9 @@ export function tituloPecaDaArea(
   }
   if (areaId === "familia") {
     return tituloPecaFamilia(especie as EspeciePecaFamilia, tipoSugerido);
+  }
+  if (areaId === "imobiliario") {
+    return tituloPecaImobiliario(especie as EspeciePecaImobiliario, tipoSugerido);
   }
   return tituloPecaCabivel(especie as EspeciePecaJec, tipoSugerido, contexto);
 }
@@ -153,6 +176,10 @@ export function especieParaScaffoldJec(
     case "execucao-titulo":
       return "execucao";
     case "inventario":
+    case "despejo":
+    case "usucapiao":
+    case "consignacao":
+    case "condominio":
       return "peticao-inicial";
     default:
       return especie;
@@ -164,5 +191,6 @@ export function listaEspeciesDaArea(areaId: string) {
   if (areaId === "civil") return ESPECIES_PECA_CIVIL;
   if (areaId === "trabalhista") return ESPECIES_PECA_TRABALHISTA;
   if (areaId === "familia") return ESPECIES_PECA_FAMILIA;
+  if (areaId === "imobiliario") return ESPECIES_PECA_IMOBILIARIO;
   return null;
 }

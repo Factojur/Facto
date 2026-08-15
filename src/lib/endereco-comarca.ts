@@ -34,6 +34,7 @@ export function rotuloAreaJudiciaria(areaId: string = "jec"): string {
     case "penal":
       return "JUSTIÇA CRIMINAL";
     case "civil":
+    case "imobiliario":
       return "JUSTIÇA CÍVEL";
     case "familia":
       return "VARA DE FAMÍLIA E SUCESSÕES";
@@ -175,7 +176,7 @@ export function formatarEnderecamentoPadrao(opcoes: {
       `VARA DE FAMÍLIA E SUCESSÕES DO FÓRUM DA COMARCA DE ${comarcaTxt}`
     );
   }
-  if (areaId === "consumidor" || areaId === "civil") {
+  if (areaId === "consumidor" || areaId === "civil" || areaId === "imobiliario") {
     return (
       `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA ${vara} ` +
       `VARA CÍVEL DO FÓRUM DA COMARCA DE ${comarcaTxt}`

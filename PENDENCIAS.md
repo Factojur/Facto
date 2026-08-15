@@ -73,8 +73,8 @@ Fonte viva também em `src/lib/abertura-areas.ts`. Trabalhar **uma de cada vez**
 1. **Consumidor (justiça comum)** — _preview admin (15/08)_ — espécies CPC; Vara Cível; CDC+CPC; sem teto 20 SM e sem recurso inominado. Catálogo `available: false`.
 2. **Civil (justiça comum)** — _preview admin (15/08)_ — `/dashboard/civil`; CC+CPC; sem CDC; sem teto 20 SM. Catálogo `available: false`.
 3. **Trabalhista** — _preview admin (15/08)_ — `/dashboard/trabalhista`; CLT; reclamante/reclamado; RO 8d. Catálogo `available: false`.
-4. **Família** — _em implementação (15/08, preview admin)_ — `/dashboard/familia`; divórcio, guarda, alimentos, inventário; Vara de Família; segredo de justiça (art. 189 CPC); cumprimento de alimentos ≠ execução cível. Catálogo `available: false`.
-5. **Imobiliário / contratual** — Decidir módulo vs. tema em civil; só então espécies.
+4. **Família** — _preview admin (15/08)_ — `/dashboard/familia`; divórcio, guarda, alimentos, inventário; Vara de Família; segredo de justiça. Catálogo `available: false`.
+5. **Imobiliário** — _preview admin (15/08)_ — `/dashboard/imobiliario`; despejo (8.245), usucapião, consignação de aluguéis, condomínio; Vara Cível. **Contratual** permanece tema no Civil. Catálogo `available: false`.
 6. **JECRIM** — TCO, composição, transação; **não** copiar JEC cível.
 7. **Penal comum** — HC, resposta à acusação; CPP (depois do JECRIM).
 8. **Previdenciário** — JEF/INSS; inicial previdenciária.

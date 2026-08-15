@@ -114,12 +114,33 @@ export const MODULO_FAMILIA: AreaModuloConfig = {
   rotuloNav: "Gerar peça Família",
 };
 
+export const MODULO_IMOBILIARIO: AreaModuloConfig = {
+  id: "imobiliario",
+  tituloDashboard: "Geração de Peça — Direito Imobiliário",
+  leiResumo: "Lei 8.245 · CC · condomínio",
+  href: "/dashboard/imobiliario",
+  idsPeticaoInicial: [
+    "peticao-inicial",
+    "despejo",
+    "usucapiao",
+    "consignacao",
+    "condominio",
+  ],
+  copyCabecalho:
+    "Peças imobiliárias na justiça comum: despejo (Lei 8.245/91), usucapião, consignação de aluguéis e cotas de condomínio. Não use para cobrança cível genérica (Civil) nem para Juizado. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+  fundamentoQualificacao: "na legislação imobiliária, no Código Civil e no CPC",
+  rotuloPoloAtivo: "autor",
+  rotuloPoloPassivo: "réu",
+  rotuloNav: "Gerar peça Imobiliário",
+};
+
 export type AreaIdMinuta =
   | "jec"
   | "consumidor"
   | "civil"
   | "trabalhista"
-  | "familia";
+  | "familia"
+  | "imobiliario";
 
 const IDS_MINUTA = new Set<string>([
   "jec",
@@ -127,6 +148,7 @@ const IDS_MINUTA = new Set<string>([
   "civil",
   "trabalhista",
   "familia",
+  "imobiliario",
 ]);
 
 export function normalizarAreaIdMinuta(raw?: string | null): AreaIdMinuta {
@@ -154,6 +176,8 @@ export function moduloDaArea(areaId: string): AreaModuloConfig {
       return MODULO_TRABALHISTA;
     case "familia":
       return MODULO_FAMILIA;
+    case "imobiliario":
+      return MODULO_IMOBILIARIO;
     default:
       return MODULO_JEC;
   }

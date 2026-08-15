@@ -79,7 +79,9 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     id: "imobiliario",
     title: "Direito Imobiliário",
     description:
-      "Compra e venda, usucapião, despejo, condomínio e regularização de imóveis.",
+      "Despejo (Lei 8.245/91), usucapião, consignação de aluguéis e cotas de condomínio — distinto do Civil genérico e do Juizado.",
+    law: "Lei 8.245 · CC",
+    href: "/dashboard/imobiliario",
     available: false,
     icon: "🏠",
   },
