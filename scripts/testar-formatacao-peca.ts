@@ -99,6 +99,18 @@ assert(
   "itens de DOS PEDIDOS sem negrito"
 );
 
+const corpoFatos = (normalizada.split(/I - DOS FATOS/)[1] ?? "").split(/II - DO DIREITO/)[0] ?? "";
+assert(
+  /golpe mediante falsa central/i.test(corpoFatos) &&
+    /valores foram transferidos/i.test(corpoFatos) &&
+    /prejuízo patrimonial/i.test(corpoFatos),
+  "corpo dos fatos preserva as três frases"
+);
+assert(
+  corpoFatos.trim().split("\n").filter(Boolean).length <= 2,
+  "frases dos fatos viram parágrafo(s) contínuos para justificar"
+);
+
 const subtituloLatim = normalizarPecaGerada(
   `*c) Do dano moral "in re ipsa" e do dever de indenizar**`
 );

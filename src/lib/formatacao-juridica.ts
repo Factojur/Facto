@@ -2,15 +2,16 @@ import type { EscritorioConfig } from "./escritorio-types";
 import {
   FORMATACAO_FORENSE,
 } from "./formatacao-forense";
-import { normalizarTextoFatos } from "./peca-paragrafos";
+import { normalizarCorpoDosTopicos, normalizarTextoFatos } from "./peca-paragrafos";
 import { classificarPeca } from "./tipografia-peca";
 
 /** Aplica normalização de parágrafos na seção DOS FATOS já presente na peça. */
 export function aplicarFormatacaoTextoJuridico(pecaBruta: string): string {
-  return pecaBruta.replace(
+  const comFatos = pecaBruta.replace(
     /I\s*[-—–]\s*DOS FATOS\n+([\s\S]*?)(?=\n+II\s*[-—–]\s*DO DIREITO)/i,
     (_m, corpo: string) => `I - DOS FATOS\n${normalizarTextoFatos(String(corpo))}`
   );
+  return normalizarCorpoDosTopicos(comFatos);
 }
 
 function escapeHtml(texto: string): string {
@@ -77,13 +78,13 @@ function blocoParaHtml(bloco: string): string {
         case "subtopico":
           return `<p class="subtopico">${html}</p>`;
         case "item-pedido":
-          return `<p class="item-pedido">${html}</p>`;
+          return `<p class="item-pedido" style="text-align:justify;text-indent:2cm;margin:0;padding:0">${html}</p>`;
         case "citacao-juris":
           return `<p class="citacao-juris">${html}</p>`;
         case "prova-item":
           return `<p class="prova-item">${html}</p>`;
         default:
-          return `<p class="paragrafo">${html}</p>`;
+          return `<p class="paragrafo" style="text-align:justify;text-indent:2cm;margin:0;padding:0">${html}</p>`;
       }
     })
     .join("\n");
@@ -206,6 +207,14 @@ export function gerarDocumentoTimbrado(
       /* Apenas respiro antes do tópico romano — sem “parágrafo duplo” */
       margin: 1.5em 0 0;
       padding: 0;
+    }
+    .documento-juridico p.paragrafo {
+      text-align: justify !important;
+      text-indent: 2cm;
+      margin: 0;
+      padding: 0;
+      white-space: normal;
+      hyphens: auto;
     }
     .documento-juridico p,
     .documento-juridico .paragrafo {

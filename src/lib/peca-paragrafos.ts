@@ -132,19 +132,123 @@ export function dividirEmParagrafosRetoricos(
 }
 
 /**
- * Prepara o texto dos fatos: 1 linha = 1 parágrafo justificado na peça.
+ * Prepara o texto dos fatos: frases seguidas viram parágrafos de 2–3 períodos
+ * (justificado só aparece quando o bloco ocupa a largura da linha).
  */
 export function normalizarTextoFatos(texto: string): string {
+  return fundirFrasesEmParagrafos(texto);
+}
+
+function pareceCitacaoJurisLinha(t: string): boolean {
+  if (/\[\[JURIS\]\]/i.test(t)) return true;
+  const temTribunal = /\b(STJ|STF|TJ[A-Z]{2}|TRF\s*\d*|TST|TSE)\b/.test(t);
+  const temClasse = /\b(REsp|AgRg|AgInt|ARE|HC|MS|EMENTA|Acórd[aã]o)\b/i.test(t);
+  return temTribunal && temClasse;
+}
+
+function fundirFrasesEmParagrafos(texto: string): string {
   const unido = juntarQuebrasDeLinhaSuaves(texto);
-  const blocos = unido
-    .split(/\n\s*\n/)
+  const linhas = unido
+    .split(/\n/)
     .map((b) => b.replace(/\s+/g, " ").trim())
     .filter(Boolean);
 
-  const paragrafos: string[] = [];
-  for (const bloco of blocos) {
-    paragrafos.push(...dividirEmParagrafosRetoricos(bloco));
-  }
+  const out: string[] = [];
+  let buf: string[] = [];
+  const flush = () => {
+    if (buf.length === 0) return;
+    out.push(...dividirEmParagrafosRetoricos(buf.join(" ")));
+    buf = [];
+  };
 
-  return paragrafos.join("\n");
+  for (const linha of linhas) {
+    if (
+      ehLinhaEstruturalPeca(linha) ||
+      pareceCitacaoJurisLinha(linha) ||
+      linha.startsWith("- ")
+    ) {
+      flush();
+      out.push(linha);
+      continue;
+    }
+    buf.push(linha);
+  }
+  flush();
+  return out.join("\n");
+}
+
+const RE_ROMANO_ITENS =
+  /^[IVXLCDM]+\s*[-—–.]\s*(?:DOS?\s+PEDIDOS|DAS\s+PROVAS)\b/i;
+const RE_ROMANO_QUALQUER = /^[IVXLCDM]+\s*[-—–.]\s+\S/i;
+const RE_FECHO =
+  /^(Nestes termos|Termos em que|Pede e espera deferimento|Pede deferimento)/i;
+
+/**
+ * Dentro de I - DOS FATOS, II - DO DIREITO, valor da causa etc.:
+ * junta frases que a IA quebrou em linhas (cada uma termina com ponto)
+ * para o justificado ocupar a largura da folha.
+ * Não mexe em endereçamento, qualificação, pedidos, provas nem fechamento.
+ */
+export function normalizarCorpoDosTopicos(peca: string): string {
+  const linhas = peca.replace(/\r\n/g, "\n").split("\n");
+  const out: string[] = [];
+  let modo: "pre" | "corpo" | "itens" = "pre";
+  let buf: string[] = [];
+
+  const flush = () => {
+    if (buf.length === 0) return;
+    out.push(...dividirEmParagrafosRetoricos(buf.join(" ")));
+    buf = [];
+  };
+
+  for (const raw of linhas) {
+    const t = raw.replace(/\s+/g, " ").trim();
+    if (!t) continue;
+
+    if (/^\[\[ESPACO/i.test(t)) {
+      flush();
+      out.push(t);
+      continue;
+    }
+
+    if (RE_ROMANO_ITENS.test(t)) {
+      flush();
+      modo = "itens";
+      out.push(t);
+      continue;
+    }
+
+    if (RE_ROMANO_QUALQUER.test(t)) {
+      flush();
+      modo = "corpo";
+      out.push(t);
+      continue;
+    }
+
+    if (RE_FECHO.test(t) || /^OAB\//i.test(t) || /^Advogado$/i.test(t)) {
+      flush();
+      modo = "pre";
+      out.push(t);
+      continue;
+    }
+
+    if (modo !== "corpo") {
+      out.push(t);
+      continue;
+    }
+
+    if (
+      ehLinhaEstruturalPeca(t) ||
+      pareceCitacaoJurisLinha(t) ||
+      t.startsWith("- ")
+    ) {
+      flush();
+      out.push(t);
+      continue;
+    }
+
+    buf.push(t);
+  }
+  flush();
+  return out.join("\n");
 }

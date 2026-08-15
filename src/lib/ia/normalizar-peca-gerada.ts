@@ -13,6 +13,7 @@ import {
 } from "@/lib/formatacao-forense";
 import {
   juntarQuebrasDeLinhaSuaves,
+  normalizarCorpoDosTopicos,
   normalizarTextoFatos,
 } from "@/lib/peca-paragrafos";
 import {
@@ -733,6 +734,7 @@ export function normalizarPecaGerada(texto: string): string {
   t = inserirEspacoEntreSubtopicos(t);
   t = normalizarSecaoFatos(t);
   t = normalizarParagrafosDoDireito(t);
+  t = normalizarCorpoDosTopicos(t);
   t = negritarSubtitulosDireito(t);
   t = aplicarItalicoTermosEstrangeiros(t);
   t = normalizarLinhaOab(t);
