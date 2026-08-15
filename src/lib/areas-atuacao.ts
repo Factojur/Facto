@@ -23,8 +23,9 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     id: "jecr",
     title: "Juizado Especial Criminal",
     description:
-      "Termos circunstanciados, composição civil, transação penal e recursos no JECRIM, com base na Lei 9.099/95.",
+      "Queixa-crime, composição civil, transação penal, defesa e recurso inominado no JECRIM (Lei 9.099/95) — distinto do JEC cível e do Penal comum.",
     law: "Lei nº 9.099/95",
+    href: "/dashboard/jecr",
     available: false,
     icon: "⚖️",
   },

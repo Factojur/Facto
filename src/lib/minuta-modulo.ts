@@ -134,13 +134,32 @@ export const MODULO_IMOBILIARIO: AreaModuloConfig = {
   rotuloNav: "Gerar peça Imobiliário",
 };
 
+export const MODULO_JECR: AreaModuloConfig = {
+  id: "jecr",
+  tituloDashboard: "Geração de Peça — Juizado Especial Criminal",
+  leiResumo: "Lei nº 9.099/95 (JECRIM)",
+  href: "/dashboard/jecr",
+  idsPeticaoInicial: [
+    "queixa-crime",
+    "composicao-civil",
+    "transacao-penal",
+  ],
+  copyCabecalho:
+    "Peças no Juizado Especial Criminal (Lei 9.099/95, arts. 60 a 92): queixa-crime, composição civil, transação penal, defesa e recurso inominado. Não use para o JEC cível nem para o rito penal comum (CPP). Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+  fundamentoQualificacao: "na Lei nº 9.099/95 (rito criminal)",
+  rotuloPoloAtivo: "querelante / acusado",
+  rotuloPoloPassivo: "querelado / Ministério Público",
+  rotuloNav: "Gerar peça JECRIM",
+};
+
 export type AreaIdMinuta =
   | "jec"
   | "consumidor"
   | "civil"
   | "trabalhista"
   | "familia"
-  | "imobiliario";
+  | "imobiliario"
+  | "jecr";
 
 const IDS_MINUTA = new Set<string>([
   "jec",
@@ -149,6 +168,7 @@ const IDS_MINUTA = new Set<string>([
   "trabalhista",
   "familia",
   "imobiliario",
+  "jecr",
 ]);
 
 export function normalizarAreaIdMinuta(raw?: string | null): AreaIdMinuta {
@@ -178,6 +198,8 @@ export function moduloDaArea(areaId: string): AreaModuloConfig {
       return MODULO_FAMILIA;
     case "imobiliario":
       return MODULO_IMOBILIARIO;
+    case "jecr":
+      return MODULO_JECR;
     default:
       return MODULO_JEC;
   }

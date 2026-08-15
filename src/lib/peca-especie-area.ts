@@ -49,6 +49,14 @@ import {
   tituloPecaImobiliario,
   type EspeciePecaImobiliario,
 } from "@/lib/imobiliario-especie-peca";
+import {
+  blocoEstruturaPromptJecr,
+  ESPECIES_PECA_JECR,
+  inferirEspecieJecr,
+  metaEspecieJecr,
+  tituloPecaJecr,
+  type EspeciePecaJecr,
+} from "@/lib/jecr-especie-peca";
 import { moduloDaArea } from "@/lib/minuta-modulo";
 
 export function ehJusticaComumCpc(areaId: string): boolean {
@@ -85,6 +93,9 @@ export function inferirEspecieDaArea(
   if (areaId === "imobiliario") {
     return inferirEspecieImobiliario(tipoAcao, fatos, especieExplicita);
   }
+  if (areaId === "jecr") {
+    return inferirEspecieJecr(tipoAcao, fatos, especieExplicita);
+  }
   return inferirEspeciePeca(tipoAcao, fatos, especieExplicita);
 }
 
@@ -104,6 +115,9 @@ export function blocoEstruturaDaArea(areaId: string, especie: string): string {
   if (areaId === "imobiliario") {
     return blocoEstruturaPromptImobiliario(especie as EspeciePecaImobiliario);
   }
+  if (areaId === "jecr") {
+    return blocoEstruturaPromptJecr(especie as EspeciePecaJecr);
+  }
   return blocoEstruturaPrompt(especie as EspeciePecaJec);
 }
 
@@ -113,6 +127,7 @@ export function metaEspecieDaArea(areaId: string, especie: string) {
   if (areaId === "trabalhista") return metaEspecieTrabalhista(especie);
   if (areaId === "familia") return metaEspecieFamilia(especie);
   if (areaId === "imobiliario") return metaEspecieImobiliario(especie);
+  if (areaId === "jecr") return metaEspecieJecr(especie);
   return metaEspecie(especie as EspeciePecaJec);
 }
 
@@ -137,6 +152,9 @@ export function tituloPecaDaArea(
   if (areaId === "imobiliario") {
     return tituloPecaImobiliario(especie as EspeciePecaImobiliario, tipoSugerido);
   }
+  if (areaId === "jecr") {
+    return tituloPecaJecr(especie as EspeciePecaJecr, tipoSugerido);
+  }
   return tituloPecaCabivel(especie as EspeciePecaJec, tipoSugerido, contexto);
 }
 
@@ -144,6 +162,25 @@ export function especieParaScaffoldJec(
   areaId: string,
   especie: string
 ): string {
+  if (areaId === "jecr") {
+    switch (especie) {
+      case "queixa-crime":
+      case "composicao-civil":
+      case "transacao-penal":
+      case "suspensao-condicional":
+        return "peticao-inicial";
+      case "defesa-jecrim":
+        return "contestacao";
+      case "alegacoes-finais":
+        return "replica";
+      case "recurso-inominado":
+        return "recurso";
+      case "embargos-declaracao":
+        return "embargos";
+      default:
+        return especie;
+    }
+  }
   if (areaId === "trabalhista") {
     switch (especie) {
       case "reclamacao":
@@ -192,5 +229,6 @@ export function listaEspeciesDaArea(areaId: string) {
   if (areaId === "trabalhista") return ESPECIES_PECA_TRABALHISTA;
   if (areaId === "familia") return ESPECIES_PECA_FAMILIA;
   if (areaId === "imobiliario") return ESPECIES_PECA_IMOBILIARIO;
+  if (areaId === "jecr") return ESPECIES_PECA_JECR;
   return null;
 }

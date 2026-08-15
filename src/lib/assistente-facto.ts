@@ -60,7 +60,7 @@ export function formatarNomeAcaoForense(
     .trim();
 
   if (!/^a[cç][aã]o\b/i.test(t) &&
-    !/^(execução|execucao|embargos|recurso|contestação|contestacao|pedido de|impugnação|impugnacao|agravo|mandado|inventário|inventario|divórcio|divorcio|alimentos|guarda)/i.test(
+    !/^(execução|execucao|embargos|recurso|contestação|contestacao|pedido de|impugnação|impugnacao|agravo|mandado|inventário|inventario|divórcio|divorcio|alimentos|guarda|queixa|transa[cç][aã]o|defesa|composi[cç][aã]o|suspens[aã]o|alega[cç][oõ]es|representa[cç][aã]o|habeas)/i.test(
       t
     )
   ) {
@@ -169,6 +169,8 @@ export function analisarCaseAssistente(input: {
             ? "na Vara de Família e Sucessões"
           : areaId === "imobiliario"
             ? "no contencioso imobiliário (Lei 8.245/91 e CC)"
+          : areaId === "jecr"
+            ? "no Juizado Especial Criminal (Lei 9.099/95)"
           : "no Juizado Especial Cível";
 
   let tipoAcao =
@@ -178,12 +180,64 @@ export function analisarCaseAssistente(input: {
         ? "Ação de Alimentos"
       : areaId === "imobiliario"
         ? "Ação de Despejo"
+      : areaId === "jecr"
+        ? "Queixa-crime"
       : "Ação de Indenização por Danos Materiais e Morais";
   let motivoAcao =
-    "Os fatos narrados indicam lesão a direito patrimonial ou extrapatrimonial, "
-    + `compatível com pedido indenizatório ${foro}.`;
+    areaId === "jecr"
+      ? "Os fatos narrados indicam infração de menor potencial ofensivo ou ação penal privada, compatível com o JECRIM."
+      : "Os fatos narrados indicam lesão a direito patrimonial ou extrapatrimonial, "
+        + `compatível com pedido indenizatório ${foro}.`;
 
-  if (
+  if (areaId === "jecr") {
+    if (contemAlgum(fatos, ["recurso inominado", "turma recursal"])) {
+      tipoAcao = "Recurso Inominado";
+      motivoAcao =
+        "Há indício de impugnação de sentença do JECRIM, cabendo recurso inominado (art. 82 da Lei 9.099/95).";
+    } else if (contemAlgum(fatos, ["transação penal", "transacao penal"])) {
+      tipoAcao = "Transação Penal";
+      motivoAcao =
+        "Os fatos sugerem infração de menor potencial ofensivo com espaço para transação penal (art. 76).";
+    } else if (contemAlgum(fatos, ["composição civil", "composicao civil"])) {
+      tipoAcao = "Composição Civil dos Danos";
+      motivoAcao =
+        "A narrativa aponta acordo sobre o dano, cabível composição civil (arts. 72 e 74).";
+    } else if (
+      contemAlgum(fatos, [
+        "suspensão condicional",
+        "suspensao condicional",
+        "art. 89",
+      ])
+    ) {
+      tipoAcao = "Suspensão Condicional do Processo";
+      motivoAcao =
+        "Há elementos compatíveis com o art. 89 da Lei 9.099/95 (suspensão condicional do processo).";
+    } else if (
+      contemAlgum(fatos, [
+        "defesa",
+        "tco",
+        "termo circunstanciado",
+        "autor do fato",
+      ])
+    ) {
+      tipoAcao = "Defesa";
+      motivoAcao =
+        "Os fatos apontam defesa do autor do fato no rito sumaríssimo do JECRIM.";
+    } else if (
+      contemAlgum(fatos, [
+        "queixa",
+        "querelante",
+        "injúria",
+        "injuria",
+        "difamação",
+        "difamacao",
+      ])
+    ) {
+      tipoAcao = "Queixa-crime";
+      motivoAcao =
+        "A narrativa indica ação penal de iniciativa privada, cabendo queixa-crime no JECRIM.";
+    }
+  } else if (
     contemAlgum(fatos, [
       "execução",
       "executivo",

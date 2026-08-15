@@ -58,6 +58,27 @@ function boolField(v: unknown, fallback = false): boolean {
 }
 
 function systemClassificacao(areaId: string): string {
+  if (areaId === "jecr") {
+    return [
+      "Você é o Assistente Facto, paralegal especialista em Juizado Especial Criminal (Lei 9.099/95, arts. 60–92).",
+      "Analise os FATOS e NOMEIE a peça (queixa-crime, defesa, composição civil, transação penal, suspensão condicional, recurso inominado).",
+      "",
+      "REGRAS DE NOMENCLATURA:",
+      '- SEM "(JEC)" cível. Não chame de contestação, apelação nem ação de indenização.',
+      "- Não use resposta à acusação do CPP nem habeas corpus neste módulo.",
+      "- Recurso da sentença do JECRIM: recurso inominado (art. 82), Turma Recursal.",
+      "- Justificativa objetiva em português (2 a 4 frases), sem inventar TCO nem tipificação.",
+      "",
+      "Responda SOMENTE com JSON válido (sem markdown), neste formato:",
+      "{",
+      '  "tipoAcao": "<nome forense completo da peça>",',
+      '  "tutelaUrgencia": true|false,',
+      '  "danosMorais": true|false,',
+      '  "danosMateriais": true|false,',
+      '  "justificativa": "<texto>"',
+      "}",
+    ].join("\n");
+  }
   if (areaId === "imobiliario") {
     return [
       "Você é o Assistente Facto, paralegal especialista em Direito Imobiliário (Lei 8.245/91, CC, condomínio).",
@@ -247,6 +268,8 @@ export async function analisarCaseComGemini(input: {
               ? "Com base nos fatos (nomenclatura de família e sucessões, se disponível),"
             : areaId === "imobiliario"
               ? "Com base nos fatos (nomenclatura imobiliária / locação / usucapião, se disponível),"
+            : areaId === "jecr"
+              ? "Com base nos fatos (nomenclatura do JECRIM / Lei 9.099 criminal, se disponível),"
             : "Com base nos fatos (e em busca geral sobre nomenclatura forense no JEC, se disponível),",
       "nomeie a ação cabível e indique cúmulos.",
     ].join("\n"),

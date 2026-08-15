@@ -11,7 +11,7 @@ description: >-
 
 Não redesenhar o que já fechamos. Skill só para o agente no Cursor; o cliente não vê isto.
 
-Módulo aberto hoje: **JEC** — **base de desenvolvimento** da dashboard. Contrato compartilhado: `src/lib/minuta-modulo.ts` (`rotuloNav` no menu). Preview admin: Consumidor, Civil, Trabalhista, Família e Imobiliário (`available: false`). Contratual fica como tema no Civil.
+Módulo aberto hoje: **JEC** — **base de desenvolvimento** da dashboard. Contrato compartilhado: `src/lib/minuta-modulo.ts` (`rotuloNav` no menu). Preview admin: Consumidor, Civil, Trabalhista, Família, Imobiliário e JECRIM (`available: false`). Contratual fica como tema no Civil. Penal comum (CPP) é o próximo.
 
 Se alterar a dashboard JEC e **não** for específico do JEC, extrair/atualizar o compartilhado (e replicar nas áreas que já tiverem rota). Não duplicar só no `jec-form`.
 

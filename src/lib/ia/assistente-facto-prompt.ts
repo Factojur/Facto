@@ -77,6 +77,8 @@ export function montarSystemPromptAnaliseEstrategica(
             ? "Vara de Família e Sucessões (CC, CPC, ECA, Lei 5.478/64). NÃO use 9.099 nem CLT. Segredo de justiça quando couber."
           : areaId === "imobiliario"
             ? "contencioso imobiliário (Lei 8.245/91, CC, condomínio, CPC). NÃO use 9.099 nem CLT."
+          : areaId === "jecr"
+            ? "Juizado Especial Criminal (Lei 9.099/95, arts. 60–92). NÃO use o rito cível do Juizado nem CPP do rito comum."
           : "juizados especiais cíveis brasileiros (Lei 9.099/95).";
   const nomePeca =
     areaId === "trabalhista"
@@ -85,6 +87,8 @@ export function montarSystemPromptAnaliseEstrategica(
         ? "Nome técnico da peça de família (divórcio, guarda, alimentos, inventário, apelação — NÃO recurso inominado)"
       : areaId === "imobiliario"
         ? "Nome técnico da peça imobiliária (despejo, usucapião, consignação, condomínio, apelação — NÃO recurso inominado)"
+      : areaId === "jecr"
+        ? "Nome técnico da peça no JECRIM (queixa-crime, defesa, composição, transação penal, recurso inominado — NÃO contestação cível nem apelação)"
       : areaId === "consumidor" || areaId === "civil"
         ? "Nome técnico da peça na justiça comum (apelação, contestação, cumprimento etc. — NÃO recurso inominado)"
         : "Nome técnico da peça/ação cabível no JEC (SEM prefixo \"Petição Inicial —\"; só o nome forense)";
@@ -104,6 +108,8 @@ export function montarSystemPromptAnaliseEstrategica(
         ? "5. Indique a espécie (inicial de família, contestação, apelação, cumprimento de alimentos ou inventário);"
       : areaId === "imobiliario"
         ? "5. Indique a espécie (despejo, usucapião, consignação, condomínio, contestação, apelação ou cumprimento);"
+      : areaId === "jecr"
+        ? "5. Indique a espécie (queixa-crime, defesa, composição civil, transação penal, suspensão condicional, alegações finais ou recurso inominado);"
       : areaId === "consumidor" || areaId === "civil"
         ? "5. Indique a espécie (petição inicial, contestação, réplica, apelação, agravo, cumprimento ou execução);"
         : "5. Indique a espécie da peça (petição inicial, contestação, embargos, recurso, réplica ou execução);",
@@ -151,6 +157,8 @@ export function montarSystemPromptRedacaoTier1(
             ? "Atue na Vara de Família e Sucessões (Código Civil, CPC, ECA e Lei 5.478/64). NÃO aplique Lei 9.099/95 nem CLT. Peça segredo de justiça (art. 189 do CPC) quando os fatos envolverem casamento, filiação, alimentos ou guarda. Honorários: art. 85 do CPC. Endereçamento: Juiz de Direito da Vara de Família."
           : areaId === "imobiliario"
             ? "Atue no contencioso imobiliário (Lei 8.245/91, Código Civil, condomínio e CPC). NÃO aplique Lei 9.099/95 nem CLT. Despejo ≠ cobrança cível. Usucapião exige posse e tempo nos FATOS. Honorários: art. 85 do CPC. Endereçamento: Vara Cível."
+          : areaId === "jecr"
+            ? "Atue no Juizado Especial Criminal (Lei 9.099/95, arts. 60 a 92). NÃO aplique o rito cível do Juizado (indenização, teto 20 SM, contestação). NÃO use resposta à acusação do CPP nem apelação. Recurso da sentença: inominado (art. 82, 10 dias) à Turma Recursal. Endereçamento: Juiz de Direito do JECRIM. Polos: querelante/querelado ou acusado/MP conforme a espécie."
           : "Atue no Juizado Especial Cível brasileiro (Lei 9.099/95).";
 
   const especialidade =
@@ -164,6 +172,8 @@ export function montarSystemPromptRedacaoTier1(
             ? "Direito de Família e Sucessões"
           : areaId === "imobiliario"
             ? "Direito Imobiliário (locação, usucapião, condomínio)"
+          : areaId === "jecr"
+            ? "Direito Penal no Juizado Especial Criminal (Lei 9.099/95)"
           : "contencioso cível e direito do consumidor";
 
   return [

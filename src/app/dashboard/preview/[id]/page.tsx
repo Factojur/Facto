@@ -40,6 +40,9 @@ export default async function PreviewAreaPage({
   if (id === "imobiliario") {
     redirect("/dashboard/imobiliario");
   }
+  if (id === "jecr") {
+    redirect("/dashboard/jecr");
+  }
 
   const area = getAreaById(id);
   if (!area) notFound();

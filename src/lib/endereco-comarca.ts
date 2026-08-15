@@ -117,7 +117,7 @@ export function ufValida(uf: string): boolean {
 export function ehPeticaoInicial(tipoAcao: string | null | undefined): boolean {
   const t = String(tipoAcao ?? "").toLowerCase();
   if (
-    /contesta[cç][aã]o|embargos|recurso|apelac|agravo|impugna[cç][aã]o|r[eé]plica|contrarraz|cumprimento/i.test(
+    /contesta[cç][aã]o|defesa|embargos|recurso|apelac|agravo|impugna[cç][aã]o|r[eé]plica|contrarraz|cumprimento|alega[cç][oõ]es finais/i.test(
       t
     )
   ) {
@@ -174,6 +174,12 @@ export function formatarEnderecamentoPadrao(opcoes: {
     return (
       `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA ${vara} ` +
       `VARA DE FAMÍLIA E SUCESSÕES DO FÓRUM DA COMARCA DE ${comarcaTxt}`
+    );
+  }
+  if (areaId === "jecr") {
+    return (
+      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA ${vara} ` +
+      `VARA DO JUIZADO ESPECIAL CRIMINAL DO FÓRUM DA COMARCA DE ${comarcaTxt}`
     );
   }
   if (areaId === "consumidor" || areaId === "civil" || areaId === "imobiliario") {

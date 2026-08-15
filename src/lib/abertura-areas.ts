@@ -88,8 +88,9 @@ export const SEQUENCIA_ABERTURA_AREAS: ItemAberturaArea[] = [
     titulo: "JECRIM",
     porQue: "Lei 9.099 criminal — não copiar JEC cível.",
     especifico: [
-      "TCO, composição civil, transação penal",
-      "Endereçamento e polos do JECRIM",
+      "Módulo próprio /dashboard/jecr (preview admin)",
+      "Queixa-crime, composição civil, transação penal, defesa, art. 89, recurso inominado",
+      "Não copiar JEC cível; HC e resposta à acusação ficam no Penal comum",
     ],
   },
   {
