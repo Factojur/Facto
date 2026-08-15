@@ -108,7 +108,7 @@ export function reuOkParaChecklist(
 }
 
 export function fraseAnteSentenca(
-  especie: EspeciePecaJec | string | null | undefined,
+  especie: string | null | undefined,
   dispositivo: string | null | undefined
 ): string | null {
   if (especie === "contestacao" || especie === "replica") return null;
@@ -137,7 +137,7 @@ export function formatarBlocoPartesJaQualificadas(opcoes: {
   advogadoNome: string;
   oabQualificacao: string;
   enderecoAdvogado?: string | null;
-  especie?: EspeciePecaJec | string | null;
+  especie?: string | null;
   dispositivoSentenca?: string | null;
 }): string {
   const autor =
