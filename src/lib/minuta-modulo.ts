@@ -152,6 +152,174 @@ export const MODULO_JECR: AreaModuloConfig = {
   rotuloNav: "Gerar peça JECRIM",
 };
 
+export const MODULO_CRIMINAL: AreaModuloConfig = {
+  id: "criminal",
+  tituloDashboard: "Geração de Peça — Direito Penal (rito comum)",
+  leiResumo: "CP · CPP",
+  href: "/dashboard/criminal",
+  idsPeticaoInicial: ["habeas-corpus", "revisao-criminal"],
+  copyCabecalho:
+    "Peças na Justiça Penal comum (CP e CPP): habeas corpus, resposta à acusação, alegações finais, apelação criminal. Não use JECRIM (9.099) nem contestação cível. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+  fundamentoQualificacao: "no Código Penal e no Código de Processo Penal",
+  rotuloPoloAtivo: "acusado / paciente",
+  rotuloPoloPassivo: "Ministério Público / autoridade coatora",
+  rotuloNav: "Gerar peça Penal",
+};
+
+export const MODULO_PREVIDENCIARIO: AreaModuloConfig = {
+  id: "previdenciario",
+  tituloDashboard: "Geração de Peça — Direito Previdenciário",
+  leiResumo: "Lei 8.213/91 · JEF",
+  href: "/dashboard/previdenciario",
+  idsPeticaoInicial: ["peticao-inicial"],
+  copyCabecalho:
+    "Peças previdenciárias (Lei 8.213/91): concessão, restabelecimento e revisão contra o INSS no JEF ou na Vara Federal. Não invente NB nem RMI. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+  fundamentoQualificacao: "na legislação previdenciária",
+  rotuloPoloAtivo: "segurado / autor",
+  rotuloPoloPassivo: "INSS",
+  rotuloNav: "Gerar peça Previdenciário",
+};
+
+export const MODULO_TRIBUTARIO: AreaModuloConfig = {
+  id: "tributario",
+  tituloDashboard: "Geração de Peça — Direito Tributário",
+  leiResumo: "CTN · Lei 6.830/80",
+  href: "/dashboard/tributario",
+  idsPeticaoInicial: ["peticao-inicial", "mandado-seguranca"],
+  copyCabecalho:
+    "Peças tributárias: embargos à execução fiscal (LEF), exceção de pré-executividade, anulatória, repetição e mandado de segurança. Não confunda com execução cível. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+  fundamentoQualificacao: "no CTN e na legislação tributária",
+  rotuloPoloAtivo: "contribuinte / executado",
+  rotuloPoloPassivo: "Fazenda Pública",
+  rotuloNav: "Gerar peça Tributário",
+};
+
+export const MODULO_ADMINISTRATIVO: AreaModuloConfig = {
+  id: "administrativo",
+  tituloDashboard: "Geração de Peça — Direito Administrativo",
+  leiResumo: "Lei 12.016/09 · CPC",
+  href: "/dashboard/administrativo",
+  idsPeticaoInicial: ["mandado-seguranca", "peticao-inicial"],
+  copyCabecalho:
+    "Peças de Direito Administrativo e Fazenda Pública: mandado de segurança (120 dias), anulação de ato, licitação. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+  fundamentoQualificacao: "no direito administrativo e na Lei 12.016/09",
+  rotuloPoloAtivo: "impetrante / autor",
+  rotuloPoloPassivo: "autoridade coatora / ente público",
+  rotuloNav: "Gerar peça Administrativo",
+};
+
+export const MODULO_EMPRESARIAL: AreaModuloConfig = {
+  id: "empresarial",
+  tituloDashboard: "Geração de Peça — Direito Empresarial",
+  leiResumo: "CC · Lei 6.404/76",
+  href: "/dashboard/empresarial",
+  idsPeticaoInicial: ["peticao-inicial", "notificacao-extrajudicial"],
+  copyCabecalho:
+    "Peças empresariais: notificação extrajudicial, dissolução, obrigações societárias. Distinga notificação de ação. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+  fundamentoQualificacao: "no direito de empresa e no CPC",
+  rotuloPoloAtivo: "autor / sócio",
+  rotuloPoloPassivo: "réu / sociedade",
+  rotuloNav: "Gerar peça Empresarial",
+};
+
+export const MODULO_DIGITAL: AreaModuloConfig = {
+  id: "digital",
+  tituloDashboard: "Geração de Peça — Direito Digital e LGPD",
+  leiResumo: "LGPD · CPC",
+  href: "/dashboard/digital",
+  idsPeticaoInicial: ["peticao-inicial"],
+  copyCabecalho:
+    "Peças de Direito Digital e LGPD. Crimes digitais: use o módulo Penal. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+  fundamentoQualificacao: "na LGPD e no CPC",
+  rotuloPoloAtivo: "titular / autor",
+  rotuloPoloPassivo: "controlador / réu",
+  rotuloNav: "Gerar peça Digital",
+};
+
+export const MODULO_AMBIENTAL: AreaModuloConfig = {
+  id: "ambiental",
+  tituloDashboard: "Geração de Peça — Direito Ambiental",
+  leiResumo: "Lei 6.938/81 · ACP",
+  href: "/dashboard/ambiental",
+  idsPeticaoInicial: ["acp-ambiental", "peticao-inicial", "defesa-infracao"],
+  copyCabecalho:
+    "Peças ambientais: ACP, defesa de auto de infração, obrigação de fazer. Não invente licença nem auto. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+  fundamentoQualificacao: "na legislação ambiental",
+  rotuloPoloAtivo: "autor",
+  rotuloPoloPassivo: "réu / poluidor",
+  rotuloNav: "Gerar peça Ambiental",
+};
+
+export const MODULO_PI: AreaModuloConfig = {
+  id: "propriedade-intelectual",
+  tituloDashboard: "Geração de Peça — Propriedade Intelectual",
+  leiResumo: "LPI · LDA",
+  href: "/dashboard/propriedade-intelectual",
+  idsPeticaoInicial: ["abstencao-marca", "peticao-inicial"],
+  copyCabecalho:
+    "Peças de marcas, patentes e direitos autorais. Não invente registro no INPI. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+  fundamentoQualificacao: "na LPI e na LDA",
+  rotuloPoloAtivo: "titular / autor",
+  rotuloPoloPassivo: "réu",
+  rotuloNav: "Gerar peça PI",
+};
+
+export const MODULO_INTERNACIONAL: AreaModuloConfig = {
+  id: "internacional",
+  tituloDashboard: "Geração de Peça — Direito Internacional",
+  leiResumo: "STJ · CPC · LINDB",
+  href: "/dashboard/internacional",
+  idsPeticaoInicial: ["homologacao", "peticao-inicial"],
+  copyCabecalho:
+    "Homologação de sentença estrangeira (STJ) e contencioso contratual internacional. Não invente tratado nem sentença. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+  fundamentoQualificacao: "no direito internacional privado e no CPC",
+  rotuloPoloAtivo: "requerente / autor",
+  rotuloPoloPassivo: "requerido / réu",
+  rotuloNav: "Gerar peça Internacional",
+};
+
+export const MODULO_MEDICO: AreaModuloConfig = {
+  id: "medico",
+  tituloDashboard: "Geração de Peça — Direito Médico e da Saúde",
+  leiResumo: "CC · CDC · conselhos",
+  href: "/dashboard/medico",
+  idsPeticaoInicial: ["peticao-inicial"],
+  copyCabecalho:
+    "Erro médico e demandas da saúde. Distinga responsabilidade civil de cobertura de plano (CDC). Não invente prontuário. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+  fundamentoQualificacao: "no Código Civil e, quando couber, no CDC",
+  rotuloPoloAtivo: "paciente / autor",
+  rotuloPoloPassivo: "profissional / hospital / operadora",
+  rotuloNav: "Gerar peça Médico",
+};
+
+export const MODULO_AGRARIO: AreaModuloConfig = {
+  id: "agrario",
+  tituloDashboard: "Geração de Peça — Direito Agrário",
+  leiResumo: "Estatuto da Terra · CC",
+  href: "/dashboard/agrario",
+  idsPeticaoInicial: ["peticao-inicial"],
+  copyCabecalho:
+    "Contratos agrários, crédito rural e regularização. Não invente matrícula rural. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+  fundamentoQualificacao: "no Estatuto da Terra e no Código Civil",
+  rotuloPoloAtivo: "autor",
+  rotuloPoloPassivo: "réu",
+  rotuloNav: "Gerar peça Agrário",
+};
+
+export const MODULO_ELEITORAL: AreaModuloConfig = {
+  id: "eleitoral",
+  tituloDashboard: "Geração de Peça — Direito Eleitoral",
+  leiResumo: "Código Eleitoral · Lei 9.504/97",
+  href: "/dashboard/eleitoral",
+  idsPeticaoInicial: ["representacao", "aije", "registro-candidatura"],
+  copyCabecalho:
+    "Representação, AIJE, registro de candidatura e defesa na Justiça Eleitoral. A base FACTO não indexa TRE/TSE — não invente julgado. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+  fundamentoQualificacao: "na legislação eleitoral",
+  rotuloPoloAtivo: "representante / autor",
+  rotuloPoloPassivo: "representado / réu",
+  rotuloNav: "Gerar peça Eleitoral",
+};
+
 export type AreaIdMinuta =
   | "jec"
   | "consumidor"
@@ -159,17 +327,43 @@ export type AreaIdMinuta =
   | "trabalhista"
   | "familia"
   | "imobiliario"
-  | "jecr";
+  | "jecr"
+  | "criminal"
+  | "previdenciario"
+  | "tributario"
+  | "administrativo"
+  | "empresarial"
+  | "digital"
+  | "ambiental"
+  | "propriedade-intelectual"
+  | "internacional"
+  | "medico"
+  | "agrario"
+  | "eleitoral";
 
-const IDS_MINUTA = new Set<string>([
-  "jec",
-  "consumidor",
-  "civil",
-  "trabalhista",
-  "familia",
-  "imobiliario",
-  "jecr",
-]);
+const MODULOS: Record<string, AreaModuloConfig> = {
+  jec: MODULO_JEC,
+  consumidor: MODULO_CONSUMIDOR,
+  civil: MODULO_CIVIL,
+  trabalhista: MODULO_TRABALHISTA,
+  familia: MODULO_FAMILIA,
+  imobiliario: MODULO_IMOBILIARIO,
+  jecr: MODULO_JECR,
+  criminal: MODULO_CRIMINAL,
+  previdenciario: MODULO_PREVIDENCIARIO,
+  tributario: MODULO_TRIBUTARIO,
+  administrativo: MODULO_ADMINISTRATIVO,
+  empresarial: MODULO_EMPRESARIAL,
+  digital: MODULO_DIGITAL,
+  ambiental: MODULO_AMBIENTAL,
+  "propriedade-intelectual": MODULO_PI,
+  internacional: MODULO_INTERNACIONAL,
+  medico: MODULO_MEDICO,
+  agrario: MODULO_AGRARIO,
+  eleitoral: MODULO_ELEITORAL,
+};
+
+const IDS_MINUTA = new Set(Object.keys(MODULOS));
 
 export function normalizarAreaIdMinuta(raw?: string | null): AreaIdMinuta {
   const id = String(raw ?? "").trim();
@@ -187,20 +381,9 @@ export function areaIdFromPathname(pathname: string): AreaIdMinuta {
 }
 
 export function moduloDaArea(areaId: string): AreaModuloConfig {
-  switch (areaId) {
-    case "consumidor":
-      return MODULO_CONSUMIDOR;
-    case "civil":
-      return MODULO_CIVIL;
-    case "trabalhista":
-      return MODULO_TRABALHISTA;
-    case "familia":
-      return MODULO_FAMILIA;
-    case "imobiliario":
-      return MODULO_IMOBILIARIO;
-    case "jecr":
-      return MODULO_JECR;
-    default:
-      return MODULO_JEC;
-  }
+  return MODULOS[areaId] ?? MODULO_JEC;
+}
+
+export function hrefMinutaSeExistir(areaId: string): string | undefined {
+  return MODULOS[areaId]?.href;
 }

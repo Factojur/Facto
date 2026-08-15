@@ -8,6 +8,12 @@ export type AreaAtuacao = {
   icon: string;
 };
 
+/**
+ * Ordem do catálogo: volume no Judiciário brasileiro (CNJ Justiça em Números
+ * 2024/2025 — Justiça Estadual ~68% dos casos novos; execução fiscal com o
+ * maior acervo; Trabalho e Federal/JEF em seguida; Eleitoral por último).
+ * JEC permanece primeiro porque é o módulo vivo e concentra o rito dos Juizados.
+ */
 export const AREAS_ATUACAO: AreaAtuacao[] = [
   {
     id: "jec",
@@ -20,43 +26,6 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     icon: "⚖️",
   },
   {
-    id: "jecr",
-    title: "Juizado Especial Criminal",
-    description:
-      "Queixa-crime, composição civil, transação penal, defesa e recurso inominado no JECRIM (Lei 9.099/95) — distinto do JEC cível e do Penal comum.",
-    law: "Lei nº 9.099/95",
-    href: "/dashboard/jecr",
-    available: false,
-    icon: "⚖️",
-  },
-  {
-    id: "trabalhista",
-    title: "Direito Trabalhista",
-    description:
-      "Reclamações, defesa e recurso ordinário na Justiça do Trabalho (CLT) — distinto da justiça comum e do Juizado.",
-    law: "CLT",
-    href: "/dashboard/trabalhista",
-    available: false,
-    icon: "👷",
-  },
-  {
-    id: "criminal",
-    title: "Direito Penal",
-    description:
-      "Habeas corpus, resposta à acusação, memoriais e recursos na Justiça Penal comum.",
-    law: "CP · CPP",
-    available: false,
-    icon: "🛡️",
-  },
-  {
-    id: "empresarial",
-    title: "Direito Empresarial",
-    description:
-      "Contratos, notificações extrajudiciais e ações societárias para pessoas jurídicas.",
-    available: false,
-    icon: "🏢",
-  },
-  {
     id: "civil",
     title: "Direito Civil",
     description:
@@ -65,62 +34,6 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     href: "/dashboard/civil",
     available: false,
     icon: "📜",
-  },
-  {
-    id: "familia",
-    title: "Direito de Família e Sucessões",
-    description:
-      "Divórcio, guarda, alimentos, inventário e partilha na Vara de Família (Código Civil e CPC) — distinto do Civil genérico e do Juizado.",
-    law: "Código Civil · CPC",
-    href: "/dashboard/familia",
-    available: false,
-    icon: "👨‍👩‍👧",
-  },
-  {
-    id: "imobiliario",
-    title: "Direito Imobiliário",
-    description:
-      "Despejo (Lei 8.245/91), usucapião, consignação de aluguéis e cotas de condomínio — distinto do Civil genérico e do Juizado.",
-    law: "Lei 8.245 · CC",
-    href: "/dashboard/imobiliario",
-    available: false,
-    icon: "🏠",
-  },
-  {
-    id: "contratual",
-    title: "Direito Contratual",
-    description:
-      "Elaboração, revisão e litígios envolvendo contratos civis e empresariais.",
-    law: "Código Civil",
-    available: false,
-    icon: "📝",
-  },
-  {
-    id: "tributario",
-    title: "Direito Tributário",
-    description:
-      "Defesas administrativas e judiciais, execuções fiscais e planejamento tributário.",
-    law: "CTN",
-    available: false,
-    icon: "💰",
-  },
-  {
-    id: "administrativo",
-    title: "Direito Administrativo",
-    description:
-      "Licitações, contratos públicos, mandado de segurança e contencioso administrativo.",
-    law: "Lei nº 14.133/21",
-    available: false,
-    icon: "🏛️",
-  },
-  {
-    id: "previdenciario",
-    title: "Direito Previdenciário",
-    description:
-      "Aposentadorias, benefícios, revisões e contencioso junto ao INSS e Justiça Federal.",
-    law: "Lei nº 8.213/91",
-    available: false,
-    icon: "🧓",
   },
   {
     id: "consumidor",
@@ -133,11 +46,121 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     icon: "🛒",
   },
   {
+    id: "tributario",
+    title: "Direito Tributário",
+    description:
+      "Embargos à execução fiscal (Lei 6.830/80), exceção de pré-executividade, anulatória, repetição e MS tributário.",
+    law: "CTN · LEF",
+    href: "/dashboard/tributario",
+    available: false,
+    icon: "💰",
+  },
+  {
+    id: "familia",
+    title: "Direito de Família e Sucessões",
+    description:
+      "Divórcio, guarda, alimentos, inventário e partilha na Vara de Família (Código Civil e CPC) — distinto do Civil genérico e do Juizado.",
+    law: "Código Civil · CPC",
+    href: "/dashboard/familia",
+    available: false,
+    icon: "👨‍👩‍👧",
+  },
+  {
+    id: "trabalhista",
+    title: "Direito Trabalhista",
+    description:
+      "Reclamações, defesa e recurso ordinário na Justiça do Trabalho (CLT) — distinto da justiça comum e do Juizado.",
+    law: "CLT",
+    href: "/dashboard/trabalhista",
+    available: false,
+    icon: "👷",
+  },
+  {
+    id: "previdenciario",
+    title: "Direito Previdenciário",
+    description:
+      "Concessão, restabelecimento e revisão de benefícios contra o INSS no JEF ou na Vara Federal.",
+    law: "Lei nº 8.213/91",
+    href: "/dashboard/previdenciario",
+    available: false,
+    icon: "🧓",
+  },
+  {
+    id: "criminal",
+    title: "Direito Penal",
+    description:
+      "Habeas corpus, resposta à acusação, memoriais, apelação criminal e agravo em execução (CP e CPP) — distinto do JECRIM.",
+    law: "CP · CPP",
+    href: "/dashboard/criminal",
+    available: false,
+    icon: "🛡️",
+  },
+  {
+    id: "jecr",
+    title: "Juizado Especial Criminal",
+    description:
+      "Queixa-crime, composição civil, transação penal, defesa e recurso inominado no JECRIM (Lei 9.099/95) — distinto do JEC cível e do Penal comum.",
+    law: "Lei nº 9.099/95",
+    href: "/dashboard/jecr",
+    available: false,
+    icon: "⚖️",
+  },
+  {
+    id: "imobiliario",
+    title: "Direito Imobiliário",
+    description:
+      "Despejo (Lei 8.245/91), usucapião, consignação de aluguéis e cotas de condomínio — distinto do Civil genérico e do Juizado.",
+    law: "Lei 8.245 · CC",
+    href: "/dashboard/imobiliario",
+    available: false,
+    icon: "🏠",
+  },
+  {
+    id: "empresarial",
+    title: "Direito Empresarial",
+    description:
+      "Notificação extrajudicial, dissolução e obrigações societárias (CC e Lei 6.404/76).",
+    law: "CC · Lei 6.404/76",
+    href: "/dashboard/empresarial",
+    available: false,
+    icon: "🏢",
+  },
+  {
+    id: "contratual",
+    title: "Direito Contratual",
+    description:
+      "Tema no módulo Civil nesta versão — revisão e litígio contratual não abrem dashboard próprio.",
+    law: "Código Civil",
+    available: false,
+    icon: "📝",
+  },
+  {
+    id: "administrativo",
+    title: "Direito Administrativo",
+    description:
+      "Mandado de segurança (Lei 12.016/09, 120 dias), anulação de ato e contencioso da Fazenda Pública.",
+    law: "Lei nº 12.016/09",
+    href: "/dashboard/administrativo",
+    available: false,
+    icon: "🏛️",
+  },
+  {
+    id: "medico",
+    title: "Direito Médico e da Saúde",
+    description:
+      "Erro médico e demandas da saúde — distinto de cobertura pura de plano (Consumidor) e do Penal.",
+    law: "CDC · Código Civil",
+    href: "/dashboard/medico",
+    available: false,
+    icon: "🩺",
+  },
+  {
     id: "digital",
     title: "Direito Digital e Tecnologia",
     description:
-      "LGPD, crimes digitais, contratos de tecnologia e proteção de dados.",
+      "LGPD e tutelas digitais cíveis. Crimes digitais: módulo Penal.",
     law: "LGPD",
+    href: "/dashboard/digital",
     available: false,
     icon: "💻",
   },
@@ -145,8 +168,9 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     id: "ambiental",
     title: "Direito Ambiental",
     description:
-      "Licenciamento, infrações ambientais, TAC e ações civis públicas ambientais.",
+      "Ação civil pública ambiental, defesa de auto de infração e obrigação de fazer ambiental.",
     law: "Lei nº 6.938/81",
+    href: "/dashboard/ambiental",
     available: false,
     icon: "🌿",
   },
@@ -154,43 +178,38 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     id: "propriedade-intelectual",
     title: "Direito da Propriedade Intelectual",
     description:
-      "Marcas, patentes, direitos autorais e contratos de licenciamento.",
+      "Abstenção de marca, contrafação, nulidade de registro e direitos autorais (LPI e LDA).",
     law: "LPI · LDA",
+    href: "/dashboard/propriedade-intelectual",
     available: false,
     icon: "©️",
-  },
-  {
-    id: "internacional",
-    title: "Direito Internacional",
-    description:
-      "Contratos internacionais, homologação de sentenças e cooperação jurídica.",
-    available: false,
-    icon: "🌍",
-  },
-  {
-    id: "medico",
-    title: "Direito Médico e da Saúde",
-    description:
-      "Erro médico, planos de saúde, responsabilidade civil e defesas perante conselhos.",
-    law: "CDC · Código Civil",
-    available: false,
-    icon: "🩺",
   },
   {
     id: "agrario",
     title: "Direito do Agronegócio (Agrário)",
     description:
-      "Contratos agrários, crédito rural, regularização fundiária e contencioso do agronegócio.",
+      "Contratos agrários, crédito rural e regularização fundiária.",
     law: "Estatuto da Terra",
+    href: "/dashboard/agrario",
     available: false,
     icon: "🌾",
+  },
+  {
+    id: "internacional",
+    title: "Direito Internacional",
+    description:
+      "Homologação de sentença estrangeira no STJ e contencioso contratual internacional.",
+    href: "/dashboard/internacional",
+    available: false,
+    icon: "🌍",
   },
   {
     id: "eleitoral",
     title: "Direito Eleitoral",
     description:
-      "Registro de candidatura, propaganda, prestações de contas e ações eleitorais.",
+      "Representação, AIJE, registro de candidatura e defesa. A base FACTO não indexa TRE/TSE.",
     law: "Código Eleitoral",
+    href: "/dashboard/eleitoral",
     available: false,
     icon: "🗳️",
   },

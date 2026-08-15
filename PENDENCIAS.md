@@ -75,13 +75,13 @@ Fonte viva também em `src/lib/abertura-areas.ts`. Trabalhar **uma de cada vez**
 3. **Trabalhista** — _preview admin (15/08)_ — `/dashboard/trabalhista`; CLT; reclamante/reclamado; RO 8d. Catálogo `available: false`.
 4. **Família** — _preview admin (15/08)_ — `/dashboard/familia`; divórcio, guarda, alimentos, inventário; Vara de Família; segredo de justiça. Catálogo `available: false`.
 5. **Imobiliário** — _preview admin (15/08)_ — `/dashboard/imobiliario`; despejo (8.245), usucapião, consignação de aluguéis, condomínio; Vara Cível. **Contratual** permanece tema no Civil. Catálogo `available: false`.
-6. **JECRIM** — _preview admin (15/08)_ — `/dashboard/jecr`; queixa, composição, transação, defesa, recurso inominado (art. 82). Sem contestação cível. Catálogo `available: false`.
-7. **Penal comum** — HC, resposta à acusação; CPP (depois do JECRIM).
-8. **Previdenciário** — JEF/INSS; inicial previdenciária.
-9. **Tributário / administrativo** — Execução fiscal; MS 120d; CARF/TRF.
-10. **Empresarial** — Notificação extrajudicial vs. ação.
-11. **Depois:** digital, ambiental, PI, internacional, médico, agrário.
-12. **Eleitoral por último** — API sem TRE/TSE.
+6. **JECRIM** — _preview admin (15/08)_ — `/dashboard/jecr`.
+7. **Penal comum** — _preview admin (15/08)_ — `/dashboard/criminal`; HC, resposta à acusação, apelação CPP.
+8. **Previdenciário** — _preview admin (15/08)_ — `/dashboard/previdenciario`; JEF/INSS.
+9. **Tributário / administrativo** — _preview admin (15/08)_ — LEF/MS.
+10. **Empresarial** — _preview admin (15/08)_ — notificação vs. ação.
+11. **Digital, ambiental, PI, internacional, médico, agrário** — _preview admin (15/08)_.
+12. **Eleitoral** — _preview admin (15/08)_ — sem lastro TRE/TSE na API.
 
 Sobreposição a resolver no produto (senão o advogado não sabe onde clicar): **consumidor × JEC × civil × médico**; **contratual × civil × empresarial**.
 

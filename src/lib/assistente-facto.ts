@@ -4,6 +4,8 @@
  * e formatamos no padrão forense para a peça.
  */
 
+import { ritoDaArea } from "@/lib/area-rito";
+
 export const ASSISTENTE_FACTO = "assistente-facto";
 
 export type CumulosAcao = {
@@ -60,7 +62,7 @@ export function formatarNomeAcaoForense(
     .trim();
 
   if (!/^a[cç][aã]o\b/i.test(t) &&
-    !/^(execução|execucao|embargos|recurso|contestação|contestacao|pedido de|impugnação|impugnacao|agravo|mandado|inventário|inventario|divórcio|divorcio|alimentos|guarda|queixa|transa[cç][aã]o|defesa|composi[cç][aã]o|suspens[aã]o|alega[cç][oõ]es|representa[cç][aã]o|habeas)/i.test(
+    !/^(execução|execucao|embargos|recurso|contestação|contestacao|pedido de|impugnação|impugnacao|agravo|mandado|inventário|inventario|divórcio|divorcio|alimentos|guarda|queixa|transa[cç][aã]o|defesa|composi[cç][aã]o|suspens[aã]o|alega[cç][oõ]es|representa[cç][aã]o|habeas|notifica|homologa|resposta)/i.test(
       t
     )
   ) {
@@ -158,31 +160,9 @@ export function analisarCaseAssistente(input: {
 }): DecisaoAssistente {
   const fatos = input.fatos.toLowerCase();
   const areaId = input.areaId ?? "jec";
-  const foro =
-    areaId === "civil"
-      ? "na justiça comum cível (Código Civil e CPC)"
-      : areaId === "consumidor"
-        ? "na justiça comum consumerista (CDC e CPC)"
-        : areaId === "trabalhista"
-          ? "na Justiça do Trabalho (CLT)"
-          : areaId === "familia"
-            ? "na Vara de Família e Sucessões"
-          : areaId === "imobiliario"
-            ? "no contencioso imobiliário (Lei 8.245/91 e CC)"
-          : areaId === "jecr"
-            ? "no Juizado Especial Criminal (Lei 9.099/95)"
-          : "no Juizado Especial Cível";
-
-  let tipoAcao =
-    areaId === "trabalhista"
-      ? "Reclamação Trabalhista"
-      : areaId === "familia"
-        ? "Ação de Alimentos"
-      : areaId === "imobiliario"
-        ? "Ação de Despejo"
-      : areaId === "jecr"
-        ? "Queixa-crime"
-      : "Ação de Indenização por Danos Materiais e Morais";
+  const copy = ritoDaArea(areaId);
+  const foro = copy.foroAssistente;
+  let tipoAcao = copy.tipoAcaoDefault;
   let motivoAcao =
     areaId === "jecr"
       ? "Os fatos narrados indicam infração de menor potencial ofensivo ou ação penal privada, compatível com o JECRIM."
@@ -238,6 +218,12 @@ export function analisarCaseAssistente(input: {
         "A narrativa indica ação penal de iniciativa privada, cabendo queixa-crime no JECRIM.";
     }
   } else if (
+    areaId === "jec" ||
+    areaId === "consumidor" ||
+    areaId === "civil" ||
+    areaId === "imobiliario"
+  ) {
+    if (
     contemAlgum(fatos, [
       "execução",
       "executivo",
@@ -308,6 +294,7 @@ export function analisarCaseAssistente(input: {
     tipoAcao = "Ação de Obrigação de Fazer";
     motivoAcao =
       "O caso envolve prestação específica a ser cumprida, compatível com obrigação de fazer.";
+  }
   }
 
   const tutelaUrgencia = contemAlgum(fatos, [

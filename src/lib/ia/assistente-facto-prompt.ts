@@ -8,6 +8,7 @@
 import {
   MARCADOR_NAO_ENCONTRADO,
 } from "@/lib/ia/verificacao-citacoes";
+import { ritoDaArea } from "@/lib/area-rito";
 import {
   blocoEstruturaDaArea,
   inferirEspecieDaArea,
@@ -66,32 +67,9 @@ export function montarSystemPromptAnaliseEstrategica(
     ? inferirEspecieDaArea(areaId, "", "", especiePeca)
     : null;
   const meta = especie ? metaEspecieDaArea(areaId, especie) : null;
-  const rito =
-    areaId === "consumidor"
-      ? "justiça comum consumerista (CDC e CPC). NÃO use Lei 9.099/95 nem recurso inominado."
-      : areaId === "civil"
-        ? "justiça comum cível (Código Civil e CPC). NÃO use Lei 9.099/95, recurso inominado nem CDC como tese principal."
-        : areaId === "trabalhista"
-          ? "Justiça do Trabalho (CLT). NÃO use Lei 9.099/95, apelação do CPC nem CDC."
-          : areaId === "familia"
-            ? "Vara de Família e Sucessões (CC, CPC, ECA, Lei 5.478/64). NÃO use 9.099 nem CLT. Segredo de justiça quando couber."
-          : areaId === "imobiliario"
-            ? "contencioso imobiliário (Lei 8.245/91, CC, condomínio, CPC). NÃO use 9.099 nem CLT."
-          : areaId === "jecr"
-            ? "Juizado Especial Criminal (Lei 9.099/95, arts. 60–92). NÃO use o rito cível do Juizado nem CPP do rito comum."
-          : "juizados especiais cíveis brasileiros (Lei 9.099/95).";
-  const nomePeca =
-    areaId === "trabalhista"
-      ? "Nome técnico da peça na JT (reclamação, defesa, recurso ordinário, agravo de petição — NÃO apelação nem contestação cível)"
-      : areaId === "familia"
-        ? "Nome técnico da peça de família (divórcio, guarda, alimentos, inventário, apelação — NÃO recurso inominado)"
-      : areaId === "imobiliario"
-        ? "Nome técnico da peça imobiliária (despejo, usucapião, consignação, condomínio, apelação — NÃO recurso inominado)"
-      : areaId === "jecr"
-        ? "Nome técnico da peça no JECRIM (queixa-crime, defesa, composição, transação penal, recurso inominado — NÃO contestação cível nem apelação)"
-      : areaId === "consumidor" || areaId === "civil"
-        ? "Nome técnico da peça na justiça comum (apelação, contestação, cumprimento etc. — NÃO recurso inominado)"
-        : "Nome técnico da peça/ação cabível no JEC (SEM prefixo \"Petição Inicial —\"; só o nome forense)";
+  const copy = ritoDaArea(areaId);
+  const rito = copy.ritoCurto;
+  const nomePeca = copy.nomePeca;
   return [
     `Você é um Paralegal Especialista em ${rito}`,
     "Receba o relato do cliente (pode estar bagunçado, coloquial ou muito longo) e devolva APENAS um resumo estruturado contendo:",
@@ -102,17 +80,7 @@ export function montarSystemPromptAnaliseEstrategica(
     `4. ${nomePeca};`,
     meta
       ? `5. Confirme a espécie da peça: ${meta.rotulo} (${especiePeca}) — adapte teses e pedidos a essa espécie;`
-      : areaId === "trabalhista"
-        ? "5. Indique a espécie (reclamação, defesa, manifestação, embargos, recurso ordinário, agravo ou execução);"
-      : areaId === "familia"
-        ? "5. Indique a espécie (inicial de família, contestação, apelação, cumprimento de alimentos ou inventário);"
-      : areaId === "imobiliario"
-        ? "5. Indique a espécie (despejo, usucapião, consignação, condomínio, contestação, apelação ou cumprimento);"
-      : areaId === "jecr"
-        ? "5. Indique a espécie (queixa-crime, defesa, composição civil, transação penal, suspensão condicional, alegações finais ou recurso inominado);"
-      : areaId === "consumidor" || areaId === "civil"
-        ? "5. Indique a espécie (petição inicial, contestação, réplica, apelação, agravo, cumprimento ou execução);"
-        : "5. Indique a espécie da peça (petição inicial, contestação, embargos, recurso, réplica ou execução);",
+      : copy.especieHint,
     "6. Pedidos essenciais sugeridos (lista curta, adequados à espécie);",
     "7. Súmulas/artigos-chave pertinentes (só se realmente aplicáveis);",
     "8. Se houver <JURISPRUDENCIA_DO_CASO>, liste quais fontes usar e a tese de cada uma (sem inventar);",
@@ -146,35 +114,9 @@ export function montarSystemPromptRedacaoTier1(
   const especie = inferirEspecieDaArea(areaId, "", "", especiePeca);
   const meta = metaEspecieDaArea(areaId, especie);
   const estrutura = blocoEstruturaDaArea(areaId, especie);
-  const ritoLinha =
-    areaId === "consumidor"
-      ? "Atue na justiça comum brasileira em demanda de consumo (CDC + CPC). NÃO aplique Lei 9.099/95, teto do Juizado, recurso inominado nem Turma Recursal. Honorários: art. 85 do CPC."
-      : areaId === "civil"
-        ? "Atue na justiça comum cível (Código Civil + CPC). NÃO aplique Lei 9.099/95 nem recurso inominado. NÃO fundamente em CDC (inversão do ônus, relação de consumo) — se o caso for consumerista, o módulo é Consumidor. Honorários: art. 85 do CPC. Responsabilidade: arts. 186 e 927 do CC quando couber."
-        : areaId === "trabalhista"
-          ? "Atue na Justiça do Trabalho (CLT). Polos: reclamante e reclamado. NÃO aplique Lei 9.099/95, apelação do CPC, Vara Cível nem CDC. Recurso da sentença: ordinário (art. 895 da CLT, 8 dias). Honorários: art. 791-A da CLT. Endereçamento: Juiz do Trabalho."
-          : areaId === "familia"
-            ? "Atue na Vara de Família e Sucessões (Código Civil, CPC, ECA e Lei 5.478/64). NÃO aplique Lei 9.099/95 nem CLT. Peça segredo de justiça (art. 189 do CPC) quando os fatos envolverem casamento, filiação, alimentos ou guarda. Honorários: art. 85 do CPC. Endereçamento: Juiz de Direito da Vara de Família."
-          : areaId === "imobiliario"
-            ? "Atue no contencioso imobiliário (Lei 8.245/91, Código Civil, condomínio e CPC). NÃO aplique Lei 9.099/95 nem CLT. Despejo ≠ cobrança cível. Usucapião exige posse e tempo nos FATOS. Honorários: art. 85 do CPC. Endereçamento: Vara Cível."
-          : areaId === "jecr"
-            ? "Atue no Juizado Especial Criminal (Lei 9.099/95, arts. 60 a 92). NÃO aplique o rito cível do Juizado (indenização, teto 20 SM, contestação). NÃO use resposta à acusação do CPP nem apelação. Recurso da sentença: inominado (art. 82, 10 dias) à Turma Recursal. Endereçamento: Juiz de Direito do JECRIM. Polos: querelante/querelado ou acusado/MP conforme a espécie."
-          : "Atue no Juizado Especial Cível brasileiro (Lei 9.099/95).";
-
-  const especialidade =
-    areaId === "civil"
-      ? "contencioso cível (obrigações, responsabilidade civil, contratos entre particulares)"
-      : areaId === "consumidor"
-        ? "direito do consumidor na justiça comum (CDC e CPC)"
-        : areaId === "trabalhista"
-          ? "Direito do Trabalho e processo do trabalho (CLT, TST)"
-          : areaId === "familia"
-            ? "Direito de Família e Sucessões"
-          : areaId === "imobiliario"
-            ? "Direito Imobiliário (locação, usucapião, condomínio)"
-          : areaId === "jecr"
-            ? "Direito Penal no Juizado Especial Criminal (Lei 9.099/95)"
-          : "contencioso cível e direito do consumidor";
+  const copy = ritoDaArea(areaId);
+  const ritoLinha = copy.ritoLinha;
+  const especialidade = copy.especialidade;
 
   return [
     `Você é um Advogado Sênior de elite, especialista em ${especialidade}, conhecido por redigir peças forenses impecáveis (${meta.rotulo}).`,

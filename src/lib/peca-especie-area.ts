@@ -58,13 +58,28 @@ import {
   type EspeciePecaJecr,
 } from "@/lib/jecr-especie-peca";
 import { moduloDaArea } from "@/lib/minuta-modulo";
+import {
+  blocoEstruturaKit,
+  inferirEspecieKit,
+  kitDaArea,
+  metaEspecieKit,
+  tituloPecaKit,
+} from "@/lib/especies-restantes";
 
 export function ehJusticaComumCpc(areaId: string): boolean {
   return (
     areaId === "consumidor" ||
     areaId === "civil" ||
     areaId === "familia" ||
-    areaId === "imobiliario"
+    areaId === "imobiliario" ||
+    areaId === "digital" ||
+    areaId === "medico" ||
+    areaId === "agrario" ||
+    areaId === "empresarial" ||
+    areaId === "ambiental" ||
+    areaId === "propriedade-intelectual" ||
+    areaId === "internacional" ||
+    areaId === "administrativo"
   );
 }
 
@@ -96,6 +111,9 @@ export function inferirEspecieDaArea(
   if (areaId === "jecr") {
     return inferirEspecieJecr(tipoAcao, fatos, especieExplicita);
   }
+  if (kitDaArea(areaId)) {
+    return inferirEspecieKit(areaId, tipoAcao, fatos, especieExplicita);
+  }
   return inferirEspeciePeca(tipoAcao, fatos, especieExplicita);
 }
 
@@ -118,6 +136,9 @@ export function blocoEstruturaDaArea(areaId: string, especie: string): string {
   if (areaId === "jecr") {
     return blocoEstruturaPromptJecr(especie as EspeciePecaJecr);
   }
+  if (kitDaArea(areaId)) {
+    return blocoEstruturaKit(areaId, especie);
+  }
   return blocoEstruturaPrompt(especie as EspeciePecaJec);
 }
 
@@ -128,6 +149,7 @@ export function metaEspecieDaArea(areaId: string, especie: string) {
   if (areaId === "familia") return metaEspecieFamilia(especie);
   if (areaId === "imobiliario") return metaEspecieImobiliario(especie);
   if (areaId === "jecr") return metaEspecieJecr(especie);
+  if (kitDaArea(areaId)) return metaEspecieKit(areaId, especie);
   return metaEspecie(especie as EspeciePecaJec);
 }
 
@@ -155,6 +177,9 @@ export function tituloPecaDaArea(
   if (areaId === "jecr") {
     return tituloPecaJecr(especie as EspeciePecaJecr, tipoSugerido);
   }
+  if (kitDaArea(areaId)) {
+    return tituloPecaKit(areaId, especie, tipoSugerido);
+  }
   return tituloPecaCabivel(especie as EspeciePecaJec, tipoSugerido, contexto);
 }
 
@@ -162,6 +187,50 @@ export function especieParaScaffoldJec(
   areaId: string,
   especie: string
 ): string {
+  if (areaId === "criminal") {
+    switch (especie) {
+      case "habeas-corpus":
+      case "revisao-criminal":
+        return "peticao-inicial";
+      case "resposta-acusacao":
+        return "contestacao";
+      case "alegacoes-finais":
+        return "replica";
+      case "apelacao":
+      case "recurso-sentido-estrito":
+      case "agravo-execucao":
+        return "recurso";
+      case "embargos-declaracao":
+        return "embargos";
+      default:
+        return especie;
+    }
+  }
+  if (areaId === "tributario") {
+    switch (especie) {
+      case "embargos-execucao-fiscal":
+      case "excecao-pre-executividade":
+        return "contestacao";
+      case "mandado-seguranca":
+        return "peticao-inicial";
+      case "apelacao":
+        return "recurso";
+      case "embargos-declaracao":
+        return "embargos";
+      default:
+        return especie;
+    }
+  }
+  if (areaId === "eleitoral") {
+    switch (especie) {
+      case "defesa":
+        return "contestacao";
+      case "recurso-eleitoral":
+        return "recurso";
+      default:
+        return "peticao-inicial";
+    }
+  }
   if (areaId === "jecr") {
     switch (especie) {
       case "queixa-crime":
@@ -217,6 +286,12 @@ export function especieParaScaffoldJec(
     case "usucapiao":
     case "consignacao":
     case "condominio":
+    case "mandado-seguranca":
+    case "notificacao-extrajudicial":
+    case "acp-ambiental":
+    case "defesa-infracao":
+    case "abstencao-marca":
+    case "homologacao":
       return "peticao-inicial";
     default:
       return especie;
@@ -230,5 +305,7 @@ export function listaEspeciesDaArea(areaId: string) {
   if (areaId === "familia") return ESPECIES_PECA_FAMILIA;
   if (areaId === "imobiliario") return ESPECIES_PECA_IMOBILIARIO;
   if (areaId === "jecr") return ESPECIES_PECA_JECR;
+  const kit = kitDaArea(areaId);
+  if (kit) return kit.especies;
   return null;
 }

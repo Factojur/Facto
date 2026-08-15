@@ -32,7 +32,17 @@ export function rotuloAreaJudiciaria(areaId: string = "jec"): string {
     case "trabalhista":
       return "JUSTIÇA DO TRABALHO";
     case "penal":
+    case "criminal":
       return "JUSTIÇA CRIMINAL";
+    case "previdenciario":
+      return "JUIZADO ESPECIAL FEDERAL";
+    case "tributario":
+    case "administrativo":
+      return "FAZENDA PÚBLICA";
+    case "eleitoral":
+      return "JUSTIÇA ELEITORAL";
+    case "internacional":
+      return "COOPERAÇÃO JURÍDICA / STJ";
     case "civil":
     case "imobiliario":
       return "JUSTIÇA CÍVEL";
@@ -182,7 +192,44 @@ export function formatarEnderecamentoPadrao(opcoes: {
       `VARA DO JUIZADO ESPECIAL CRIMINAL DO FÓRUM DA COMARCA DE ${comarcaTxt}`
     );
   }
-  if (areaId === "consumidor" || areaId === "civil" || areaId === "imobiliario") {
+  if (areaId === "criminal") {
+    return (
+      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA ${vara} ` +
+      `VARA CRIMINAL DO FÓRUM DA COMARCA DE ${comarcaTxt}`
+    );
+  }
+  if (areaId === "previdenciario") {
+    return (
+      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) FEDERAL DA ${vara} ` +
+      `VARA DO JUIZADO ESPECIAL FEDERAL DE ${comarcaTxt}`
+    );
+  }
+  if (areaId === "tributario" || areaId === "administrativo") {
+    return (
+      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA ${vara} ` +
+      `VARA DA FAZENDA PÚBLICA DO FÓRUM DA COMARCA DE ${comarcaTxt}`
+    );
+  }
+  if (areaId === "eleitoral") {
+    return (
+      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) ELEITORAL DA ${vara} ` +
+      `ZONA ELEITORAL DE ${comarcaTxt}`
+    );
+  }
+  if (areaId === "internacional") {
+    return `EXCELENTÍSSIMO(A) SENHOR(A) MINISTRO(A) PRESIDENTE DO SUPERIOR TRIBUNAL DE JUSTIÇA`;
+  }
+  if (
+    areaId === "consumidor" ||
+    areaId === "civil" ||
+    areaId === "imobiliario" ||
+    areaId === "empresarial" ||
+    areaId === "digital" ||
+    areaId === "medico" ||
+    areaId === "agrario" ||
+    areaId === "ambiental" ||
+    areaId === "propriedade-intelectual"
+  ) {
     return (
       `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA ${vara} ` +
       `VARA CÍVEL DO FÓRUM DA COMARCA DE ${comarcaTxt}`

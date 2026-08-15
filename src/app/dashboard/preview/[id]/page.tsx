@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAreaById } from "@/lib/areas-atuacao";
+import { hrefMinutaSeExistir } from "@/lib/minuta-modulo";
 import { aberturaPorAreaId } from "@/lib/abertura-areas";
 import { isEmailPreviewAreas } from "@/lib/emails-preview-areas";
 import { AreaIllustration } from "@/components/dashboard/area-illustration";
@@ -22,26 +23,9 @@ export default async function PreviewAreaPage({
     notFound();
   }
 
-  if (id === "jec") {
-    redirect("/dashboard/jec");
-  }
-  if (id === "consumidor") {
-    redirect("/dashboard/consumidor");
-  }
-  if (id === "civil") {
-    redirect("/dashboard/civil");
-  }
-  if (id === "trabalhista") {
-    redirect("/dashboard/trabalhista");
-  }
-  if (id === "familia") {
-    redirect("/dashboard/familia");
-  }
-  if (id === "imobiliario") {
-    redirect("/dashboard/imobiliario");
-  }
-  if (id === "jecr") {
-    redirect("/dashboard/jecr");
+  const href = hrefMinutaSeExistir(id);
+  if (href) {
+    redirect(href);
   }
 
   const area = getAreaById(id);
