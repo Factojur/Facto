@@ -353,7 +353,9 @@ export async function gerarPecaComIA(params: {
     (await buscarConhecimentoRelacionado(
       areaId === "civil"
         ? `${params.tipoAcao} Código Civil obrigações particulares`
-        : params.tipoAcao,
+        : areaId === "consumidor"
+          ? `${params.tipoAcao} CDC consumidor fornecedor`
+          : params.tipoAcao,
       8,
       params.fatos,
       areaId
@@ -441,7 +443,9 @@ export async function gerarPecaComIA(params: {
     const reforco = await buscarConhecimentoRelacionado(
       areaId === "civil"
         ? `${queryExtra} Código Civil obrigações`
-        : queryExtra,
+        : areaId === "consumidor"
+          ? `${queryExtra} CDC consumidor`
+          : queryExtra,
       8,
       params.fatos,
       areaId

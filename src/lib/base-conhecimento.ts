@@ -288,14 +288,33 @@ function lastroConsumeristaParaCivil(
   );
 }
 
+function lastroDeJuizado(
+  titulo: string,
+  texto: string,
+  categoria: string
+): boolean {
+  const blob = `${titulo}\n${categoria}\n${texto}`.toLowerCase();
+  return (
+    /9\.099/.test(blob) ||
+    blob.includes("juizado especial") ||
+    blob.includes("recurso inominado") ||
+    blob.includes("turma recursal")
+  );
+}
+
 function descartarLastroPorArea(
   areaId: string | undefined,
   titulo: string,
   texto: string,
   categoria: string
 ): boolean {
-  if (areaId !== "civil") return false;
-  return lastroConsumeristaParaCivil(titulo, texto, categoria);
+  if (areaId === "civil") {
+    return lastroConsumeristaParaCivil(titulo, texto, categoria);
+  }
+  if (areaId === "consumidor") {
+    return lastroDeJuizado(titulo, texto, categoria);
+  }
+  return false;
 }
 
 export async function buscarConhecimentoRelacionado(

@@ -333,6 +333,7 @@ export function blocoEstruturaPromptConsumidor(
     "   Rito: JUSTIÇA COMUM (CPC). NÃO aplique Lei 9.099/95, teto de 40/20 SM, recurso inominado nem isenção genérica de sucumbência do Juizado.",
     "   Fundamentação: CDC (relação de consumo) + CPC + Código Civil subsidiário. Honorários: art. 85 do CPC.",
     "   Inversão do ônus da prova: art. 6º, VIII, do CDC — subtópico de DO DIREITO, se cabível.",
+    "   Julgado da base cuja ementa contrarie o pedido: não cite como lastro favorável. Não use Lei 9.099 nem Turma Recursal.",
   ];
 
   if (especie === "peticao-inicial") {
@@ -345,6 +346,10 @@ export function blocoEstruturaPromptConsumidor(
       "   Preliminares só se cabíveis (inépcia, ilegitimidade, incompetência, falta de interesse…). Não invente.",
       "   Pedidos: improcedência + honorários sucumbenciais na forma do art. 85 do CPC (não cite 9.099)."
     );
+  } else if (especie === "replica") {
+    extras.push(
+      "   Impugne a contestação com CDC e CPC. Mantenha a relação de consumo dos FATOS (fornecedor × consumidor)."
+    );
   } else if (especie === "apelacao") {
     extras.push(
       "   Cabimento e tempestividade: arts. 1.009 e 1.003, §5º, do CPC (15 dias úteis).",
@@ -352,7 +357,8 @@ export function blocoEstruturaPromptConsumidor(
     );
   } else if (especie === "agravo-instrumento") {
     extras.push(
-      "   Cabimento: art. 1.015 do CPC. Indique a decisão interlocutória e o prejuízo."
+      "   Cabimento: art. 1.015 do CPC. Protocolo e endereçamento: Tribunal de Justiça (arts. 1.016 e 1.017) — NÃO o juiz da vara.",
+      "   Indique a decisão interlocutória e o prejuízo. Não cite acórdão que indeferiu a mesma medida como se apoiasse o agravo."
     );
   } else if (especie === "embargos-declaracao") {
     extras.push(

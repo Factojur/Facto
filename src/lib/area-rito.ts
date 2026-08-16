@@ -62,7 +62,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     especieHint:
       "5. Indique a espécie (petição inicial, contestação, réplica, apelação, agravo, cumprimento ou execução);",
     ritoLinha:
-      "Atue na justiça comum brasileira em demanda de consumo (CDC + CPC). NÃO aplique Lei 9.099/95, teto do Juizado, recurso inominado nem Turma Recursal. Honorários: art. 85 do CPC.",
+      "Atue na justiça comum brasileira em demanda de consumo (CDC + CPC). NÃO aplique Lei 9.099/95, teto do Juizado, recurso inominado nem Turma Recursal. Honorários: art. 85 do CPC. Agravo de instrumento: endereçamento ao Tribunal, não à vara. Use CDC (arts. 2º, 3º, 6º, 14, 42, 51 quando o fato autorizar) e os nomes das partes dos FATOS — não recubra o caso como mútuo civil entre particulares se houver fornecedor.",
     especialidade: "direito do consumidor na justiça comum (CDC e CPC)",
     foroAssistente: "na justiça comum consumerista (CDC e CPC)",
     tipoAcaoDefault: "Ação de Indenização por Danos Materiais e Morais",
