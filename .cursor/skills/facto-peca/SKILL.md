@@ -11,7 +11,7 @@ description: >-
 
 Não redesenhar o que já fechamos. Skill só para o agente no Cursor; o cliente não vê isto.
 
-Módulo aberto hoje: **todas as áreas com dashboard** (`available: true`), salvo **Contratual** (tema no Civil). Plano JEC e leigo: só JEC. Completo/Pro + OAB: demais. Eleitoral aberto no catálogo, lastro TRE/TSE ainda fraco.
+Módulo aberto hoje: **todas as áreas com dashboard** (`available: true`), salvo **Contratual** (fora da grade; litígio no Civil; Contratos em breve). Plano JEC e leigo: só JEC. Completo/Pro + OAB: demais. Eleitoral aberto no catálogo, lastro TRE/TSE ainda fraco.
 
 Preview admin (`/dashboard/preview/<id>`) permanece para e-mails internos.
 

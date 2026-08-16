@@ -133,7 +133,8 @@ export function JecCasosLista({ emailUsuario }: { emailUsuario: string }) {
             </h1>
             <p className="mt-1 text-sm text-slate-500">
               Acompanhe o processo da pré-ação ao trânsito em julgado e gere a
-              peça de cada etapa.
+              peça de cada etapa. Esta lista é só do Juizado Especial Cível —
+              as outras áreas ainda não salvam caso aqui.
             </p>
           </div>
           <Link

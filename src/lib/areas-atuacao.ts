@@ -8,6 +8,8 @@ export type AreaAtuacao = {
   icon: string;
   /** Uma linha: quando usar este card e não o vizinho. */
   dicaEscolha?: string;
+  /** Fora da grade de áreas (ex.: Contratual → teaser Contratos). */
+  listarNoCatalogo?: boolean;
 };
 
 /**
@@ -26,7 +28,8 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     href: "/dashboard/jec",
     available: true,
     icon: "⚖️",
-    dicaEscolha: "Rito 9.099 — teto do Juizado. Consumo na justiça comum: card Consumidor.",
+    dicaEscolha:
+      "Teto e rito 9.099. Consumo na Vara Cível: Consumidor. Particular sem CDC: Civil.",
   },
   {
     id: "civil",
@@ -37,7 +40,8 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     href: "/dashboard/civil",
     available: true,
     icon: "📜",
-    dicaEscolha: "Cobrança e contratos entre particulares. Consumo: Consumidor. Locação: Imobiliário.",
+    dicaEscolha:
+      "Particulares (CC/CPC). Consumo: Consumidor ou JEC. Locação: Imobiliário. Erro médico: Médico.",
   },
   {
     id: "consumidor",
@@ -48,7 +52,8 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     href: "/dashboard/consumidor",
     available: true,
     icon: "🛒",
-    dicaEscolha: "CDC + CPC (Vara Cível). No Juizado, use o JEC.",
+    dicaEscolha:
+      "CDC na Vara Cível. No Juizado (teto 9.099): JEC. Só erro médico: Médico.",
   },
   {
     id: "tributario",
@@ -59,6 +64,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     href: "/dashboard/tributario",
     available: true,
     icon: "💰",
+    dicaEscolha: "Fazenda / LEF. Não é cobrança entre particulares (Civil).",
   },
   {
     id: "familia",
@@ -80,6 +86,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     href: "/dashboard/trabalhista",
     available: true,
     icon: "👷",
+    dicaEscolha: "CLT e Justiça do Trabalho. Não use JEC nem Civil.",
   },
   {
     id: "previdenciario",
@@ -90,6 +97,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     href: "/dashboard/previdenciario",
     available: true,
     icon: "🧓",
+    dicaEscolha: "INSS / JEF. Não é acidentário trabalhista (Trabalhista).",
   },
   {
     id: "criminal",
@@ -133,17 +141,19 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     href: "/dashboard/empresarial",
     available: true,
     icon: "🏢",
-    dicaEscolha: "Sociedade e notificação. Contrato civil puro: Civil.",
+    dicaEscolha:
+      "Sociedade (Lei 6.404). Contrato entre particulares sem sociedade: Civil.",
   },
   {
     id: "contratual",
     title: "Direito Contratual",
     description:
-      "Tema no módulo Civil nesta versão — revisão e litígio contratual não abrem dashboard próprio.",
+      "Litígio de contrato: use Civil. Minutas de contrato (modelos) ficam para um canal à parte.",
     law: "Código Civil",
     available: false,
     icon: "📝",
-    dicaEscolha: "Não abre dashboard — use Direito Civil.",
+    listarNoCatalogo: false,
+    dicaEscolha: "Fora da grade — litígio no Civil; contratos em breve.",
   },
   {
     id: "administrativo",
@@ -154,6 +164,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     href: "/dashboard/administrativo",
     available: true,
     icon: "🏛️",
+    dicaEscolha: "MS e ato da Administração. Tributo: Tributário.",
   },
   {
     id: "medico",
@@ -164,7 +175,8 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     href: "/dashboard/medico",
     available: true,
     icon: "🩺",
-    dicaEscolha: "Erro médico (CC). Só cobertura de plano: Consumidor.",
+    dicaEscolha:
+      "Erro médico / saúde. Só recusa de cobertura de plano, sem erro: Consumidor.",
   },
   {
     id: "digital",
@@ -229,6 +241,10 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
 ];
 
 export const IDS_AREAS_VALIDAS = new Set(AREAS_ATUACAO.map((a) => a.id));
+
+export function areasDoCatalogo(): AreaAtuacao[] {
+  return AREAS_ATUACAO.filter((a) => a.listarNoCatalogo !== false);
+}
 
 export function getAreaById(id: string): AreaAtuacao | undefined {
   return AREAS_ATUACAO.find((a) => a.id === id);

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
-  AREAS_ATUACAO,
+  areasDoCatalogo,
   getAreaById,
   hrefModuloArea,
   type AreaAtuacao,
@@ -309,9 +309,11 @@ export function DashboardHome({
     persistirFavoritos(novos);
   }
 
+  const areasCatalogo = useMemo(() => areasDoCatalogo(), []);
+
   const areasFavoritas = favoritos
     .map((id) => getAreaById(id))
-    .filter((a): a is AreaAtuacao => Boolean(a));
+    .filter((a): a is AreaAtuacao => Boolean(a && a.listarNoCatalogo !== false));
 
   const gateAreas = {
     plano,
@@ -320,11 +322,11 @@ export function DashboardHome({
   } as const;
 
   const areasVisiveis = useMemo(() => {
-    let lista = AREAS_ATUACAO;
+    let lista = areasCatalogo;
     if (filtro === "favoritas") {
-      lista = AREAS_ATUACAO.filter((a) => favoritos.includes(a.id));
+      lista = areasCatalogo.filter((a) => favoritos.includes(a.id));
     } else if (filtro === "disponiveis") {
-      lista = AREAS_ATUACAO.filter(
+      lista = areasCatalogo.filter(
         (a) =>
           hrefModuloArea(a, previewAreas) &&
           areaEstaLiberada(a.id, gateAreas)
@@ -344,7 +346,7 @@ export function DashboardHome({
         .toLowerCase();
       return blob.includes(q);
     });
-  }, [filtro, favoritos, plano, leigo, acessoLivre, previewAreas, buscaArea]);
+  }, [filtro, favoritos, plano, leigo, acessoLivre, previewAreas, buscaArea, areasCatalogo]);
 
   const areaJec = getAreaById("jec");
 
@@ -537,6 +539,16 @@ export function DashboardHome({
                   </button>
                 </div>
               )}
+              {!leigo && filtro === "todas" && !buscaArea.trim() ? (
+                <p className="mt-5 text-center">
+                  <span className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-white/55">
+                    Contratos — em breve
+                    <span className="ml-2 text-white/35">
+                      (minutas; litígio de contrato: Civil)
+                    </span>
+                  </span>
+                </p>
+              ) : null}
               </div>
             </section>
           </>

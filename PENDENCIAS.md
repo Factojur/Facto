@@ -90,7 +90,7 @@ O detector de “nome da ação” hoje não trata REsp/RE/RR — se gerar sem i
 
 Fonte viva também em `src/lib/abertura-areas.ts`. Trabalhar **uma de cada vez**; o compartilhado já está no contrato da minuta.
 
-**Catálogo (16/08):** áreas com rota próprias `available: true` (Completo/Pro + OAB). **Contratual** continua fechado (use Civil). Plano JEC e leigo: só JEC. Eleitoral aberto; lastro TRE/TSE depois (Datajud ou manual).
+**Catálogo (16/08):** áreas com rota próprias `available: true` (Completo/Pro + OAB). **Contratual** saiu da grade; teaser **Contratos — em breve** na home. Litígio de contrato: Civil. Plano JEC e leigo: só JEC. Eleitoral aberto; lastro TRE/TSE depois (Datajud ou manual).
 
 **Preview interno** ainda existe em `/dashboard/preview/<id>` para e-mails admin.
 
@@ -102,7 +102,7 @@ Fonte viva também em `src/lib/abertura-areas.ts`. Trabalhar **uma de cada vez**
 2. **Civil (justiça comum)** — _preview admin (15/08)_ — `/dashboard/civil`; CC+CPC; sem CDC; sem teto 20 SM. Catálogo `available: false`.
 3. **Trabalhista** — _preview admin (15/08)_ — `/dashboard/trabalhista`; CLT; reclamante/reclamado; RO 8d. Catálogo `available: false`.
 4. **Família** — _preview admin (15/08)_ — `/dashboard/familia`; divórcio, guarda, alimentos, inventário; Vara de Família; segredo de justiça. Catálogo `available: false`.
-5. **Imobiliário** — _preview admin (15/08)_ — `/dashboard/imobiliario`; despejo (8.245), usucapião, consignação de aluguéis, condomínio; Vara Cível. **Contratual** permanece tema no Civil. Catálogo `available: false`.
+5. **Imobiliário** — _preview admin (15/08)_ — `/dashboard/imobiliario`; despejo (8.245), usucapião, consignação de aluguéis, condomínio; Vara Cível. **Contratual** fora da grade (16/08). Catálogo `available: false`.
 6. **JECRIM** — _preview admin (15/08)_ — `/dashboard/jecr`.
 7. **Penal comum** — _preview admin (15/08)_ — `/dashboard/criminal`; HC, resposta à acusação, apelação CPP.
 8. **Previdenciário** — _preview admin (15/08)_ — `/dashboard/previdenciario`; JEF/INSS.
@@ -111,7 +111,7 @@ Fonte viva também em `src/lib/abertura-areas.ts`. Trabalhar **uma de cada vez**
 11. **Digital, ambiental, PI, internacional, médico, agrário** — _preview admin (15/08)_.
 12. **Eleitoral** — _aberto no catálogo 16/08_ — lastro TRE/TSE **depois** (consultar Datajud ou ingestão manual). API Jurisprudências.ai não tem TRE/TSE.
 
-Sobreposição a resolver no produto (senão o advogado não sabe onde clicar): **consumidor × JEC × civil × médico**; **contratual × civil × empresarial**.
+Sobreposição (dica nos cards 16/08): consumidor × JEC × civil × médico; empresarial × civil. Contratos (minutas) não competem com essas áreas.
 
 Prazos: o FACTO **não conta prazo processual sozinho** hoje. Abrir área implica pelo menos **avisar o prazo típico da espécie** (copy + Assistente), não um calendário jurídico completo na v1.
 
@@ -197,7 +197,7 @@ Prazos: o FACTO **não conta prazo processual sozinho** hoje. Abrir área implic
 
 10. **[P1] Segundo tribunal (STJ) em produção** — _exige Pro + cache com TTL_ (API já busca STJ via seletor)  
 11. **[P2] Política CDC / cota-teste 7 dias**  
-12. **[P2] Expandir áreas** — _aberto 16/08_ no catálogo (exceto Contratual). Ver testes do usuário.
+12. **[P2] Expandir áreas** — _aberto 16/08_ no catálogo (Contratual fora da grade). Ver testes do usuário.
 13. **[P2] Obsidian → `base_conhecimento` (sync)** — _especificado; não implementar ainda_
     - Spec: `docs/obsidian-sync-spec.md` · template: `docs/obsidian-templates/exemplo-juris.md`
     - Agora: alimentar base via admin/seeds; Obsidian só como notas pessoais se quiser
@@ -206,7 +206,8 @@ Prazos: o FACTO **não conta prazo processual sozinho** hoje. Abrir área implic
     - [ ] (Opcional) export fila `juris_verificacao` → Markdown
 14. **[P3] Depois do núcleo da minuta** — _não neste deploy (16/08)_
    - **Chat multi-turno:** **sim, beneficia** o advogado (iterar tese sem recomeçar). **Não aplicar agora:** custa token, aumenta risco de inventar fato, e as áreas recém-abertas ainda vão ser testadas. Fica para depois do núcleo estável.
-   - **Add-in Word / contratos:** mesmo — melhoria de canal, não do lastro. Não implementar nesta fase.  
+   - **Add-in Word:** melhoria de canal. Não implementar nesta fase.
+   - **Contratos (minutas, não petição):** teaser na home (“Contratos — em breve”). **Decidir depois** quais modelos (poucos, de uso real: prestação de serviços, NDA, locação, distrato — não 40 templates genéricos). Canal apartado das áreas; Completo/Pro + OAB. Litígio de contrato permanece no Civil. Não implementar a biblioteca agora.
 15. **[P1] PLANO X** — _código 14/08_ — B 10/30/50 + saldo; E +10 análises R$ 29,90; G Completo Anual **R$ 1.890** (mantido) + H cotas 100/180; I copy JEC leigo; J 15 juris externa; **N botão só base curada**. SQL: `supabase/migration-extras-analises.sql`. A (Supabase Pro) só ao começar a vender.
 
 ---
