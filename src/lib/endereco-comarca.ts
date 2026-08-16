@@ -230,6 +230,17 @@ export function formatarEnderecamentoPadrao(opcoes: {
     );
   }
   if (areaId === "tributario" || areaId === "administrativo") {
+    const foro = (info.foro ?? "").toLowerCase();
+    if (
+      /justi[cç]a federal|\bjf\b|\bjef\b|se[cç][aã]o judici[aá]ria|vara federal/.test(
+        foro
+      )
+    ) {
+      return (
+        `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) FEDERAL DA ${vara} ` +
+        `VARA FEDERAL DE ${comarcaTxt}`
+      );
+    }
     return (
       `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA ${vara} ` +
       `VARA DA FAZENDA PÚBLICA DO FÓRUM DA COMARCA DE ${comarcaTxt}`

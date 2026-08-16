@@ -213,7 +213,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     especieHint:
       "5. Indique a espécie (embargos à execução fiscal, EPE, anulatória, repetição, MS, contestação ou apelação);",
     ritoLinha:
-      "Atue no contencioso tributário (CTN e LEF — Lei 6.830/80). Embargos à execução fiscal ≠ embargos de declaração. Exceção de pré-executividade só com matéria de ordem pública e prova pré-constituída. Endereçamento: Vara da Fazenda Pública ou Vara Federal.",
+      "Atue no contencioso tributário (CTN e LEF — Lei 6.830/80). Embargos à execução fiscal (art. 16 da LEF, em regra após garantia) ≠ embargos de declaração (CPC 1.022). Exceção de pré-executividade só com matéria de ordem pública e prova pré-constituída — não peça dilação. Mandado de segurança: Lei 12.016/09, 120 dias, prova pré-constituída. NÃO use Lei 9.099, CDC nem execução cível entre particulares. Não invente CDA, PAF nem valor de tributo. Honorários: art. 85 do CPC (Fazenda). Endereçamento: Vara da Fazenda Pública (ou Vara Federal se o foro dos FATOS for da União).",
     especialidade: "Direito Tributário (CTN / execução fiscal)",
     foroAssistente: "no contencioso tributário (CTN e LEF)",
     tipoAcaoDefault: "Embargos à Execução Fiscal",

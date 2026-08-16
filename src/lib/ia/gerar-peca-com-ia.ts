@@ -32,6 +32,13 @@ import {
   planoMaestroEquipe,
   type EtapaEquipeFacto,
 } from "@/lib/ia/agentes-facto";
+
+function enriquecerQueryLastro(areaId: string, q: string): string {
+  if (areaId === "civil") return `${q} Código Civil obrigações particulares`;
+  if (areaId === "consumidor") return `${q} CDC consumidor fornecedor`;
+  if (areaId === "tributario") return `${q} CTN execução fiscal CDA Lei 6.830`;
+  return q;
+}
 import {
   inferirEspecieDaArea,
 } from "@/lib/peca-especie-area";
@@ -351,11 +358,7 @@ export async function gerarPecaComIA(params: {
   const itens =
     params.itensConhecimento ??
     (await buscarConhecimentoRelacionado(
-      areaId === "civil"
-        ? `${params.tipoAcao} Código Civil obrigações particulares`
-        : areaId === "consumidor"
-          ? `${params.tipoAcao} CDC consumidor fornecedor`
-          : params.tipoAcao,
+      enriquecerQueryLastro(areaId, params.tipoAcao),
       8,
       params.fatos,
       areaId
@@ -441,11 +444,7 @@ export async function gerarPecaComIA(params: {
   let itensFinais = itens;
   if (queryExtra.trim()) {
     const reforco = await buscarConhecimentoRelacionado(
-      areaId === "civil"
-        ? `${queryExtra} Código Civil obrigações`
-        : areaId === "consumidor"
-          ? `${queryExtra} CDC consumidor`
-          : queryExtra,
+      enriquecerQueryLastro(areaId, queryExtra),
       8,
       params.fatos,
       areaId

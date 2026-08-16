@@ -302,6 +302,26 @@ function lastroDeJuizado(
   );
 }
 
+function lastroAlienoAoTributario(
+  titulo: string,
+  texto: string,
+  categoria: string
+): boolean {
+  const blob = `${titulo}\n${categoria}\n${texto}`.toLowerCase();
+  if (
+    /ctn|cda|execu[cç][aã]o fiscal|lei 6\.830|iptu|icms|iss\b|tribut/.test(blob)
+  ) {
+    return false;
+  }
+  return (
+    lastroDeJuizado(titulo, texto, categoria) ||
+    lastroConsumeristaParaCivil(titulo, texto, categoria) ||
+    blob.includes("clt") ||
+    blob.includes("reclamação trabalhista") ||
+    blob.includes("reclamacao trabalhista")
+  );
+}
+
 function descartarLastroPorArea(
   areaId: string | undefined,
   titulo: string,
@@ -313,6 +333,9 @@ function descartarLastroPorArea(
   }
   if (areaId === "consumidor") {
     return lastroDeJuizado(titulo, texto, categoria);
+  }
+  if (areaId === "tributario") {
+    return lastroAlienoAoTributario(titulo, texto, categoria);
   }
   return false;
 }
