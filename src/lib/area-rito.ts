@@ -100,7 +100,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     especieHint:
       "5. Indique a espécie (reclamação, defesa, manifestação, embargos, recurso ordinário, agravo ou execução);",
     ritoLinha:
-      "Atue na Justiça do Trabalho (CLT). Polos: reclamante e reclamado. Recurso da sentença: ordinário (art. 895 da CLT, 8 dias). Honorários: art. 791-A da CLT. Endereçamento: Juiz do Trabalho.",
+      "Atue na Justiça do Trabalho (CLT). Polos: reclamante e reclamado (nunca autor/réu). Recurso da sentença: ordinário (art. 895 da CLT, 8 dias) — NÃO apelação nem 15 dias do CPC. Agravo de instrumento (art. 897, b): TRT, não TJ. Agravo de petição (art. 897, a): TRT. Honorários: art. 791-A da CLT, não art. 85 do CPC. Endereçamento da reclamação: Juiz do Trabalho. Não invente CTPS, salário, horas extras nem rescisão se os FATOS não trouxerem.",
     especialidade: "Direito do Trabalho e processo do trabalho (CLT, TST)",
     foroAssistente: "na Justiça do Trabalho (CLT)",
     tipoAcaoDefault: "Reclamação Trabalhista",

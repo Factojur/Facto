@@ -340,6 +340,7 @@ export function blocoEstruturaPromptTrabalhista(
     "   Honorários sucumbenciais: art. 791-A da CLT (não use o art. 85 do CPC como base principal).",
     "   Endereçamento: Juiz do Trabalho da Vara do Trabalho (não Juiz de Direito).",
     "   Súmulas e OJs do TST quando pertinentes; não invente número de processo.",
+    "   Não invente salário, CTPS, horas extras, FGTS nem data de rescisão se os FATOS não trouxerem. Julgado contrário ao pedido: não cite como lastro favorável.",
   ];
 
   if (especie === "reclamacao") {
@@ -359,10 +360,12 @@ export function blocoEstruturaPromptTrabalhista(
     );
   } else if (especie === "agravo-instrumento") {
     extras.push(
-      "   Art. 897, b, da CLT: destrava recurso. Não use o rol do art. 1.015 do CPC."
+      "   Art. 897, b, da CLT: destrava recurso denegado. Endereçamento: TRT, NÃO o Tribunal de Justiça. Não use o rol do art. 1.015 do CPC."
     );
   } else if (especie === "agravo-peticao") {
-    extras.push("   Art. 897, a, da CLT — fase de execução.");
+    extras.push(
+      "   Art. 897, a, da CLT — fase de execução. Endereçamento: TRT, não a Vara e não o TJ."
+    );
   } else if (especie === "embargos-declaracao") {
     extras.push("   Art. 897-A da CLT. Não transforme em recurso ordinário disfarçado.");
   } else if (especie === "execucao-titulo") {

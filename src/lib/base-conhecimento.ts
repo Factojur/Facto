@@ -343,6 +343,26 @@ function lastroAlienoAFamilia(
   );
 }
 
+function lastroAlienoAoTrabalhista(
+  titulo: string,
+  texto: string,
+  categoria: string
+): boolean {
+  const blob = `${titulo}\n${categoria}\n${texto}`.toLowerCase();
+  if (
+    /\bclt\b|\btst\b|horas extras|v[ií]nculo empregat|fgts|verbas rescis|justi[cç]a do trabalho|reclamação trabalhista/.test(
+      blob
+    )
+  ) {
+    return false;
+  }
+  return (
+    lastroDeJuizado(titulo, texto, categoria) ||
+    lastroConsumeristaParaCivil(titulo, texto, categoria) ||
+    /execu[cç][aã]o fiscal|\bcda\b/.test(blob)
+  );
+}
+
 function descartarLastroPorArea(
   areaId: string | undefined,
   titulo: string,
@@ -360,6 +380,9 @@ function descartarLastroPorArea(
   }
   if (areaId === "familia") {
     return lastroAlienoAFamilia(titulo, texto, categoria);
+  }
+  if (areaId === "trabalhista") {
+    return lastroAlienoAoTrabalhista(titulo, texto, categoria);
   }
   return false;
 }

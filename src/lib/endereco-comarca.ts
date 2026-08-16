@@ -189,7 +189,20 @@ export function formatarEnderecamentoPadrao(opcoes: {
       uf || "___"
     }`;
   }
-  // CPC 1.016: agravo de instrumento se dirige ao tribunal, não à vara.
+  // CLT art. 897: agravo de instrumento e agravo de petição vão ao TRT, não ao TJ.
+  if (
+    areaId === "trabalhista" &&
+    (especie === "agravo-instrumento" ||
+      especie === "agravo-peticao" ||
+      especie.includes("agravo-peticao") ||
+      especie.includes("agravo de petição") ||
+      especie.includes("agravo de peticao"))
+  ) {
+    return `EXCELENTÍSSIMO(A) SENHOR(A) DESEMBARGADOR(A) PRESIDENTE DO EGRÉGIO TRIBUNAL REGIONAL DO TRABALHO${
+      uf ? ` (${uf})` : ""
+    }`;
+  }
+  // CPC 1.016: agravo de instrumento cível se dirige ao tribunal estadual.
   if (
     especie === "agravo-instrumento" ||
     especie.includes("agravo-instrumento") ||

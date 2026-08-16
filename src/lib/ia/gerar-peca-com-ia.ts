@@ -46,6 +46,7 @@ function enriquecerQueryLastro(areaId: string, q: string): string {
   if (areaId === "consumidor") return `${q} CDC consumidor fornecedor`;
   if (areaId === "tributario") return `${q} CTN execução fiscal CDA Lei 6.830`;
   if (areaId === "familia") return `${q} família alimentos guarda divórcio inventário`;
+  if (areaId === "trabalhista") return `${q} CLT TST reclamação trabalhista`;
   return q;
 }
 
