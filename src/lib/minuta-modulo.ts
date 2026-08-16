@@ -109,8 +109,8 @@ export const MODULO_FAMILIA: AreaModuloConfig = {
   copyCabecalho:
     "Peças de família e sucessões (Código Civil e CPC): divórcio, guarda, alimentos, inventário. Tramitação em segredo de justiça (art. 189 do CPC) quando couber. Não use Juizado nem CLT. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
   fundamentoQualificacao: "no Código Civil, no CPC e na legislação de família",
-  rotuloPoloAtivo: "autor",
-  rotuloPoloPassivo: "réu",
+  rotuloPoloAtivo: "requerente",
+  rotuloPoloPassivo: "requerido",
   rotuloNav: "Gerar peça Família",
 };
 
@@ -386,4 +386,95 @@ export function moduloDaArea(areaId: string): AreaModuloConfig {
 
 export function hrefMinutaSeExistir(areaId: string): string | undefined {
   return MODULOS[areaId]?.href;
+}
+
+/** MLE (levantamento de depósito) não cabe em Penal, JECRIM nem Eleitoral. */
+export function areaMostraMle(areaId: string): boolean {
+  return areaId !== "criminal" && areaId !== "jecr" && areaId !== "eleitoral";
+}
+
+/** Justiça gratuita cabe em qualquer juízo; some só em notificação pura se um dia existir módulo extra. */
+export function areaMostraJusticaGratuita(_areaId: string): boolean {
+  return true;
+}
+
+export function placeholderForoDaArea(areaId: string): string {
+  switch (areaId) {
+    case "trabalhista":
+      return "Ex.: 2ª Vara do Trabalho de Campinas/SP";
+    case "familia":
+      return "Ex.: Vara de Família e Sucessões de Campinas/SP";
+    case "jecr":
+      return "Ex.: Juizado Especial Criminal de Campinas/SP";
+    case "criminal":
+      return "Ex.: 1ª Vara Criminal de Campinas/SP";
+    case "previdenciario":
+      return "Ex.: JEF / Vara Federal de Campinas/SP";
+    case "tributario":
+    case "administrativo":
+      return "Ex.: Vara da Fazenda Pública de Campinas/SP";
+    case "eleitoral":
+      return "Ex.: 12ª Zona Eleitoral de Campinas/SP";
+    case "internacional":
+      return "Ex.: STJ — homologação de sentença estrangeira";
+    case "jec":
+      return "Ex.: Juizado Especial Cível de Guarulhos/SP";
+    default:
+      return "Ex.: Vara Cível de Campinas/SP";
+  }
+}
+
+export function foroLegadoDaArea(
+  areaId: string,
+  cidade: string,
+  uf: string,
+  numeroVara?: string
+): string {
+  const local = `${cidade}${uf ? `/${uf}` : ""}`;
+  const n = numeroVara?.trim();
+  switch (areaId) {
+    case "trabalhista":
+      return n ? `${n}ª Vara do Trabalho de ${local}` : `Vara do Trabalho de ${local}`;
+    case "familia":
+      return n
+        ? `${n}ª Vara de Família e Sucessões de ${local}`
+        : `Vara de Família e Sucessões de ${local}`;
+    case "jecr":
+      return n
+        ? `${n}ª Vara do Juizado Especial Criminal de ${local}`
+        : `Juizado Especial Criminal de ${local}`;
+    case "criminal":
+      return n ? `${n}ª Vara Criminal de ${local}` : `Vara Criminal de ${local}`;
+    case "previdenciario":
+      return n
+        ? `${n}ª Vara do JEF de ${local}`
+        : `Juizado Especial Federal de ${local}`;
+    case "eleitoral":
+      return n ? `${n}ª Zona Eleitoral de ${local}` : `Zona Eleitoral de ${local}`;
+    case "jec":
+      return n
+        ? `${n}ª Vara do Juizado Especial Cível de ${local}`
+        : `Juizado Especial Cível de ${local}`;
+    default:
+      return n ? `${n}ª Vara Cível de ${local}` : `Vara Cível de ${local}`;
+  }
+}
+
+/** Competência territorial do TJSP — só juízo estadual paulista. */
+export function areaMostraLinkTjsp(areaId: string): boolean {
+  return [
+    "jec",
+    "civil",
+    "consumidor",
+    "familia",
+    "imobiliario",
+    "jecr",
+    "criminal",
+    "empresarial",
+    "medico",
+    "digital",
+    "ambiental",
+    "agrario",
+    "propriedade-intelectual",
+  ].includes(areaId);
 }

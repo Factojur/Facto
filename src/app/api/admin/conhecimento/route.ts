@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import {
   TAMANHO_MAXIMO_ARQUIVO_BYTES,
   TIPOS_ARQUIVO_ACEITOS,
+  ehCategoriaLastro,
   extrairTextoDeArquivo,
 } from "@/lib/base-conhecimento";
 
@@ -39,6 +40,15 @@ async function criarViaArquivo(request: Request, userId: string) {
   if (!titulo || !categoria) {
     return NextResponse.json(
       { error: "Título e categoria são obrigatórios." },
+      { status: 400 }
+    );
+  }
+  if (!ehCategoriaLastro(categoria)) {
+    return NextResponse.json(
+      {
+        error:
+          "Cadastre só Súmula ou Jurisprudência. Lei/código não entra nesta base.",
+      },
       { status: 400 }
     );
   }
@@ -152,6 +162,15 @@ async function criarViaTexto(request: Request, userId: string) {
   if (!titulo || !categoria || !texto) {
     return NextResponse.json(
       { error: "Título, categoria e texto/conteúdo são obrigatórios." },
+      { status: 400 }
+    );
+  }
+  if (!ehCategoriaLastro(categoria)) {
+    return NextResponse.json(
+      {
+        error:
+          "Cadastre só Súmula ou Jurisprudência. Lei/código não entra nesta base.",
+      },
       { status: 400 }
     );
   }

@@ -3,7 +3,8 @@
  * Não grava direto em base_conhecimento.
  *
  * Duplicidade:
- * - exata → não sobe
+ * - exata (API/scrape) → não sobe
+ * - exata (upload do usuário) → sobe com aviso; admin confirma na aprovação
  * - possível → sobe com aviso_duplicidade
  * - nenhuma → sobe pendente
  */
@@ -15,6 +16,7 @@ import {
 } from "@/lib/juris-provedores/jurisprudencia-service";
 import {
   analisarDuplicidade,
+  rotuloMotivoDuplicidadeExata,
   type ParComparacao,
 } from "@/lib/juris-provedores/duplicidade";
 
@@ -103,11 +105,13 @@ export async function enviarParaVerificacao(
   }
 
   let hidratado = precedente;
-  try {
-    const hyd = await completarEmentaPorLookup(precedente);
-    if (hyd.lookup) hidratado = hyd.precedente;
-  } catch {
-    /* lookup opcional — segue com a ementa da busca */
+  if (precedente.origem !== "upload_usuario") {
+    try {
+      const hyd = await completarEmentaPorLookup(precedente);
+      if (hyd.lookup) hidratado = hyd.precedente;
+    } catch {
+      /* lookup opcional — segue com a ementa da busca */
+    }
   }
   const ementa = montarTexto(hidratado);
 
@@ -128,7 +132,8 @@ export async function enviarParaVerificacao(
     existentes
   );
 
-  if (dup.nivel === "exata") {
+  const ehUpload = precedente.origem === "upload_usuario";
+  if (dup.nivel === "exata" && !ehUpload) {
     return {
       inserido: false,
       jaExistia: true,
@@ -136,6 +141,13 @@ export async function enviarParaVerificacao(
       id: dup.similar?.id,
     };
   }
+
+  const motivoAviso =
+    dup.nivel === "exata"
+      ? rotuloMotivoDuplicidadeExata(dup.motivo)
+      : dup.nivel === "possivel"
+        ? dup.motivo ?? null
+        : null;
 
   const { data, error } = await admin
     .from("juris_verificacao")
@@ -152,8 +164,8 @@ export async function enviarParaVerificacao(
           ? "jurisprudencias.ai"
           : precedente.origem,
       status: "pendente",
-      aviso_duplicidade: dup.nivel === "possivel",
-      motivo_aviso: dup.nivel === "possivel" ? dup.motivo ?? null : null,
+      aviso_duplicidade: dup.nivel !== "nenhuma",
+      motivo_aviso: motivoAviso,
       similar_titulo: dup.similar?.titulo ?? null,
       similar_base_id: dup.similar?.id ?? null,
       usuario_origem: usuarioId,
@@ -174,8 +186,8 @@ export async function enviarParaVerificacao(
   return {
     inserido: true,
     jaExistia: false,
-    avisoDuplicidade: dup.nivel === "possivel",
-    motivo: dup.motivo,
+    avisoDuplicidade: dup.nivel !== "nenhuma",
+    motivo: motivoAviso ?? dup.motivo,
     id: data?.id,
   };
 }
@@ -243,8 +255,15 @@ async function salvarDiretoNaBaseFallback(
  */
 export async function aprovarVerificacao(
   verificacaoId: string,
-  adminUserId: string
-): Promise<{ ok: boolean; baseId?: string; erro?: string }> {
+  adminUserId: string,
+  opcoes?: { confirmarDuplicidade?: boolean }
+): Promise<{
+  ok: boolean;
+  baseId?: string;
+  erro?: string;
+  precisaConfirmacao?: boolean;
+  similarTitulo?: string;
+}> {
   const admin = createAdminClient();
   const { data: item, error } = await admin
     .from("juris_verificacao")
@@ -260,29 +279,39 @@ export async function aprovarVerificacao(
     return { ok: true, baseId: item.base_conhecimento_id };
   }
 
-  // Dedupe final antes de gravar na definitiva
-  const { data: ja } = await admin
-    .from("base_conhecimento")
-    .select("id")
-    .eq("titulo", item.titulo)
-    .eq("categoria", "Jurisprudência")
-    .maybeSingle();
+  let existentesBase: ParComparacao[] = [];
+  try {
+    const { data: base } = await admin
+      .from("base_conhecimento")
+      .select("id, titulo, texto")
+      .eq("categoria", "Jurisprudência")
+      .limit(800);
+    existentesBase = (base ?? []).map((row) => ({
+      id: row.id,
+      titulo: row.titulo,
+      texto: row.texto,
+    }));
+  } catch {
+    /* segue sem rechecagem se a tabela falhar */
+  }
 
-  if (ja?.id) {
-    await admin
-      .from("juris_verificacao")
-      .update({
-        status: "rejeitado",
-        revisado_em: new Date().toISOString(),
-        revisado_por: adminUserId,
-        motivo_aviso: "Rejeitado na aprovação: já existia na base definitiva.",
-        base_conhecimento_id: ja.id,
-      })
-      .eq("id", verificacaoId);
+  const dup = analisarDuplicidade(
+    {
+      titulo: item.titulo,
+      ementa: item.ementa,
+      url: item.url,
+      numeroProcesso: item.numero_processo,
+    },
+    existentesBase
+  );
+
+  if (dup.nivel === "exata" && !opcoes?.confirmarDuplicidade) {
     return {
       ok: false,
-      erro: "Já existe na base definitiva — marcado como rejeitado.",
-      baseId: ja.id,
+      precisaConfirmacao: true,
+      similarTitulo: dup.similar?.titulo,
+      erro: rotuloMotivoDuplicidadeExata(dup.motivo),
+      baseId: dup.similar?.id,
     };
   }
 
@@ -319,6 +348,36 @@ export async function aprovarVerificacao(
   );
 
   return { ok: true, baseId: criado.id };
+}
+
+/**
+ * Jurisprudência/súmula anexada na geração da peça → fila admin.
+ * Lei municipal NÃO deve chamar isto (nunca entra em juris_verificacao).
+ */
+export async function enfileirarUploadsJurisDoCaso(
+  itens: { titulo: string; tipo: string; texto: string }[],
+  usuarioId: string
+): Promise<void> {
+  for (const item of itens) {
+    const ementa = item.texto.trim();
+    if (!ementa) continue;
+    const tipo =
+      item.tipo === "sumula"
+        ? "sumula"
+        : item.tipo === "decisao"
+          ? "decisao"
+          : "acordao";
+    await enviarParaVerificacao(
+      {
+        origem: "upload_usuario",
+        tribunal: "Anexo do usuário",
+        titulo: item.titulo.trim() || "Jurisprudência anexada",
+        ementa,
+        tipo,
+      },
+      usuarioId
+    );
+  }
 }
 
 export async function rejeitarVerificacao(

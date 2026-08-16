@@ -10,8 +10,18 @@ import { CONHECIMENTO_CURADO_JEC } from "@/lib/conhecimento-curado-jec";
 import { SUMULAS_ATIVAS_CURADAS } from "@/lib/sumulas";
 import { gerarEmbedding } from "@/lib/ia/embeddings";
 
-export const CATEGORIAS_CONHECIMENTO = ["Lei", "Súmula", "Jurisprudência"] as const;
+export const CATEGORIAS_LASTRO = ["Súmula", "Jurisprudência"] as const;
+/** Inclui Lei só por linhas antigas no banco — não cadastrar nem retrieve. */
+export const CATEGORIAS_CONHECIMENTO = [
+  ...CATEGORIAS_LASTRO,
+  "Lei",
+] as const;
 export type CategoriaConhecimento = (typeof CATEGORIAS_CONHECIMENTO)[number];
+
+export function ehCategoriaLastro(categoria: string): boolean {
+  const c = categoria.trim().toLowerCase();
+  return c === "súmula" || c === "sumula" || c.startsWith("juris");
+}
 
 export type ItemConhecimento = {
   id: string;
@@ -224,11 +234,10 @@ function pontuarTrecho(trechoNormalizado: string, palavras: string[]): number {
   return pontos;
 }
 
-/** Prioriza súmulas e leis no ranking (Pacote A — base curada). */
+/** Prioriza súmulas no ranking. Lei não entra no retrieve. */
 function bonusCategoria(categoria: string): number {
   const c = normalizar(categoria);
   if (c.includes("sumula")) return 4;
-  if (c.includes("lei")) return 2;
   if (c.includes("juris")) return 1;
   return 0;
 }
@@ -292,6 +301,7 @@ export async function buscarConhecimentoRelacionado(
           ItemConhecimento & { similarity?: number }
         >) {
           if (!row?.id) continue;
+          if (!ehCategoriaLastro(row.categoria ?? "")) continue;
           porId.set(row.id, {
             id: row.id,
             titulo: row.titulo,
@@ -315,6 +325,7 @@ export async function buscarConhecimentoRelacionado(
     const { data, error } = await admin
       .from("base_conhecimento")
       .select("id, titulo, categoria, texto, criado_em")
+      .neq("categoria", "Lei")
       .or(condicoes)
       .order("criado_em", { ascending: false })
       .limit(30);
@@ -322,6 +333,7 @@ export async function buscarConhecimentoRelacionado(
     if (error && porId.size === 0) throw error;
 
     for (const row of (data ?? []) as ItemConhecimento[]) {
+      if (!ehCategoriaLastro(row.categoria)) continue;
       if (!porId.has(row.id)) {
         porId.set(row.id, { ...row, similarity: 0 });
       }
@@ -351,6 +363,7 @@ export async function buscarConhecimentoRelacionado(
     }
 
     for (const curado of CONHECIMENTO_CURADO) {
+      if (!ehCategoriaLastro(curado.categoria)) continue;
       const score = pontuarItemCurado(curado, palavras);
       if (score > 0) {
         candidatos.push({ ...curado, score });
@@ -376,7 +389,8 @@ export async function buscarConhecimentoRelacionado(
     return unicos;
   } catch {
     // Sem banco: ainda devolve o núcleo curado pontuado.
-    return CONHECIMENTO_CURADO.map((item) => ({
+    return CONHECIMENTO_CURADO.filter((item) => ehCategoriaLastro(item.categoria))
+      .map((item) => ({
       item,
       score: pontuarItemCurado(item, palavras),
     }))

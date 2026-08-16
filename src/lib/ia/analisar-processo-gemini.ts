@@ -13,12 +13,13 @@ import type {
   RotuloDocProcesso,
 } from "@/lib/analisar-processo-types";
 import { ROTULOS_DOC_PROCESSO } from "@/lib/analisar-processo-types";
+import { ritoDaArea } from "@/lib/area-rito";
 import {
-  ESPECIES_PECA_JEC,
-  inferirEspeciePeca,
-  tituloPecaCabivel,
-  type EspeciePecaJec,
-} from "@/lib/jec-especie-peca";
+  inferirEspecieDaArea,
+  idsPeticaoInicialDaArea,
+  listaEspeciesDaArea,
+  tituloPecaDaArea,
+} from "@/lib/peca-especie-area";
 import { pecaUsaPartesJaQualificadas } from "@/lib/partes-ja-qualificadas";
 import {
   gerarTextoComGemini,
@@ -96,48 +97,64 @@ function normalizarRotulo(v: unknown): RotuloDocProcesso {
   return "outros";
 }
 
-function normalizarEspecie(v: unknown, tipoAcao: string, fatos: string): EspeciePecaJec {
-  const s = str(v).toLowerCase();
-  const ids = ESPECIES_PECA_JEC.map((e) => e.id);
-  if ((ids as string[]).includes(s)) return s as EspeciePecaJec;
-  if (s.includes("contest")) return "contestacao";
-  if (s.includes("embarg")) return "embargos";
-  if (s.includes("recurs") || s.includes("apel") || s.includes("inomin"))
-    return "recurso";
-  if (s.includes("replic")) return "replica";
-  if (s.includes("execu")) return "execucao";
-  return inferirEspeciePeca(tipoAcao, fatos);
+function idsEspecieDaArea(areaId: string): string[] {
+  const lista = listaEspeciesDaArea(areaId);
+  if (lista) return lista.map((e) => e.id);
+  return [
+    "peticao-inicial",
+    "contestacao",
+    "embargos",
+    "recurso",
+    "replica",
+    "execucao",
+  ];
 }
 
-const SYSTEM = [
-  "Você é o Assistente Facto, paralegal especialista em Juizado Especial Cível (Lei 9.099/95).",
-  "Receberá textos extraídos de documentos processuais (autos completos ou peças selecionadas).",
-  "Tarefas:",
-  "1) Classificar cada documento (sentença, contestação, petição inicial, decisão, recurso, autos, outros).",
-  "2) Montar uma FICHA PROCESSUAL objetiva (sem inventar números/datas ausentes — use string vazia).",
-  "3) Sugerir a PEÇA CABÍVEL agora (peticao-inicial | contestacao | embargos | recurso | replica | execucao)",
-  "   com nome forense, confiança 0–1 e justificativa curta.",
-  "4) pecaCandidata.tipoAcao = nome da PEÇA A PROTOCOLAR AGORA (Embargos de Declaração, Recurso Inominado, Agravo de Instrumento, Contestação, Réplica…). NUNCA copie o nome da ação originária nem o nome do arquivo enviado (ex.: cumprimento de sentença).",
-  "5) fatosSugeridos: narrativa em 3ª pessoa pronta para o campo Fatos do formulário (8–20 linhas).",
-  "6) dispositivo: resuma o julgamento da sentença em uma das formas: procedente, improcedente, parcialmente procedente, extinto. Vazio se não houver sentença.",
-  "",
-  "Responda SOMENTE JSON válido (sem markdown):",
-  "{",
-  '  "documentos": [{"nome":"","rotulo":"sentenca|contestacao|peticao_inicial|decisao|recurso|autos_completos|outros","resumo":""}],',
-  '  "ficha": {',
-  '    "orgao":"", "numeroProcesso":"", "comarca":"",',
-  '    "partesAutor":"", "partesReu":"", "dataDecisao":"",',
-  '    "dispositivo":"procedente|improcedente|parcialmente procedente|extinto|",',
-  '    "pedidosResumo":"", "fundamentosResumo":"",',
-  '    "faseProcessual":"", "fatosSugeridos":""',
-  "  },",
-  '  "pecaCandidata": {',
-  '    "tipoAcao":"", "especiePeca":"recurso", "confianca":0.0,',
-  '    "justificativa":"", "tutelaUrgencia":false, "danosMorais":false, "danosMateriais":false',
-  "  },",
-  '  "avisos": []',
-  "}",
-].join("\n");
+function normalizarEspecie(
+  v: unknown,
+  tipoAcao: string,
+  fatos: string,
+  areaId: string
+): string {
+  const s = str(v).toLowerCase().replace(/\s+/g, "-");
+  const ids = idsEspecieDaArea(areaId);
+  if (ids.includes(s)) return s;
+  return inferirEspecieDaArea(areaId, tipoAcao, fatos, s);
+}
+
+function systemAnalise(areaId: string): string {
+  const rito = ritoDaArea(areaId);
+  const ids = idsEspecieDaArea(areaId).join(" | ");
+  return [
+    `Você é o Assistente Facto, paralegal especialista em ${rito.especialidade}.`,
+    rito.ritoLinha,
+    "Receberá textos extraídos de documentos processuais (autos completos ou peças selecionadas).",
+    "Tarefas:",
+    "1) Classificar cada documento (sentença, contestação, petição inicial, decisão, recurso, autos, outros).",
+    "2) Montar uma FICHA PROCESSUAL objetiva (sem inventar números/datas ausentes — use string vazia).",
+    `3) Sugerir a PEÇA CABÍVEL agora (${ids}) com nome forense, confiança 0–1 e justificativa curta.`,
+    "4) pecaCandidata.tipoAcao = nome da PEÇA A PROTOCOLAR AGORA. NUNCA copie só o nome da ação originária nem o nome do arquivo.",
+    "5) fatosSugeridos: narrativa em 3ª pessoa pronta para o campo Fatos do formulário (8–20 linhas).",
+    "6) dispositivo: resuma o julgamento da sentença (procedente, improcedente, parcialmente procedente, extinto). Vazio se não houver sentença.",
+    "",
+    "Responda SOMENTE JSON válido (sem markdown):",
+    "{",
+    '  "documentos": [{"nome":"","rotulo":"sentenca|contestacao|peticao_inicial|decisao|recurso|autos_completos|outros","resumo":""}],',
+    '  "ficha": {',
+    '    "orgao":"", "numeroProcesso":"", "comarca":"",',
+    '    "partesAutor":"", "partesReu":"", "dataDecisao":"",',
+    '    "dispositivo":"procedente|improcedente|parcialmente procedente|extinto|",',
+    '    "pedidosResumo":"", "fundamentosResumo":"",',
+    '    "faseProcessual":"", "fatosSugeridos":""',
+    "  },",
+    '  "pecaCandidata": {',
+    `    "tipoAcao":"", "especiePeca":"${idsEspecieDaArea(areaId)[0]}", "confianca":0.0,`,
+    '    "justificativa":"", "tutelaUrgencia":false, "danosMorais":false, "danosMateriais":false',
+    "  },",
+    '  "avisos": []',
+    "}",
+  ].join("\n");
+}
 
 export type DocTextoProcesso = {
   nome: string;
@@ -146,7 +163,8 @@ export type DocTextoProcesso = {
 };
 
 export async function analisarProcessoComGemini(
-  docs: DocTextoProcesso[]
+  docs: DocTextoProcesso[],
+  areaId: string = "jec"
 ): Promise<AnaliseProcessoResultado> {
   if (!geminiConfigurado()) {
     throw new Error("GEMINI_API_KEY não configurada.");
@@ -171,13 +189,13 @@ export async function analisarProcessoComGemini(
   }
 
   const res = await gerarTextoComGemini({
-    systemPrompt: SYSTEM,
+    systemPrompt: systemAnalise(areaId),
     userPrompt: [
       "<DOCUMENTOS_DO_PROCESSO>",
       blocos.join("\n\n"),
       "</DOCUMENTOS_DO_PROCESSO>",
       "",
-      "Classifique, monte a ficha e sugira a peça cabível no JEC.",
+      `Classifique, monte a ficha e sugira a peça cabível neste módulo (${ritoDaArea(areaId).especialidade}).`,
     ].join("\n"),
     modelos: modelosRedacao().slice(0, 3),
     temperature: 0.2,
@@ -227,15 +245,21 @@ export async function analisarProcessoComGemini(
   const especiePeca = normalizarEspecie(
     pecaRaw.especiePeca,
     tipoBruto || justificativa,
-    ficha.fatosSugeridos
+    ficha.fatosSugeridos,
+    areaId
   );
   const contextoTitulo = `${justificativa} ${ficha.fatosSugeridos} ${tipoBruto}`;
-  const tipoAcao = pecaUsaPartesJaQualificadas(especiePeca)
+  const idsInicial = idsPeticaoInicialDaArea(areaId);
+  const jaQual = pecaUsaPartesJaQualificadas(especiePeca, idsInicial);
+  const tipoAcao = jaQual
     ? formatarNomeAcaoForense(
-        tituloPecaCabivel(especiePeca, tipoBruto, contextoTitulo)
+        tituloPecaDaArea(areaId, especiePeca, tipoBruto, contextoTitulo),
+        areaId
       )
-    : formatarNomeAcaoForense(tipoBruto) || tipoBruto || "Ação cível (JEC)";
-  const tituloCompleto = pecaUsaPartesJaQualificadas(especiePeca)
+    : formatarNomeAcaoForense(tipoBruto, areaId) ||
+      tipoBruto ||
+      ritoDaArea(areaId).tipoAcaoDefault;
+  const tituloCompleto = jaQual
     ? tipoAcao
     : montarTituloAcaoCompleto(tipoAcao, {
         danosMorais,

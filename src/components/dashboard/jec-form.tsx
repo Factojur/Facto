@@ -29,7 +29,7 @@ import {
 } from "@/lib/jec-rascunho-storage";
 import { montarChecklistJec, podeGerarPeca } from "@/lib/jec-checklist";
 import { placeholderFatosPorTipo } from "@/lib/jec-placeholders";
-import { DOCS_CONFERENCIA_PROTOCOLO } from "@/lib/jec-docs-checklist";
+import { docsConferenciaDaArea } from "@/lib/docs-conferencia-protocolo";
 import {
   ESPECIES_PECA_JEC,
   inferirEspeciePeca,
@@ -47,6 +47,7 @@ import {
 import {
   GUIAS_MINUTA,
   LOADING_STAGES_GERACAO,
+  areaMostraMle,
   moduloDaArea,
   type AreaIdMinuta,
   type GuiaMinuta,
@@ -155,7 +156,7 @@ function FileField({
   );
 }
 
-function ProtocoloDocsChecklist() {
+function ProtocoloDocsChecklist({ areaId }: { areaId: AreaIdMinuta }) {
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="text-lg font-semibold text-slate-800">
@@ -172,7 +173,7 @@ function ProtocoloDocsChecklist() {
       </p>
 
       <ul className="mt-4 list-disc space-y-2.5 pl-5">
-        {DOCS_CONFERENCIA_PROTOCOLO.map((doc) => (
+        {docsConferenciaDaArea(areaId).map((doc) => (
           <li key={doc.id} className="text-sm text-slate-800">
             {doc.label}
             {doc.nota ? (
@@ -1015,7 +1016,7 @@ export function JecForm({
     setEspeciePeca(espSalva);
     setEspecieManual(Boolean(p.especiePeca));
     setTutelaUrgencia(Boolean(p.tutelaUrgencia));
-    setComarca(normalizarComarcaValue(p.comarca));
+    setComarca(normalizarComarcaValue(p.comarca, areaId));
     setValoresCausa(p.valoresCausa ?? valoresCausaVazio());
     setUsaLeiMunicipal(Boolean(p.usaLeiMunicipal));
     setLeiMunicipalTexto(p.leiMunicipalTexto ?? "");
@@ -1228,7 +1229,7 @@ export function JecForm({
         analiseProcesso?.ficha.dispositivo?.trim() || undefined,
       tutelaUrgencia,
       pedirJusticaGratuita,
-      temMle,
+      temMle: areaMostraMle(areaId) ? temMle : false,
       fatos: fatos.trim(),
       pedidosUsuario,
       documentos: {
@@ -1600,6 +1601,7 @@ export function JecForm({
 
             {modoAcao === "processo" && !analiseProcesso && (
               <AnalisarProcessoSection
+                areaId={areaId}
                 onResultado={(a) => {
                   aplicarAnaliseProcesso(a);
                   setError(null);
@@ -1816,7 +1818,7 @@ export function JecForm({
           </div>
         </section>
 
-        <ComarcaSection value={comarca} onChange={setComarca} />
+        <ComarcaSection areaId={areaId} value={comarca} onChange={setComarca} />
 
         <AutorSection
           value={autores}
@@ -1830,9 +1832,11 @@ export function JecForm({
                 Opções na peça
               </h3>
               <p className="mb-3 text-xs leading-relaxed text-slate-500">
-                Marque só o que deve constar no texto gerado. A declaração de
-                hipossuficiência e os documentos do MLE o FACTO não recebe:
-                você junta depois, no protocolo (e-proc, ESAJ ou presencial).
+                Marque só o que deve constar no texto gerado. Documentos de
+                hipossuficiência
+                {areaMostraMle(areaId) ? " e do MLE" : ""} o FACTO não recebe:
+                você junta depois, no protocolo (e-proc, PJe, ESAJ ou
+                presencial).
               </p>
             </div>
 
@@ -1854,6 +1858,7 @@ export function JecForm({
               </span>
             </label>
 
+            {areaMostraMle(areaId) && (
             <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-sm text-slate-700">
               <input
                 type="checkbox"
@@ -1871,6 +1876,7 @@ export function JecForm({
                 </span>
               </span>
             </label>
+            )}
           </div>
         </AutorSection>
 
@@ -1999,7 +2005,9 @@ export function JecForm({
               Fundamentos do caso
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Anexe lei municipal ou jurisprudência do caso (texto ou arquivo).
+              São anexos diferentes: a jurisprudência deste caso pode ser citada
+              na peça; a lei municipal só fundamenta este município e não vira
+              lastro geral do FACTO.
             </p>
           </div>
 
@@ -2008,7 +2016,9 @@ export function JecForm({
               Lei municipal (opcional)
             </h3>
             <p className="mb-4 text-sm text-slate-500">
-              Quando a ação depender de norma do município.
+              Norma deste município (posturas, ISS, código de obras, etc.). Serve
+              para o sistema entender o fundamento deste caso — não é súmula nem
+              acórdão, e não entra na base geral do FACTO.
             </p>
             <label className="flex items-start gap-2 text-sm text-slate-700">
               <input
@@ -2371,7 +2381,7 @@ export function JecForm({
           />
 
           <div className="mt-8">
-            <ProtocoloDocsChecklist />
+            <ProtocoloDocsChecklist areaId={areaId} />
           </div>
         </div>
       )}

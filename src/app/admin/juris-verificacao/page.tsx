@@ -47,10 +47,10 @@ export default async function JurisVerificacaoPage() {
         </div>
 
         <p className="mt-4 max-w-2xl text-sm text-stone-400">
-          Julgados do Jurisprudências.ai e scrapes de tribunais (ex.: TJSP)
-          entram aqui antes da base definitiva. Itens escolhidos pelo usuário na
-          peça aparecem com prioridade. Duplicatas exatas são bloqueadas;
-          possíveis duplicidades sobem com aviso.
+          Julgados anexados pelo usuário, escolhidos na busca e scrapes entram
+          aqui um a um, antes da base definitiva. Uploads do usuário sempre
+          aparecem na fila. Se o texto for idêntico ao que já está na base, a
+          aprovação pede confirmação — não grava duplicata sem o seu ok.
         </p>
 
         <div className="mt-8">

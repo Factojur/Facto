@@ -4,21 +4,32 @@ Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou
 
 **Juris / seed:** depois de cada lote ou dia de cota, atualizar a seção **Lacunas da base (áreas falhas)** abaixo — tribunal errado, 0 insert, ou API sem aquele tribunal. Não deixar falha só no chat.
 
-## Alerta — próximo seed (15/08)
+## Alerta — seed automático 01h (16/08)
 
-1. **Retomar:** `npx tsx scripts/seed-juris-ai-faixa.ts 56 64`  
-   - Lotes **1–55** inseridos; **56** parou em 429 (15/08); **57–64** pendentes (TRF3/4, TST, STJ eleitoral, CARF).  
-   Já inclui `pub_from=2023-01-01` + lookup de ementa.
-2. Se parar no meio: retomar `npx tsx scripts/seed-juris-ai-faixa.ts <lote> 64`.
-3. Depois: `npm run reindex:embeddings`.
-4. Seed = Jurisprudências.ai, **não** e-SAJ. Tribunais da API: `stf stj tst trf3 trf4 tjce tjgo tjma tjmg tjmt tjpr tjrj tjrs tjsc tjsp carf`. **Sem TSE, TRE-SP, TRF1/2/5/6, TNU.**
+Tarefa Windows `FACTO-seed-juris-01h` reinstalada (`npx --yes`). Próxima: **17/08/2026 01:00**.
 
-### Depois de 40–64 — próximos lotes (rascunho 15/08)
+**Vencimento Jurisprudências.ai: 13/09/2026.** Pausa automática a partir de **06/09** (última semana para pontos fracos). Inflação: madrugadas **17/08–05/09**.
 
-- **TJSP (qualidade JEC):** novos termos só de temas fracos na tabela de lacunas (execução, juros, vício, veículo, ICMS municipal) — não repetir lote 1.
-- **Áreas falhas:** eleitoral (precisa TRE/TSE = segunda API); previdenciário após 57–59; trabalhista após TST 60–62.
-- **Próximos TJs na API (sem scrape):** TJRJ, TJMG, TJPR, TJRS — lotes curtos de temas JEC + consumerista, um tribunal por vez.
-- **Scrape:** TJSP worker/captcha primeiro; STJ/TJRJ/TJMG só depois de Supabase Pro.
+Fila: lotes **84–646**. Cada madrugada usa as **7 contas** até 429 e reindexa.
+
+PC ligado, sem dormir; se for notebook, **na tomada** (a tarefa não inicia em bateria).
+
+Tribunais da API: `stf stj tst trf3 trf4 tjce tjgo tjma tjmg tjmt tjpr tjrj tjrs tjsc tjsp carf`. Sem TSE, TRE, TRF1/2/5/6, TNU.
+
+### Códigos e leis na base (decisão 15/08; confirmado 16/08)
+
+**Não manter “Lei” no mesmo saco da peça.** A categoria Lei no admin da `base_conhecimento` é inútil como lastro de citação: o retrieve mistura artigo com acórdão e o modelo cola lei. Já houve CF inteira vazando em busca genérica. Contagem 16/08: **0** itens em Lei; súmula e juris são o que a minuta usa.
+
+**Agora:** Gemini interpreta CPC, CC, CLT, CPP, CDC (e o rito em `area-rito.ts`). Não criar a “outra página” de códigos ainda.
+
+**Futuro (não é a fila):** canal separado — página admin tipo biblioteca de normas / `<NORMA_DE_CONSULTA>` — só cérebro (calibrar tese, **não transcrever** na peça, **não** ir para `juris_verificacao`). Distinto de Súmula + Jurisprudência.
+
+**UI (16/08):** categoria **Lei** retirada do admin e do retrieve da peça. Gemini + `area-rito.ts` cobrem o código. **Não é certeza** criar a biblioteca depois.
+
+### Depois de 97–200
+
+- Segunda API: TRE/TSE (eleitoral) e TRF1/2/5/6 / TNU se previdenciário ainda falhar.
+- Scrape TJSP: só com Supabase Pro e validador; não promover cache bruto.
 
 ---
 
@@ -64,11 +75,28 @@ Checklist **por área** antes de `available` + `href`:
 7. Gate: Completo/Pro + OAB; leigo continua só JEC.
 8. Casos-ouro da área com endereçamento **real**.
 
+### Recursos aos tribunais superiores (16/08) — **não implementar agora**
+
+Observação de produto: a formatação de página já é a mesma; **faltam espécies** (esqueleto + endereçamento + título no classificador).
+
+- **JEC:** não criar REsp (Súmula 203 do STJ — não cabe da Turma Recursal). **Sim** Recurso Extraordinário da Turma Recursal (Súmula 640 do STF): STF, prequestionamento, repercussão geral.
+- **Justiça comum** (civil, consumidor, família, imobiliário e demais CPC): **REsp (STJ)** e **RE (STF)** depois da apelação. Esqueleto próprio (violação de lei federal / dissídio / prequestionamento; RE + repercussão geral). Endereçamento: Presidência do tribunal de origem (admissibilidade) ou STJ/STF — não vara.
+- **Trabalhista:** equivalente é **recurso de revista (TST)**, depois RE. Não copiar REsp.
+- **Penal:** RE/REsp excepcionais; kit já tem apelação CPP, RESE, agravo em execução, HC.
+
+O detector de “nome da ação” hoje não trata REsp/RE/RR — se gerar sem isso, o título cai como parágrafo comum.
+
 ### Sequência de implementação (área a área)
 
 Fonte viva também em `src/lib/abertura-areas.ts`. Trabalhar **uma de cada vez**; o compartilhado já está no contrato da minuta.
 
-**Preview interno (15/08):** `admin@facto.com` e `factoassessoria.jur@gmail.com` entram nos cards ainda `available: false` via `/dashboard/preview/<id>`. Clientes continuam vendo “Em breve”. Não ligar `available` no catálogo até o checklist da área fechar.
+**Catálogo (16/08):** áreas com rota próprias `available: true` (Completo/Pro + OAB). **Contratual** continua fechado (use Civil). Plano JEC e leigo: só JEC. Eleitoral aberto; lastro TRE/TSE depois (Datajud ou manual).
+
+**Preview interno** ainda existe em `/dashboard/preview/<id>` para e-mails admin.
+
+**Varredura de produto (15/08, tarde):** rito, espécies, polos, endereçamento, JG/MLE, checklist e análise alinhados. Lastro de juris segue no seed diário.
+
+**Testes de qualidade da peça (16/08):** o usuário vai gerar peças reais nas áreas recém-abertas. Anotar falhas de rito/endereçamento/formatação aqui — não tratar como “só lastro”.
 
 1. **Consumidor (justiça comum)** — _preview admin (15/08)_ — espécies CPC; Vara Cível; CDC+CPC; sem teto 20 SM e sem recurso inominado. Catálogo `available: false`.
 2. **Civil (justiça comum)** — _preview admin (15/08)_ — `/dashboard/civil`; CC+CPC; sem CDC; sem teto 20 SM. Catálogo `available: false`.
@@ -81,7 +109,7 @@ Fonte viva também em `src/lib/abertura-areas.ts`. Trabalhar **uma de cada vez**
 9. **Tributário / administrativo** — _preview admin (15/08)_ — LEF/MS.
 10. **Empresarial** — _preview admin (15/08)_ — notificação vs. ação.
 11. **Digital, ambiental, PI, internacional, médico, agrário** — _preview admin (15/08)_.
-12. **Eleitoral** — _preview admin (15/08)_ — sem lastro TRE/TSE na API.
+12. **Eleitoral** — _aberto no catálogo 16/08_ — lastro TRE/TSE **depois** (consultar Datajud ou ingestão manual). API Jurisprudências.ai não tem TRE/TSE.
 
 Sobreposição a resolver no produto (senão o advogado não sabe onde clicar): **consumidor × JEC × civil × médico**; **contratual × civil × empresarial**.
 
@@ -118,7 +146,7 @@ Prazos: o FACTO **não conta prazo processual sozinho** hoje. Abrir área implic
    - [ ] Enquanto webhook falhar: `/admin/emails` → **Sincronizar MP agora**
    - [ ] **Compra real MP** + validar webhook automático + **cancelar assinatura (CDC)** ponta a ponta
 
-4. **[P1] Cadastro — validação OAB real por UF** — _pendente_
+4. **[P1] Cadastro — validação OAB real por UF** — _manter mock até o usuário terminar os testes_
    - Hoje: mock em `validate-oab.ts` (números de teste).
    - [ ] Consultar base oficial/API da OAB do estado (UF + número + nome/CPF) no cadastro de advogado
    - [ ] UX de erro clara quando OAB não conferir; manter fluxo leigo sem OAB
@@ -169,14 +197,16 @@ Prazos: o FACTO **não conta prazo processual sozinho** hoje. Abrir área implic
 
 10. **[P1] Segundo tribunal (STJ) em produção** — _exige Pro + cache com TTL_ (API já busca STJ via seletor)  
 11. **[P2] Política CDC / cota-teste 7 dias**  
-12. **[P2] Expandir áreas** — _parcial:_ contrato + preview admin; módulos ainda fechados para cliente (ver **Sequência de implementação**)
+12. **[P2] Expandir áreas** — _aberto 16/08_ no catálogo (exceto Contratual). Ver testes do usuário.
 13. **[P2] Obsidian → `base_conhecimento` (sync)** — _especificado; não implementar ainda_
     - Spec: `docs/obsidian-sync-spec.md` · template: `docs/obsidian-templates/exemplo-juris.md`
     - Agora: alimentar base via admin/seeds; Obsidian só como notas pessoais se quiser
     - Depois (quando curadoria doer): script `sync:obsidian` (só `status: aprovado`) + reindex
     - [ ] Implementar sync v1 (dry-run + `--write`)
     - [ ] (Opcional) export fila `juris_verificacao` → Markdown
-14. **[P3]** Chat multi-turno, Word add-in, contratos  
+14. **[P3] Depois do núcleo da minuta** — _não neste deploy (16/08)_
+   - **Chat multi-turno:** **sim, beneficia** o advogado (iterar tese sem recomeçar). **Não aplicar agora:** custa token, aumenta risco de inventar fato, e as áreas recém-abertas ainda vão ser testadas. Fica para depois do núcleo estável.
+   - **Add-in Word / contratos:** mesmo — melhoria de canal, não do lastro. Não implementar nesta fase.  
 15. **[P1] PLANO X** — _código 14/08_ — B 10/30/50 + saldo; E +10 análises R$ 29,90; G Completo Anual **R$ 1.890** (mantido) + H cotas 100/180; I copy JEC leigo; J 15 juris externa; **N botão só base curada**. SQL: `supabase/migration-extras-analises.sql`. A (Supabase Pro) só ao começar a vender.
 
 ---
@@ -376,7 +406,7 @@ API **não tem:** TSE, TRE-SP (nem outro TRE), TRF1/2/5/6, TNU, STM. Listagem 14
 | **Eleitoral** | Lote 22: **0** insert (TJSP). TRE/TSE fora da API. | Lote **63** pronto (STJ). Segunda API depois. |
 | **Previdenciário** | Lote 7 STJ fraco (+5); lote 36 STJ: **0**. | Lotes **57–59** prontos (TRF3/TRF4). |
 | **Trabalhista** | Lotes 9 e 32 no TJSP fracos (11+11); muitos termos 0 úteis. | Lotes **60–62** prontos (TST). |
-| **Tributário** | Lote 12 +5 (STJ/municipal misturado). | Lote **64** pronto (CARF). ICMS/IPTU estadual/municipal podem continuar rasos. |
+| **Tributário** | Lote 12 +5 (STJ/municipal misturado). Lote **64** (CARF) rendeu pouco (temas de STJ/ITCMD). | Lotes **81** e **96** (CARF IRPJ/CSLL/PIS/multa/ágio). IPTU/ISS: lote **95**. |
 | **Internacional** | Lote 24 +5. | Sem tribunal extra na API. Segunda fonte depois. |
 | **Lote 56** | Cota 429 (15/08) após 1–55 ok. | Retomar `seed-juris-ai-faixa.ts 56 64`. |
 
@@ -387,10 +417,13 @@ Critério de “falha”: lote com **0** insert, ou &lt;10 insert em tema que de
 - [x] Lotes 1–8 (ver histórico abaixo).
 - [x] Lotes **9–39** (14/08) — **+770 insert**; `reindex` +770.
 - [x] Lotes **40–55** (15/08) — faixa original avançou; **56** 429.
-- [ ] Lotes **56–64** — retomar quando a cota da API liberar.
+- [x] Lotes **56–64** (16/08) — faixa + reindex; lote 63 (STJ eleitoral) 0 insert.
 - [x] Lookup ementas curtas (14/08) — **696** completadas / 356 skip / 0 falha; reindex em seguida.
 - [x] Lotes **40–55** (15/08) — faixa rodou; **~180 insert** até o 56 (cota 429 no lote 56). Vazios: 41, 43, 50, 54.
-- [ ] Lote **56** (retomar) + **57–64** — `npx tsx scripts/seed-juris-ai-faixa.ts 56 64`.
+- [x] Lotes **65–80** (16/08) — **+277** insert; vazios/fracos: 74 (LGPD STJ), 77 (IPTU TJSP), 79 (conselhos STJ). Retomas em **94–95**.
+- [x] Lotes **81–83** (16/08) — **+139** insert (CARF 55, TJCE 32, TJGO 52). Cota 429 no **84**.
+- [ ] Lotes **84–96** — `npx tsx scripts/seed-juris-ai-faixa.ts 84 96`.
+- [ ] Lotes **97–200** — prontos no código; depois de 96 o diário segue ou `npx tsx scripts/seed-juris-ai-faixa.ts 97 200` (~1248 consultas, vários dias).
 - [ ] Após cada dia de seed: `npm run reindex:embeddings`.
 - [ ] Segunda API quando 40–64 fechar: priorizar **eleitoral (TRE/TSE)** e o que ainda estiver na tabela de lacunas.
 - [ ] Reaquecer cache TJSP (`npm run aquecer:cache-tjsp`) — 14/08 cache vazio; scrape 0/15 (captcha). Base_conhecimento intacta.

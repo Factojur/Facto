@@ -23,9 +23,14 @@ type ArquivoLocal = {
 type Props = {
   onResultado: (analise: AnaliseProcessoResultado) => void;
   onErro: (msg: string) => void;
+  areaId?: string;
 };
 
-export function AnalisarProcessoSection({ onResultado, onErro }: Props) {
+export function AnalisarProcessoSection({
+  onResultado,
+  onErro,
+  areaId = "jec",
+}: Props) {
   const [modoUpload, setModoUpload] = useState<"completos" | "seletivo">(
     "seletivo"
   );
@@ -97,7 +102,7 @@ export function AnalisarProcessoSection({ onResultado, onErro }: Props) {
       const res = await fetch("/api/analisar-processo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentos }),
+        body: JSON.stringify({ documentos, areaId }),
       });
       if (res.status === 413) {
         onErro(

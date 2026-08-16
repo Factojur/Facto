@@ -1,6 +1,6 @@
 /**
  * Ordem de implementação das áreas (além do JEC, já aberto).
- * Preview interno ≠ available no catálogo.
+ * Preview interno ≠ available no catálogo. Em 16/08 as áreas com rota foram abertas ao Completo/Pro+OAB.
  */
 
 export type ItemAberturaArea = {

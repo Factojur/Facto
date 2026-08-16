@@ -71,7 +71,12 @@ function primeiroCicloDoCadastro(createdAt: string | null): string {
 export default async function AdminUsoPecasPage({
   searchParams,
 }: {
-  searchParams: Promise<{ periodo?: string; ciclo?: string; q?: string }>;
+  searchParams: Promise<{
+    periodo?: string;
+    ciclo?: string;
+    q?: string;
+    ordem?: string;
+  }>;
 }) {
   const supabase = await createClient();
   const {
@@ -92,6 +97,10 @@ export default async function AdminUsoPecasPage({
       : "mes";
   const cicloParam = (params.ciclo ?? "").trim();
   const busca = (params.q ?? "").trim().toLowerCase();
+  const ordem =
+    params.ordem === "pecas-asc" || params.ordem === "cadastro"
+      ? params.ordem
+      : "pecas-desc";
 
   const cicloAtual = cicloAtualLocal();
   let tabelaPronta = true;
@@ -219,12 +228,28 @@ export default async function AdminUsoPecasPage({
       })
       .filter((c) => {
         if (!busca) return true;
+        const q = busca;
         return (
-          c.email.toLowerCase().includes(busca) ||
-          c.nome.toLowerCase().includes(busca)
+          c.email.toLowerCase().includes(q) ||
+          c.nome.toLowerCase().includes(q) ||
+          c.plano.toLowerCase().includes(q)
         );
       })
-      .sort((a, b) => b.pecasPeriodo - a.pecasPeriodo);
+      .sort((a, b) => {
+        if (ordem === "pecas-asc") {
+          if (a.pecasPeriodo !== b.pecasPeriodo) {
+            return a.pecasPeriodo - b.pecasPeriodo;
+          }
+          return a.nome.localeCompare(b.nome, "pt-BR");
+        }
+        if (ordem === "cadastro") {
+          return (b.cadastro ?? "").localeCompare(a.cadastro ?? "");
+        }
+        if (a.pecasPeriodo !== b.pecasPeriodo) {
+          return b.pecasPeriodo - a.pecasPeriodo;
+        }
+        return a.nome.localeCompare(b.nome, "pt-BR");
+      });
   } catch {
     tabelaPronta = false;
   }
@@ -255,11 +280,20 @@ export default async function AdminUsoPecasPage({
     </Link>
   );
 
-  const qsBase = (extra: Record<string, string>) => {
+  const qsBase = (extra: Record<string, string> = {}) => {
+    const merged: Record<string, string> = {
+      periodo,
+      ...(periodo === "ciclo" && cicloParam ? { ciclo: cicloParam } : {}),
+      ...(busca ? { q: busca } : {}),
+      ...(ordem !== "pecas-desc" ? { ordem } : {}),
+      ...extra,
+    };
     const sp = new URLSearchParams();
-    if (busca) sp.set("q", busca);
-    for (const [k, v] of Object.entries(extra)) {
-      if (v) sp.set(k, v);
+    for (const [k, v] of Object.entries(merged)) {
+      if (!v) continue;
+      if (k === "periodo" && v === "mes") continue;
+      if (k === "ordem" && v === "pecas-desc") continue;
+      sp.set(k, v);
     }
     const s = sp.toString();
     return s ? `?${s}` : "";
@@ -336,9 +370,81 @@ export default async function AdminUsoPecasPage({
 
             <form
               method="get"
+              className="mt-6 flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:flex-row sm:flex-wrap sm:items-end"
+            >
+              {periodo !== "ciclo" && (
+                <input type="hidden" name="periodo" value={periodo} />
+              )}
+              {periodo === "ciclo" && (
+                <input type="hidden" name="periodo" value="ciclo" />
+              )}
+              {periodo === "ciclo" && cicloParam && (
+                <input type="hidden" name="ciclo" value={cicloParam} />
+              )}
+              <div className="min-w-[16rem] flex-1">
+                <label
+                  htmlFor="q"
+                  className="mb-1 block text-xs font-medium text-stone-500"
+                >
+                  Buscar cliente
+                </label>
+                <input
+                  id="q"
+                  name="q"
+                  defaultValue={busca}
+                  placeholder="Nome, e-mail ou plano"
+                  className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-stone-600 focus:border-facto-gold/50"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="ordem"
+                  className="mb-1 block text-xs font-medium text-stone-500"
+                >
+                  Ordem de gastos (peças)
+                </label>
+                <select
+                  id="ordem"
+                  name="ordem"
+                  defaultValue={ordem}
+                  className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-facto-gold/50"
+                >
+                  <option value="pecas-desc" className="bg-stone-900">
+                    Quem mais gerou peças
+                  </option>
+                  <option value="pecas-asc" className="bg-stone-900">
+                    Quem menos gerou peças
+                  </option>
+                  <option value="cadastro" className="bg-stone-900">
+                    Cadastro mais recente
+                  </option>
+                </select>
+              </div>
+              <button
+                type="submit"
+                className="rounded-lg bg-facto-gold px-4 py-2 text-sm font-semibold text-facto-dark transition hover:bg-[#a39a78]"
+              >
+                Aplicar
+              </button>
+              {busca || ordem !== "pecas-desc" ? (
+                <Link
+                  href={`/admin/uso-pecas${qsBase({ q: "", ordem: "pecas-desc" })}`}
+                  className="px-2 py-2 text-sm text-stone-400 underline-offset-2 hover:text-white hover:underline"
+                >
+                  Limpar busca
+                </Link>
+              ) : null}
+            </form>
+
+            <form
+              method="get"
               className="mt-4 flex flex-wrap items-end gap-3"
             >
               <input type="hidden" name="periodo" value="ciclo" />
+              {busca ? <input type="hidden" name="q" value={busca} /> : null}
+              {ordem !== "pecas-desc" ? (
+                <input type="hidden" name="ordem" value={ordem} />
+              ) : null}
               <div>
                 <label
                   htmlFor="ciclo"
@@ -363,26 +469,11 @@ export default async function AdminUsoPecasPage({
                   ))}
                 </select>
               </div>
-              <div>
-                <label
-                  htmlFor="q"
-                  className="mb-1 block text-xs font-medium text-stone-500"
-                >
-                  Buscar cliente
-                </label>
-                <input
-                  id="q"
-                  name="q"
-                  defaultValue={busca}
-                  placeholder="nome ou e-mail"
-                  className="w-56 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-stone-600 focus:border-facto-gold/50"
-                />
-              </div>
               <button
                 type="submit"
-                className="rounded-lg bg-facto-gold px-4 py-2 text-sm font-semibold text-facto-dark transition hover:bg-[#a39a78]"
+                className="rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-stone-300 hover:border-facto-gold/40 hover:text-white"
               >
-                Filtrar
+                Ver este mês
               </button>
             </form>
 
@@ -444,6 +535,13 @@ export default async function AdminUsoPecasPage({
                     <th className="px-4 py-3 font-medium">Plano</th>
                     <th className="px-4 py-3 font-medium text-right">
                       Peças
+                      <span className="mt-0.5 block text-[10px] font-normal normal-case tracking-normal text-stone-600">
+                        {ordem === "pecas-asc"
+                          ? "menos → mais"
+                          : ordem === "cadastro"
+                            ? "—"
+                            : "mais → menos"}
+                      </span>
                     </th>
                     <th className="px-4 py-3 font-medium text-right">
                       Extras

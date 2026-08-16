@@ -145,6 +145,11 @@ function AreaPortalCard({
         <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-white/65">
           {area.description}
         </p>
+        {area.dicaEscolha && (
+          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-amber-200/80">
+            {area.dicaEscolha}
+          </p>
+        )}
         <div className="mt-4 flex flex-wrap gap-1.5">
           {tema.tags.map((tag) => (
             <span

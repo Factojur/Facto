@@ -68,3 +68,40 @@ export function mesclarNotasConferencia(
       : item
   );
 }
+
+export function docsConferenciaDaArea(areaId: string): DocConferenciaItem[] {
+  const semMle = areaId === "criminal" || areaId === "jecr" || areaId === "eleitoral";
+  let itens = DOCS_CONFERENCIA_PROTOCOLO_BASE.filter(
+    (d) => !(semMle && d.id === "mle")
+  );
+  if (areaId === "jec") {
+    itens = mesclarNotasConferencia(itens, {
+      procuracao:
+        "No JEC, a parte pode atuar sozinha em hipóteses da Lei 9.099/95.",
+    });
+  }
+  if (areaId === "trabalhista") {
+    itens = mesclarNotasConferencia(itens, {
+      procuracao: "Na JT o advogado atua com procuração; jus postulandi tem hipóteses próprias.",
+      titulo_calculo: "Planilha de liquidação / sentença, quando a espécie exigir.",
+    });
+  }
+  if (areaId === "familia") {
+    itens = mesclarNotasConferencia(itens, {
+      identidade: "Documentos das partes e, se houver, das crianças/adolescentes.",
+      provas: "Certidões, comprovantes de renda, laudos — o que a peça alega.",
+    });
+  }
+  if (areaId === "previdenciario") {
+    itens = mesclarNotasConferencia(itens, {
+      provas: "CNIS, cartas INSS, laudos e comprovante do pedido administrativo, se houver.",
+    });
+  }
+  if (areaId === "criminal" || areaId === "jecr") {
+    itens = mesclarNotasConferencia(itens, {
+      provas: "Peças do inquérito/processo, certidões e o que a defesa ou a queixa alega.",
+      titulo_calculo: "Não se aplica a levantamento cível — ignore se a peça for penal.",
+    });
+  }
+  return itens;
+}

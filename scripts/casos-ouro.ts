@@ -26,6 +26,7 @@ import {
 } from "../src/lib/ia/verificacao-citacoes";
 import { CASOS_OURO_AREAS } from "./casos-ouro/fixtures-areas";
 import { CASOS_OURO_ESPECIES } from "./casos-ouro/fixtures-especies";
+import { CASOS_OURO_ESPECIES_AREAS } from "./casos-ouro/fixtures-especies-areas";
 import { CASOS_OURO_JEC } from "./casos-ouro/fixtures";
 import { mergeStats, rodarAssertsLastro } from "./casos-ouro/lastro";
 import { createSuite } from "./casos-ouro/suite";
@@ -269,13 +270,14 @@ function main() {
   const totalCasos =
     CASOS_OURO_JEC.length +
     CASOS_OURO_AREAS.length +
-    CASOS_OURO_ESPECIES.length;
+    CASOS_OURO_ESPECIES.length +
+    CASOS_OURO_ESPECIES_AREAS.length;
 
   console.log(
     `Casos-ouro FACTO: ${totalCasos} casos + catálogo (0 tokens Gemini)\n`
   );
   console.log(
-    `  JEC inicial: ${CASOS_OURO_JEC.length} · Áreas: ${CASOS_OURO_AREAS.length} · Espécies: ${CASOS_OURO_ESPECIES.length}`
+    `  JEC inicial: ${CASOS_OURO_JEC.length} · Áreas: ${CASOS_OURO_AREAS.length} · Espécies JEC: ${CASOS_OURO_ESPECIES.length} · Espécies outras áreas: ${CASOS_OURO_ESPECIES_AREAS.length}`
   );
 
   const allStats = [];
@@ -298,6 +300,17 @@ function main() {
       allStats.push({ oks: 0, falhas: 1 });
       console.error(
         `  FAIL (exceção espécie): ${e instanceof Error ? e.message : String(e)}`
+      );
+    }
+  }
+
+  for (const caso of CASOS_OURO_ESPECIES_AREAS) {
+    try {
+      allStats.push(rodarCasoEspecie(caso));
+    } catch (e) {
+      allStats.push({ oks: 0, falhas: 1 });
+      console.error(
+        `  FAIL (exceção espécie área): ${e instanceof Error ? e.message : String(e)}`
       );
     }
   }

@@ -189,12 +189,15 @@ export async function POST(request: Request) {
 
     const ct = request.headers.get("content-type") ?? "";
     let docsTexto: DocTexto[] = [];
+    let areaId = "jec";
 
     if (ct.includes("application/json")) {
       const body = (await request.json().catch(() => null)) as {
         documentos?: DocumentoTextoPayload[];
         arquivos?: ArquivoProcessoPayload[];
+        areaId?: string;
       } | null;
+      if (body?.areaId?.trim()) areaId = body.areaId.trim();
       const doJson = documentosDoJson(body);
       if (!doJson.ok) {
         return NextResponse.json(
@@ -274,7 +277,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const analise = await analisarProcessoComGemini(docsTexto);
+    const analise = await analisarProcessoComGemini(docsTexto, areaId);
 
     const registro = await registrarUmaAnalise({
       userId: user.id,

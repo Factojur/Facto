@@ -3,6 +3,9 @@
  * Uso: npx tsx scripts/seed-juris-ai-faixa.ts 9 56
  *      npx tsx scripts/seed-juris-ai-faixa.ts 40 64
  * Lotes 57–64 = lacunas (TST / TRF / STJ eleitoral / CARF).
+ * Lotes 65–80 = TJs da API + rito das áreas (depois de 64).
+ * Lotes 81–96 = TJs rasos + reforço TJSP + CARF.
+ * Lotes 97–200 = TJs × áreas + TST/TRF/CARF/STJ/STF.
  */
 import { spawnSync } from "child_process";
 import { termosDoLote, LOTE_MAX } from "./seed-juris-termos";
@@ -22,7 +25,7 @@ console.log("Para se aparecer “Cota diária esgotada”. Depois: reindex:embed
 for (let n = from; n <= to; n++) {
   const qtd = termosDoLote(n).length;
   console.log(`\n========== LOTE ${n}/${to} (${qtd} termos) ==========\n`);
-  const r = spawnSync("npx", ["tsx", "scripts/seed-juris-ai-lote.ts", String(n)], {
+  const r = spawnSync("npx", ["--yes", "tsx", "scripts/seed-juris-ai-lote.ts", String(n)], {
     encoding: "utf8",
     env: { ...process.env, SEED_JURIS_POR_TEMA: process.env.SEED_JURIS_POR_TEMA ?? "15" },
     cwd: process.cwd(),

@@ -225,7 +225,7 @@ async function main() {
   }
 
   console.log(
-    `Pool Jurisprudências.ai: ${tokens.length} conta(s) (JURISPRUDENCIAS_AI_API_KEY + _KEYS). Usa todas; 429 troca de token.`
+    `Pool Jurisprudências.ai: ${tokens.length} conta(s) (KEY + KEYS). Round-robin em todas; 429 só troca de token, não aborta o lote.`
   );
 
   const supabase = createClient(url, key, {
@@ -244,59 +244,87 @@ async function main() {
   let pulados = 0;
   let falhas = 0;
   let chamadas = 0;
+  /** Próxima conta a usar — gira nas 7, não fica na paga até 429. */
   let tokenIdx = 0;
 
   let lookupEsgotado = false;
+
+  async function buscarNoPool(
+    court: string,
+    query: string,
+    pubFrom?: string
+  ): Promise<{
+    decisoes: DecisaoAi[];
+    okHttp: boolean;
+    todasEsgotadas: boolean;
+    erroApi?: string;
+  }> {
+    for (let t = 0; t < tokens.length; t++) {
+      const idx = (tokenIdx + t) % tokens.length;
+      const token = tokens[idx]!;
+      chamadas++;
+      const r = await buscarPagina(court, query, token, pubFrom);
+      if (r.status === 429 || r.status === 401 || r.status === 403) {
+        process.stdout.write(`c${idx + 1}/${tokens.length}→${r.status} `);
+        continue;
+      }
+      tokenIdx = (idx + 1) % tokens.length;
+      if (r.erro && !r.decisoes.length) {
+        return {
+          decisoes: [],
+          okHttp: true,
+          todasEsgotadas: false,
+          erroApi: r.erro,
+        };
+      }
+      return {
+        decisoes: r.decisoes,
+        okHttp: true,
+        todasEsgotadas: false,
+      };
+    }
+    return { decisoes: [], okHttp: false, todasEsgotadas: true };
+  }
 
   for (const termo of TERMOS) {
     const court = (termo.tribunal ?? TRIBUNAL).toLowerCase();
     const query = termo.q;
     process.stdout.write(
-      `▸ [${court}] ${query.slice(0, 48)}… `
+      `▸ [${court} ${tokenIdx + 1}/${tokens.length}] ${query.slice(0, 44)}… `
     );
 
-    let decisoes: DecisaoAi[] = [];
-    let okHttp = false;
-    for (let t = 0; t < tokens.length; t++) {
-      const token = tokens[(tokenIdx + t) % tokens.length]!;
-      chamadas++;
-      const r = await buscarPagina(court, query, token, PUB_FROM || undefined);
-      if (r.status === 429 || r.status === 401 || r.status === 403) {
-        console.log(`token esgotado/negado (${r.status}), tentando outro…`);
-        continue;
-      }
-      if (r.erro && !r.decisoes.length) {
-        console.log(`ERRO ${r.erro}`);
-        falhas++;
-        okHttp = true;
-        break;
-      }
-      decisoes = r.decisoes;
-      tokenIdx = (tokenIdx + t) % tokens.length;
-      okHttp = true;
-      break;
-    }
+    let r = await buscarNoPool(court, query, PUB_FROM || undefined);
 
-    if (!okHttp) {
-      console.log("sem token disponível");
+    if (r.todasEsgotadas) {
+      console.log(`${tokens.length}/${tokens.length} contas 429 — interrompendo o lote.`);
       falhas++;
       console.log("Cota diária esgotada — interrompendo o lote.");
       break;
     }
 
-    if (PUB_FROM && decisoes.length === 0 && okHttp) {
-      const token = tokens[tokenIdx]!;
-      chamadas++;
-      const r2 = await buscarPagina(court, query, token);
-      if (r2.status === 429 || r2.status === 401 || r2.status === 403) {
-        console.log("fallback sem data: token esgotado — interrompendo o lote.");
+    if (r.erroApi) {
+      console.log(`ERRO ${r.erroApi}`);
+      falhas++;
+      continue;
+    }
+
+    let decisoes = r.decisoes;
+
+    if (PUB_FROM && decisoes.length === 0) {
+      process.stdout.write("fallback sem data… ");
+      r = await buscarNoPool(court, query);
+      if (r.todasEsgotadas) {
+        console.log(`${tokens.length}/${tokens.length} contas 429 no fallback — interrompendo o lote.`);
         falhas++;
         console.log("Cota diária esgotada — interrompendo o lote.");
         break;
       }
-      if (!r2.erro && r2.decisoes.length) {
-        decisoes = r2.decisoes;
+      if (r.erroApi) {
+        console.log(`ERRO ${r.erroApi}`);
+        falhas++;
+        continue;
       }
+      decisoes = r.decisoes;
     }
 
     const vistos = new Set<string>();
@@ -322,11 +350,11 @@ async function main() {
         if (hyd.esgotado) lookupEsgotado = true;
         else if (hyd.lookup) p = hyd.precedente;
       }
-      const r = await upsertPrecedente(supabase, p);
-      if (r === "insert") {
+      const up = await upsertPrecedente(supabase, p);
+      if (up === "insert") {
         i++;
         inseridos++;
-      } else if (r === "skip") {
+      } else if (up === "skip") {
         s++;
         pulados++;
       } else falhas++;

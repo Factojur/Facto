@@ -36,7 +36,9 @@ function blocoBaseMunicipalEJuris(
         `Arquivo: ${leiMunicipal.nome}`,
         leiMunicipal.texto.trim(),
         "</LEI_MUNICIPAL_ANEXADA>",
-        "Norma municipal: cite só o que estiver literalmente no anexo.",
+        "Esta norma vale SÓ para este caso (município do fato). Use-a para interpretar e fundamentar o pedido.",
+        "NÃO trate lei municipal como acórdão nem súmula. NÃO invente número de processo a partir dela.",
+        "Se precisar referir a norma, mencione o artigo que estiver LITERALMENTE no anexo — sem transcrever a lei inteira.",
       ].join("\n")
     : "\nNão há lei municipal anexada — não invente norma municipal.";
 

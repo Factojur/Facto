@@ -59,7 +59,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Não autorizado." }, { status: 403 });
   }
 
-  let body: { id?: string; acao?: string; motivo?: string };
+  let body: {
+    id?: string;
+    acao?: string;
+    motivo?: string;
+    confirmarDuplicidade?: boolean;
+  };
   try {
     body = await request.json();
   } catch {
@@ -76,7 +81,19 @@ export async function POST(request: Request) {
   }
 
   if (acao === "aprovar") {
-    const r = await aprovarVerificacao(id, user.id);
+    const r = await aprovarVerificacao(id, user.id, {
+      confirmarDuplicidade: Boolean(body.confirmarDuplicidade),
+    });
+    if (r.precisaConfirmacao) {
+      return NextResponse.json(
+        {
+          precisaConfirmacao: true,
+          error: r.erro,
+          similarTitulo: r.similarTitulo,
+        },
+        { status: 409 }
+      );
+    }
     if (!r.ok) {
       return NextResponse.json({ error: r.erro }, { status: 400 });
     }

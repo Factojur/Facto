@@ -64,6 +64,7 @@ export async function POST(request: Request) {
     if (!ementa || !titulo) continue;
 
     if (raw.tipo === "sumula" || raw.origem === "sumula") continue;
+    // Upload do formulário vai à fila em gerar-peca; lei municipal nunca entra aqui.
     if (raw.origem === "upload_usuario") continue;
     if (raw.origem === "base_conhecimento") continue;
 

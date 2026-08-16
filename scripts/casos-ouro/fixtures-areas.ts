@@ -355,7 +355,7 @@ CDC art. 37. Publicidade enganosa.
 TJSP Processo nº 1008001-33.2022.8.26.0100 — propaganda enganosa e dano moral.
     `.trim(),
     pecaIaBruta: pecaCompleta({
-      foro: "DO JUIZADO ESPECIAL CÍVEL DA COMARCA DE SÃO PAULO - SP",
+      foro: "DA __ VARA CÍVEL DA COMARCA DE SÃO PAULO - SP",
       autor: "CONSUMIDOR FICTO",
       reu: "FORNECEDOR FICTO LTDA.",
       nomePeca: "AÇÃO DE INDENIZAÇÃO POR PUBLICIDADE ENGANOSA",

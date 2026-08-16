@@ -12,6 +12,7 @@
  */
 
 import type { PlanoId } from "@/lib/planos-facto";
+import { getAreaById } from "@/lib/areas-atuacao";
 
 export type TipoUsuario = "advogado" | "leigo" | string | null | undefined;
 
@@ -49,4 +50,19 @@ export function areaEstaLiberada(
   if (liberadas === "todas") return true;
   if (liberadas === "nenhuma") return false;
   return liberadas.has(areaId);
+}
+
+/** Catálogo `available` + plano (JEC para leigo/plano JEC; demais para Completo+OAB). */
+export function areaAbertaParaCliente(
+  areaId: string,
+  opcoes: {
+    plano: PlanoId | null;
+    tipoUsuario?: TipoUsuario;
+    acessoLivre?: boolean;
+  }
+): boolean {
+  if (!areaEstaLiberada(areaId, opcoes)) return false;
+  if (areaId === "jec") return true;
+  const area = getAreaById(areaId);
+  return Boolean(area?.available && area.href);
 }

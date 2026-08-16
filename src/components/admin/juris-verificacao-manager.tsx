@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { ehMotivoDuplicidadeExata } from "@/lib/juris-provedores/duplicidade";
 
 type ItemVerificacao = {
   id: string;
@@ -56,16 +57,33 @@ export function JurisVerificacaoManager() {
     void carregar();
   }, [carregar]);
 
-  async function agir(id: string, acao: "aprovar" | "rejeitar") {
+  async function agir(
+    id: string,
+    acao: "aprovar" | "rejeitar",
+    confirmarDuplicidade = false
+  ) {
     setAcaoId(id);
     setErro(null);
     try {
       const res = await fetch("/api/admin/juris-verificacao", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, acao }),
+        body: JSON.stringify({ id, acao, confirmarDuplicidade }),
       });
       const data = await res.json();
+      if (res.status === 409 && data.precisaConfirmacao) {
+        const similar = data.similarTitulo
+          ? `\n\nJá na base: “${data.similarTitulo}”`
+          : "";
+        const ok = window.confirm(
+          `${data.error || "Este julgado é exatamente igual a um que já está na base de conhecimento."}${similar}\n\nTem certeza de que quer gravar mesmo em duplicidade?`
+        );
+        if (ok) {
+          await agir(id, "aprovar", true);
+          return;
+        }
+        return;
+      }
       if (!res.ok) {
         setErro(data.error || "Não foi possível concluir a ação.");
         return;
@@ -134,20 +152,38 @@ export function JurisVerificacaoManager() {
                       : ""}
                   </p>
                 </div>
-                {item.escolhido_usuario && (
+                {item.fonte === "upload_usuario" && (
+                  <span className="rounded-md bg-sky-500/15 px-2.5 py-1 text-xs font-medium text-sky-200">
+                    Upload do usuário
+                  </span>
+                )}
+                {item.escolhido_usuario && item.fonte !== "upload_usuario" && (
                   <span className="rounded-md bg-emerald-500/15 px-2.5 py-1 text-xs font-medium text-emerald-200">
                     Escolhido pelo usuário
                   </span>
                 )}
-                {item.aviso_duplicidade && (
-                  <span className="rounded-md bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-200">
-                    Possível duplicidade
-                  </span>
-                )}
+                {item.aviso_duplicidade &&
+                  ehMotivoDuplicidadeExata(item.motivo_aviso) && (
+                    <span className="rounded-md bg-red-500/15 px-2.5 py-1 text-xs font-medium text-red-200">
+                      Duplicata exata
+                    </span>
+                  )}
+                {item.aviso_duplicidade &&
+                  !ehMotivoDuplicidadeExata(item.motivo_aviso) && (
+                    <span className="rounded-md bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-200">
+                      Possível duplicidade
+                    </span>
+                  )}
               </div>
 
               {item.aviso_duplicidade && (
-                <p className="mt-2 text-xs text-amber-200/90">
+                <p
+                  className={`mt-2 text-xs ${
+                    ehMotivoDuplicidadeExata(item.motivo_aviso)
+                      ? "text-red-200/90"
+                      : "text-amber-200/90"
+                  }`}
+                >
                   {item.motivo_aviso}
                   {item.similar_titulo
                     ? ` · Similar a: “${item.similar_titulo}”`

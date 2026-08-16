@@ -62,7 +62,7 @@ export function formatarNomeAcaoForense(
     .trim();
 
   if (!/^a[cç][aã]o\b/i.test(t) &&
-    !/^(execução|execucao|embargos|recurso|contestação|contestacao|pedido de|impugnação|impugnacao|agravo|mandado|inventário|inventario|divórcio|divorcio|alimentos|guarda|queixa|transa[cç][aã]o|defesa|composi[cç][aã]o|suspens[aã]o|alega[cç][oõ]es|representa[cç][aã]o|habeas|notifica|homologa|resposta)/i.test(
+    !/^(execução|execucao|embargos|recurso|contestação|contestacao|pedido de|impugnação|impugnacao|agravo|mandado|inventário|inventario|divórcio|divorcio|alimentos|guarda|queixa|transa[cç][aã]o|defesa|composi[cç][aã]o|suspens[aã]o|alega[cç][oõ]es|representa[cç][aã]o|habeas|notifica|homologa|resposta|reclama)/i.test(
       t
     )
   ) {

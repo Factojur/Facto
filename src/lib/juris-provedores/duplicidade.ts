@@ -1,9 +1,19 @@
 /**
  * Análise de duplicidade entre precedente candidato e a base/fila.
- * - exata → bloqueia envio à verificação
+ * - exata (busca API) → não enfileira
+ * - exata (upload do usuário) → enfileira com aviso; aprovação pede confirmação
  * - possivel → sobe com aviso para o admin
  * - nenhuma → sobe limpo
  */
+
+export function ehMotivoDuplicidadeExata(motivo: string | null | undefined): boolean {
+  return (motivo ?? "").toLowerCase().startsWith("duplicata exata");
+}
+
+export function rotuloMotivoDuplicidadeExata(motivo?: string): string {
+  const detalhe = motivo?.trim() || "já existe na base de conhecimento.";
+  return `Duplicata exata — ${detalhe}`;
+}
 
 export type NivelDuplicidade = "exata" | "possivel" | "nenhuma";
 
@@ -138,7 +148,11 @@ export function analisarDuplicidade(
       };
     }
 
-    if (candTitulo && exTitulo && candTitulo === exTitulo) {
+    if (
+      candTitulo.length > 40 &&
+      exTitulo.length > 40 &&
+      candTitulo === exTitulo
+    ) {
       return {
         nivel: "exata",
         similar: ex,

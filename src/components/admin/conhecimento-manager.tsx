@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { CATEGORIAS_CONHECIMENTO } from "@/lib/base-conhecimento";
+import { CATEGORIAS_LASTRO } from "@/lib/base-conhecimento";
 
 type Item = {
   id: string;
@@ -16,7 +16,7 @@ type Item = {
 
 type Modo = "texto" | "arquivo";
 
-const ORDEM_CATEGORIAS = ["Súmula", "Jurisprudência", "Lei"] as const;
+const ORDEM_CATEGORIAS = ["Súmula", "Jurisprudência"] as const;
 
 /** Tribunais conhecidos — novos entram em "Outros" até aparecerem no título. */
 const TRIBUNAIS_CONHECIDOS = [
@@ -220,7 +220,7 @@ export function ConhecimentoManager({
   const [itens, setItens] = useState<Item[]>(itensIniciais);
   const [modo, setModo] = useState<Modo>("texto");
   const [titulo, setTitulo] = useState("");
-  const [categoria, setCategoria] = useState<string>(CATEGORIAS_CONHECIMENTO[0]);
+  const [categoria, setCategoria] = useState<string>(CATEGORIAS_LASTRO[0]);
   const [texto, setTexto] = useState("");
   const [nomeArquivo, setNomeArquivo] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -246,7 +246,8 @@ export function ConhecimentoManager({
         item.categoria as (typeof ORDEM_CATEGORIAS)[number]
       )
         ? item.categoria
-        : "Lei";
+        ? item.categoria
+        : "Jurisprudência";
       const lista = map.get(cat) ?? [];
       lista.push(item);
       map.set(cat, lista);
@@ -445,7 +446,7 @@ export function ConhecimentoManager({
               onChange={(e) => setCategoria(e.target.value)}
               className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-facto-gold/50 focus:ring-2 focus:ring-facto-gold/20"
             >
-              {CATEGORIAS_CONHECIMENTO.map((c) => (
+              {CATEGORIAS_LASTRO.map((c) => (
                 <option key={c} value={c} className="bg-facto-dark">
                   {c}
                 </option>
@@ -539,7 +540,7 @@ export function ConhecimentoManager({
               return (
                 <SecaoRecolhivel
                   key={cat}
-                  titulo={cat === "Súmula" ? "Súmulas" : cat === "Lei" ? "Leis" : "Jurisprudências"}
+                  titulo={cat === "Súmula" ? "Súmulas" : "Jurisprudências"}
                   contagem={lista.length}
                   aberto={abertoCat}
                   onToggle={() => toggle(chaveCat)}

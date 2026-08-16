@@ -12,8 +12,9 @@ import {
   idsPeticaoInicialDaArea,
   especieParaScaffoldJec,
 } from "@/lib/peca-especie-area";
-import { moduloDaArea, normalizarAreaIdMinuta } from "@/lib/minuta-modulo";
-import { isEmailPreviewAreas } from "@/lib/emails-preview-areas";
+import { enfileirarUploadsJurisDoCaso } from "@/lib/juris-provedores/salvar-na-base";
+import { areaAbertaParaCliente } from "@/lib/acesso-areas";
+import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
 import {
   buscarConhecimentoRelacionado,
   extrairTextoDeArquivo,
@@ -106,6 +107,7 @@ function tipoJurisOuPadrao(tipo?: string): TipoFonteJurisCaso {
 async function extrairLeiMunicipal(
   lei?: LeiMunicipalPayload | null
 ): Promise<{ nome: string; texto: string } | null> {
+  // Só deste caso. Nunca gravar em base_conhecimento nem juris_verificacao.
   if (!lei) return null;
 
   const textoColado = lei.texto?.trim();
@@ -326,9 +328,27 @@ async function postGerarPeca(request: Request) {
   }
 
   const areaId = normalizarAreaIdMinuta(body.areaId);
-  if (areaId !== "jec" && !isEmailPreviewAreas(email)) {
+  let tipoUsuario =
+    (user.user_metadata?.tipo_usuario as string | undefined) ?? "advogado";
+  try {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("tipo_usuario")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profile?.tipo_usuario) tipoUsuario = profile.tipo_usuario;
+  } catch {
+    /* metadata */
+  }
+  if (
+    !areaAbertaParaCliente(areaId, {
+      plano: saldo.cota.plano,
+      tipoUsuario,
+      acessoLivre: isEmailAcessoLivre(email),
+    })
+  ) {
     return NextResponse.json(
-      { error: "Este módulo ainda não está disponível." },
+      { error: "Este módulo não está disponível no seu plano." },
       { status: 403 }
     );
   }
@@ -346,20 +366,6 @@ async function postGerarPeca(request: Request) {
 
   // Teto JEC para leigos (sem OAB): 20 SM — só no módulo JEC
   if (areaId === "jec" && !isEmailAcessoLivre(email)) {
-    let tipoUsuario =
-      (user.user_metadata?.tipo_usuario as string | undefined) ?? "advogado";
-    try {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("tipo_usuario")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (profile?.tipo_usuario) {
-        tipoUsuario = profile.tipo_usuario;
-      }
-    } catch {
-      /* perfil indisponível — segue com metadata */
-    }
     if (tipoUsuario === "leigo" && body.valoresCausa) {
       const resumoTeto = calcularResumoValorCausa(body.valoresCausa);
       if (ultrapassaTetoJec(resumoTeto.totalCentavos, false)) {
@@ -402,6 +408,12 @@ async function postGerarPeca(request: Request) {
       },
       { status: 400 }
     );
+  }
+
+  if (jurisDoCaso.length > 0) {
+    void enfileirarUploadsJurisDoCaso(jurisDoCaso, user.id).catch((erro) => {
+      console.error("[gerar-peca] fila de verificação (upload juris):", erro);
+    });
   }
 
   const jurisMeta =
@@ -515,6 +527,7 @@ async function postGerarPeca(request: Request) {
     comarca: body.comarca ?? { cidade: "", uf: "" },
     areaJudiciaria: rotuloAreaJudiciaria(areaId),
     areaId,
+    especiePeca: especieResolvida,
     varaEmBranco:
       idsPeticaoInicialDaArea(areaId).includes(especieResolvida) ||
       ehPeticaoInicial(tipoResolvido),

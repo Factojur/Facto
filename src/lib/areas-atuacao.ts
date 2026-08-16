@@ -6,6 +6,8 @@ export type AreaAtuacao = {
   href?: string;
   available: boolean;
   icon: string;
+  /** Uma linha: quando usar este card e não o vizinho. */
+  dicaEscolha?: string;
 };
 
 /**
@@ -24,6 +26,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     href: "/dashboard/jec",
     available: true,
     icon: "⚖️",
+    dicaEscolha: "Rito 9.099 — teto do Juizado. Consumo na justiça comum: card Consumidor.",
   },
   {
     id: "civil",
@@ -32,8 +35,9 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
       "Cobrança, indenização e obrigações na justiça comum (Código Civil e CPC) — distinto do Juizado e do módulo Consumidor.",
     law: "Código Civil · CPC",
     href: "/dashboard/civil",
-    available: false,
+    available: true,
     icon: "📜",
+    dicaEscolha: "Cobrança e contratos entre particulares. Consumo: Consumidor. Locação: Imobiliário.",
   },
   {
     id: "consumidor",
@@ -42,8 +46,9 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
       "Ações, defesas e recursos consumeristas na justiça comum (CDC e CPC) — distinto do Juizado Especial Cível.",
     law: "CDC · CPC",
     href: "/dashboard/consumidor",
-    available: false,
+    available: true,
     icon: "🛒",
+    dicaEscolha: "CDC + CPC (Vara Cível). No Juizado, use o JEC.",
   },
   {
     id: "tributario",
@@ -52,7 +57,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
       "Embargos à execução fiscal (Lei 6.830/80), exceção de pré-executividade, anulatória, repetição e MS tributário.",
     law: "CTN · LEF",
     href: "/dashboard/tributario",
-    available: false,
+    available: true,
     icon: "💰",
   },
   {
@@ -62,8 +67,9 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
       "Divórcio, guarda, alimentos, inventário e partilha na Vara de Família (Código Civil e CPC) — distinto do Civil genérico e do Juizado.",
     law: "Código Civil · CPC",
     href: "/dashboard/familia",
-    available: false,
+    available: true,
     icon: "👨‍👩‍👧",
+    dicaEscolha: "Vara de Família — não use o Civil genérico nem o JEC.",
   },
   {
     id: "trabalhista",
@@ -72,7 +78,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
       "Reclamações, defesa e recurso ordinário na Justiça do Trabalho (CLT) — distinto da justiça comum e do Juizado.",
     law: "CLT",
     href: "/dashboard/trabalhista",
-    available: false,
+    available: true,
     icon: "👷",
   },
   {
@@ -82,7 +88,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
       "Concessão, restabelecimento e revisão de benefícios contra o INSS no JEF ou na Vara Federal.",
     law: "Lei nº 8.213/91",
     href: "/dashboard/previdenciario",
-    available: false,
+    available: true,
     icon: "🧓",
   },
   {
@@ -92,8 +98,9 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
       "Habeas corpus, resposta à acusação, memoriais, apelação criminal e agravo em execução (CP e CPP) — distinto do JECRIM.",
     law: "CP · CPP",
     href: "/dashboard/criminal",
-    available: false,
+    available: true,
     icon: "🛡️",
+    dicaEscolha: "Rito comum (CPP). Contravenção / 9.099 criminal: JECRIM.",
   },
   {
     id: "jecr",
@@ -102,8 +109,9 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
       "Queixa-crime, composição civil, transação penal, defesa e recurso inominado no JECRIM (Lei 9.099/95) — distinto do JEC cível e do Penal comum.",
     law: "Lei nº 9.099/95",
     href: "/dashboard/jecr",
-    available: false,
+    available: true,
     icon: "⚖️",
+    dicaEscolha: "Só JECRIM. JEC é cível; Penal comum é CPP.",
   },
   {
     id: "imobiliario",
@@ -112,8 +120,9 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
       "Despejo (Lei 8.245/91), usucapião, consignação de aluguéis e cotas de condomínio — distinto do Civil genérico e do Juizado.",
     law: "Lei 8.245 · CC",
     href: "/dashboard/imobiliario",
-    available: false,
+    available: true,
     icon: "🏠",
+    dicaEscolha: "Despejo e usucapião. Cobrança sem locação: Civil.",
   },
   {
     id: "empresarial",
@@ -122,8 +131,9 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
       "Notificação extrajudicial, dissolução e obrigações societárias (CC e Lei 6.404/76).",
     law: "CC · Lei 6.404/76",
     href: "/dashboard/empresarial",
-    available: false,
+    available: true,
     icon: "🏢",
+    dicaEscolha: "Sociedade e notificação. Contrato civil puro: Civil.",
   },
   {
     id: "contratual",
@@ -133,6 +143,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     law: "Código Civil",
     available: false,
     icon: "📝",
+    dicaEscolha: "Não abre dashboard — use Direito Civil.",
   },
   {
     id: "administrativo",
@@ -141,7 +152,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
       "Mandado de segurança (Lei 12.016/09, 120 dias), anulação de ato e contencioso da Fazenda Pública.",
     law: "Lei nº 12.016/09",
     href: "/dashboard/administrativo",
-    available: false,
+    available: true,
     icon: "🏛️",
   },
   {
@@ -151,8 +162,9 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
       "Erro médico e demandas da saúde — distinto de cobertura pura de plano (Consumidor) e do Penal.",
     law: "CDC · Código Civil",
     href: "/dashboard/medico",
-    available: false,
+    available: true,
     icon: "🩺",
+    dicaEscolha: "Erro médico (CC). Só cobertura de plano: Consumidor.",
   },
   {
     id: "digital",
@@ -161,8 +173,9 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
       "LGPD e tutelas digitais cíveis. Crimes digitais: módulo Penal.",
     law: "LGPD",
     href: "/dashboard/digital",
-    available: false,
+    available: true,
     icon: "💻",
+    dicaEscolha: "LGPD e tutelas cíveis. Crime digital: Penal.",
   },
   {
     id: "ambiental",
@@ -171,7 +184,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
       "Ação civil pública ambiental, defesa de auto de infração e obrigação de fazer ambiental.",
     law: "Lei nº 6.938/81",
     href: "/dashboard/ambiental",
-    available: false,
+    available: true,
     icon: "🌿",
   },
   {
@@ -181,7 +194,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
       "Abstenção de marca, contrafação, nulidade de registro e direitos autorais (LPI e LDA).",
     law: "LPI · LDA",
     href: "/dashboard/propriedade-intelectual",
-    available: false,
+    available: true,
     icon: "©️",
   },
   {
@@ -191,7 +204,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
       "Contratos agrários, crédito rural e regularização fundiária.",
     law: "Estatuto da Terra",
     href: "/dashboard/agrario",
-    available: false,
+    available: true,
     icon: "🌾",
   },
   {
@@ -200,7 +213,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     description:
       "Homologação de sentença estrangeira no STJ e contencioso contratual internacional.",
     href: "/dashboard/internacional",
-    available: false,
+    available: true,
     icon: "🌍",
   },
   {
@@ -210,7 +223,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
       "Representação, AIJE, registro de candidatura e defesa. A base FACTO não indexa TRE/TSE.",
     law: "Código Eleitoral",
     href: "/dashboard/eleitoral",
-    available: false,
+    available: true,
     icon: "🗳️",
   },
 ];

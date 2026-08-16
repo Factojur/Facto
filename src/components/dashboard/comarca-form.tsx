@@ -1,7 +1,13 @@
 "use client";
 
+import {
+  areaMostraLinkTjsp,
+  foroLegadoDaArea,
+  placeholderForoDaArea,
+} from "@/lib/minuta-modulo";
+
 export type ComarcaValue = {
-  /** Texto livre do foro/juizado (endereçamento da peça). */
+  /** Texto livre do foro (endereçamento da peça). */
   foro: string;
   /** Legado — rascunhos antigos / fechamento. */
   cep?: string;
@@ -18,7 +24,8 @@ export function comarcaVazia(): ComarcaValue {
 
 /** Converte rascunhos antigos (cidade/UF) para o campo único. */
 export function normalizarComarcaValue(
-  raw: Partial<ComarcaValue> | null | undefined
+  raw: Partial<ComarcaValue> | null | undefined,
+  areaId: string = "jec"
 ): ComarcaValue {
   if (!raw) return comarcaVazia();
   const foroDireto = (raw.foro ?? "").trim();
@@ -38,12 +45,8 @@ export function normalizarComarcaValue(
   const n = (raw.numeroJuizado ?? "").trim();
   if (!cidade && !uf) return comarcaVazia();
 
-  const juizado = n
-    ? `${n}ª Vara do Juizado Especial Cível de ${cidade}${uf ? `/${uf}` : ""}`
-    : `Juizado Especial Cível de ${cidade}${uf ? `/${uf}` : ""}`;
-
   return {
-    foro: juizado,
+    foro: foroLegadoDaArea(areaId, cidade, uf, n),
     cep: raw.cep,
     cidade,
     uf,
@@ -55,9 +58,11 @@ export function normalizarComarcaValue(
 export function ComarcaSection({
   value,
   onChange,
+  areaId = "jec",
 }: {
   value: ComarcaValue;
   onChange: (v: ComarcaValue) => void;
+  areaId?: string;
 }) {
   return (
     <section
@@ -70,18 +75,20 @@ export function ComarcaSection({
             Comarca / Foro
           </h2>
           <p className="text-sm text-slate-500">
-            Informe município/UF no foro (ex.: … de Campinas/SP). Em petição
-            inicial a vara fica em branco (___).
+            Informe município/UF no foro (ex.: … de Campinas/SP). Em peça
+            inaugural a vara fica em branco (___).
           </p>
         </div>
-        <a
-          href="https://www.tjsp.jus.br/app/CompetenciaTerritorial"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-xs font-medium text-stone-700 transition hover:bg-stone-100"
-        >
-          Consultar foro no TJSP ↗
-        </a>
+        {areaMostraLinkTjsp(areaId) && (
+          <a
+            href="https://www.tjsp.jus.br/app/CompetenciaTerritorial"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-xs font-medium text-stone-700 transition hover:bg-stone-100"
+          >
+            Consultar foro no TJSP ↗
+          </a>
+        )}
       </div>
 
       <div className="mt-4 space-y-4">
@@ -96,7 +103,7 @@ export function ComarcaSection({
             id="comarca-foro"
             value={value.foro}
             onChange={(e) => onChange({ ...value, foro: e.target.value })}
-            placeholder="Ex.: Juizado Especial Cível de Guarulhos/SP"
+            placeholder={placeholderForoDaArea(areaId)}
             className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
           />
         </div>
@@ -107,7 +114,7 @@ export function ComarcaSection({
           >
             Número do processo{" "}
             <span className="font-normal text-slate-500">
-              (só se já houver — contestação, recurso etc.)
+              (só se já houver — defesa, recurso etc.)
             </span>
           </label>
           <input

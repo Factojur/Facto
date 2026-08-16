@@ -49,7 +49,14 @@ export function rotuloAreaJudiciaria(areaId: string = "jec"): string {
     case "familia":
       return "VARA DE FAMÍLIA E SUCESSÕES";
     case "consumidor":
-      return "CÍVEL";
+      return "VARA CÍVEL";
+    case "digital":
+    case "medico":
+    case "agrario":
+    case "empresarial":
+    case "ambiental":
+    case "propriedade-intelectual":
+      return "JUSTIÇA CÍVEL";
     default:
       return "JUÍZO COMPETENTE";
   }
@@ -123,11 +130,11 @@ export function ufValida(uf: string): boolean {
   return UFS_VALIDAS.has(uf.trim().toUpperCase());
 }
 
-/** Petição inicial (e sucedâneos sem processo) → vara em branco. */
+/** Peça inaugural (vara em branco). Incidentais = false. */
 export function ehPeticaoInicial(tipoAcao: string | null | undefined): boolean {
   const t = String(tipoAcao ?? "").toLowerCase();
   if (
-    /contesta[cç][aã]o|defesa|embargos|recurso|apelac|agravo|impugna[cç][aã]o|r[eé]plica|contrarraz|cumprimento|alega[cç][oõ]es finais/i.test(
+    /contesta[cç][aã]o|defesa|embargos|recurso|apelac|agravo|impugna[cç][aã]o|r[eé]plica|contrarraz|cumprimento|alega[cç][oõ]es finais|resposta [aà] acusa|sentido estrito|inominado|exce[cç][aã]o de pr[eé]/i.test(
       t
     )
   ) {
@@ -147,6 +154,8 @@ export function formatarEnderecamentoPadrao(opcoes: {
   varaEmBranco?: boolean;
   /** Módulo do dashboard — define a fórmula da linha. */
   areaId?: string;
+  /** Espécie (HC vai ao Tribunal, não à vara). */
+  especiePeca?: string;
 }): string {
   const info = opcoes.comarca ?? {};
   const area = (opcoes.areaJudiciaria ?? "JUIZADO ESPECIAL CÍVEL")
@@ -174,6 +183,12 @@ export function formatarEnderecamentoPadrao(opcoes: {
     : info.numeroJuizado!.trim().replace(/[ªº°]/g, "");
 
   const areaId = opcoes.areaId ?? "";
+  const especie = (opcoes.especiePeca ?? "").toLowerCase();
+  if (especie === "habeas-corpus" || especie.includes("habeas")) {
+    return `EXCELENTÍSSIMO(A) SENHOR(A) DESEMBARGADOR(A) PRESIDENTE DO EGRÉGIO TRIBUNAL DE JUSTIÇA DO ESTADO DE ${
+      uf || "___"
+    }`;
+  }
   if (areaId === "trabalhista") {
     return (
       `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DO TRABALHO DA ${vara} ` +
