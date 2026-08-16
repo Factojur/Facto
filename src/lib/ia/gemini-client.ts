@@ -33,8 +33,6 @@ export const MODELOS_REDACAO_PADRAO = [
   "gemini-flash-latest",
   "gemini-2.0-flash",
   "gemini-2.5-flash-lite",
-  "gemini-2.0-flash-lite",
-  "gemini-flash-lite-latest",
 ] as const;
 
 export function modelosRedacao(): readonly string[] {
@@ -267,7 +265,7 @@ export async function gerarTextoComGemini(params: {
 
     for (let i = 0; i < cadeia.length; i++) {
       const modelo = cadeia[i]!;
-      const tentativas = 2; // 1ª + 1 retry em sobrecarga no mesmo modelo
+      const tentativas = /lite/i.test(modelo) ? 2 : 3;
 
       for (let tentativa = 1; tentativa <= tentativas; tentativa++) {
         const resultado = await chamarGemini({

@@ -163,6 +163,15 @@ export function contarMarcadoresNaoEncontrado(texto: string): number {
  * Insere o marcador após jurisprudências citadas sem lastro no contexto
  * (não altera leis/códigos — só alertas de acórdão/processo inventável).
  */
+function trechoEhNumeroDosAutos(texto: string, trecho: string, idx: number): boolean {
+  const corte = texto.search(/\nI\s*[-—–.]/i);
+  const cabecalho = corte < 0 ? texto.slice(0, 900) : texto.slice(0, corte);
+  if (idx > cabecalho.length) return false;
+  return /processo\s+n/i.test(trecho) || /^\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}$/.test(
+    trecho.trim()
+  );
+}
+
 export function anotarJurisprudenciasSemLastro(
   texto: string,
   citacoes: CitacaoVerificada[]
@@ -177,9 +186,9 @@ export function anotarJurisprudenciasSemLastro(
     if (!trecho || out.includes(`${trecho} ${MARCADOR_NAO_ENCONTRADO}`)) {
       continue;
     }
-    // Substitui só a primeira ocorrência não marcada
     const idx = out.indexOf(trecho);
     if (idx < 0) continue;
+    if (trechoEhNumeroDosAutos(out, trecho, idx)) continue;
     const depois = out.slice(idx + trecho.length);
     if (depois.trimStart().startsWith(MARCADOR_NAO_ENCONTRADO)) continue;
     out =

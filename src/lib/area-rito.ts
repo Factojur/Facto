@@ -39,7 +39,8 @@ const TABELA: Record<string, AreaRitoCopy> = {
       'Nome técnico da peça/ação cabível no JEC (SEM prefixo "Petição Inicial —"; só o nome forense)',
     especieHint:
       "5. Indique a espécie da peça (petição inicial, contestação, embargos, recurso, réplica ou execução);",
-    ritoLinha: "Atue no Juizado Especial Cível brasileiro (Lei 9.099/95).",
+    ritoLinha:
+      "Atue no Juizado Especial Cível brasileiro (Lei 9.099/95). Recurso da sentença: inominado (arts. 41–42, prazo de 10 dias — não acrescente “úteis” por conta própria). NÃO trate esta demanda como apelação do CPC. Julgado da base que for apelação da justiça comum: use só a tese, sem dizer que este processo é apelação.",
     especialidade: "contencioso cível e direito do consumidor",
     foroAssistente: "no Juizado Especial Cível",
     tipoAcaoDefault: "Ação de Indenização por Danos Materiais e Morais",

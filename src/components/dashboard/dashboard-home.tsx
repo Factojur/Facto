@@ -404,7 +404,7 @@ export function DashboardHome({
               Seu cadastro foi feito sem OAB, por isso o FACTO libera o Juizado
               Especial Cível para causas de até 20 salários mínimos nacionais
               (Lei nº 9.099/95). Valores acima desse teto e as demais áreas
-              (ainda &quot;em breve&quot;) exigem verificação da OAB.
+              exigem cadastro com OAB e plano Completo ou Pro.
             </p>
             <Link
               href={areaJec.href!}

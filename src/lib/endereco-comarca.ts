@@ -267,3 +267,19 @@ export function formatarEnderecamentoJec(info: ComarcaInfo): string {
     varaEmBranco: true,
   });
 }
+
+/** Troca a 1ª linha se for endereçamento — a IA não pode reescrever maiúsculas. */
+export function substituirEnderecamentoDeterministico(
+  peca: string,
+  enderecamento: string
+): string {
+  const alvo = enderecamento.trim();
+  if (!alvo) return peca;
+  const linhas = peca.split("\n");
+  const i = linhas.findIndex((l) =>
+    /excelent[ií]ssim/i.test(l.trim())
+  );
+  if (i < 0) return `${alvo}\n${peca}`;
+  linhas[i] = alvo;
+  return linhas.join("\n");
+}

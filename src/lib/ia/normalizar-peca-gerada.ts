@@ -29,6 +29,28 @@ function ehLinhaEnderecamento(t: string): boolean {
   return /^(EXCELENT[IÍ]SSIMO|DA COMARCA|JU[IÍ]ZO\s+DA)/i.test(t);
 }
 
+/** Grafias que o Flash-Lite inventa com frequência. */
+function corrigirOrtografiaForense(texto: string): string {
+  return texto
+    .replace(/\baplicaju[cć]i-se\b/gi, "aplica-se")
+    .replace(/\bpatagar\b/gi, "patamar");
+}
+
+/** `"In casu"*` / `In casu*` → padrão *"in casu"*. */
+function consertarLatinMarkdownOrfao(texto: string): string {
+  return texto
+    .replace(/"([A-Za-zÀ-ÿ][^"\n]{1,60})"\*(?!\*)/g, '*"$1"*')
+    .replace(/(?<!\*)\b([Ii]n casu)\*(?!\*)/g, '*"$1"*');
+}
+
+function forcarCaixaEnderecamento(texto: string): string {
+  const linhas = texto.split("\n");
+  const i = linhas.findIndex((l) => ehLinhaEnderecamento(l.trim()));
+  if (i < 0) return texto;
+  linhas[i] = linhas[i]!.trim().toUpperCase();
+  return linhas.join("\n");
+}
+
 function ehMarcadorEspaco(t: string): boolean {
   return parseMarcadorEspaco(t) !== null;
 }
@@ -719,7 +741,10 @@ function negritarSubtitulosDireito(texto: string): string {
 
 /** Pipeline completo aplicado à saída da IA antes de HTML/PDF/Word. */
 export function normalizarPecaGerada(texto: string): string {
-  let t = removerSeparadoresMarkdown(texto);
+  let t = corrigirOrtografiaForense(texto);
+  t = consertarLatinMarkdownOrfao(t);
+  t = removerSeparadoresMarkdown(t);
+  t = forcarCaixaEnderecamento(t);
   t = normalizarBlocosJuris(t);
   t = juntarQuebrasDeLinhaSuaves(t);
   t = separarTitulosESubtopicos(t);

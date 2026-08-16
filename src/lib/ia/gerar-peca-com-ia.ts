@@ -9,6 +9,7 @@ import {
   montarContextoConhecimento,
   type TrechoConhecimento,
 } from "@/lib/base-conhecimento";
+import { substituirEnderecamentoDeterministico } from "@/lib/endereco-comarca";
 import {
   montarSystemPromptAnaliseEstrategica,
   montarSystemPromptRedacaoTier1,
@@ -507,7 +508,13 @@ export async function gerarPecaComIA(params: {
     return { ok: false, erro: `Falha na redação: ${redacaoRes.erro}` };
   }
 
-  const textoGerado = removerVazamentoDeAnalise(redacaoRes.texto);
+  let textoGerado = removerVazamentoDeAnalise(redacaoRes.texto);
+  if (params.instrucoes?.enderecamento?.trim()) {
+    textoGerado = substituirEnderecamentoDeterministico(
+      textoGerado,
+      params.instrucoes.enderecamento
+    );
+  }
   if (!textoGerado || textoGerado.length < 200) {
     return {
       ok: false,

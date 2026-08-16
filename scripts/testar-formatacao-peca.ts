@@ -235,4 +235,14 @@ const comValor = garantirSecaoValorCausa(
 );
 assert(/DO VALOR DA CAUSA/i.test(comValor), "garantirSecaoValorCausa funciona");
 
+const typos = normalizarPecaGerada(
+  `EXCELENTÍSSIMO(A) SENHOR(A) doutor(A) JUIZ(A) DE DIREITO DA ___ VARA DO JUIZADO ESPECIAL CÍVEL DO FÓRUM DA COMARCA DE SÃO PAULO/SP
+
+Aplica-se o CDC. "In casu"* a indenização no patagar de R$ 8.000,00. aplicajući-se a Súmula 479.`
+);
+assert(/DOUTOR\(A\)/.test(typos.split("\n")[0]!), "endereçamento em caixa alta");
+assert(/patamar/i.test(typos), "corrige patagar");
+assert(/aplica-se a Súmula/i.test(typos), "corrige aplicajući-se");
+assert(/\*"In casu"\*/.test(typos) || /\*"in casu"\*/i.test(typos), "latim órfão vira itálico");
+
 console.log("\nTodas as checagens locais passaram (0 tokens Gemini).");

@@ -103,8 +103,9 @@ export function FluxoFactoSection({ leigo = false }: { leigo?: boolean }) {
         </div>
 
         <p className="mt-6 text-center text-xs text-stone-600 md:text-sm">
-          Cada área terá seu módulo dedicado — o JEC já está disponível; as
-          demais chegam em breve.
+          {leigo
+            ? "O seu acesso é o Juizado Especial Cível. Advogado com Completo ou Pro usa as demais áreas do catálogo."
+            : "Cada área tem o próprio rito. Completo e Pro (com OAB) acessam o catálogo; o plano JEC fica no Juizado. Contratos (minutas) ainda não."}
         </p>
       </div>
     </section>

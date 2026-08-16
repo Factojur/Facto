@@ -49,7 +49,7 @@ export function AssistenteFactoDestaque({ leigo = false }: { leigo?: boolean }) 
             <p className="mt-3 text-sm leading-relaxed text-stone-400 md:text-base">
               {leigo
                 ? "Orienta a redação no Juizado Especial Cível — sugere fundamentos e acelera a minuta do início ao protocolo."
-                : "No módulo disponível hoje (JEC); as demais áreas entram com o mesmo Assistente. Orienta a redação, sugere fundamentos e acelera cada peça."}
+                : "No módulo da área em que você estiver: orienta a redação, sugere fundamentos e acelera cada minuta."}
             </p>
           </div>
 
@@ -59,7 +59,7 @@ export function AssistenteFactoDestaque({ leigo = false }: { leigo?: boolean }) 
             </div>
             <div className="hidden sm:block">
               <p className="text-sm font-semibold text-white">
-                {leigo ? "Módulo JEC" : "JEC agora · demais em breve"}
+                {leigo ? "Módulo JEC" : "Todas as áreas do seu plano"}
               </p>
               <p className="mt-0.5 text-xs text-stone-500">
                 {leigo
