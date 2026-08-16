@@ -33,18 +33,23 @@ function ehLinhaEnderecamento(t: string): boolean {
 function corrigirOrtografiaForense(texto: string): string {
   return texto
     .replace(/\baplicaju[cć]i-se\b/gi, "aplica-se")
-    .replace(/\bpatagar\b/gi, "patamar");
+    .replace(/\bpatagar\b/gi, "patamar")
+    .replace(/\binsubistente\b/gi, "não informado")
+    .replace(/\[Inserir[^\]]*\]/gi, "…");
 }
 
 /** `"In casu"*` / `In casu*` → padrão *"in casu"*. */
 function consertarLatinMarkdownOrfao(texto: string): string {
   return texto
     .replace(/\\+"/g, '"')
-    .replace(/\*{0,5}"\s*(in casu)\s*"\*/gi, '*"$1"*')
-    .replace(/\*{0,5}"\s*(caput)\s*"\*/gi, '*"$1"*')
-    .replace(/\*{0,5}"\s*(in re ipsa)\s*"\*/gi, '*"$1"*')
+    // ***"termo"* / **"termo"* / *"termo"* → *"termo"*
+    .replace(
+      /\*{1,5}\s*"\s*((?:in casu|caput|in re ipsa|fumus boni iuris|periculum in mora)[^"]{0,40})\s*"\s*\*/gi,
+      '*"$1"*'
+    )
     .replace(/"([A-Za-zÀ-ÿ][^"\n]{1,60})"\*(?!\*)/g, '*"$1"*')
-    .replace(/(?<!\*)\b([Ii]n casu)\*(?!\*)/g, '*"$1"*');
+    .replace(/(?<!\*)\b([Ii]n casu)\*(?!\*)/g, '*"$1"*')
+    .replace(/(?<!\*)\bIn casu\b(?!\*)/g, '*"in casu"*');
 }
 
 function limparDigitosEmoji(texto: string): string {

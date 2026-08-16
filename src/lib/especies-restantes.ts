@@ -284,8 +284,11 @@ export const KIT_CRIMINAL = kit(
     },
   ],
   [
-    "   Rito: JUSTIÇA PENAL COMUM (CP + CPP). NÃO aplique Lei 9.099/95, contestação cível nem CLT.",
-    "   Não invente inquérito, denúncia, pena nem tipificação além dos FATOS.",
+    "   Rito: JUSTIÇA PENAL COMUM (CP + CPP). NÃO aplique Lei 9.099/95 (JECRIM), contestação cível, CLT nem CDC.",
+    "   Não invente inquérito, denúncia, pena, tipificação nem coação além dos FATOS.",
+    "   Resposta à acusação (arts. 396/396-A do CPP) ≠ contestação. Apelação: art. 593 do CPP (não inominado).",
+    "   HC: art. 5º, LXVIII, da CF e arts. 647 e ss. do CPP — endereçamento ao Tribunal.",
+    "   Agravo em execução: art. 197 da LEP (não agravo do CPC 1.015). Julgado contrário: não cite como lastro favorável.",
   ],
   (t) => {
     if (/habeas/.test(t)) return "habeas-corpus";
@@ -337,8 +340,11 @@ export const KIT_PREVIDENCIARIO = kit(
     "Ação previdenciária"
   ),
   [
-    "   Rito: PREVIDENCIÁRIO (Lei 8.213/91). Não invente NB, DIP, RMI nem tempo de contribuição.",
-    "   Endereçamento: Juizado Especial Federal ou Vara Federal. NÃO use Lei 9.099 estadual cível.",
+    "   Rito: PREVIDENCIÁRIO (Lei 8.213/91). Polo: segurado/autor × INSS. JEF ou Vara Federal.",
+    "   Não invente NB, DIP, RMI, tempo de contribuição, carência nem laudo médico.",
+    "   NÃO aplique Lei 9.099 estadual cível, CLT, CDC nem Vara Cível estadual.",
+    "   Agravo de instrumento: Tribunal Regional Federal (TRF), não TJ estadual.",
+    "   Nomeie o benefício dos FATOS. Julgado contrário ao pedido: não cite como lastro favorável.",
   ],
   (t) => {
     if (/agravo/.test(t)) return "agravo-instrumento";
@@ -483,8 +489,9 @@ export const KIT_ADMINISTRATIVO = kit(
     },
   ],
   [
-    "   Rito: ADMINISTRATIVO / FAZENDA. MS: Lei 12.016/09. Não invente o ato coator.",
-    "   Endereçamento: Vara da Fazenda Pública ou Justiça Federal, conforme o ente.",
+    "   Rito: ADMINISTRATIVO / FAZENDA. MS: Lei 12.016/09 (120 dias, prova pré-constituída). Não invente o ato coator.",
+    "   Endereçamento: Vara da Fazenda Pública ou Justiça Federal, conforme o ente dos FATOS.",
+    "   NÃO aplique Lei 9.099, CLT nem CDC. Agravo federal: TRF. Julgado contrário: não cite como lastro favorável.",
   ],
   (t) => {
     if (/manda(do)? de seguran/.test(t)) return "mandado-seguranca";
@@ -516,7 +523,8 @@ export const KIT_EMPRESARIAL = kit(
   ],
   [
     "   Rito: EMPRESARIAL (CC / Lei 6.404/76). Distinga notificação de ação judicial.",
-    "   Não invente contrato social, CNPJ nem percentual de quotas.",
+    "   Não invente contrato social, CNPJ nem percentual de quotas. NÃO use Lei 9.099 nem CLT.",
+    "   Julgado contrário ao pedido: não cite como lastro favorável.",
   ],
   (t) => {
     if (/notifica/.test(t)) return "notificacao-extrajudicial";
@@ -542,6 +550,7 @@ export const KIT_DIGITAL = kit(
   ),
   [
     "   Rito: DIGITAL / LGPD (Lei 13.709/18 + CPC). Não invente incidente na ANPD.",
+    "   NÃO use Lei 9.099 nem CLT. Crimes digitais: módulo Penal. Julgado contrário: não cite como lastro favorável.",
     "   Não use este módulo para tipificar crime (CP) — isso é Penal.",
   ],
   (t) => {
@@ -576,6 +585,7 @@ export const KIT_AMBIENTAL = kit(
   ],
   [
     "   Rito: AMBIENTAL. Não invente auto de infração, TAC, licença nem área degradada.",
+    "   NÃO use Lei 9.099 nem CLT. Julgado contrário: não cite como lastro favorável.",
   ],
   (t) => {
     if (/a[cç][aã]o civil p[uú]blica|\bacp\b/.test(t)) return "acp-ambiental";
@@ -607,7 +617,10 @@ export const KIT_PI = kit(
       "Ação de propriedade intelectual"
     ),
   ],
-  ["   Rito: PROPRIEDADE INTELECTUAL (LPI / LDA). Não invente registro no INPI."],
+  [
+    "   Rito: PROPRIEDADE INTELECTUAL (LPI / LDA). Não invente registro no INPI.",
+    "   NÃO use Lei 9.099 nem CLT. Julgado contrário: não cite como lastro favorável.",
+  ],
   (t) => {
     if (/absten|contrafa[cç]|marca/.test(t)) return "abstencao-marca";
     if (/apela/.test(t)) return "apelacao";
@@ -636,6 +649,7 @@ export const KIT_INTERNACIONAL = kit(
   ],
   [
     "   Homologação: enderece ao STJ. Não invente tratado, apostila nem teor da sentença estrangeira.",
+    "   NÃO use Lei 9.099 nem CLT. Julgado contrário: não cite como lastro favorável.",
   ],
   (t) => {
     if (/homologa|senten[cç]a estrangeira/.test(t)) return "homologacao";
@@ -654,7 +668,8 @@ export const KIT_MEDICO = kit(
   ),
   [
     "   Rito: MÉDICO. Distinga erro médico (CC) de negativa de cobertura (CDC).",
-    "   Não invente prontuário, laudo nem conduta da equipe.",
+    "   Não invente prontuário, laudo nem conduta da equipe. NÃO use Lei 9.099 nem CLT.",
+    "   Julgado contrário: não cite como lastro favorável.",
   ],
   (t) => {
     if (/apela/.test(t)) return "apelacao";
@@ -669,7 +684,10 @@ export const KIT_AGRARIO = kit(
     "Contratos agrários, crédito rural, regularização. Não invente matrícula rural nem ITR.",
     "Ação agrária"
   ),
-  ["   Rito: AGRÁRIO (Estatuto da Terra + CC). Não invente matrícula, área nem ITR."],
+  [
+    "   Rito: AGRÁRIO (Estatuto da Terra + CC). Não invente matrícula, área nem ITR.",
+    "   NÃO use Lei 9.099 nem CLT. Julgado contrário: não cite como lastro favorável.",
+  ],
   (t) => {
     if (/apela/.test(t)) return "apelacao";
     if (/contesta/.test(t)) return "contestacao";
@@ -729,6 +747,7 @@ export const KIT_ELEITORAL = kit(
   [
     "   Rito: ELEITORAL. NÃO invente acórdão de TRE/TSE (a base FACTO não indexa esses tribunais).",
     "   Endereçamento: Juiz Eleitoral da zona ou Tribunal Regional Eleitoral, conforme a espécie.",
+    "   NÃO use Lei 9.099 cível, CLT nem CDC. Fundamente só com o que estiver nos FATOS e na lei.",
   ],
   (t) => {
     if (/\baije\b|investiga[cç][aã]o judicial eleitoral/.test(t)) return "aije";

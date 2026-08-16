@@ -339,24 +339,26 @@ export function blocoEstruturaPromptTrabalhista(
     "   Polos: RECLAMANTE e RECLAMADO (nunca autor/réu da justiça comum).",
     "   Honorários sucumbenciais: art. 791-A da CLT (não use o art. 85 do CPC como base principal).",
     "   Endereçamento: Juiz do Trabalho da Vara do Trabalho (não Juiz de Direito).",
-    "   Súmulas e OJs do TST quando pertinentes; não invente número de processo.",
+    "   Súmulas e OJs do TST quando pertinentes; não invente número de processo nem OAB.",
     "   Não invente salário, CTPS, horas extras, FGTS nem data de rescisão se os FATOS não trouxerem. Julgado contrário ao pedido: não cite como lastro favorável.",
+    "   Preferir lastro TST/TRT. Não cite TJSP/justiça comum sem vínculo trabalhista. Aviso prévio: art. 7º, XXI, da CF (não inciso II) + art. 487 da CLT.",
+    "   Nomes: use RECLAMANTE/RECLAMADO dos FATOS — nunca “autor”, “réu”, “empregador” genérico no polo.",
   ];
 
   if (especie === "reclamacao") {
     extras.push(
-      "   Pedidos líquidos quando possível (art. 840, §1º, da CLT).",
+      "   Pedidos: articule as verbas dos FATOS. Só liquíde valores se os FATOS trouxerem cifra ou base clara; senão peça “a liquidar em execução”. Não invente R$ de FGTS/férias.",
       "   Temas típicos: verbas rescisórias, horas extras, FGTS, adicional, reconhecimento de vínculo — só se os FATOS autorizarem.",
       "   Não fundamente em CDC salvo se a causa de pedir for realmente consumerista (não é este módulo)."
     );
   } else if (especie === "defesa") {
     extras.push(
       "   Preliminares só se cabíveis (inépcia, ilegitimidade, incompetência da JT, prescrição…). Não invente.",
-      "   Impugne documentos e quantifique a defesa. Pedidos: improcedência + honorários 791-A se cabíveis."
+      "   Impugne documentos. Pedidos: improcedência + honorários 791-A se cabíveis. Diga reclamante/reclamado, não autor/réu."
     );
   } else if (especie === "recurso-ordinario") {
     extras.push(
-      "   Cabimento e tempestividade: art. 895 da CLT (8 dias). Órgão ad quem: TRT. NÃO chame de apelação."
+      "   Cabimento e tempestividade: art. 895 da CLT (8 dias). Órgão ad quem: TRT. NÃO chame de apelação. Nas razões, nomeie o recorrido pelos FATOS (não “EMPREGADOR”)."
     );
   } else if (especie === "agravo-instrumento") {
     extras.push(

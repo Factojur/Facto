@@ -42,12 +42,28 @@ import {
 } from "@/lib/juris-caso-types";
 
 function enriquecerQueryLastro(areaId: string, q: string): string {
-  if (areaId === "civil") return `${q} Código Civil obrigações particulares`;
-  if (areaId === "consumidor") return `${q} CDC consumidor fornecedor`;
-  if (areaId === "tributario") return `${q} CTN execução fiscal CDA Lei 6.830`;
-  if (areaId === "familia") return `${q} família alimentos guarda divórcio inventário`;
-  if (areaId === "trabalhista") return `${q} CLT TST reclamação trabalhista`;
-  return q;
+  const map: Record<string, string> = {
+    civil: "Código Civil obrigações particulares",
+    consumidor: "CDC consumidor fornecedor",
+    tributario: "CTN execução fiscal CDA Lei 6.830",
+    familia: "família alimentos guarda divórcio inventário",
+    trabalhista: "CLT TST reclamação trabalhista",
+    previdenciario: "INSS benefício Lei 8.213 previdenciário JEF",
+    criminal: "CPP Código Penal habeas corpus",
+    jecr: "JECRIM Lei 9.099 criminal transação penal",
+    imobiliario: "Lei 8.245 despejo usucapião locação",
+    empresarial: "sociedade Lei 6.404 societário",
+    administrativo: "mandado de segurança Lei 12.016 Fazenda",
+    digital: "LGPD dados pessoais",
+    ambiental: "Lei 6.938 meio ambiente ACP",
+    "propriedade-intelectual": "marca LPI direitos autorais",
+    agrario: "Estatuto da Terra agrário",
+    medico: "erro médico responsabilidade civil saúde",
+    internacional: "homologação sentença estrangeira STJ",
+    eleitoral: "Lei 9.504 eleitoral TRE TSE",
+  };
+  const extra = map[areaId];
+  return extra ? `${q} ${extra}` : q;
 }
 
 export type InstrucoesDeterministicas = {

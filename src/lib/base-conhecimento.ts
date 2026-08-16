@@ -349,8 +349,30 @@ function lastroAlienoAoTrabalhista(
   categoria: string
 ): boolean {
   const blob = `${titulo}\n${categoria}\n${texto}`.toLowerCase();
+  const trabalhista =
+    /\bclt\b|\btst\b|\btrt\b|horas extras|v[ií]nculo empregat|fgts|verbas rescis|justi[cç]a do trabalho|reclama[cç][aã]o trabalhista|s[uú]mula\s*\d+\s*(do\s*)?tst/.test(
+      blob
+    );
+  if (trabalhista) return false;
+  // Sem marca trabalhista: descarta justiça comum / juizado / CDC / fiscal.
+  return (
+    lastroDeJuizado(titulo, texto, categoria) ||
+    lastroConsumeristaParaCivil(titulo, texto, categoria) ||
+    /execu[cç][aã]o fiscal|\bcda\b/.test(blob) ||
+    /\btjsp\b|\btjrj\b|\btjmg\b|\btjrs\b|\btjgo\b|\btjce\b|vara c[ií]vel|c[oó]digo civil/.test(
+      blob
+    )
+  );
+}
+
+function lastroAlienoAoPrevidenciario(
+  titulo: string,
+  texto: string,
+  categoria: string
+): boolean {
+  const blob = `${titulo}\n${categoria}\n${texto}`.toLowerCase();
   if (
-    /\bclt\b|\btst\b|horas extras|v[ií]nculo empregat|fgts|verbas rescis|justi[cç]a do trabalho|reclamação trabalhista/.test(
+    /\binss\b|previdenc|benef[ií]cio|aposentadoria|\bbpc\b|loas|aux[ií]lio|8\.213|\bjef\b|tempo de contribui/.test(
       blob
     )
   ) {
@@ -359,7 +381,60 @@ function lastroAlienoAoTrabalhista(
   return (
     lastroDeJuizado(titulo, texto, categoria) ||
     lastroConsumeristaParaCivil(titulo, texto, categoria) ||
+    blob.includes("clt") ||
     /execu[cç][aã]o fiscal|\bcda\b/.test(blob)
+  );
+}
+
+function lastroAlienoAoCriminal(
+  titulo: string,
+  texto: string,
+  categoria: string
+): boolean {
+  const blob = `${titulo}\n${categoria}\n${texto}`.toLowerCase();
+  if (
+    /\bcpp\b|\bcp\b|habeas|penal|c[oó]digo penal|acusa[cç][aã]o|\blep\b|pris[aã]o|senten[cç]a condenat/.test(
+      blob
+    )
+  ) {
+    return false;
+  }
+  return (
+    lastroConsumeristaParaCivil(titulo, texto, categoria) ||
+    blob.includes("clt") ||
+    /execu[cç][aã]o fiscal|\bcda\b|juizado especial c[ií]vel/.test(blob)
+  );
+}
+
+function lastroAlienoAoJecr(
+  titulo: string,
+  texto: string,
+  categoria: string
+): boolean {
+  const blob = `${titulo}\n${categoria}\n${texto}`.toLowerCase();
+  if (
+    /9\.099|jecrim|juizado especial criminal|transa[cç][aã]o penal|composi[cç][aã]o civil|queixa/.test(
+      blob
+    )
+  ) {
+    return false;
+  }
+  return (
+    lastroConsumeristaParaCivil(titulo, texto, categoria) ||
+    blob.includes("clt") ||
+    /execu[cç][aã]o fiscal|\bcda\b/.test(blob)
+  );
+}
+
+function lastroSoJuizadoCdcClt(
+  titulo: string,
+  texto: string,
+  categoria: string
+): boolean {
+  return (
+    lastroDeJuizado(titulo, texto, categoria) ||
+    lastroConsumeristaParaCivil(titulo, texto, categoria) ||
+    `${titulo} ${texto}`.toLowerCase().includes("clt")
   );
 }
 
@@ -383,6 +458,34 @@ function descartarLastroPorArea(
   }
   if (areaId === "trabalhista") {
     return lastroAlienoAoTrabalhista(titulo, texto, categoria);
+  }
+  if (areaId === "previdenciario") {
+    return lastroAlienoAoPrevidenciario(titulo, texto, categoria);
+  }
+  if (areaId === "criminal") {
+    return lastroAlienoAoCriminal(titulo, texto, categoria);
+  }
+  if (areaId === "jecr") {
+    return lastroAlienoAoJecr(titulo, texto, categoria);
+  }
+  if (
+    areaId === "imobiliario" ||
+    areaId === "empresarial" ||
+    areaId === "administrativo" ||
+    areaId === "digital" ||
+    areaId === "ambiental" ||
+    areaId === "propriedade-intelectual" ||
+    areaId === "agrario" ||
+    areaId === "internacional" ||
+    areaId === "eleitoral"
+  ) {
+    return lastroSoJuizadoCdcClt(titulo, texto, categoria);
+  }
+  if (areaId === "medico") {
+    return (
+      lastroDeJuizado(titulo, texto, categoria) ||
+      `${titulo} ${texto}`.toLowerCase().includes("clt")
+    );
   }
   return false;
 }

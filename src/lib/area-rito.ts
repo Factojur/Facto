@@ -175,7 +175,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     especieHint:
       "5. Indique a espécie (habeas corpus, resposta à acusação, alegações finais, apelação, recurso em sentido estrito, agravo em execução ou revisão criminal);",
     ritoLinha:
-      "Atue na Justiça Penal comum (CP e CPP). Resposta à acusação (arts. 396 e 396-A do CPP), NÃO contestação. Apelação criminal (art. 593 do CPP), NÃO recurso inominado. HC: art. 5º, LXVIII, da CF e arts. 647 e ss. do CPP. Endereçamento: Vara Criminal (ou Tribunal no HC).",
+      "Atue na Justiça Penal comum (CP e CPP). Resposta à acusação (arts. 396 e 396-A do CPP), NÃO contestação. Apelação criminal (art. 593 do CPP), NÃO recurso inominado. HC: art. 5º, LXVIII, da CF e arts. 647 e ss. do CPP — Tribunal. Agravo em execução: art. 197 da LEP. NÃO use Lei 9.099 (JECRIM), CLT nem CDC. Não invente tipificação, inquérito, pena nem coação além dos FATOS. Endereçamento: Vara Criminal (ou Tribunal no HC).",
     especialidade: "Direito Penal e Processo Penal (rito comum)",
     foroAssistente: "na Justiça Penal comum (CP e CPP)",
     tipoAcaoDefault: "Resposta à acusação",
@@ -195,7 +195,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     especieHint:
       "5. Indique a espécie (inicial previdenciária, contestação, apelação, agravo ou cumprimento);",
     ritoLinha:
-      "Atue no contencioso previdenciário contra o INSS (Lei 8.213/91 e rito do JEF/Justiça Federal quando couber). Não invente NB, DIP nem cálculo de RMI. Honorários: art. 85 do CPC / temas STJ de sucumbência previdenciária. Endereçamento: Juizado Especial Federal ou Vara Federal.",
+      "Atue no contencioso previdenciário contra o INSS (Lei 8.213/91; Decreto 3.048/99). Endereçamento: Juizado Especial Federal ou Vara Federal — NÃO Vara Cível estadual nem Lei 9.099 cível. Agravo: TRF, não TJ. Não invente NB, DIP, RMI, tempo de contribuição nem laudo. Nomeie o benefício dos FATOS (aposentadoria, BPC/LOAS, auxílio etc.). Honorários: art. 85 do CPC / orientação previdenciária do STJ. Sem CLT nem CDC como tese principal.",
     especialidade: "Direito Previdenciário (INSS / JEF)",
     foroAssistente: "no Juizado Especial Federal / Vara Federal previdenciária",
     tipoAcaoDefault: "Ação de Concessão de Benefício Previdenciário",

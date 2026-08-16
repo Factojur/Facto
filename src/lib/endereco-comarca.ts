@@ -189,6 +189,14 @@ export function formatarEnderecamentoPadrao(opcoes: {
       uf || "___"
     }`;
   }
+  // Notificação extrajudicial não se endereça a juiz.
+  if (
+    especie === "notificacao-extrajudicial" ||
+    especie.includes("notificacao-extrajudicial") ||
+    especie.includes("notificação extrajudicial")
+  ) {
+    return "NOTIFICAÇÃO EXTRAJUDICIAL";
+  }
   // CLT art. 897: agravo de instrumento e agravo de petição vão ao TRT, não ao TJ.
   if (
     areaId === "trabalhista" &&
@@ -201,6 +209,23 @@ export function formatarEnderecamentoPadrao(opcoes: {
     return `EXCELENTÍSSIMO(A) SENHOR(A) DESEMBARGADOR(A) PRESIDENTE DO EGRÉGIO TRIBUNAL REGIONAL DO TRABALHO${
       uf ? ` (${uf})` : ""
     }`;
+  }
+  // Agravo no JEF / Justiça Federal → TRF (não TJ estadual).
+  if (
+    (areaId === "previdenciario" || areaId === "administrativo") &&
+    (especie === "agravo-instrumento" ||
+      especie.includes("agravo-instrumento") ||
+      especie.includes("agravo de instrumento"))
+  ) {
+    const foro = (info.foro ?? "").toLowerCase();
+    if (
+      areaId === "previdenciario" ||
+      /justi[cç]a federal|\bjf\b|\bjef\b|se[cç][aã]o judici[aá]ria|vara federal/.test(
+        foro
+      )
+    ) {
+      return `EXCELENTÍSSIMO(A) SENHOR(A) DESEMBARGADOR(A) FEDERAL PRESIDENTE DO EGRÉGIO TRIBUNAL REGIONAL FEDERAL`;
+    }
   }
   // CPC 1.016: agravo de instrumento cível se dirige ao tribunal estadual.
   if (

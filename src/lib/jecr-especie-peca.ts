@@ -302,6 +302,7 @@ export function blocoEstruturaPromptJecr(especie: EspeciePecaJecr): string {
     "   NÃO use contestação, apelação do CPC/CPP, resposta à acusação (art. 396-A do CPP) nem habeas corpus neste módulo — HC e rito comum ficam no Penal.",
     "   Infrações de menor potencial ofensivo (art. 61). Não invente tipificação, pena, TCO nem número de inquérito.",
     "   Honorários advocatícios na esfera penal só se os FATOS e a espécie autorizarem; não copie art. 85 do CPC como regra.",
+    "   Julgado contrário ao pedido: não cite como lastro favorável. Não invente tipificação além dos FATOS.",
   ];
   if (especie === "queixa-crime") {
     extras.push(
