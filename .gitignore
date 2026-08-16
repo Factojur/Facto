@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# auditorias Gemini locais (não entram no build da Vercel)
+scripts/_audit-*
+scripts/_limpar-*
+scripts/_w_*
+scripts/seed-juris-diario.log
