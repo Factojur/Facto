@@ -334,6 +334,7 @@ export function blocoEstruturaPromptConsumidor(
     "   Fundamentação: CDC (relação de consumo) + CPC + Código Civil subsidiário. Honorários: art. 85 do CPC.",
     "   Inversão do ônus da prova: art. 6º, VIII, do CDC — subtópico de DO DIREITO, se cabível.",
     "   Julgado da base cuja ementa contrarie o pedido: não cite como lastro favorável. Não use Lei 9.099 nem Turma Recursal.",
+    "   Nomes das partes: copie os FATOS (ex.: BANCO ALFA). Nunca use “instituição financeira” no polo. Não invente CEP (00000-000), CNPJ, endereço da ré, multa diária nem prazo de 10 dias se os FATOS não trouxerem.",
   ];
 
   if (especie === "peticao-inicial") {
@@ -348,7 +349,7 @@ export function blocoEstruturaPromptConsumidor(
     );
   } else if (especie === "replica") {
     extras.push(
-      "   Impugne a contestação com CDC e CPC. Mantenha a relação de consumo dos FATOS (fornecedor × consumidor)."
+      "   Impugne a contestação com CDC e CPC. Mantenha a relação de consumo e os nomes dos polos dos FATOS (não generalize para “instituição financeira”). Não cite ementa de furto de cartão se os FATOS forem conta/contrato inexistentes."
     );
   } else if (especie === "apelacao") {
     extras.push(
@@ -370,7 +371,7 @@ export function blocoEstruturaPromptConsumidor(
     );
   } else if (especie === "execucao-titulo") {
     extras.push(
-      "   Título do art. 784 do CPC; certeza, liquidez e exigibilidade."
+      "   Título do art. 784 do CPC; certeza, liquidez e exigibilidade. Não chame o crédito de alimentar. Não invente SISBAJUD/“teimosinha”. Prazo de pagamento: art. 829 do CPC (3 dias), sem dígitos-emoji."
     );
   }
 

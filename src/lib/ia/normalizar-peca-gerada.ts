@@ -39,10 +39,16 @@ function corrigirOrtografiaForense(texto: string): string {
 /** `"In casu"*` / `In casu*` → padrão *"in casu"*. */
 function consertarLatinMarkdownOrfao(texto: string): string {
   return texto
+    .replace(/\\+"/g, '"')
     .replace(/\*{0,5}"\s*(in casu)\s*"\*/gi, '*"$1"*')
     .replace(/\*{0,5}"\s*(caput)\s*"\*/gi, '*"$1"*')
+    .replace(/\*{0,5}"\s*(in re ipsa)\s*"\*/gi, '*"$1"*')
     .replace(/"([A-Za-zÀ-ÿ][^"\n]{1,60})"\*(?!\*)/g, '*"$1"*')
     .replace(/(?<!\*)\b([Ii]n casu)\*(?!\*)/g, '*"$1"*');
+}
+
+function limparDigitosEmoji(texto: string): string {
+  return texto.replace(/(\d)[\uFE0F\u20E3]+/g, "$1");
 }
 
 function forcarCaixaEnderecamento(texto: string): string {
@@ -744,6 +750,7 @@ function negritarSubtitulosDireito(texto: string): string {
 /** Pipeline completo aplicado à saída da IA antes de HTML/PDF/Word. */
 export function normalizarPecaGerada(texto: string): string {
   let t = corrigirOrtografiaForense(texto);
+  t = limparDigitosEmoji(t);
   t = consertarLatinMarkdownOrfao(t);
   t = removerSeparadoresMarkdown(t);
   t = forcarCaixaEnderecamento(t);
