@@ -15,6 +15,7 @@ import {
 import { enfileirarUploadsJurisDoCaso } from "@/lib/juris-provedores/salvar-na-base";
 import { areaAbertaParaCliente } from "@/lib/acesso-areas";
 import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
+import { moduloDaArea, normalizarAreaIdMinuta } from "@/lib/minuta-modulo";
 import {
   buscarConhecimentoRelacionado,
   extrairTextoDeArquivo,
@@ -41,7 +42,6 @@ import {
   mensagemBloqueioTetoLeigo,
   ultrapassaTetoJec,
 } from "@/lib/jec-teto";
-import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
 import { injetarProvasELinkNuvem } from "@/lib/provas-anexos";
 import {
   formatarQualificacaoReus,

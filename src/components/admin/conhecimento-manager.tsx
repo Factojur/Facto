@@ -246,7 +246,6 @@ export function ConhecimentoManager({
         item.categoria as (typeof ORDEM_CATEGORIAS)[number]
       )
         ? item.categoria
-        ? item.categoria
         : "Jurisprudência";
       const lista = map.get(cat) ?? [];
       lista.push(item);

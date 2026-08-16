@@ -28,10 +28,10 @@ export type CasoOuroArea = {
   secoesObrigatorias?: string[];
 };
 
-/** Espécies JEC além da petição inicial — normalização + lastro. */
+/** Espécies além da petição inicial — JEC ou rito da área. */
 export type CasoOuroEspecie = {
   id: string;
-  especie: EspeciePecaJec;
+  especie: EspeciePecaJec | string;
   tema: string;
   pecaIaBruta: string;
   secoesObrigatorias: string[];

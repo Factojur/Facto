@@ -2,8 +2,6 @@
  * Tipos do fluxo "Analisar processo" (passos 1–5).
  */
 
-import type { EspeciePecaJec } from "@/lib/jec-especie-peca";
-
 export const ROTULOS_DOC_PROCESSO = [
   "autos_completos",
   "peticao_inicial",
@@ -69,7 +67,7 @@ export type AnaliseProcessoResultado = {
   /** Nome forense / espécie sugerida. */
   pecaCandidata: {
     tipoAcao: string;
-    especiePeca: EspeciePecaJec;
+    especiePeca: string;
     tituloCompleto: string;
     confianca: number;
     justificativa: string;
