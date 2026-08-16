@@ -39,6 +39,8 @@ function corrigirOrtografiaForense(texto: string): string {
 /** `"In casu"*` / `In casu*` → padrão *"in casu"*. */
 function consertarLatinMarkdownOrfao(texto: string): string {
   return texto
+    .replace(/\*{0,5}"\s*(in casu)\s*"\*/gi, '*"$1"*')
+    .replace(/\*{0,5}"\s*(caput)\s*"\*/gi, '*"$1"*')
     .replace(/"([A-Za-zÀ-ÿ][^"\n]{1,60})"\*(?!\*)/g, '*"$1"*')
     .replace(/(?<!\*)\b([Ii]n casu)\*(?!\*)/g, '*"$1"*');
 }

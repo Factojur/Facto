@@ -119,7 +119,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     especieHint:
       "5. Indique a espécie (inicial de família, contestação, apelação, cumprimento de alimentos ou inventário);",
     ritoLinha:
-      "Atue na Vara de Família e Sucessões. Peça segredo de justiça (art. 189 do CPC) quando couber. Honorários: art. 85 do CPC.",
+      "Atue na Vara de Família e Sucessões (CC, CPC, ECA, Lei 5.478/64). NÃO use Lei 9.099, CLT nem CDC. Segredo de justiça (art. 189, II, do CPC) quando casamento, filiação, alimentos ou guarda. Agravo de instrumento: Tribunal, não a vara. Não invente renda, bens, testamento nem dados de criança além dos FATOS. Honorários: art. 85 do CPC. MP se incapaz nos fatos.",
     especialidade: "Direito de Família e Sucessões",
     foroAssistente: "na Vara de Família e Sucessões",
     tipoAcaoDefault: "Ação de Alimentos",

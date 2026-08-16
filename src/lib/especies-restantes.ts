@@ -418,11 +418,11 @@ export const KIT_TRIBUTARIO = kit(
   ],
   [
     "   Rito: TRIBUTÁRIO (CTN + LEF). Embargos à execução fiscal ≠ embargos de declaração.",
-    "   Não invente CDA, processo administrativo fiscal nem valores de tributo.",
     "   NÃO aplique Lei 9.099, CDC, CLT nem execução de título entre particulares.",
     "   Embargos à EF: art. 16 da LEF (prazo e garantia). EPE: só ordem pública + prova pré-constituída.",
     "   MS: Lei 12.016/09, 120 dias; não transforme MS em embargos à execução.",
     "   Honorários: art. 85 do CPC. Julgado da base contrário ao pedido: não cite como lastro favorável.",
+    "   Não troque o ente credor dos FATOS (Município ≠ Estado ≠ União / PGFN). Não invente CDA, valor, prescrição quinquenal nem efeito suspensivo se os FATOS não trouxerem.",
   ],
   (t) => {
     if (/pr[eé]-executividade|pr[eé] executividade|\bepe\b/.test(t)) {

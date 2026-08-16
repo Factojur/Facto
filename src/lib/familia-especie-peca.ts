@@ -311,6 +311,8 @@ export function blocoEstruturaPromptFamilia(especie: EspeciePecaFamilia): string
     "   Em alimentos, use alimentante/alimentado no mérito quando couber (além de autor/réu no cabeçalho).",
     "   Honorários: art. 85 do CPC. Interesse de incapaz: Ministério Público (art. 178 do CPC / ECA) se os fatos envolverem criança ou adolescente.",
     "   Não exponha dados sensíveis além do necessário (endereço de criança, dados de saúde).",
+    "   Julgado da base contrário ao pedido: não cite como lastro favorável.",
+    "   Não invente estado civil, renda extra, horas extras, percentual sobre salário-mínimo nem pagamentos parciais se isso não estiver nos FATOS.",
   ];
 
   if (especie === "peticao-inicial") {
@@ -327,6 +329,11 @@ export function blocoEstruturaPromptFamilia(especie: EspeciePecaFamilia): string
     extras.push(
       "   Qualifique inventariante, cônjuge/companheiro meeiro e herdeiros. Não invente bens, quinhões nem testamento.",
       "   Arrolamento sumário só se os fatos indicarem acordo e partes capazes."
+    );
+  } else if (especie === "agravo-instrumento") {
+    extras.push(
+      "   Cabimento: art. 1.015 do CPC. Endereçamento: Tribunal (Desembargador Presidente), NÃO o juiz da vara.",
+      "   Não cite acórdão que indeferiu a mesma medida como se apoiasse o agravo."
     );
   } else if (especie === "apelacao") {
     extras.push("   Arts. 1.009 e 1.003, §5º, do CPC. Não chame de recurso inominado.");

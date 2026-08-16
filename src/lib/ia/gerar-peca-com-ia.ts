@@ -32,13 +32,6 @@ import {
   planoMaestroEquipe,
   type EtapaEquipeFacto,
 } from "@/lib/ia/agentes-facto";
-
-function enriquecerQueryLastro(areaId: string, q: string): string {
-  if (areaId === "civil") return `${q} Código Civil obrigações particulares`;
-  if (areaId === "consumidor") return `${q} CDC consumidor fornecedor`;
-  if (areaId === "tributario") return `${q} CTN execução fiscal CDA Lei 6.830`;
-  return q;
-}
 import {
   inferirEspecieDaArea,
 } from "@/lib/peca-especie-area";
@@ -47,6 +40,14 @@ import {
   contextoVerificacaoJurisCaso,
   type BlocoJurisCaso,
 } from "@/lib/juris-caso-types";
+
+function enriquecerQueryLastro(areaId: string, q: string): string {
+  if (areaId === "civil") return `${q} Código Civil obrigações particulares`;
+  if (areaId === "consumidor") return `${q} CDC consumidor fornecedor`;
+  if (areaId === "tributario") return `${q} CTN execução fiscal CDA Lei 6.830`;
+  if (areaId === "familia") return `${q} família alimentos guarda divórcio inventário`;
+  return q;
+}
 
 export type InstrucoesDeterministicas = {
   enderecamento?: string;

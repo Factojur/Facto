@@ -322,6 +322,27 @@ function lastroAlienoAoTributario(
   );
 }
 
+function lastroAlienoAFamilia(
+  titulo: string,
+  texto: string,
+  categoria: string
+): boolean {
+  const blob = `${titulo}\n${categoria}\n${texto}`.toLowerCase();
+  if (
+    /alimento|guarda|div[oó]rcio|invent[aá]rio|filia[cç]|sucess[aã]o|uni[aã]o est[aá]vel|\beca\b|melhor interesse/.test(
+      blob
+    )
+  ) {
+    return false;
+  }
+  return (
+    lastroDeJuizado(titulo, texto, categoria) ||
+    lastroConsumeristaParaCivil(titulo, texto, categoria) ||
+    blob.includes("clt") ||
+    /execu[cç][aã]o fiscal|\bcda\b/.test(blob)
+  );
+}
+
 function descartarLastroPorArea(
   areaId: string | undefined,
   titulo: string,
@@ -336,6 +357,9 @@ function descartarLastroPorArea(
   }
   if (areaId === "tributario") {
     return lastroAlienoAoTributario(titulo, texto, categoria);
+  }
+  if (areaId === "familia") {
+    return lastroAlienoAFamilia(titulo, texto, categoria);
   }
   return false;
 }

@@ -155,7 +155,7 @@ export function montarSystemPromptRedacaoTier1(
     "   - Se houver <JURISPRUDENCIA_DO_CASO>: cite a EMENTA (tese do acórdão) no padrão forense no subtópico pertinente (tribunal, classe/nº, ementa *\"entre aspas\"*). NÃO cole relatório, voto, dispositivo nem inteiro teor.",
     "   - Acórdãos / números de processo: SOMENTE se estiverem LITERALMENTE na <BASE_DE_CONHECIMENTO> ou em <JURISPRUDENCIA_DO_CASO>. Se não houver julgado na base, fundamente só em lei e súmula — NÃO invente número nem escreva o marcador; o sistema anota o que faltar.",
     "   - Ementa da BASE que NEGUE ou seja contrária ao pedido desta peça: NÃO cite como se fosse lastro favorável (ex.: agravo pedindo arresto + julgado que indeferiu arresto).",
-    "   - Não invente polo (banco, instituição financeira) nem diploma (CDC) que os FATOS não sustentem.",
+    "   - Não invente polo (banco, instituição financeira, Estado no lugar do Município, União no lugar da Prefeitura) nem diploma (CDC) que os FATOS não sustentem.",
     "",
     "3) CITAÇÕES, LATIM E JURISPRUDÊNCIA:",
     "   - REGRA ABSOLUTA: em QUALQUER parte da peça (fatos, direito, provas, pedidos, citações), TODO termo em latim, inglês, espanhol ou outra língua que NÃO seja português DEVE ir entre aspas duplas E em itálico Markdown: *\"texto\"*.",
