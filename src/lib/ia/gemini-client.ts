@@ -16,9 +16,8 @@ const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
 /** Cadeia Etapa 1 — Paralegal / triagem (rápido e barato). */
 export const MODELOS_TRIAGEM = [
-  "gemini-2.5-flash-lite",
-  "gemini-2.0-flash-lite",
   "gemini-flash-lite-latest",
+  "gemini-2.0-flash-lite",
   "gemini-2.5-flash",
   "gemini-2.0-flash",
   "gemini-flash-latest",
@@ -27,12 +26,13 @@ export const MODELOS_TRIAGEM = [
 /**
  * Cadeia Etapa 2 — Redator (qualidade com custo controlado).
  * Flash primeiro; Lite como escape de sobrecarga; Pro só via env.
+ * Evitar gemini-2.5-flash-lite: a API recusa contas novas (“no longer available”).
  */
 export const MODELOS_REDACAO_PADRAO = [
   "gemini-2.5-flash",
   "gemini-flash-latest",
   "gemini-2.0-flash",
-  "gemini-2.5-flash-lite",
+  "gemini-flash-lite-latest",
 ] as const;
 
 export function modelosRedacao(): readonly string[] {
@@ -47,7 +47,7 @@ export function modelosRedacao(): readonly string[] {
 export const MODELOS_REDACAO = MODELOS_REDACAO_PADRAO;
 
 const MODELO_PADRAO = MODELOS_TRIAGEM[0];
-const MODELO_FALLBACK = "gemini-2.5-flash-lite";
+const MODELO_FALLBACK = "gemini-flash-lite-latest";
 
 export type ResultadoGeminiSucesso = {
   ok: true;

@@ -333,6 +333,7 @@ export function blocoEstruturaPromptCivil(
     "   Rito: JUSTIÇA COMUM (CPC). NÃO aplique Lei 9.099/95, teto de 40/20 SM, recurso inominado nem Turma Recursal.",
     "   Fundamentação: Código Civil (obrigações, responsabilidade, contratos entre particulares) + CPC. Honorários: art. 85 do CPC.",
     "   NÃO trate como relação de consumo (CDC, inversão do art. 6º, VIII) — se o caso for consumerista, o módulo correto é Direito do Consumidor.",
+    "   NÃO invente banco, CDC ou polo que não esteja nos FATOS. Julgado da base cuja ementa contrarie o pedido: não cite como lastro favorável.",
     "   Ônus da prova: regra geral do art. 373 do CPC (autor quanto ao fato constitutivo), salvo inversão pontual do §1º se os fatos autorizarem — não invente hipossuficiência de consumo.",
   ];
 
@@ -346,6 +347,10 @@ export function blocoEstruturaPromptCivil(
       "   Preliminares só se cabíveis (inépcia, ilegitimidade, incompetência, falta de interesse…). Não invente.",
       "   Pedidos: improcedência + honorários sucumbenciais na forma do art. 85 do CPC (não cite 9.099)."
     );
+  } else if (especie === "replica") {
+    extras.push(
+      "   Impugne a contestação com CC e CPC. Não recubra o caso com CDC ou instituição financeira se os polos forem particulares."
+    );
   } else if (especie === "apelacao") {
     extras.push(
       "   Cabimento e tempestividade: arts. 1.009 e 1.003, §5º, do CPC (15 dias úteis).",
@@ -353,7 +358,8 @@ export function blocoEstruturaPromptCivil(
     );
   } else if (especie === "agravo-instrumento") {
     extras.push(
-      "   Cabimento: art. 1.015 do CPC. Indique a decisão interlocutória e o prejuízo."
+      "   Cabimento: art. 1.015 do CPC. Protocolo e endereçamento: Tribunal de Justiça (arts. 1.016 e 1.017 do CPC) — Desembargador Presidente / Câmara, NÃO o juiz da vara.",
+      "   Indique a decisão interlocutória e o prejuízo. Não cite acórdão que indeferiu a mesma medida como se apoiasse o agravo."
     );
   } else if (especie === "embargos-declaracao") {
     extras.push(

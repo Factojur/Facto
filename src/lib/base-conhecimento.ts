@@ -266,11 +266,44 @@ function pontuarItemCurado(
  * Falha de forma silenciosa (lista vazia / só curado) se a tabela ainda não
  * existir — a geração da peça nunca deve travar por causa disso.
  */
+/** Civil: não injetar lastro CDC/banco quando o módulo não é Consumidor. */
+function lastroConsumeristaParaCivil(
+  titulo: string,
+  texto: string,
+  categoria: string
+): boolean {
+  const blob = `${titulo}\n${categoria}\n${texto}`.toLowerCase();
+  return (
+    /\bcdc\b/.test(blob) ||
+    blob.includes("código de defesa do consumidor") ||
+    blob.includes("codigo de defesa do consumidor") ||
+    blob.includes("relação de consumo") ||
+    blob.includes("relacao de consumo") ||
+    /s[uú]mula\s*297/.test(blob) ||
+    /s[uú]mula\s*479/.test(blob) ||
+    blob.includes("instituição financeira") ||
+    blob.includes("instituicao financeira") ||
+    blob.includes("negativação indevida") ||
+    blob.includes("negativacao indevida")
+  );
+}
+
+function descartarLastroPorArea(
+  areaId: string | undefined,
+  titulo: string,
+  texto: string,
+  categoria: string
+): boolean {
+  if (areaId !== "civil") return false;
+  return lastroConsumeristaParaCivil(titulo, texto, categoria);
+}
+
 export async function buscarConhecimentoRelacionado(
   tipoAcao: string,
   limite = 6,
   /** Fatos / tese do caso — amplia as palavras-chave da busca (RAG). */
-  textoExtra?: string
+  textoExtra?: string,
+  areaId?: string
 ): Promise<TrechoConhecimento[]> {
   const palavras = palavrasChave(tipoAcao, textoExtra);
   if (palavras.length === 0) return [];
@@ -374,6 +407,9 @@ export async function buscarConhecimentoRelacionado(
     const vistos = new Set<string>();
     const unicos: TrechoConhecimento[] = [];
     for (const c of candidatos) {
+      if (descartarLastroPorArea(areaId, c.titulo, c.texto, c.categoria)) {
+        continue;
+      }
       const k = `${c.categoria}|${c.titulo}|${c.texto.slice(0, 60)}`;
       if (vistos.has(k)) continue;
       vistos.add(k);
@@ -395,6 +431,15 @@ export async function buscarConhecimentoRelacionado(
       score: pontuarItemCurado(item, palavras),
     }))
       .filter((x) => x.score > 0)
+      .filter(
+        (x) =>
+          !descartarLastroPorArea(
+            areaId,
+            x.item.titulo,
+            x.item.texto,
+            x.item.categoria
+          )
+      )
       .sort((a, b) => b.score - a.score)
       .slice(0, limite)
       .map(({ item }) => item);

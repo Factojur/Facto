@@ -350,7 +350,14 @@ export async function gerarPecaComIA(params: {
 
   const itens =
     params.itensConhecimento ??
-    (await buscarConhecimentoRelacionado(params.tipoAcao, 8, params.fatos));
+    (await buscarConhecimentoRelacionado(
+      areaId === "civil"
+        ? `${params.tipoAcao} Código Civil obrigações particulares`
+        : params.tipoAcao,
+      8,
+      params.fatos,
+      areaId
+    ));
 
   const contextoBase = montarContextoConhecimento(itens);
   const leiMunicipal = params.leiMunicipal?.texto?.trim()
@@ -432,9 +439,12 @@ export async function gerarPecaComIA(params: {
   let itensFinais = itens;
   if (queryExtra.trim()) {
     const reforco = await buscarConhecimentoRelacionado(
-      queryExtra,
+      areaId === "civil"
+        ? `${queryExtra} Código Civil obrigações`
+        : queryExtra,
       8,
-      params.fatos
+      params.fatos,
+      areaId
     );
     const vistos = new Set(
       itens.map((i) => `${i.categoria}|${i.titulo}|${i.texto.slice(0, 80)}`)

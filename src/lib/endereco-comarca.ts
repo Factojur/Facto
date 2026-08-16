@@ -154,7 +154,7 @@ export function formatarEnderecamentoPadrao(opcoes: {
   varaEmBranco?: boolean;
   /** Módulo do dashboard — define a fórmula da linha. */
   areaId?: string;
-  /** Espécie (HC vai ao Tribunal, não à vara). */
+  /** Espécie (HC e agravo de instrumento vão ao Tribunal, não à vara). */
   especiePeca?: string;
 }): string {
   const info = opcoes.comarca ?? {};
@@ -185,6 +185,16 @@ export function formatarEnderecamentoPadrao(opcoes: {
   const areaId = opcoes.areaId ?? "";
   const especie = (opcoes.especiePeca ?? "").toLowerCase();
   if (especie === "habeas-corpus" || especie.includes("habeas")) {
+    return `EXCELENTÍSSIMO(A) SENHOR(A) DESEMBARGADOR(A) PRESIDENTE DO EGRÉGIO TRIBUNAL DE JUSTIÇA DO ESTADO DE ${
+      uf || "___"
+    }`;
+  }
+  // CPC 1.016: agravo de instrumento se dirige ao tribunal, não à vara.
+  if (
+    especie === "agravo-instrumento" ||
+    especie.includes("agravo-instrumento") ||
+    especie.includes("agravo de instrumento")
+  ) {
     return `EXCELENTÍSSIMO(A) SENHOR(A) DESEMBARGADOR(A) PRESIDENTE DO EGRÉGIO TRIBUNAL DE JUSTIÇA DO ESTADO DE ${
       uf || "___"
     }`;

@@ -81,7 +81,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     especieHint:
       "5. Indique a espécie (petição inicial, contestação, réplica, apelação, agravo, cumprimento ou execução);",
     ritoLinha:
-      "Atue na justiça comum cível (Código Civil + CPC). NÃO aplique Lei 9.099/95 nem recurso inominado. NÃO fundamente em CDC como tese principal. Honorários: art. 85 do CPC.",
+      "Atue na justiça comum cível (Código Civil + CPC). NÃO aplique Lei 9.099/95 nem recurso inominado. NÃO fundamente em CDC, Súmula 297/STJ, inversão consumerista nem “instituição financeira” se os FATOS forem entre particulares (mútuo, CC). Use os nomes das partes dos FATOS. Honorários: art. 85 do CPC. Agravo de instrumento: endereçamento ao Tribunal (Desembargador Presidente), não ao juiz da vara.",
     especialidade:
       "contencioso cível (obrigações, responsabilidade civil, contratos entre particulares)",
     foroAssistente: "na justiça comum cível (Código Civil e CPC)",
