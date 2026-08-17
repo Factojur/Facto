@@ -320,6 +320,31 @@ export const MODULO_ELEITORAL: AreaModuloConfig = {
   rotuloNav: "Gerar peça Eleitoral",
 };
 
+export const MODULO_CONSTITUCIONAL: AreaModuloConfig = {
+  id: "constitucional",
+  tituloDashboard: "Geração de Peça — Direito Constitucional",
+  leiResumo: "CF/88 · Leis 9.868 · 9.882 · 12.016",
+  href: "/dashboard/constitucional",
+  idsPeticaoInicial: [
+    "mandado-seguranca",
+    "habeas-corpus",
+    "habeas-data",
+    "mandado-injuncao",
+    "acao-popular",
+    "reclamacao-constitucional",
+    "adpf",
+    "adi",
+    "adc",
+    "ado",
+  ],
+  copyCabecalho:
+    "Remédios constitucionais (ativo e passivo), RE, reclamação e controle concentrado (CF/88). Distinga do Administrativo e do Penal. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+  fundamentoQualificacao: "na Constituição Federal e nas leis dos remédios constitucionais",
+  rotuloPoloAtivo: "impetrante / recorrente / autor",
+  rotuloPoloPassivo: "autoridade / recorrido / réu",
+  rotuloNav: "Gerar peça Constitucional",
+};
+
 export type AreaIdMinuta =
   | "jec"
   | "consumidor"
@@ -339,7 +364,8 @@ export type AreaIdMinuta =
   | "internacional"
   | "medico"
   | "agrario"
-  | "eleitoral";
+  | "eleitoral"
+  | "constitucional";
 
 const MODULOS: Record<string, AreaModuloConfig> = {
   jec: MODULO_JEC,
@@ -361,6 +387,7 @@ const MODULOS: Record<string, AreaModuloConfig> = {
   medico: MODULO_MEDICO,
   agrario: MODULO_AGRARIO,
   eleitoral: MODULO_ELEITORAL,
+  constitucional: MODULO_CONSTITUCIONAL,
 };
 
 const IDS_MINUTA = new Set(Object.keys(MODULOS));
@@ -388,9 +415,14 @@ export function hrefMinutaSeExistir(areaId: string): string | undefined {
   return MODULOS[areaId]?.href;
 }
 
-/** MLE (levantamento de depósito) não cabe em Penal, JECRIM nem Eleitoral. */
+/** MLE (levantamento de depósito) não cabe em Penal, JECRIM, Eleitoral nem Constitucional. */
 export function areaMostraMle(areaId: string): boolean {
-  return areaId !== "criminal" && areaId !== "jecr" && areaId !== "eleitoral";
+  return (
+    areaId !== "criminal" &&
+    areaId !== "jecr" &&
+    areaId !== "eleitoral" &&
+    areaId !== "constitucional"
+  );
 }
 
 /** Justiça gratuita cabe em qualquer juízo; some só em notificação pura se um dia existir módulo extra. */
@@ -415,6 +447,8 @@ export function placeholderForoDaArea(areaId: string): string {
       return "Ex.: Vara da Fazenda Pública de Campinas/SP";
     case "eleitoral":
       return "Ex.: 12ª Zona Eleitoral de Campinas/SP";
+    case "constitucional":
+      return "Ex.: STF / STJ / Vara Federal de Campinas/SP";
     case "internacional":
       return "Ex.: STJ — homologação de sentença estrangeira";
     case "jec":
@@ -470,6 +504,7 @@ export function areaMostraLinkTjsp(areaId: string): boolean {
     "imobiliario",
     "jecr",
     "criminal",
+    "constitucional",
     "empresarial",
     "medico",
     "digital",

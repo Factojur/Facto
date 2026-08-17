@@ -61,6 +61,7 @@ function enriquecerQueryLastro(areaId: string, q: string): string {
     medico: "erro médico responsabilidade civil saúde",
     internacional: "homologação sentença estrangeira STJ",
     eleitoral: "Lei 9.504 eleitoral TRE TSE",
+    constitucional: "Constituição Federal remédios RE ADPF ADI",
   };
   const extra = map[areaId];
   return extra ? `${q} ${extra}` : q;

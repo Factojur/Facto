@@ -70,7 +70,11 @@ export function mesclarNotasConferencia(
 }
 
 export function docsConferenciaDaArea(areaId: string): DocConferenciaItem[] {
-  const semMle = areaId === "criminal" || areaId === "jecr" || areaId === "eleitoral";
+  const semMle =
+    areaId === "criminal" ||
+    areaId === "jecr" ||
+    areaId === "eleitoral" ||
+    areaId === "constitucional";
   let itens = DOCS_CONFERENCIA_PROTOCOLO_BASE.filter(
     (d) => !(semMle && d.id === "mle")
   );
@@ -101,6 +105,13 @@ export function docsConferenciaDaArea(areaId: string): DocConferenciaItem[] {
     itens = mesclarNotasConferencia(itens, {
       provas: "Peças do inquérito/processo, certidões e o que a defesa ou a queixa alega.",
       titulo_calculo: "Não se aplica a levantamento cível — ignore se a peça for penal.",
+    });
+  }
+  if (areaId === "constitucional") {
+    itens = mesclarNotasConferencia(itens, {
+      provas:
+        "Prova pré-constituída (MS), decisão paradigma (reclamação/RE), lei impugnada (ADI/ADPF) — o que a peça alega.",
+      titulo_calculo: "Em regra não há levantamento cível — ignore se inaplicável.",
     });
   }
   return itens;

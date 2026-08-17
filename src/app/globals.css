@@ -42,3 +42,64 @@ body {
 .animate-fade-up {
   animation: fade-up 0.5s ease-out both;
 }
+
+@keyframes facto-node-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 8px 0 rgba(144, 139, 106, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 22px 4px rgba(144, 139, 106, 0.45);
+  }
+}
+
+@keyframes facto-star-twinkle {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.65;
+  }
+}
+
+.facto-node-pulse {
+  animation: facto-node-pulse 3.2s ease-in-out infinite;
+}
+
+.facto-star-twinkle {
+  animation: facto-star-twinkle 3.5s ease-in-out infinite;
+}
+
+.facto-mesh-dot-pulse {
+  animation: facto-node-pulse 4s ease-in-out infinite;
+}
+
+@keyframes facto-fluxo-node {
+  0%,
+  100% {
+    box-shadow: 0 0 10px 0 rgba(144, 139, 106, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 22px 3px rgba(144, 139, 106, 0.4);
+  }
+}
+
+.facto-fluxo-node {
+  animation: facto-fluxo-node 3.5s ease-in-out infinite;
+}
+
+.facto-fluxo-pulse {
+  filter: drop-shadow(0 0 4px rgba(196, 191, 154, 0.8));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .facto-node-pulse {
+    animation-duration: 6s;
+  }
+  .facto-mesh-dot-pulse,
+  .facto-star-twinkle,
+  .facto-fluxo-node {
+    animation: none !important;
+  }
+}

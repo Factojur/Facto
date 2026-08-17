@@ -774,6 +774,480 @@ export const KIT_ELEITORAL = kit(
   "representacao"
 );
 
+export const KIT_CONSTITUCIONAL = kit(
+  [
+    // ——— Polo ativo / impetrante / autor / recorrente ———
+    {
+      id: "mandado-seguranca",
+      rotulo: "Mandado de segurança",
+      descricao:
+        "Polo ativo. CF art. 5º, LXIX + Lei 12.016/09. Direito líquido e certo; prova pré-constituída; autoridade coatora.",
+      nomePecaHint: "Mandado de segurança",
+      exigeProcesso: false,
+      conectivoPartes:
+        "impetrando o presente mandado de segurança, pelos fundamentos a seguir.",
+      prazoAviso: "120 dias (art. 23 da Lei 12.016/09).",
+    },
+    {
+      id: "habeas-corpus",
+      rotulo: "Habeas corpus",
+      descricao:
+        "Polo ativo. CF art. 5º, LXVIII. Liberdade de locomoção. Distinga do HC tipicamente penal (módulo Penal).",
+      nomePecaHint: "Habeas corpus",
+      exigeProcesso: false,
+      conectivoPartes: "impetrando o presente habeas corpus, pelos fundamentos a seguir.",
+      prazoAviso: "Remédio constitucional — sem prazo decadencial típico.",
+    },
+    {
+      id: "habeas-data",
+      rotulo: "Habeas data",
+      descricao:
+        "Polo ativo. CF art. 5º, LXXII + Lei 9.507/97. Acesso ou retificação de dados.",
+      nomePecaHint: "Habeas data",
+      exigeProcesso: false,
+      conectivoPartes: "impetrando o presente habeas data, pelos fundamentos a seguir.",
+      prazoAviso: "Lei 9.507/97 — observe o rito e a competência nos FATOS.",
+    },
+    {
+      id: "mandado-injuncao",
+      rotulo: "Mandado de injunção",
+      descricao:
+        "Polo ativo. CF art. 5º, LXXI. Omissão normativa que inviabiliza o exercício de direito constitucional.",
+      nomePecaHint: "Mandado de injunção",
+      exigeProcesso: false,
+      conectivoPartes:
+        "impetrando o presente mandado de injunção, pelos fundamentos a seguir.",
+      prazoAviso: "Competência conforme a omissão (STF/STJ/TJ) — nos FATOS.",
+    },
+    {
+      id: "acao-popular",
+      rotulo: "Ação popular",
+      descricao:
+        "Polo ativo. CF art. 5º, LXXIII + Lei 4.717/65. Cidadão contra ato lesivo ao patrimônio público / moralidade.",
+      nomePecaHint: "Ação popular",
+      exigeProcesso: false,
+      conectivoPartes: "propondo a presente ação popular, pelos fundamentos a seguir.",
+      prazoAviso: "Prescrição quinquenal em regra (Lei 4.717/65) — confira nos FATOS.",
+    },
+    {
+      id: "reclamacao-constitucional",
+      rotulo: "Reclamação constitucional",
+      descricao:
+        "Polo ativo. Preservar autoridade de decisão do STF/STJ ou competência do tribunal. Não invente paradigma.",
+      nomePecaHint: "Reclamação",
+      exigeProcesso: false,
+      conectivoPartes: "oferecendo a presente reclamação, pelos fundamentos a seguir.",
+      prazoAviso: "Regimento interno do tribunal — o FACTO não conta o prazo.",
+    },
+    {
+      id: "recurso-extraordinario",
+      rotulo: "Recurso extraordinário",
+      descricao:
+        "Polo ativo (recorrente). CF art. 102, III. Questão constitucional; repercussão geral. Não invente leading case.",
+      nomePecaHint: "Recurso extraordinário",
+      exigeProcesso: true,
+      conectivoPartes:
+        "interpondo o presente recurso extraordinário, pelos fundamentos a seguir.",
+      prazoAviso: "15 dias úteis em regra (art. 1.003, §5º, do CPC) — confira a intimação.",
+    },
+    {
+      id: "agravo-recurso-extraordinario",
+      rotulo: "Agravo em recurso extraordinário",
+      descricao:
+        "Polo ativo. Agravo contra decisão que inadmite o RE. Endereçamento ao STF.",
+      nomePecaHint: "Agravo em recurso extraordinário",
+      exigeProcesso: true,
+      conectivoPartes: "interpondo o presente agravo, pelos fundamentos a seguir.",
+      prazoAviso: "Prazo do art. 1.042 do CPC, em regra.",
+    },
+    {
+      id: "recurso-ordinario-constitucional",
+      rotulo: "Recurso ordinário constitucional",
+      descricao:
+        "Polo ativo. CF arts. 102, II, ou 105, II (ROC ao STF/STJ). Não confundir com RE nem apelação.",
+      nomePecaHint: "Recurso ordinário constitucional",
+      exigeProcesso: true,
+      conectivoPartes:
+        "interpondo o presente recurso ordinário, pelos fundamentos a seguir.",
+      prazoAviso: "Prazo do CPC/regimento — confira a intimação nos FATOS.",
+    },
+    {
+      id: "adpf",
+      rotulo: "ADPF",
+      descricao:
+        "Polo ativo. Lei 9.882/99. Competência do STF. Só com legitimidade e preceito nos FATOS.",
+      nomePecaHint: "ADPF",
+      exigeProcesso: false,
+      conectivoPartes: "propor a presente ADPF, pelos fundamentos a seguir.",
+      prazoAviso: "Controle concentrado — STF.",
+    },
+    {
+      id: "adi",
+      rotulo: "ADI",
+      descricao:
+        "Polo ativo. Lei 9.868/99. Competência do STF. Exige legitimidade ativa nos FATOS.",
+      nomePecaHint: "ADI",
+      exigeProcesso: false,
+      conectivoPartes: "propor a presente ADI, pelos fundamentos a seguir.",
+      prazoAviso: "Controle concentrado — STF.",
+    },
+    {
+      id: "adc",
+      rotulo: "ADC",
+      descricao:
+        "Polo ativo. Ação declaratória de constitucionalidade (Lei 9.868/99). Competência do STF.",
+      nomePecaHint: "ADC",
+      exigeProcesso: false,
+      conectivoPartes: "propor a presente ADC, pelos fundamentos a seguir.",
+      prazoAviso: "Controle concentrado — STF.",
+    },
+    {
+      id: "ado",
+      rotulo: "ADI por omissão (ADO)",
+      descricao:
+        "Polo ativo. CF art. 103, §2º + Lei 9.868/99. Omissão inconstitucional. Competência do STF.",
+      nomePecaHint: "ADI por omissão",
+      exigeProcesso: false,
+      conectivoPartes: "propor a presente ADI por omissão, pelos fundamentos a seguir.",
+      prazoAviso: "Controle concentrado — STF.",
+    },
+    {
+      id: "apelacao",
+      rotulo: "Apelação",
+      descricao:
+        "Polo ativo ou passivo. Apelação em MS (quando cabível) ou demanda constitucional difusa. Art. 1.009 do CPC.",
+      nomePecaHint: "Apelação",
+      exigeProcesso: true,
+      conectivoPartes: "interpondo a presente apelação, pelos fundamentos a seguir.",
+      prazoAviso: "15 dias úteis (art. 1.003, §5º, do CPC).",
+    },
+    {
+      id: "agravo-instrumento",
+      rotulo: "Agravo de instrumento",
+      descricao:
+        "Polo ativo ou passivo. Art. 1.015 do CPC em processo constitucional difuso / MS. Não é agravo em RE.",
+      nomePecaHint: "Agravo de instrumento",
+      exigeProcesso: true,
+      conectivoPartes:
+        "interpondo o presente agravo de instrumento, pelos fundamentos a seguir.",
+      prazoAviso: "15 dias úteis (art. 1.003, §5º, do CPC).",
+    },
+    {
+      id: "agravo-regimental",
+      rotulo: "Agravo regimental / interno",
+      descricao:
+        "Polo ativo ou passivo. Agravo interno no STF/STJ (art. 1.021 do CPC / regimento).",
+      nomePecaHint: "Agravo regimental",
+      exigeProcesso: true,
+      conectivoPartes: "interpondo o presente agravo interno, pelos fundamentos a seguir.",
+      prazoAviso: "Prazo regimental / art. 1.021 do CPC — confira a intimação.",
+    },
+    {
+      id: "embargos-declaracao",
+      rotulo: "Embargos de declaração",
+      descricao: "Polo ativo ou passivo. Art. 1.022 do CPC (ou regimento do tribunal).",
+      nomePecaHint: "Embargos de declaração",
+      exigeProcesso: true,
+      conectivoPartes:
+        "opondo os presentes embargos de declaração, pelos fundamentos a seguir.",
+      prazoAviso: "5 dias úteis (art. 1.023 do CPC), salvo regimento.",
+    },
+    {
+      id: "memorial",
+      rotulo: "Memorial / razões",
+      descricao:
+        "Polo ativo ou passivo. Memorial ou razões finais em processo constitucional já em curso.",
+      nomePecaHint: "Memorial",
+      exigeProcesso: true,
+      conectivoPartes: "apresentando o presente memorial, pelos fundamentos a seguir.",
+      prazoAviso: "Prazo fixado pelo juízo/tribunal nos FATOS.",
+    },
+
+    // ——— Polo passivo / autoridade / recorrido / réu ———
+    {
+      id: "informacoes-ms",
+      rotulo: "Informações em mandado de segurança",
+      descricao:
+        "Polo passivo (autoridade coatora). Art. 7º, I, da Lei 12.016/09. Prestação de informações.",
+      nomePecaHint: "Informações em mandado de segurança",
+      exigeProcesso: true,
+      conectivoPartes:
+        "prestando as presentes informações, pelos fundamentos a seguir.",
+      prazoAviso: "10 dias em regra (art. 7º, I, da Lei 12.016/09).",
+    },
+    {
+      id: "contestacao-ms",
+      rotulo: "Contestação / defesa em MS",
+      descricao:
+        "Polo passivo (impetrado / litisconsorte). Defesa de mérito no mandado de segurança.",
+      nomePecaHint: "Contestação em mandado de segurança",
+      exigeProcesso: true,
+      conectivoPartes: "apresentando a presente contestação, pelos fundamentos a seguir.",
+      prazoAviso: "Prazo da intimação / Lei 12.016/09 — confira nos FATOS.",
+    },
+    {
+      id: "contestacao-habeas-data",
+      rotulo: "Contestação em habeas data",
+      descricao: "Polo passivo. Defesa do órgão/detentor dos dados (Lei 9.507/97).",
+      nomePecaHint: "Contestação em habeas data",
+      exigeProcesso: true,
+      conectivoPartes: "apresentando a presente contestação, pelos fundamentos a seguir.",
+      prazoAviso: "Prazo da Lei 9.507/97 / intimação — nos FATOS.",
+    },
+    {
+      id: "informacoes-mandado-injuncao",
+      rotulo: "Informações em mandado de injunção",
+      descricao: "Polo passivo. Informações / defesa do órgão omisso.",
+      nomePecaHint: "Informações em mandado de injunção",
+      exigeProcesso: true,
+      conectivoPartes:
+        "prestando as presentes informações, pelos fundamentos a seguir.",
+      prazoAviso: "Prazo fixado pelo tribunal nos FATOS.",
+    },
+    {
+      id: "contestacao-reclamacao",
+      rotulo: "Contestação / impugnação à reclamação",
+      descricao: "Polo passivo. Defesa na reclamação constitucional.",
+      nomePecaHint: "Impugnação à reclamação",
+      exigeProcesso: true,
+      conectivoPartes:
+        "apresentando a presente impugnação, pelos fundamentos a seguir.",
+      prazoAviso: "Prazo regimental / intimação — nos FATOS.",
+    },
+    {
+      id: "contrarrazoes-recurso-extraordinario",
+      rotulo: "Contrarrazões ao recurso extraordinário",
+      descricao: "Polo passivo (recorrido). Resposta ao RE.",
+      nomePecaHint: "Contrarrazões ao RE",
+      exigeProcesso: true,
+      conectivoPartes:
+        "oferecendo as presentes contrarrazões, pelos fundamentos a seguir.",
+      prazoAviso: "15 dias úteis em regra (art. 1.003, §5º, do CPC).",
+    },
+    {
+      id: "contestacao-adi",
+      rotulo: "Contestação / informações em ADI",
+      descricao:
+        "Polo passivo / interessado. Informações ou contestação em ADI (Lei 9.868/99). Não invente legitimidade.",
+      nomePecaHint: "Informações / contestação em ADI",
+      exigeProcesso: true,
+      conectivoPartes:
+        "prestando as presentes informações, pelos fundamentos a seguir.",
+      prazoAviso: "Prazo do STF / Lei 9.868/99 — nos FATOS.",
+    },
+    {
+      id: "contestacao-adpf",
+      rotulo: "Contestação / informações em ADPF",
+      descricao: "Polo passivo / interessado. Informações ou contestação em ADPF (Lei 9.882/99).",
+      nomePecaHint: "Informações / contestação em ADPF",
+      exigeProcesso: true,
+      conectivoPartes:
+        "prestando as presentes informações, pelos fundamentos a seguir.",
+      prazoAviso: "Prazo do STF / Lei 9.882/99 — nos FATOS.",
+    },
+    {
+      id: "contestacao-adc",
+      rotulo: "Contestação / informações em ADC",
+      descricao:
+        "Polo passivo / interessado. Informações ou contestação em ADC (Lei 9.868/99).",
+      nomePecaHint: "Informações / contestação em ADC",
+      exigeProcesso: true,
+      conectivoPartes:
+        "prestando as presentes informações, pelos fundamentos a seguir.",
+      prazoAviso: "Prazo do STF / Lei 9.868/99 — nos FATOS.",
+    },
+    {
+      id: "contestacao-ado",
+      rotulo: "Contestação / informações em ADO",
+      descricao:
+        "Polo passivo / órgão omisso. Informações ou contestação em ADI por omissão (Lei 9.868/99).",
+      nomePecaHint: "Informações / contestação em ADO",
+      exigeProcesso: true,
+      conectivoPartes:
+        "prestando as presentes informações, pelos fundamentos a seguir.",
+      prazoAviso: "Prazo do STF / Lei 9.868/99 — nos FATOS.",
+    },
+    {
+      id: "contrarrazoes-recurso-ordinario",
+      rotulo: "Contrarrazões ao recurso ordinário constitucional",
+      descricao: "Polo passivo (recorrido). Resposta ao ROC (CF arts. 102, II / 105, II).",
+      nomePecaHint: "Contrarrazões ao ROC",
+      exigeProcesso: true,
+      conectivoPartes:
+        "oferecendo as presentes contrarrazões, pelos fundamentos a seguir.",
+      prazoAviso: "15 dias úteis em regra (art. 1.003, §5º, do CPC).",
+    },
+    {
+      id: "contestacao-acao-popular",
+      rotulo: "Contestação em ação popular",
+      descricao: "Polo passivo. Defesa do ato / agente na ação popular (Lei 4.717/65).",
+      nomePecaHint: "Contestação em ação popular",
+      exigeProcesso: true,
+      conectivoPartes: "apresentando a presente contestação, pelos fundamentos a seguir.",
+      prazoAviso: "Art. 335 do CPC, em regra.",
+    },
+  ],
+  [
+    "   Rito: CONSTITUCIONAL (CF/88). Remédios: MS (Lei 12.016/09), HC, HD (Lei 9.507/97), MI, ação popular (Lei 4.717/65).",
+    "   Controle concentrado (ADI/ADC/ADO/ADPF): só STF; não invente legitimidade, preceito nem lei impugnada.",
+    "   RE / agravo em RE / ROC / reclamação: não invente paradigma, tema de repercussão geral nem acórdão.",
+    "   Polo passivo: informações em MS (art. 7º, I, Lei 12.016/09), contrarrazões ao RE/ROC, contestações e impugnações — use a espécie correta.",
+    "   Distinga: MS de ato administrativo sem ênfase constitucional → módulo Administrativo; HC tipicamente penal → módulo Penal.",
+    "   NÃO use Lei 9.099, CLT nem CDC como rito. Honorários: art. 85 do CPC quando couber.",
+    "   Julgado da base contrário ao pedido: não cite como lastro favorável.",
+  ],
+  (t) => {
+    if (
+      /contrarraz.*ordin[aá]rio|ordin[aá]rio.*contrarraz|contrarraz.*\broc\b/.test(t)
+    ) {
+      return "contrarrazoes-recurso-ordinario";
+    }
+    if (/contrarraz|contra-raz|contrarrazo/.test(t)) {
+      return "contrarrazoes-recurso-extraordinario";
+    }
+    if (/informa[cç].*manda(do)? de seguran|manda(do)? de seguran.*informa/.test(t)) {
+      return "informacoes-ms";
+    }
+    if (/contesta.*manda(do)? de seguran|defesa.*manda(do)? de seguran/.test(t)) {
+      return "contestacao-ms";
+    }
+    if (/contesta.*habeas.?data|habeas.?data.*contesta/.test(t)) {
+      return "contestacao-habeas-data";
+    }
+    if (/informa[cç].*injun|injun.*informa/.test(t)) {
+      return "informacoes-mandado-injuncao";
+    }
+    if (/impugna.*reclama|contesta.*reclama|reclama.*contesta/.test(t)) {
+      return "contestacao-reclamacao";
+    }
+    if (/informa[cç].*\badi\b|contesta.*\badi\b|\badi\b.*informa/.test(t)) {
+      return "contestacao-adi";
+    }
+    if (/informa[cç].*\badpf\b|contesta.*\badpf\b|\badpf\b.*informa/.test(t)) {
+      return "contestacao-adpf";
+    }
+    if (/informa[cç].*\badc\b|contesta.*\badc\b|\badc\b.*informa/.test(t)) {
+      return "contestacao-adc";
+    }
+    if (
+      /informa[cç].*\bado\b|contesta.*\bado\b|\bado\b.*informa|informa[cç].*omiss|omiss.*informa/.test(
+        t
+      )
+    ) {
+      return "contestacao-ado";
+    }
+    if (/contesta.*a[cç][aã]o popular|a[cç][aã]o popular.*contesta/.test(t)) {
+      return "contestacao-acao-popular";
+    }
+    if (/\bado\b|inconstitucionalidade por omiss|adi por omiss/.test(t)) return "ado";
+    if (/\badc\b|declarat[oó]ria de constitucionalidade/.test(t)) return "adc";
+    if (/\badi\b|a[cç][aã]o direta de inconstitucionalidade/.test(t)) return "adi";
+    if (/\badpf\b|argui[cç][aã]o de descumprimento/.test(t)) return "adpf";
+    if (/a[cç][aã]o popular|lei 4\.717/.test(t)) return "acao-popular";
+    if (/habeas.?data|\bhd\b/.test(t)) return "habeas-data";
+    if (/injun[cç][aã]o/.test(t)) return "mandado-injuncao";
+    if (/reclama[cç][aã]o/.test(t)) return "reclamacao-constitucional";
+    if (/agravo.*extraordin[aá]rio|extraordin[aá]rio.*agravo/.test(t)) {
+      return "agravo-recurso-extraordinario";
+    }
+    if (/recurso ordin[aá]rio constitucional|\broc\b/.test(t)) {
+      return "recurso-ordinario-constitucional";
+    }
+    if (/recurso extraordin[aá]rio|\bre\b/.test(t)) return "recurso-extraordinario";
+    if (/agravo (regimental|interno)/.test(t)) return "agravo-regimental";
+    if (/agravo de instrumento|agravo-instrumento/.test(t)) return "agravo-instrumento";
+    if (/habeas.?corpus|\bhc\b/.test(t)) return "habeas-corpus";
+    if (/manda(do)? de seguran/.test(t)) return "mandado-seguranca";
+    if (/embargos? de declara/.test(t)) return "embargos-declaracao";
+    if (/apela/.test(t)) return "apelacao";
+    if (/memorial|raz[oõ]es finais/.test(t)) return "memorial";
+    return null;
+  },
+  {
+    "mandado-seguranca": "Mandado de Segurança",
+    "habeas-corpus": "Habeas Corpus",
+    "habeas-data": "Habeas Data",
+    "mandado-injuncao": "Mandado de Injunção",
+    "acao-popular": "Ação Popular",
+    "reclamacao-constitucional": "Reclamação",
+    "recurso-extraordinario": "Recurso Extraordinário",
+    "agravo-recurso-extraordinario": "Agravo em Recurso Extraordinário",
+    "recurso-ordinario-constitucional": "Recurso Ordinário Constitucional",
+    adpf: "ADPF",
+    adi: "ADI",
+    adc: "ADC",
+    ado: "ADI por Omissão",
+    apelacao: "Apelação",
+    "agravo-instrumento": "Agravo de Instrumento",
+    "agravo-regimental": "Agravo Regimental",
+    "embargos-declaracao": "Embargos de Declaração",
+    memorial: "Memorial",
+    "informacoes-ms": "Informações em Mandado de Segurança",
+    "contestacao-ms": "Contestação em Mandado de Segurança",
+    "contestacao-habeas-data": "Contestação em Habeas Data",
+    "informacoes-mandado-injuncao": "Informações em Mandado de Injunção",
+    "contestacao-reclamacao": "Impugnação à Reclamação",
+    "contrarrazoes-recurso-extraordinario": "Contrarrazões ao RE",
+    "contestacao-adi": "Informações / Contestação em ADI",
+    "contestacao-adpf": "Informações / Contestação em ADPF",
+    "contestacao-adc": "Informações / Contestação em ADC",
+    "contestacao-ado": "Informações / Contestação em ADO",
+    "contrarrazoes-recurso-ordinario": "Contrarrazões ao ROC",
+    "contestacao-acao-popular": "Contestação em Ação Popular",
+  },
+  {
+    "mandado-seguranca": INICIAL,
+    "habeas-corpus": [
+      { chave: "cabimento", titulo: "DO CABIMENTO", obrigatoria: true },
+      { chave: "fatos", titulo: "DOS FATOS", obrigatoria: true },
+      { chave: "direito", titulo: "DO DIREITO", obrigatoria: true },
+      { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
+    ],
+    "habeas-data": INICIAL,
+    "mandado-injuncao": INICIAL,
+    "acao-popular": INICIAL,
+    "reclamacao-constitucional": INICIAL,
+    "recurso-extraordinario": RECURSO,
+    "agravo-recurso-extraordinario": RECURSO,
+    "recurso-ordinario-constitucional": RECURSO,
+    adpf: INICIAL,
+    adi: INICIAL,
+    adc: INICIAL,
+    ado: INICIAL,
+    apelacao: RECURSO,
+    "agravo-instrumento": [
+      {
+        chave: "tempestividade",
+        titulo: "DA TEMPESTIVIDADE E DO CABIMENTO",
+        obrigatoria: true,
+      },
+      { chave: "decisao", titulo: "DA DECISÃO AGRAVADA", obrigatoria: true },
+      { chave: "razoes", titulo: "DAS RAZÕES DO AGRAVO", obrigatoria: true },
+      { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
+    ],
+    "agravo-regimental": RECURSO,
+    "embargos-declaracao": ED,
+    memorial: [
+      { chave: "sintese", titulo: "DA SÍNTESE PROCESSUAL", obrigatoria: true },
+      { chave: "direito", titulo: "DO DIREITO", obrigatoria: true },
+      { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
+    ],
+    "informacoes-ms": DEFESA,
+    "contestacao-ms": DEFESA,
+    "contestacao-habeas-data": DEFESA,
+    "informacoes-mandado-injuncao": DEFESA,
+    "contestacao-reclamacao": DEFESA,
+    "contrarrazoes-recurso-extraordinario": RECURSO,
+    "contestacao-adi": DEFESA,
+    "contestacao-adpf": DEFESA,
+    "contestacao-adc": DEFESA,
+    "contestacao-ado": DEFESA,
+    "contrarrazoes-recurso-ordinario": RECURSO,
+    "contestacao-acao-popular": DEFESA,
+  },
+  "mandado-seguranca"
+);
+
 export const KITS_AREA: Record<string, KitArea> = {
   criminal: KIT_CRIMINAL,
   previdenciario: KIT_PREVIDENCIARIO,
@@ -787,6 +1261,7 @@ export const KITS_AREA: Record<string, KitArea> = {
   medico: KIT_MEDICO,
   agrario: KIT_AGRARIO,
   eleitoral: KIT_ELEITORAL,
+  constitucional: KIT_CONSTITUCIONAL,
 };
 
 export function kitDaArea(areaId: string): KitArea | null {

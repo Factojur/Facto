@@ -376,6 +376,26 @@ const TABELA: Record<string, AreaRitoCopy> = {
       ["Não invente julgado de TRE/TSE. AIJE, representação, registro."]
     ),
   },
+  constitucional: {
+    ritoCurto:
+      "Direito Constitucional (CF/88, remédios, RE, reclamação, ADI/ADPF). NÃO use 9.099 nem CLT.",
+    nomePeca:
+      "Nome técnico constitucional (MS, HC, HD, MI, RE, ROC, reclamação, ADI/ADC/ADO/ADPF, informações, contrarrazões, memorial)",
+    especieHint:
+      "5. Indique a espécie (ativo ou passivo: MS, HC, HD, MI, ação popular, reclamação, RE, ROC, ADI/ADC/ADO/ADPF, informações, contestação, contrarrazões ou memorial);",
+    ritoLinha:
+      "Atue em Direito Constitucional. Remédios (polo ativo): MS (Lei 12.016/09, 120 dias), HC, HD (Lei 9.507/97), MI, ação popular (Lei 4.717/65). Polo passivo: informações em MS (art. 7º, I), contestações (MS/HD/reclamação/ação popular/ADI/ADC/ADO/ADPF), contrarrazões ao RE e ao ROC. RE e agravo em RE: CF art. 102, III — não invente paradigma. ADI/ADC/ADO/ADPF: só STF, com legitimidade nos FATOS. Distinga MS administrativo puro (módulo Administrativo) e HC tipicamente penal (módulo Penal). Endereçamento: juízo/tribunal/STF conforme a espécie e os FATOS.",
+    especialidade: "Direito Constitucional",
+    foroAssistente: "no juízo / tribunal / STF conforme o remédio",
+    tipoAcaoDefault: "Mandado de Segurança",
+    nomenclaturaUser: "Com base nos fatos (nomenclatura constitucional, se disponível),",
+    classificador: classif(
+      "Você é o Assistente Facto, paralegal especialista em Direito Constitucional.",
+      [
+        "Remédios CF (ativo e passivo). Não invente paradigma STF. ADI/ADC/ADO/ADPF só com legitimidade.",
+      ]
+    ),
+  },
 };
 
 export function ritoDaArea(areaId: string): AreaRitoCopy {

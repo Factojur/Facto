@@ -1,3 +1,4 @@
+/** Ícones line-art limpos (estilo mockup híbrido / Lucide). viewBox 24×24. */
 export function AreaIllustration({
   areaId,
   className,
@@ -5,226 +6,234 @@ export function AreaIllustration({
   areaId: string;
   className?: string;
 }) {
-  const stroke = {
+  const s = {
     stroke: "currentColor",
-    strokeWidth: 1.6,
+    strokeWidth: 1.5,
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
     fill: "none",
   };
-  const thin = { ...stroke, strokeWidth: 1.2 };
 
   switch (areaId) {
     case "jec":
-      return (
-        <svg viewBox="0 0 120 100" className={className} aria-hidden>
-          <path d="M60 14v52M40 30h40" {...stroke} />
-          <path d="M40 30L30 40M80 30l10 10" {...stroke} />
-          <ellipse cx="30" cy="44" rx="9" ry="3.5" {...stroke} />
-          <ellipse cx="90" cy="44" rx="9" ry="3.5" {...stroke} />
-          <path d="M44 70h32v16H44z" {...stroke} />
-          <path d="M50 76h8M50 80h14" {...thin} />
-        </svg>
-      );
-
     case "jecr":
+      // Balança (Lucide Scale)
       return (
-        <svg viewBox="0 0 120 100" className={className} aria-hidden>
-          <path d="M28 22h40l8 8v48H28V22z" {...stroke} />
-          <path d="M68 22v8h8" {...stroke} />
-          <path d="M36 40h28M36 50h22M36 60h26" {...thin} />
-          <path d="M82 38v28" {...stroke} />
-          <rect x="74" y="32" width="16" height="10" rx="1" {...stroke} />
-          <path d="M78 66h8M74 72h16" {...stroke} />
-        </svg>
-      );
-
-    case "trabalhista":
-      return (
-        <svg viewBox="0 0 120 100" className={className} aria-hidden>
-          <rect x="26" y="28" width="48" height="50" rx="2" {...stroke} />
-          <path d="M34 40h32M34 50h24M34 60h28" {...thin} />
-          <circle cx="88" cy="40" r="14" {...stroke} />
-          <path d="M88 32v8l6 4" {...stroke} />
-        </svg>
-      );
-
-    case "criminal":
-      return (
-        <svg viewBox="0 0 120 100" className={className} aria-hidden>
-          <path d="M60 16l28 10v22c0 18-12 30-28 36-16-6-28-18-28-36V26L60 16z" {...stroke} />
-          <path d="M60 36v28M48 50h24" {...thin} />
-        </svg>
-      );
-
-    case "empresarial":
-      return (
-        <svg viewBox="0 0 120 100" className={className} aria-hidden>
-          <path d="M24 78V40l22-14 22 14v38" {...stroke} />
-          <path d="M38 78V56h12v22M54 78V50h12v28" {...thin} />
-          <path d="M22 78h48" {...stroke} />
-          <rect x="74" y="42" width="24" height="32" rx="1.5" {...stroke} />
-          <path d="M80 52h12M80 60h8" {...thin} />
+        <svg viewBox="0 0 24 24" className={className} aria-hidden>
+          <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" {...s} />
+          <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" {...s} />
+          <path d="M7 21h10" {...s} />
+          <path d="M12 3v18" {...s} />
+          <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2" {...s} />
         </svg>
       );
 
     case "civil":
+      // Coluna / pilar
       return (
-        <svg viewBox="0 0 120 100" className={className} aria-hidden>
-          <path d="M32 24h40l12 12v48H32V24z" {...stroke} />
-          <path d="M72 24v12h12" {...stroke} />
-          <path d="M42 48h28M42 58h20M42 68h24" {...thin} />
-          <path d="M84 70l10 6-10 6v-12z" {...stroke} />
-        </svg>
-      );
-
-    case "familia":
-      return (
-        <svg viewBox="0 0 120 100" className={className} aria-hidden>
-          <path d="M24 78V46l36-24 36 24v32" {...stroke} />
-          <path d="M52 78V58h16v20" {...stroke} />
-          <circle cx="48" cy="40" r="7" {...stroke} />
-          <circle cx="72" cy="40" r="7" {...stroke} />
-        </svg>
-      );
-
-    case "imobiliario":
-      return (
-        <svg viewBox="0 0 120 100" className={className} aria-hidden>
-          <path d="M22 78V48l38-26 38 26v30" {...stroke} />
-          <path d="M50 78V58h20v20" {...stroke} />
-          <circle cx="86" cy="36" r="8" {...stroke} />
-          <path d="M86 44v16l6 4" {...stroke} />
-        </svg>
-      );
-
-    case "contratual":
-      return (
-        <svg viewBox="0 0 120 100" className={className} aria-hidden>
-          <path d="M30 20h40l14 14v54H30V20z" {...stroke} />
-          <path d="M70 20v14h14" {...stroke} />
-          <path d="M40 48h28M40 58h20" {...thin} />
-          <path d="M40 72c8 8 20 8 28 0" {...stroke} />
-        </svg>
-      );
-
-    case "tributario":
-      return (
-        <svg viewBox="0 0 120 100" className={className} aria-hidden>
-          <path d="M28 22h36l12 12v52H28V22z" {...stroke} />
-          <path d="M64 22v12h12" {...stroke} />
-          <path d="M38 46h20M38 56h16M38 66h18" {...thin} />
-          <path d="M78 78V48M90 78V38M102 78V58M72 78h36" {...stroke} />
-        </svg>
-      );
-
-    case "administrativo":
-      return (
-        <svg viewBox="0 0 120 100" className={className} aria-hidden>
-          <path d="M20 78h80" {...stroke} />
-          <path d="M28 78V50h12v28M50 78V40h12v38M72 78V50h12v28" {...stroke} />
-          <path d="M24 50h72" {...stroke} />
-          <path d="M60 18l32 20H28L60 18z" {...stroke} />
-        </svg>
-      );
-
-    case "previdenciario":
-      return (
-        <svg viewBox="0 0 120 100" className={className} aria-hidden>
-          <rect x="28" y="28" width="64" height="44" rx="3" {...stroke} />
-          <circle cx="48" cy="48" r="8" {...stroke} />
-          <path d="M62 44h22M62 54h16" {...thin} />
-          <path d="M36 80h48" {...stroke} />
+        <svg viewBox="0 0 24 24" className={className} aria-hidden>
+          <path d="M4 6h16" {...s} />
+          <path d="M6 6v2h12V6" {...s} />
+          <path d="M8 8v10M12 8v10M16 8v10" {...s} />
+          <path d="M6 18h12" {...s} />
+          <path d="M4 20h16" {...s} />
         </svg>
       );
 
     case "consumidor":
+      // Carrinho
       return (
-        <svg viewBox="0 0 120 100" className={className} aria-hidden>
-          <path d="M60 14v40M44 28h32" {...stroke} />
-          <path d="M44 28L36 38M76 28l8 10" {...stroke} />
-          <ellipse cx="36" cy="42" rx="8" ry="3" {...stroke} />
-          <ellipse cx="84" cy="42" rx="8" ry="3" {...stroke} />
-          <path d="M38 68h44l-6 18H44L38 68z" {...stroke} />
+        <svg viewBox="0 0 24 24" className={className} aria-hidden>
+          <circle cx="8" cy="21" r="1" {...s} />
+          <circle cx="19" cy="21" r="1" {...s} />
+          <path
+            d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57L22 7H6"
+            {...s}
+          />
         </svg>
       );
 
-    case "digital":
+    case "trabalhista":
+      // Maleta (Lucide Briefcase)
       return (
-        <svg viewBox="0 0 120 100" className={className} aria-hidden>
-          <rect x="24" y="22" width="72" height="44" rx="3" {...stroke} />
-          <path d="M44 78h32M60 66v12" {...stroke} />
-          <rect x="48" y="34" width="24" height="20" rx="2" {...stroke} />
-          <path d="M52 34v-4a8 8 0 0116 0v4" {...stroke} />
+        <svg viewBox="0 0 24 24" className={className} aria-hidden>
+          <path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" {...s} />
+          <rect width="20" height="14" x="2" y="6" rx="2" {...s} />
         </svg>
       );
 
-    case "ambiental":
+    case "empresarial":
+      // Prédio
       return (
-        <svg viewBox="0 0 120 100" className={className} aria-hidden>
-          <path d="M52 82V48" {...stroke} />
-          <path d="M52 54c-16-2-24-16-22-30 14 2 22 14 22 30z" {...stroke} />
-          <path d="M52 60c16-2 24-16 22-30-14 2-22 14-22 30z" {...stroke} />
-          <rect x="74" y="50" width="26" height="32" rx="1.5" {...stroke} />
-          <path d="M80 60h14M80 68h10" {...thin} />
+        <svg viewBox="0 0 24 24" className={className} aria-hidden>
+          <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" {...s} />
+          <path d="M6 12h12M6 16h12M10 6h4" {...s} />
+          <path d="M10 22v-4h4v4" {...s} />
         </svg>
       );
 
-    case "propriedade-intelectual":
+    case "tributario":
+      // Cédula
       return (
-        <svg viewBox="0 0 120 100" className={className} aria-hidden>
-          <circle cx="48" cy="42" r="20" {...stroke} />
-          <path d="M38 42h12c5 0 8 3 8 7s-3 7-8 7h-6" {...stroke} />
-          <path d="M42 42v22" {...stroke} />
-          <path d="M78 28h18l8 8v40H78V28z" {...stroke} />
-          <path d="M96 28v8h8" {...stroke} />
+        <svg viewBox="0 0 24 24" className={className} aria-hidden>
+          <rect x="2" y="6" width="20" height="12" rx="2" {...s} />
+          <circle cx="12" cy="12" r="2.5" {...s} />
+          <path d="M6 9h1.5M16.5 15H18" {...s} />
         </svg>
       );
 
-    case "internacional":
+    case "previdenciario":
+      // Escudo + cruz
       return (
-        <svg viewBox="0 0 120 100" className={className} aria-hidden>
-          <circle cx="48" cy="48" r="24" {...stroke} />
-          <path d="M24 48h48M48 24c5 6 8 12 8 24s-3 18-8 24c-5-6-8-12-8-24s3-18 8-24z" {...thin} />
-          <rect x="76" y="40" width="24" height="32" rx="1.5" {...stroke} />
-          <path d="M82 50h12M82 58h8" {...thin} />
+        <svg viewBox="0 0 24 24" className={className} aria-hidden>
+          <path
+            d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+            {...s}
+          />
+          <path d="M12 8v8M8.5 12h7" {...s} />
+        </svg>
+      );
+
+    case "familia":
+      // Grupo (Lucide Users)
+      return (
+        <svg viewBox="0 0 24 24" className={className} aria-hidden>
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" {...s} />
+          <circle cx="9" cy="7" r="4" {...s} />
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87" {...s} />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" {...s} />
+        </svg>
+      );
+
+    case "criminal":
+      // Martelo de juiz: cabeça larga + anéis + cabo + bloco
+      return (
+        <svg viewBox="0 0 24 24" className={className} aria-hidden>
+          <g transform="rotate(-42 15 8)">
+            {/* Cabeça do malhete (grossa) */}
+            <rect x="9.5" y="1.5" width="11" height="7" rx="2" {...s} />
+            {/* Faces / anéis da cabeça */}
+            <path d="M11.2 1.5v7M18.8 1.5v7" {...s} />
+            <path d="M9.5 5h11" {...s} />
+            {/* Cabo */}
+            <path d="M15 8.5v11" {...s} />
+            <path d="M13.5 19.5h3" {...s} />
+          </g>
+          {/* Bloco sonoro */}
+          <path d="M2.5 18.5h9.5" {...s} />
+          <path d="M3.5 18.5c0-1.2 1.8-2 4-2s4 .8 4 2" {...s} />
+        </svg>
+      );
+
+    case "imobiliario":
+      // Casa (Lucide Home)
+      return (
+        <svg viewBox="0 0 24 24" className={className} aria-hidden>
+          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" {...s} />
+          <polyline points="9 22 9 12 15 12 15 22" {...s} />
+        </svg>
+      );
+
+    case "administrativo":
+      // Frontão / colunas (Parthenon)
+      return (
+        <svg viewBox="0 0 24 24" className={className} aria-hidden>
+          <path d="M3 21h18" {...s} />
+          <path d="M5 21V10h2v11M9 21V10h2v11M13 21V10h2v11M17 21V10h2v11" {...s} />
+          <path d="M3 10h18" {...s} />
+          <path d="M12 3l9 7H3l9-7z" {...s} />
         </svg>
       );
 
     case "medico":
       return (
-        <svg viewBox="0 0 120 100" className={className} aria-hidden>
-          <rect x="26" y="22" width="40" height="54" rx="2" {...stroke} />
-          <path d="M34 36h24M34 46h18M34 56h20" {...thin} />
-          <path d="M78 30h16v14h14v16H94v14H78V60H64V44h14V30z" {...stroke} />
+        <svg viewBox="0 0 24 24" className={className} aria-hidden>
+          <path d="M8 2h8v6h6v8h-6v6H8v-6H2V8h6V2z" {...s} />
+        </svg>
+      );
+
+    case "digital":
+      return (
+        <svg viewBox="0 0 24 24" className={className} aria-hidden>
+          <rect x="2" y="3" width="20" height="14" rx="2" {...s} />
+          <path d="M8 21h8M12 17v4" {...s} />
+        </svg>
+      );
+
+    case "ambiental":
+      return (
+        <svg viewBox="0 0 24 24" className={className} aria-hidden>
+          <path d="M12 22v-8" {...s} />
+          <path d="M12 14c-5-1-8-6-7-11 4 1 7 5 7 11z" {...s} />
+          <path d="M12 15c5-1 8-6 7-11-4 1-7 5-7 11z" {...s} />
+        </svg>
+      );
+
+    case "propriedade-intelectual":
+      return (
+        <svg viewBox="0 0 24 24" className={className} aria-hidden>
+          <circle cx="12" cy="12" r="9" {...s} />
+          <path d="M9 9.5h3.2a2.2 2.2 0 0 1 0 4.4H10.5" {...s} />
+          <path d="M10.5 9.5V17" {...s} />
         </svg>
       );
 
     case "agrario":
+      // Trator (cabine + rodas + chassi)
       return (
-        <svg viewBox="0 0 120 100" className={className} aria-hidden>
-          <path d="M24 78V50l20-16 20 16v28" {...stroke} />
-          <path d="M36 78V60h16v18" {...stroke} />
-          <path d="M20 78h84" {...stroke} />
-          <path d="M68 78c6-16 14-26 28-30" {...stroke} />
-          <circle cx="88" cy="36" r="8" {...stroke} />
+        <svg viewBox="0 0 24 24" className={className} aria-hidden>
+          <circle cx="7" cy="17" r="3" {...s} />
+          <circle cx="18" cy="18" r="2.5" {...s} />
+          <path d="M10 17h5.5" {...s} />
+          <path d="M4 17V9h7l2 4h5v4" {...s} />
+          <path d="M11 9V5h4v4" {...s} />
+          <path d="M13 5h5l1 4" {...s} />
+        </svg>
+      );
+
+    case "internacional":
+      return (
+        <svg viewBox="0 0 24 24" className={className} aria-hidden>
+          <circle cx="12" cy="12" r="9" {...s} />
+          <path d="M3 12h18" {...s} />
+          <path
+            d="M12 3c2.5 3 4 6 4 9s-1.5 6-4 9c-2.5-3-4-6-4-9s1.5-6 4-9z"
+            {...s}
+          />
         </svg>
       );
 
     case "eleitoral":
       return (
-        <svg viewBox="0 0 120 100" className={className} aria-hidden>
-          <rect x="32" y="36" width="56" height="42" rx="3" {...stroke} />
-          <path d="M48 36v-8h24v8" {...stroke} />
-          <path d="M52 36h16" {...thin} />
-          <path d="M50 58l8 8 16-16" {...stroke} />
+        <svg viewBox="0 0 24 24" className={className} aria-hidden>
+          <rect x="5" y="8" width="14" height="13" rx="2" {...s} />
+          <path d="M9 8V5h6v3" {...s} />
+          <path d="M9 14l2 2 4-4" {...s} />
+        </svg>
+      );
+
+    case "contratual":
+      return (
+        <svg viewBox="0 0 24 24" className={className} aria-hidden>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" {...s} />
+          <path d="M14 2v6h6M9 13h6M9 17h4" {...s} />
+        </svg>
+      );
+
+    case "constitucional":
+      // Bandeira do Brasil (retângulo + losango + círculo)
+      return (
+        <svg viewBox="0 0 24 24" className={className} aria-hidden>
+          <rect x="2" y="5" width="20" height="14" rx="1.5" {...s} />
+          <path d="M12 7.5 18.5 12 12 16.5 5.5 12Z" {...s} />
+          <circle cx="12" cy="12" r="2.6" {...s} />
         </svg>
       );
 
     default:
       return (
-        <svg viewBox="0 0 120 100" className={className} aria-hidden>
-          <circle cx="60" cy="50" r="28" {...stroke} />
+        <svg viewBox="0 0 24 24" className={className} aria-hidden>
+          <circle cx="12" cy="12" r="8" {...s} />
         </svg>
       );
   }

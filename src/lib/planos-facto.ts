@@ -18,7 +18,7 @@ export const PLANO_JEC = {
   /** 79,90 ÷ 40 */
   custoPorPecaAprox: "R$ 2,00",
   beneficios: [
-    "Para leigos e quem atua só no Juizado — sem OAB",
+    "Para a própria parte no Juizado — sem OAB",
     "40 minutas/mês — ≈ R$ 2,00 por peça na cota",
     "10 análises de processo/mês",
     "Equipe FACTO: análise, súmulas da base curada e redação",

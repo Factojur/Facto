@@ -23,7 +23,8 @@ Não muda a minuta sozinho. Alimenta a base que a Pesquisa usa.
 
 ## Estado (16/08)
 
-- Na base até **83**. Próximo **84**. `LOTE_MAX` **646**. Vencimento **2026-09-13** → pausa automática **06/09**. Tarefa 01h: 17/08.
+- Na base até **83**. Próximo **84**. `LOTE_MAX` **646**. Vencimento **2026-09-13** → pausa automática **06/09**. Tarefa 01h: **17/08** (reinstalada com `npx --yes`).
+- Se a madrugada falhar: conferir `scripts/seed-juris-diario.log` e rodar de novo `powershell -ExecutionPolicy Bypass -File scripts\instalar-tarefa-seed-juris.ps1`.
 
 ## Produto vs seed
 

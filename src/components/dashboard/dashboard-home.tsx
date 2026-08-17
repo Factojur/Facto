@@ -16,6 +16,7 @@ import {
 import { AreaIllustration } from "@/components/dashboard/area-illustration";
 import { AssistenteFactoDestaque } from "@/components/dashboard/assistente-facto-destaque";
 import { FluxoFactoSection } from "@/components/dashboard/fluxo-facto-section";
+import { AreasGradeHibrida, ROTULO_AREA_BOTAO } from "@/components/dashboard/areas-rede-visual";
 import { areaEstaLiberada } from "@/lib/acesso-areas";
 import type { PlanoId } from "@/lib/planos-facto";
 import { JusticaWatermark } from "@/components/dashboard/justica-watermark";
@@ -85,27 +86,45 @@ function AreaPortalCard({
   rotuloBloqueio?: string;
   previewInterno?: boolean;
 }) {
-  const tema = getAreaTema(area.id);
   const href = hrefModuloArea(area, previewInterno);
   const disponivel = Boolean(href && liberadaNoPlano);
+  const rotulo = ROTULO_AREA_BOTAO[area.id] ?? area.title;
 
   const cardInner = (
     <>
-      <div
-        className="pointer-events-none absolute inset-0 opacity-60"
-        style={{ background: tema.pattern }}
-        aria-hidden
-      />
-      <div
-        className={`pointer-events-none absolute -right-6 -top-6 h-32 w-32 rounded-full blur-3xl ${tema.glow}`}
-        aria-hidden
-      />
-
-      <div className="relative flex items-start justify-between gap-3">
+      <div className="flex min-w-0 flex-1 items-center gap-4">
         <AreaIllustration
           areaId={area.id}
-          className={`h-24 w-24 opacity-90 transition duration-500 group-hover:scale-110 group-hover:opacity-100 ${tema.accent}`}
+          className="h-10 w-10 shrink-0 text-facto-gold transition duration-300 group-hover:text-[#d4cfa8] group-hover:drop-shadow-[0_0_8px_rgba(144,139,106,0.65)]"
         />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-base font-semibold tracking-wide text-facto-gold transition group-hover:text-[#e8e2bc] md:text-lg">
+              {rotulo}
+            </h3>
+            {!area.available && previewInterno && (
+              <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-200/90">
+                Preview
+              </span>
+            )}
+            {!area.available && !previewInterno && (
+              <span className="rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-white/55">
+                Em breve
+              </span>
+            )}
+            {area.available && !liberadaNoPlano && (
+              <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-200/90">
+                {rotuloBloqueio}
+              </span>
+            )}
+          </div>
+          <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-white/45 transition group-hover:text-white/60 md:text-[13px]">
+            {area.description}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex shrink-0 items-center gap-1">
         <BotaoFavorito
           claro
           ativo={favorito}
@@ -120,64 +139,37 @@ function AreaPortalCard({
               : `Favoritar ${area.title}`
           }
         />
-      </div>
-
-      <div className="relative mt-4">
-        {!area.available && previewInterno && (
-          <span className="mb-2 inline-block rounded-full bg-amber-400/20 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200">
-            Preview interno
-          </span>
-        )}
-        {!area.available && !previewInterno && (
-          <span className="mb-2 inline-block rounded-full bg-white/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white/70">
-            Em breve
-          </span>
-        )}
-        {area.available && !liberadaNoPlano && (
-          <span className="mb-2 inline-block rounded-full bg-amber-400/20 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200">
-            {rotuloBloqueio}
-          </span>
-        )}
-        <h3 className="text-xl font-bold text-white">{area.title}</h3>
-        {area.law && (
-          <p className="mt-1 text-xs font-medium text-white/50">{area.law}</p>
-        )}
-        <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-white/65">
-          {area.description}
-        </p>
-        {area.dicaEscolha && (
-          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-amber-200/80">
-            {area.dicaEscolha}
-          </p>
-        )}
-        <div className="mt-4 flex flex-wrap gap-1.5">
-          {tema.tags.map((tag) => (
-            <span
-              key={tag}
-              className="rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white/80"
+        {disponivel && (
+          <span
+            className="text-facto-gold/70 transition duration-300 group-hover:translate-x-0.5 group-hover:text-[#e8e2bc]"
+            aria-hidden
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
             >
-              {tag}
-            </span>
-          ))}
-        </div>
+              <path
+                d="M9 6l6 6-6 6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
+        )}
       </div>
-
-      {disponivel && (
-        <div className="relative mt-6 flex items-center gap-2 text-sm font-semibold text-white/90 transition group-hover:text-amber-300">
-          <span>Entrar no módulo</span>
-          <span className="transition-transform group-hover:translate-x-1">→</span>
-        </div>
-      )}
     </>
   );
 
-  const classes = `group relative flex min-h-[320px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br p-6 shadow-xl transition duration-300 ${tema.gradient} ${
+  const classes = `group relative flex items-center gap-3 overflow-hidden rounded-xl border border-facto-gold/35 bg-[#1c1c16]/75 px-4 py-4 backdrop-blur-[2px] transition duration-300 md:px-5 md:py-5 ${
     disponivel
-      ? "hover:-translate-y-1 hover:border-white/25 hover:shadow-2xl hover:shadow-black/40 cursor-pointer"
-      : "opacity-80"
+      ? "cursor-pointer hover:border-facto-gold hover:bg-[#1c1c16]/90 hover:shadow-[0_0_32px_rgba(144,139,106,0.4)]"
+      : "opacity-75"
   }`;
 
-  const style = { animationDelay: `${index * 80}ms` };
+  const style = { animationDelay: `${index * 60}ms` };
 
   if (disponivel && href) {
     return (
@@ -194,6 +186,7 @@ function AreaPortalCard({
   );
 }
 
+
 function FavoritoRapido({
   area,
   onRemover,
@@ -205,12 +198,11 @@ function FavoritoRapido({
   liberadaNoPlano?: boolean;
   previewInterno?: boolean;
 }) {
-  const tema = getAreaTema(area.id);
   const inner = (
     <>
       <AreaIllustration
         areaId={area.id}
-        className={`h-10 w-10 shrink-0 ${tema.accent}`}
+        className="h-9 w-9 shrink-0 text-facto-gold"
       />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-white">{area.title}</p>
@@ -504,26 +496,28 @@ export function DashboardHome({
 
               <div className="relative z-10">
               {areasVisiveis.length > 0 ? (
-                <div className="grid gap-5 sm:grid-cols-2">
-                  {areasVisiveis.map((area, i) => (
-                    <AreaPortalCard
-                      key={area.id}
-                      area={area}
-                      favorito={favoritos.includes(area.id)}
-                      onToggleFavorito={() => toggleFavorito(area.id)}
-                      index={i}
-                      previewInterno={previewAreas}
-                      liberadaNoPlano={areaEstaLiberada(area.id, gateAreas)}
-                      rotuloBloqueio={
-                        leigo && !acessoLivre
-                          ? "Requer OAB"
-                          : !plano && !acessoLivre
-                            ? "Contrate um plano"
-                            : "Upgrade de plano"
-                      }
-                    />
-                  ))}
-                </div>
+                <AreasGradeHibrida>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 sm:gap-4">
+                    {areasVisiveis.map((area, i) => (
+                      <AreaPortalCard
+                        key={area.id}
+                        area={area}
+                        favorito={favoritos.includes(area.id)}
+                        onToggleFavorito={() => toggleFavorito(area.id)}
+                        index={i}
+                        previewInterno={previewAreas}
+                        liberadaNoPlano={areaEstaLiberada(area.id, gateAreas)}
+                        rotuloBloqueio={
+                          leigo && !acessoLivre
+                            ? "Requer OAB"
+                            : !plano && !acessoLivre
+                              ? "Contrate um plano"
+                              : "Upgrade de plano"
+                        }
+                      />
+                    ))}
+                  </div>
+                </AreasGradeHibrida>
               ) : (
                 <div className="rounded-xl border border-white/10 bg-white/5 px-6 py-10 text-center text-stone-400">
                   Nenhuma área com esse filtro ou pesquisa.{" "}

@@ -6,13 +6,15 @@ Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou
 
 ## Alerta — seed automático 01h (16/08)
 
-Tarefa Windows `FACTO-seed-juris-01h` reinstalada (`npx --yes`). Próxima: **17/08/2026 01:00**.
+Tarefa Windows `FACTO-seed-juris-01h` reinstalada (`npx --yes`; script também desativa bloqueio em bateria). Próxima: **17/08/2026 01:00**.
+Estado: lotes **84–646**. Vencimento assinatura **2026-09-13** (pausa automática ~06/09).
+Na madrugada de 16/08 o log parou no prompt interativo do `npx` (sem `--yes`) — corrigido.
 
 **Vencimento Jurisprudências.ai: 13/09/2026.** Pausa automática a partir de **06/09** (última semana para pontos fracos). Inflação: madrugadas **17/08–05/09**.
 
 Fila: lotes **84–646**. Cada madrugada usa as **7 contas** até 429 e reindexa.
 
-PC ligado, sem dormir; se for notebook, **na tomada** (a tarefa não inicia em bateria).
+PC ligado, sem dormir. Notebook: o instalador da tarefa **permite** rodar na bateria; ainda assim prefira **na tomada** na madrugada.
 
 Tribunais da API: `stf stj tst trf3 trf4 tjce tjgo tjma tjmg tjmt tjpr tjrj tjrs tjsc tjsp carf`. Sem TSE, TRE, TRF1/2/5/6, TNU.
 

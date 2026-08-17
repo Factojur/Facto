@@ -477,7 +477,8 @@ function descartarLastroPorArea(
     areaId === "propriedade-intelectual" ||
     areaId === "agrario" ||
     areaId === "internacional" ||
-    areaId === "eleitoral"
+    areaId === "eleitoral" ||
+    areaId === "constitucional"
   ) {
     return lastroSoJuizadoCdcClt(titulo, texto, categoria);
   }

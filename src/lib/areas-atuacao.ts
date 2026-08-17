@@ -13,10 +13,8 @@ export type AreaAtuacao = {
 };
 
 /**
- * Ordem do catálogo: volume no Judiciário brasileiro (CNJ Justiça em Números
- * 2024/2025 — Justiça Estadual ~68% dos casos novos; execução fiscal com o
- * maior acervo; Trabalho e Federal/JEF em seguida; Eleitoral por último).
- * JEC permanece primeiro porque é o módulo vivo e concentra o rito dos Juizados.
+ * Ordem do catálogo (produto): JEC → Civil → Trabalhista → JECRIM → Penal →
+ * Constitucional → demais (volume / afinidade de rito).
  */
 export const AREAS_ATUACAO: AreaAtuacao[] = [
   {
@@ -44,40 +42,6 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
       "Particulares (CC/CPC). Consumo: Consumidor ou JEC. Locação: Imobiliário. Erro médico: Médico.",
   },
   {
-    id: "consumidor",
-    title: "Direito do Consumidor",
-    description:
-      "Ações, defesas e recursos consumeristas na justiça comum (CDC e CPC) — distinto do Juizado Especial Cível.",
-    law: "CDC · CPC",
-    href: "/dashboard/consumidor",
-    available: true,
-    icon: "🛒",
-    dicaEscolha:
-      "CDC na Vara Cível. No Juizado (teto 9.099): JEC. Só erro médico: Médico.",
-  },
-  {
-    id: "tributario",
-    title: "Direito Tributário",
-    description:
-      "Embargos à execução fiscal (Lei 6.830/80), exceção de pré-executividade, anulatória, repetição e MS tributário.",
-    law: "CTN · LEF",
-    href: "/dashboard/tributario",
-    available: true,
-    icon: "💰",
-    dicaEscolha: "Fazenda / LEF. Não é cobrança entre particulares (Civil).",
-  },
-  {
-    id: "familia",
-    title: "Direito de Família e Sucessões",
-    description:
-      "Divórcio, guarda, alimentos, inventário e partilha na Vara de Família (Código Civil e CPC) — distinto do Civil genérico e do Juizado.",
-    law: "Código Civil · CPC",
-    href: "/dashboard/familia",
-    available: true,
-    icon: "👨‍👩‍👧",
-    dicaEscolha: "Vara de Família — não use o Civil genérico nem o JEC.",
-  },
-  {
     id: "trabalhista",
     title: "Direito Trabalhista",
     description:
@@ -89,15 +53,15 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     dicaEscolha: "CLT e Justiça do Trabalho. Não use JEC nem Civil.",
   },
   {
-    id: "previdenciario",
-    title: "Direito Previdenciário",
+    id: "jecr",
+    title: "Juizado Especial Criminal",
     description:
-      "Concessão, restabelecimento e revisão de benefícios contra o INSS no JEF ou na Vara Federal.",
-    law: "Lei nº 8.213/91",
-    href: "/dashboard/previdenciario",
+      "Queixa-crime, composição civil, transação penal, defesa e recurso inominado no JECRIM (Lei 9.099/95) — distinto do JEC cível e do Penal comum.",
+    law: "Lei nº 9.099/95",
+    href: "/dashboard/jecr",
     available: true,
-    icon: "🧓",
-    dicaEscolha: "INSS / JEF. Não é acidentário trabalhista (Trabalhista).",
+    icon: "⚖️",
+    dicaEscolha: "Só JECRIM. JEC é cível; Penal comum é CPP.",
   },
   {
     id: "criminal",
@@ -111,15 +75,61 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     dicaEscolha: "Rito comum (CPP). Contravenção / 9.099 criminal: JECRIM.",
   },
   {
-    id: "jecr",
-    title: "Juizado Especial Criminal",
+    id: "constitucional",
+    title: "Direito Constitucional",
     description:
-      "Queixa-crime, composição civil, transação penal, defesa e recurso inominado no JECRIM (Lei 9.099/95) — distinto do JEC cível e do Penal comum.",
-    law: "Lei nº 9.099/95",
-    href: "/dashboard/jecr",
+      "Remédios constitucionais, recurso extraordinário, reclamação e controle concentrado (CF/88) — distinto do Administrativo e do Penal.",
+    law: "CF/88 · Leis 9.868 · 9.882 · 12.016",
+    href: "/dashboard/constitucional",
     available: true,
-    icon: "⚖️",
-    dicaEscolha: "Só JECRIM. JEC é cível; Penal comum é CPP.",
+    icon: "📕",
+    dicaEscolha:
+      "Remédios e STF/STJ. MS de ato administrativo puro: Administrativo. HC penal típico: Penal.",
+  },
+  {
+    id: "consumidor",
+    title: "Direito do Consumidor",
+    description:
+      "Ações, defesas e recursos consumeristas na justiça comum (CDC e CPC) — distinto do Juizado Especial Cível.",
+    law: "CDC · CPC",
+    href: "/dashboard/consumidor",
+    available: true,
+    icon: "🛒",
+    dicaEscolha:
+      "CDC na Vara Cível. No Juizado (teto 9.099): JEC. Só erro médico: Médico.",
+  },
+  {
+    id: "familia",
+    title: "Direito de Família e Sucessões",
+    description:
+      "Divórcio, guarda, alimentos, inventário e partilha na Vara de Família (Código Civil e CPC) — distinto do Civil genérico e do Juizado.",
+    law: "Código Civil · CPC",
+    href: "/dashboard/familia",
+    available: true,
+    icon: "👨‍👩‍👧",
+    dicaEscolha: "Vara de Família — não use o Civil genérico nem o JEC.",
+  },
+  {
+    id: "tributario",
+    title: "Direito Tributário",
+    description:
+      "Embargos à execução fiscal (Lei 6.830/80), exceção de pré-executividade, anulatória, repetição e MS tributário.",
+    law: "CTN · LEF",
+    href: "/dashboard/tributario",
+    available: true,
+    icon: "💰",
+    dicaEscolha: "Fazenda / LEF. Não é cobrança entre particulares (Civil).",
+  },
+  {
+    id: "previdenciario",
+    title: "Direito Previdenciário",
+    description:
+      "Concessão, restabelecimento e revisão de benefícios contra o INSS no JEF ou na Vara Federal.",
+    law: "Lei nº 8.213/91",
+    href: "/dashboard/previdenciario",
+    available: true,
+    icon: "🧓",
+    dicaEscolha: "INSS / JEF. Não é acidentário trabalhista (Trabalhista).",
   },
   {
     id: "imobiliario",
@@ -164,7 +174,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     href: "/dashboard/administrativo",
     available: true,
     icon: "🏛️",
-    dicaEscolha: "MS e ato da Administração. Tributo: Tributário.",
+    dicaEscolha: "MS e ato da Administração. Tributo: Tributário. Remédio CF puro: Constitucional.",
   },
   {
     id: "medico",

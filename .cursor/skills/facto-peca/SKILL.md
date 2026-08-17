@@ -11,7 +11,7 @@ description: >-
 
 Não redesenhar o que já fechamos. Skill só para o agente no Cursor; o cliente não vê isto.
 
-Módulo aberto hoje: **todas as áreas com dashboard** (`available: true`), salvo **Contratual** (fora da grade; litígio no Civil; Contratos em breve). Plano JEC e leigo: só JEC. Completo/Pro + OAB: demais. Eleitoral aberto no catálogo, lastro TRE/TSE ainda fraco.
+Módulo aberto hoje: **todas as áreas com dashboard** (`available: true`), salvo **Contratual** (fora da grade; litígio no Civil; Contratos em breve). Inclui **Constitucional**. Plano JEC e parte sem OAB: só JEC. Completo/Pro + OAB: demais. Eleitoral aberto no catálogo, lastro TRE/TSE ainda fraco.
 
 Preview admin (`/dashboard/preview/<id>`) permanece para e-mails internos.
 
@@ -20,7 +20,7 @@ Se alterar a dashboard JEC e **não** for específico do JEC, extrair/atualizar 
 ## Sempre
 
 - Minuta para **revisar e protocolar fora** do FACTO. Não enviar arquivo ao juízo.
-- **JG e MLE:** checkbox só inclui o **pedido no texto**. MLE não aparece em Penal, JECRIM nem Eleitoral. Declaração e docs do MLE o usuário junta no protocolo.
+- **JG e MLE:** checkbox só inclui o **pedido no texto**. MLE não aparece em Penal, JECRIM, Eleitoral nem Constitucional. Declaração e docs do MLE o usuário junta no protocolo.
 - **Provas do fato:** insumos para a IA (contrato, print, nota). Não confundir com checklist de protocolo.
 - **Já qualificado:** peças incidentais = só nome; petição inicial = qualificação mínima.
 - **Corpo justificado:** fatos/direito em parágrafos de 2–3 períodos. Uma frase por linha parece alinhada à esquerda.

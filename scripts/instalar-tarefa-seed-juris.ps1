@@ -7,6 +7,11 @@ $repo = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $tr = "cmd.exe /c cd /d `"$repo`" && npx --yes tsx scripts/seed-juris-diario.ts >> `"$repo\scripts\seed-juris-diario.log`" 2>&1"
 
 schtasks /Create /F /TN "FACTO-seed-juris-01h" /SC DAILY /ST 01:00 /RL LIMITED /TR $tr
+# Notebook: não bloquear se estiver na bateria (senão a 01h falha em silêncio).
+$settings = (Get-ScheduledTask -TaskName "FACTO-seed-juris-01h").Settings
+$settings.DisallowStartIfOnBatteries = $false
+$settings.StopIfGoingOnBatteries = $false
+Set-ScheduledTask -TaskName "FACTO-seed-juris-01h" -Settings $settings | Out-Null
 Write-Host "Tarefa FACTO-seed-juris-01h criada (diária 01:00)."
 Write-Host "O PC precisa estar ligado (sem dormir). Log: scripts\seed-juris-diario.log"
 Write-Host "Pool: JURISPRUDENCIAS_AI_API_KEY + JURISPRUDENCIAS_AI_API_KEYS (7 contas)."

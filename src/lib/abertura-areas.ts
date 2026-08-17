@@ -95,12 +95,22 @@ export const SEQUENCIA_ABERTURA_AREAS: ItemAberturaArea[] = [
   },
   {
     id: "criminal",
-    ordem: 7,
+    ordem: 5,
     titulo: "Penal comum",
     porQue: "Depois do JECRIM.",
     especifico: [
       "Habeas corpus, resposta à acusação, memoriais",
       "Prazos CPP",
+    ],
+  },
+  {
+    id: "constitucional",
+    ordem: 6,
+    titulo: "Constitucional",
+    porQue: "Remédios CF e STF.",
+    especifico: [
+      "MS, HC, HD, MI, RE, reclamação, ADI/ADPF",
+      "Endereçamento STF/tribunal conforme a espécie",
     ],
   },
   {

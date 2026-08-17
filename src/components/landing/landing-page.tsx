@@ -303,7 +303,7 @@ export function LandingPage() {
                   {PLANO_JEC.rotulo}
                 </h3>
                 <p className="mt-1 text-sm text-stone-500">
-                  Para leigos e quem atua só no Juizado, sem OAB: 40 minutas/mês
+                  Para a própria parte no Juizado — sem OAB: 40 minutas/mês
                   com lastro e padrão forense.
                 </p>
                 <div className="mt-6 flex items-baseline gap-1">

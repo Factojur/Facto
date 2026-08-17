@@ -231,6 +231,37 @@ export function especieParaScaffoldJec(
         return "peticao-inicial";
     }
   }
+  if (areaId === "constitucional") {
+    switch (especie) {
+      case "recurso-extraordinario":
+      case "agravo-recurso-extraordinario":
+      case "recurso-ordinario-constitucional":
+      case "agravo-regimental":
+      case "contrarrazoes-recurso-extraordinario":
+      case "contrarrazoes-recurso-ordinario":
+      case "apelacao":
+        return "recurso";
+      case "agravo-instrumento":
+        return "agravo-instrumento";
+      case "embargos-declaracao":
+        return "embargos";
+      case "informacoes-ms":
+      case "contestacao-ms":
+      case "contestacao-habeas-data":
+      case "informacoes-mandado-injuncao":
+      case "contestacao-reclamacao":
+      case "contestacao-adi":
+      case "contestacao-adpf":
+      case "contestacao-adc":
+      case "contestacao-ado":
+      case "contestacao-acao-popular":
+        return "contestacao";
+      case "memorial":
+        return "memorial";
+      default:
+        return "peticao-inicial";
+    }
+  }
   if (areaId === "jecr") {
     switch (especie) {
       case "queixa-crime":

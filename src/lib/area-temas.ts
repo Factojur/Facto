@@ -84,6 +84,13 @@ export const AREA_TEMAS: Record<string, AreaTema> = {
     pattern: "radial-gradient(circle at 60% 80%, rgba(147,197,253,0.12), transparent 50%)",
     tags: ["Licitações", "MS", "Contratos"],
   },
+  constitucional: {
+    gradient: "from-amber-950 via-stone-900 to-yellow-950",
+    glow: "bg-amber-300/15",
+    accent: "text-amber-200",
+    pattern: "radial-gradient(circle at 40% 20%, rgba(252,211,77,0.12), transparent 50%)",
+    tags: ["Remédios", "RE", "STF"],
+  },
   previdenciario: {
     gradient: "from-cyan-950 via-stone-900 to-sky-950",
     glow: "bg-cyan-300/15",

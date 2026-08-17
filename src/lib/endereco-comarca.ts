@@ -41,6 +41,8 @@ export function rotuloAreaJudiciaria(areaId: string = "jec"): string {
       return "FAZENDA PÚBLICA";
     case "eleitoral":
       return "JUSTIÇA ELEITORAL";
+    case "constitucional":
+      return "JUÍZO CONSTITUCIONAL";
     case "internacional":
       return "COOPERAÇÃO JURÍDICA / STJ";
     case "civil":
@@ -184,7 +186,48 @@ export function formatarEnderecamentoPadrao(opcoes: {
 
   const areaId = opcoes.areaId ?? "";
   const especie = (opcoes.especiePeca ?? "").toLowerCase();
+
+  // Controle concentrado e RE → STF
+  if (
+    areaId === "constitucional" &&
+    (especie === "adi" ||
+      especie === "adc" ||
+      especie === "ado" ||
+      especie === "adpf" ||
+      especie === "contestacao-adi" ||
+      especie === "contestacao-adpf" ||
+      especie === "contestacao-adc" ||
+      especie === "contestacao-ado" ||
+      especie === "informacoes-mandado-injuncao" ||
+      especie === "recurso-extraordinario" ||
+      especie === "agravo-recurso-extraordinario" ||
+      especie === "contrarrazoes-recurso-extraordinario" ||
+      especie === "contrarrazoes-recurso-ordinario" ||
+      especie === "recurso-ordinario-constitucional" ||
+      especie === "agravo-regimental" ||
+      especie.includes("extraordinario") ||
+      especie.includes("extraordinário"))
+  ) {
+    return "EXCELENTÍSSIMO(A) SENHOR(A) MINISTRO(A) PRESIDENTE DO COLENDO SUPREMO TRIBUNAL FEDERAL";
+  }
+  if (
+    areaId === "constitucional" &&
+    (especie === "reclamacao-constitucional" || especie.includes("reclama"))
+  ) {
+    return "EXCELENTÍSSIMO(A) SENHOR(A) MINISTRO(A) PRESIDENTE DO COLENDO SUPREMO TRIBUNAL FEDERAL";
+  }
+
   if (especie === "habeas-corpus" || especie.includes("habeas")) {
+    if (areaId === "constitucional") {
+      // HC constitucional pode ser TJ, TRF ou STF — use o foro dos FATOS se indicar STF
+      const foro = (info.foro ?? "").toLowerCase();
+      if (/\bstf\b|supremo/.test(foro)) {
+        return "EXCELENTÍSSIMO(A) SENHOR(A) MINISTRO(A) PRESIDENTE DO COLENDO SUPREMO TRIBUNAL FEDERAL";
+      }
+      if (/\btrf\b|tribunal regional federal|justi[cç]a federal/.test(foro)) {
+        return "EXCELENTÍSSIMO(A) SENHOR(A) DESEMBARGADOR(A) FEDERAL PRESIDENTE DO EGRÉGIO TRIBUNAL REGIONAL FEDERAL";
+      }
+    }
     return `EXCELENTÍSSIMO(A) SENHOR(A) DESEMBARGADOR(A) PRESIDENTE DO EGRÉGIO TRIBUNAL DE JUSTIÇA DO ESTADO DE ${
       uf || "___"
     }`;
@@ -292,6 +335,26 @@ export function formatarEnderecamentoPadrao(opcoes: {
   }
   if (areaId === "internacional") {
     return `EXCELENTÍSSIMO(A) SENHOR(A) MINISTRO(A) PRESIDENTE DO SUPERIOR TRIBUNAL DE JUSTIÇA`;
+  }
+  if (areaId === "constitucional") {
+    const foro = (info.foro ?? "").toLowerCase();
+    if (/\bstf\b|supremo/.test(foro)) {
+      return "EXCELENTÍSSIMO(A) SENHOR(A) MINISTRO(A) PRESIDENTE DO COLENDO SUPREMO TRIBUNAL FEDERAL";
+    }
+    if (
+      /justi[cç]a federal|\bjf\b|\btrf\b|se[cç][aã]o judici[aá]ria|vara federal/.test(
+        foro
+      )
+    ) {
+      return (
+        `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) FEDERAL DA ${vara} ` +
+        `VARA FEDERAL DE ${comarcaTxt}`
+      );
+    }
+    return (
+      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA ${vara} ` +
+      `VARA DO FÓRUM DA COMARCA DE ${comarcaTxt}`
+    );
   }
   if (
     areaId === "consumidor" ||
