@@ -39,6 +39,14 @@ import {
   type EspeciePecaJec,
 } from "@/lib/jec-especie-peca";
 import {
+  especieCompativelComPoloJec,
+  inferirPoloPorEspecieJec,
+  listaEspeciesJecFiltradas,
+  normalizarPoloAdvocacia,
+  rotuloPoloAdvocacia,
+  type PoloAdvocacia,
+} from "@/lib/polo-advocacia";
+import {
   idsPeticaoInicialDaArea,
   listaEspeciesDaArea,
   metaEspecieDaArea,
@@ -597,6 +605,7 @@ function estadoInicialFormulario() {
     modoAcao: "assistente" as ModoDefinicaoAcao,
     tipoAcaoTexto: "",
     especiePeca: "peticao-inicial" as EspeciePecaJec,
+    poloAdvocacia: "ativo" as PoloAdvocacia,
     especieManual: false,
     fatos: "",
     tutelaUrgencia: false,
@@ -641,6 +650,7 @@ export function JecForm({
   const [especiePeca, setEspeciePeca] = useState(
     () => idsPeticaoInicialDaArea(areaId)[0] ?? "peticao-inicial"
   );
+  const [poloAdvocacia, setPoloAdvocacia] = useState<PoloAdvocacia>("ativo");
   const [especieManual, setEspecieManual] = useState(false);
   const [fatos, setFatos] = useState("");
   const [tutelaUrgencia, setTutelaUrgencia] = useState(false);
@@ -740,8 +750,28 @@ export function JecForm({
     leigo &&
     ultrapassaTetoJec(resumoValores.totalCentavos, false);
   const idsInicial = idsPeticaoInicialDaArea(areaId);
-  const especiesOpcoes = listaEspeciesDaArea(areaId) ?? ESPECIES_PECA_JEC;
+  const especiesOpcoes = useMemo(() => {
+    const base = listaEspeciesDaArea(areaId) ?? ESPECIES_PECA_JEC;
+    if (areaId !== "jec") return base;
+    return listaEspeciesJecFiltradas(poloAdvocacia);
+  }, [areaId, poloAdvocacia]);
   const moduloUi = moduloDaArea(areaId);
+
+  useEffect(() => {
+    if (areaId !== "jec") return;
+    if (!especieCompativelComPoloJec(especiePeca, poloAdvocacia)) {
+      const primeira = especiesOpcoes[0]?.id;
+      if (primeira) setEspeciePeca(primeira);
+    }
+  }, [areaId, poloAdvocacia, especiePeca, especiesOpcoes]);
+
+  useEffect(() => {
+    if (areaId !== "jec" || !especieManual) return;
+    const inferido = inferirPoloPorEspecieJec(especiePeca);
+    if (inferido && inferido !== poloAdvocacia) {
+      setPoloAdvocacia(inferido);
+    }
+  }, [areaId, especieManual, especiePeca, poloAdvocacia]);
 
   const tituloAcaoCompleto = useMemo(() => {
     if (!tipoAcaoDefinido) return "";
@@ -866,8 +896,19 @@ export function JecForm({
       ? peca.tituloCompleto || peca.tipoAcao
       : peca.tituloCompleto || peca.tipoAcao;
     setTipoAcaoTexto(titulo);
-    setEspeciePeca(peca.especiePeca);
+    setEspeciePeca(
+      inferirEspeciePeca(titulo, analise.ficha.fatosSugeridos, peca.especiePeca)
+    );
     setEspecieManual(true);
+    if (areaId === "jec") {
+      const esp = inferirEspeciePeca(
+        titulo,
+        analise.ficha.fatosSugeridos,
+        peca.especiePeca
+      );
+      const poloInferido = inferirPoloPorEspecieJec(esp);
+      if (poloInferido) setPoloAdvocacia(poloInferido);
+    }
     setTutelaUrgencia(peca.tutelaUrgencia);
     setCumuloDanosMorais(peca.danosMorais);
     setCumuloDanosMateriais(peca.danosMateriais);
@@ -967,6 +1008,7 @@ export function JecForm({
     setModoAcao(ini.modoAcao);
     setTipoAcaoTexto(ini.tipoAcaoTexto);
     setEspeciePeca(ini.especiePeca);
+    setPoloAdvocacia(ini.poloAdvocacia);
     setEspecieManual(ini.especieManual);
     setFatos(ini.fatos);
     setTutelaUrgencia(ini.tutelaUrgencia);
@@ -1014,6 +1056,7 @@ export function JecForm({
       p.especiePeca
     );
     setEspeciePeca(espSalva);
+    setPoloAdvocacia(normalizarPoloAdvocacia(p.poloAdvocacia));
     setEspecieManual(Boolean(p.especiePeca));
     setTutelaUrgencia(Boolean(p.tutelaUrgencia));
     setComarca(normalizarComarcaValue(p.comarca, areaId));
@@ -1087,6 +1130,7 @@ export function JecForm({
           fatos,
           tipoSelecionado: tituloAcaoCompleto || tipoAcaoTexto || ASSISTENTE_FACTO,
           especiePeca,
+          poloAdvocacia: areaId === "jec" ? poloAdvocacia : undefined,
           tutelaUrgencia,
           comarca,
           valoresCausa,
@@ -1224,6 +1268,8 @@ export function JecForm({
     const payload = {
       tipoAcao,
       especiePeca,
+      poloAdvocacia: areaId === "jec" ? poloAdvocacia : undefined,
+      atuarLeigo: leigo,
       areaId,
       dispositivoSentenca:
         analiseProcesso?.ficha.dispositivo?.trim() || undefined,
@@ -1461,6 +1507,50 @@ export function JecForm({
           </p>
 
           <div className="space-y-4 sm:max-w-2xl">
+            {areaId === "jec" ? (
+              <div>
+                <span className="mb-1.5 block text-sm font-medium text-slate-700">
+                  Estou atuando pelo…
+                </span>
+                <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
+                  {(["ativo", "passivo"] as const).map((polo) => (
+                    <label
+                      key={polo}
+                      className="flex flex-1 cursor-pointer items-start gap-2.5 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm has-[:checked]:border-stone-500 has-[:checked]:bg-stone-50"
+                    >
+                      <input
+                        type="radio"
+                        name="poloAdvocacia"
+                        checked={poloAdvocacia === polo}
+                        onChange={() => setPoloAdvocacia(polo)}
+                        className="mt-0.5 h-4 w-4 border-slate-300 text-stone-700 focus:ring-stone-500"
+                      />
+                      <span>
+                        <span className="font-medium text-slate-800">
+                          {polo === "ativo" ? "Polo ativo" : "Polo passivo"}
+                        </span>
+                        <span className="mt-0.5 block text-xs text-slate-500">
+                          {rotuloPoloAdvocacia(
+                            polo,
+                            moduloUi.rotuloPoloAtivo,
+                            moduloUi.rotuloPoloPassivo
+                          )}
+                          {leigo
+                            ? " — em causa própria"
+                            : " — a peça será redigida em favor deste polo"}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <p className="mt-1.5 text-xs text-slate-500">
+                  O tipo de peça abaixo é filtrado conforme o polo escolhido.
+                  Recursos e embargos podem aparecer nos dois lados, conforme o
+                  caso.
+                </p>
+              </div>
+            ) : null}
+
             <div>
               <label
                 htmlFor="especiePeca"

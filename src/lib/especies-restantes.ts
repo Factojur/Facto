@@ -217,6 +217,17 @@ export const KIT_CRIMINAL = kit(
       prazoAviso: "Não há prazo decadencial típico — a coação deve estar nos FATOS.",
     },
     {
+      id: "defesa-preliminar",
+      rotulo: "Defesa preliminar",
+      descricao:
+        "Art. 395 do CPP — rejeição da denúncia ou absolvição sumária. Anterior e distinta da resposta à acusação (arts. 396 e 396-A).",
+      nomePecaHint: "Defesa preliminar",
+      exigeProcesso: true,
+      conectivoPartes:
+        "apresentando a presente defesa preliminar, pelos fundamentos a seguir.",
+      prazoAviso: "Prazo típico: 10 dias (art. 396 do CPP).",
+    },
+    {
       id: "resposta-acusacao",
       rotulo: "Resposta à acusação",
       descricao:
@@ -286,12 +297,14 @@ export const KIT_CRIMINAL = kit(
   [
     "   Rito: JUSTIÇA PENAL COMUM (CP + CPP). NÃO aplique Lei 9.099/95 (JECRIM), contestação cível, CLT nem CDC.",
     "   Não invente inquérito, denúncia, pena, tipificação nem coação além dos FATOS.",
-    "   Resposta à acusação (arts. 396/396-A do CPP) ≠ contestação. Apelação: art. 593 do CPP (não inominado).",
+    "   Resposta à acusação (arts. 396/396-A do CPP) ≠ contestação. Defesa preliminar (art. 395) ≠ resposta — só preliminares de rejeição/absolvição sumária.",
+    "   Apelação: art. 593 do CPP (não inominado).",
     "   HC: art. 5º, LXVIII, da CF e arts. 647 e ss. do CPP — endereçamento ao Tribunal.",
     "   Agravo em execução: art. 197 da LEP (não agravo do CPC 1.015). Julgado contrário: não cite como lastro favorável.",
   ],
   (t) => {
     if (/habeas/.test(t)) return "habeas-corpus";
+    if (/defesa preliminar|art\.?\s*395/.test(t)) return "defesa-preliminar";
     if (/resposta [aà] acusa|396-a/.test(t)) return "resposta-acusacao";
     if (/revis[aã]o criminal/.test(t)) return "revisao-criminal";
     if (/agravo em execu/.test(t) || /l\.?e\.?p/.test(t)) return "agravo-execucao";
@@ -303,6 +316,7 @@ export const KIT_CRIMINAL = kit(
   },
   {
     "habeas-corpus": "Habeas Corpus",
+    "defesa-preliminar": "Defesa Preliminar",
     "resposta-acusacao": "Resposta à Acusação",
     "alegacoes-finais": "Alegações Finais",
     apelacao: "Apelação Criminal",
@@ -316,6 +330,19 @@ export const KIT_CRIMINAL = kit(
       { chave: "paciente", titulo: "DO PACIENTE E DA AUTORIDADE COATORA", obrigatoria: true },
       { chave: "coacao", titulo: "DA COAÇÃO ILEGAL", obrigatoria: true },
       { chave: "direito", titulo: "DO DIREITO", obrigatoria: true },
+      { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
+    ],
+    "defesa-preliminar": [
+      {
+        chave: "tempestividade",
+        titulo: "DA TEMPESTIVIDADE E DO CABIMENTO",
+        obrigatoria: true,
+      },
+      {
+        chave: "preliminares",
+        titulo: "DAS PRELIMINARES (ART. 395 DO CPP)",
+        obrigatoria: true,
+      },
       { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
     ],
     "resposta-acusacao": DEFESA,

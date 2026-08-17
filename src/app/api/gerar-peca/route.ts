@@ -550,6 +550,9 @@ async function postGerarPeca(request: Request) {
     leiMunicipal,
     jurisDoCaso,
     casoReal: true,
+    poloAdvocacia:
+      areaId === "jec" ? body.poloAdvocacia ?? "ativo" : body.poloAdvocacia,
+    atuarLeigo: Boolean(body.atuarLeigo),
     instrucoes: {
       enderecamento,
       valorCausa: montarSecaoValorCausa(valorCausaResumo).join("\n"),

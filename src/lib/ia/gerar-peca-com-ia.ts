@@ -35,6 +35,12 @@ import {
 import {
   inferirEspecieDaArea,
 } from "@/lib/peca-especie-area";
+import {
+  normalizarPoloAdvocacia,
+  rotuloPoloAdvocacia,
+  type PoloAdvocacia,
+} from "@/lib/polo-advocacia";
+import { moduloDaArea } from "@/lib/minuta-modulo";
 import { formatarOabAssinatura } from "@/lib/formatar-oab";
 import {
   contextoVerificacaoJurisCaso,
@@ -154,12 +160,28 @@ function parseEstrategiaJuridica(texto: string): AnaliseEstrategica {
   };
 }
 
+function linhaPoloUsuario(
+  polo: PoloAdvocacia | null | undefined,
+  areaId: string
+): string | null {
+  if (!polo) return null;
+  const modulo = moduloDaArea(areaId);
+  const lado = rotuloPoloAdvocacia(
+    polo,
+    modulo.rotuloPoloAtivo,
+    modulo.rotuloPoloPassivo
+  );
+  return `Polo processual (formulário): ${polo} (${lado}) — fundamentar em favor deste polo.`;
+}
+
 function montarUserPromptTriagem(params: {
   tipoAcao: string;
   fatos: string;
   tutelaUrgencia?: boolean;
   casoReal: boolean;
   especiePeca?: string;
+  poloAdvocacia?: PoloAdvocacia | null;
+  areaId?: string;
 }): string {
   return [
     "Processe o relato abaixo e devolva APENAS o resumo estruturado pedido no system prompt.",
@@ -168,6 +190,7 @@ function montarUserPromptTriagem(params: {
     params.especiePeca
       ? `Espécie da peça (formulário): ${params.especiePeca}`
       : null,
+    linhaPoloUsuario(params.poloAdvocacia, params.areaId ?? "jec"),
     params.tutelaUrgencia != null
       ? `Tutela marcada no formulário: ${params.tutelaUrgencia ? "Sim" : "Não"}`
       : null,
@@ -189,6 +212,8 @@ function montarUserPromptRedacao(params: {
   casoReal: boolean;
   estrategiaJuridica: string;
   especiePeca?: string;
+  poloAdvocacia?: PoloAdvocacia | null;
+  areaId?: string;
 }): string {
   const partes = [
     "TAREFA: redija a PEÇA COMPLETA seguindo o system prompt e o resumo estratégico abaixo.",
@@ -202,6 +227,7 @@ function montarUserPromptRedacao(params: {
     params.especiePeca
       ? `Espécie da peça: ${params.especiePeca} — use exatamente a estrutura romana dessa espécie.`
       : null,
+    linhaPoloUsuario(params.poloAdvocacia, params.areaId ?? "jec"),
     params.instrucoes?.tutelaUrgencia != null
       ? `Tutela no formulário: ${params.instrucoes.tutelaUrgencia ? "Sim — incluir se confirmada na estratégia/fatos" : "Não — só se os fatos revelarem urgência manifesta"}`
       : null,
@@ -350,6 +376,8 @@ export async function gerarPecaComIA(params: {
   jurisDoCaso?: BlocoJurisCaso[] | null;
   instrucoes?: InstrucoesDeterministicas;
   casoReal?: boolean;
+  poloAdvocacia?: PoloAdvocacia | null;
+  atuarLeigo?: boolean;
 }): Promise<ResultadoPecaIA> {
   if (!geminiConfigurado()) {
     return {
@@ -360,6 +388,14 @@ export async function gerarPecaComIA(params: {
 
   const casoReal = params.casoReal ?? true;
   const areaId = params.areaId ?? "jec";
+  const polo =
+    params.poloAdvocacia != null
+      ? normalizarPoloAdvocacia(params.poloAdvocacia)
+      : null;
+  const opcoesPolo =
+    polo != null
+      ? { polo, atuarLeigo: Boolean(params.atuarLeigo) }
+      : undefined;
   const especie = inferirEspecieDaArea(
     areaId,
     params.tipoAcao,
@@ -413,7 +449,8 @@ export async function gerarPecaComIA(params: {
       leiMunicipal,
       jurisDoCaso,
       especie,
-      areaId
+      areaId,
+      opcoesPolo
     ),
     userPrompt: montarUserPromptTriagem({
       tipoAcao: params.tipoAcao,
@@ -421,6 +458,8 @@ export async function gerarPecaComIA(params: {
       tutelaUrgencia: params.instrucoes?.tutelaUrgencia,
       casoReal,
       especiePeca: especie,
+      poloAdvocacia: polo,
+      areaId,
     }),
     modelos: MODELOS_TRIAGEM,
     temperature: 0.25,
@@ -521,7 +560,8 @@ export async function gerarPecaComIA(params: {
       leiMunicipal,
       jurisDoCaso,
       especie,
-      areaId
+      areaId,
+      opcoesPolo
     ),
     userPrompt: montarUserPromptRedacao({
       tipoAcao: analiseEstrategica.nomeAcao || params.tipoAcao,
@@ -530,6 +570,8 @@ export async function gerarPecaComIA(params: {
       casoReal,
       estrategiaJuridica,
       especiePeca: especie,
+      poloAdvocacia: polo,
+      areaId,
     }),
     modelos: modelosRedacao(),
     temperature: 0.35,

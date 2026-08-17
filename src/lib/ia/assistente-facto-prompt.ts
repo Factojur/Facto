@@ -18,6 +18,11 @@ import {
   montarBlocoPromptJurisCaso,
   type BlocoJurisCaso,
 } from "@/lib/juris-caso-types";
+import {
+  blocoPromptPoloAdvocacia,
+  type PoloAdvocacia,
+} from "@/lib/polo-advocacia";
+import { moduloDaArea } from "@/lib/minuta-modulo";
 
 export type BlocoLeiMunicipal = {
   nome: string;
@@ -63,7 +68,11 @@ export function montarSystemPromptAnaliseEstrategica(
   leiMunicipal?: BlocoLeiMunicipal | null,
   jurisDoCaso?: BlocoJurisCaso[] | null,
   especiePeca?: string | null,
-  areaId: string = "jec"
+  areaId: string = "jec",
+  opcoesPolo?: {
+    polo?: PoloAdvocacia | null;
+    atuarLeigo?: boolean;
+  }
 ): string {
   const especie = especiePeca
     ? inferirEspecieDaArea(areaId, "", "", especiePeca)
@@ -72,6 +81,20 @@ export function montarSystemPromptAnaliseEstrategica(
   const copy = ritoDaArea(areaId);
   const rito = copy.ritoCurto;
   const nomePeca = copy.nomePeca;
+  const modulo = moduloDaArea(areaId);
+  const blocoPolo =
+    opcoesPolo?.polo != null
+      ? [
+          "",
+          blocoPromptPoloAdvocacia({
+            polo: opcoesPolo.polo,
+            rotuloAtivo: modulo.rotuloPoloAtivo,
+            rotuloPassivo: modulo.rotuloPoloPassivo,
+            atuarLeigo: opcoesPolo.atuarLeigo,
+            areaId,
+          }),
+        ].join("\n")
+      : "";
   return [
     `Você é um Paralegal Especialista em ${rito}`,
     "Receba o relato do cliente (pode estar bagunçado, coloquial ou muito longo) e devolva APENAS um resumo estruturado contendo:",
@@ -99,6 +122,7 @@ export function montarSystemPromptAnaliseEstrategica(
     "Formato livre em texto claro (pode usar numeração). Sem saudações.",
     "",
     blocoBaseMunicipalEJuris(contextoBase, leiMunicipal, jurisDoCaso),
+    blocoPolo,
   ].join("\n");
 }
 
@@ -111,7 +135,11 @@ export function montarSystemPromptRedacaoTier1(
   leiMunicipal?: BlocoLeiMunicipal | null,
   jurisDoCaso?: BlocoJurisCaso[] | null,
   especiePeca: string = "peticao-inicial",
-  areaId: string = "jec"
+  areaId: string = "jec",
+  opcoesPolo?: {
+    polo?: PoloAdvocacia | null;
+    atuarLeigo?: boolean;
+  }
 ): string {
   const especie = inferirEspecieDaArea(areaId, "", "", especiePeca);
   const meta = metaEspecieDaArea(areaId, especie);
@@ -119,6 +147,17 @@ export function montarSystemPromptRedacaoTier1(
   const copy = ritoDaArea(areaId);
   const ritoLinha = copy.ritoLinha;
   const especialidade = copy.especialidade;
+  const modulo = moduloDaArea(areaId);
+  const blocoPolo =
+    opcoesPolo?.polo != null
+      ? blocoPromptPoloAdvocacia({
+          polo: opcoesPolo.polo,
+          rotuloAtivo: modulo.rotuloPoloAtivo,
+          rotuloPassivo: modulo.rotuloPoloPassivo,
+          atuarLeigo: opcoesPolo.atuarLeigo,
+          areaId,
+        })
+      : null;
 
   return [
     `Você é um Advogado Sênior de elite, especialista em ${especialidade}, conhecido por redigir peças forenses impecáveis (${meta.rotulo}).`,
@@ -226,8 +265,11 @@ export function montarSystemPromptRedacaoTier1(
     "   NÃO escreva a linha isolada \"Advogado\" entre o nome e a OAB.",
     "   Se a parte for leiga (sem OAB), use o nome da parte e omita a linha OAB.",
     "",
+    blocoPolo ?? "",
     blocoBaseMunicipalEJuris(contextoBase, leiMunicipal, jurisDoCaso),
-  ].join("\n");
+  ]
+    .filter((linha) => linha !== "")
+    .join("\n");
 }
 
 /** @deprecated — use montarSystemPromptRedacaoTier1 */

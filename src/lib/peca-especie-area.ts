@@ -194,6 +194,8 @@ export function especieParaScaffoldJec(
         return "peticao-inicial";
       case "resposta-acusacao":
         return "contestacao";
+      case "defesa-preliminar":
+        return "defesa-preliminar";
       case "alegacoes-finais":
         return "replica";
       case "apelacao":
@@ -274,7 +276,7 @@ export function especieParaScaffoldJec(
       case "alegacoes-finais":
         return "replica";
       case "recurso-inominado":
-        return "recurso";
+        return "recurso-inominado";
       case "embargos-declaracao":
         return "embargos";
       default:

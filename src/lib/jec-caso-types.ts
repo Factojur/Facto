@@ -74,8 +74,8 @@ export const FASES_CASO_JEC: MetaFaseCasoJec[] = [
   {
     id: "recurso",
     rotulo: "Recurso",
-    descricao: "Recurso inominado, agravo ou contrarrazões.",
-    especieSugerida: "recurso",
+    descricao: "Recurso inominado, agravo de instrumento ou contrarrazões.",
+    especieSugerida: "recurso-inominado",
     ordem: 6,
   },
   {

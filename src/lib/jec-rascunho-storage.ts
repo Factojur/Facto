@@ -18,6 +18,8 @@ export type JecRascunhoPayload = {
   tipoSelecionado: string;
   /** JEC-1 — espécie da peça. */
   especiePeca?: string;
+  /** Polo em que o advogado/parte atua (JEC). */
+  poloAdvocacia?: "ativo" | "passivo";
   tutelaUrgencia: boolean;
   comarca: ComarcaValue;
   valoresCausa: ValoresPorCategoria;
@@ -111,6 +113,7 @@ export function payloadLeveParaRascunho(opcoes: {
   fatos: string;
   tipoSelecionado: string;
   especiePeca?: string;
+  poloAdvocacia?: "ativo" | "passivo";
   tutelaUrgencia: boolean;
   comarca: ComarcaValue;
   valoresCausa: ValoresPorCategoria;
@@ -136,6 +139,7 @@ export function payloadLeveParaRascunho(opcoes: {
     fatos: opcoes.fatos,
     tipoSelecionado: opcoes.tipoSelecionado,
     especiePeca: opcoes.especiePeca,
+    poloAdvocacia: opcoes.poloAdvocacia,
     tutelaUrgencia: opcoes.tutelaUrgencia,
     comarca: opcoes.comarca,
     valoresCausa: opcoes.valoresCausa,

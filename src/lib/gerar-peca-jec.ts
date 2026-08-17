@@ -98,6 +98,10 @@ export type GerarPecaJecInput = {
   baseConhecimento?: TrechoConhecimento[];
   /** Dispositivo da sentença (análise de autos / recurso). */
   dispositivoSentenca?: string | null;
+  /** Polo em que o advogado atua (JEC e demais áreas quando informado). */
+  poloAdvocacia?: "ativo" | "passivo" | null;
+  /** Causa própria (JEC leigo) — ajusta prompt partidário. */
+  atuarLeigo?: boolean;
 };
 
 export type GerarPecaJecOutput = {
@@ -225,10 +229,10 @@ function extrairPedidos(
       .join("\n");
   }
 
-  if (especie === "recurso") {
+  if (especie === "recurso" || especie === "recurso-inominado") {
     const itens = [
-      "O conhecimento do recurso, por tempestivo e cabível;",
-      "No mérito, a reforma / anulação da decisão recorrida, com o provimento integral dos pedidos recursais;",
+      "O conhecimento do recurso inominado, por tempestivo e cabível;",
+      "No mérito, a reforma / anulação da sentença recorrida, com o provimento integral dos pedidos recursais;",
       "A condenação da parte adversa nas verbas de sucumbência, na forma da Lei nº 9.099/95, se cabível.",
     ];
     if (pedirJG) {
@@ -238,6 +242,53 @@ function extrairPedidos(
         "A concessão / manutenção dos benefícios da justiça gratuita no âmbito recursal, se cabível;"
       );
     }
+    return itens
+      .map((texto, i) => `${String.fromCharCode(97 + i)}) ${texto}`)
+      .join("\n");
+  }
+
+  if (especie === "agravo-instrumento") {
+    const itens = [
+      "O conhecimento e o provimento do presente agravo de instrumento;",
+      "A reforma da decisão interlocutória agravada, nos termos dos fundamentos;",
+      "A condenação da parte adversa nas verbas de sucumbência, na forma da Lei nº 9.099/95, se cabível.",
+    ];
+    if (pedirJG) {
+      itens.splice(
+        2,
+        0,
+        "A concessão / manutenção dos benefícios da justiça gratuita, se cabível;"
+      );
+    }
+    return itens
+      .map((texto, i) => `${String.fromCharCode(97 + i)}) ${texto}`)
+      .join("\n");
+  }
+
+  if (especie === "contrarrazoes-inominado") {
+    const itens = [
+      "O conhecimento das presentes contrarrazões;",
+      "No mérito, o desprovimento do recurso inominado interposto pela parte adversa, com a manutenção da sentença;",
+      "A condenação do recorrente nas verbas de sucumbência, na forma da Lei nº 9.099/95, se cabível.",
+    ];
+    if (pedirJG) {
+      itens.splice(
+        2,
+        0,
+        "A manutenção dos benefícios da justiça gratuita, se cabível;"
+      );
+    }
+    return itens
+      .map((texto, i) => `${String.fromCharCode(97 + i)}) ${texto}`)
+      .join("\n");
+  }
+
+  if (especie === "defesa-preliminar") {
+    const itens = [
+      "O acolhimento das preliminares do art. 395 do CPP, com a rejeição da denúncia;",
+      "Subsidiariamente, a absolvição sumária do acusado, se cabível;",
+      "A condenação do Ministério Público nas verbas de sucumbência, se cabível.",
+    ];
     return itens
       .map((texto, i) => `${String.fromCharCode(97 + i)}) ${texto}`)
       .join("\n");

@@ -8,9 +8,15 @@ export type EspeciePecaJec =
   | "peticao-inicial"
   | "contestacao"
   | "embargos"
-  | "recurso"
+  | "recurso-inominado"
+  | "agravo-instrumento"
+  | "contrarrazoes-inominado"
   | "replica"
-  | "execucao";
+  | "execucao"
+  /** Scaffold interno (Penal — art. 395 CPP); não listar no formulário JEC. */
+  | "defesa-preliminar"
+  /** @deprecated alias — normaliza para recurso-inominado */
+  | "recurso";
 
 export type ChaveSecaoJec =
   | "fatos"
@@ -79,13 +85,34 @@ export const ESPECIES_PECA_JEC: MetaEspecieJec[] = [
       "opondo os presentes embargos, pelos fundamentos a seguir.",
   },
   {
-    id: "recurso",
-    rotulo: "Recurso",
-    descricao: "Recurso inominado, agravo ou contrarrazões.",
-    nomePecaHint: "Recurso inominado…",
+    id: "recurso-inominado",
+    rotulo: "Recurso inominado",
+    descricao:
+      "Recurso contra sentença do Juizado à Turma Recursal (Lei 9.099/95, art. 41).",
+    nomePecaHint: "Recurso inominado",
     exigeProcesso: true,
     conectivoPartes:
-      "interpondo o presente recurso, pelos fundamentos a seguir.",
+      "interpondo o presente recurso inominado, pelos fundamentos a seguir.",
+  },
+  {
+    id: "agravo-instrumento",
+    rotulo: "Agravo de instrumento",
+    descricao:
+      "Recurso contra decisão interlocutória no Juizado (tutela, indeferimento de prova etc.).",
+    nomePecaHint: "Agravo de instrumento",
+    exigeProcesso: true,
+    conectivoPartes:
+      "interpondo o presente agravo de instrumento, pelos fundamentos a seguir.",
+  },
+  {
+    id: "contrarrazoes-inominado",
+    rotulo: "Contrarrazões ao recurso inominado",
+    descricao:
+      "Resposta do recorrido ao recurso inominado interposto pela parte adversa.",
+    nomePecaHint: "Contrarrazões ao recurso inominado",
+    exigeProcesso: true,
+    conectivoPartes:
+      "apresentando as presentes contrarrazões, pelos fundamentos a seguir.",
   },
   {
     id: "replica",
@@ -148,6 +175,73 @@ const ESQUELETOS: Record<EspeciePecaJec, SecaoEsqueletoJec[]> = {
       titulo: "DAS PROVAS E ANEXOS",
       obrigatoria: false,
       opcionalSistema: true,
+    },
+    { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
+  ],
+  "recurso-inominado": [
+    {
+      chave: "tempestividade",
+      titulo: "DA TEMPESTIVIDADE E DO CABIMENTO",
+      obrigatoria: true,
+    },
+    {
+      chave: "historico",
+      titulo: "DO HISTÓRICO PROCESSUAL",
+      obrigatoria: true,
+    },
+    {
+      chave: "razoes",
+      titulo: "DAS RAZÕES DE REFORMA",
+      obrigatoria: true,
+    },
+    { chave: "pedidos", titulo: "DOS PEDIDOS RECURSAIS", obrigatoria: true },
+  ],
+  "agravo-instrumento": [
+    {
+      chave: "tempestividade",
+      titulo: "DA TEMPESTIVIDADE E DO CABIMENTO",
+      obrigatoria: true,
+    },
+    {
+      chave: "historico",
+      titulo: "DO HISTÓRICO PROCESSUAL E DA DECISÃO AGRAVADA",
+      obrigatoria: true,
+    },
+    {
+      chave: "razoes",
+      titulo: "DAS RAZÕES DO AGRAVO",
+      obrigatoria: true,
+    },
+    { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
+  ],
+  "contrarrazoes-inominado": [
+    {
+      chave: "tempestividade",
+      titulo: "DA TEMPESTIVIDADE E DO CABIMENTO",
+      obrigatoria: true,
+    },
+    {
+      chave: "historico",
+      titulo: "DO RECURSO INTERPOSTO E DO HISTÓRICO",
+      obrigatoria: true,
+    },
+    {
+      chave: "razoes",
+      titulo: "DAS CONTRARRAZÕES",
+      obrigatoria: true,
+    },
+    { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
+  ],
+  "defesa-preliminar": [
+    {
+      chave: "tempestividade",
+      titulo: "DA TEMPESTIVIDADE E DO CABIMENTO",
+      obrigatoria: true,
+    },
+    {
+      chave: "preliminares",
+      titulo: "DAS PRELIMINARES (ART. 395 DO CPP)",
+      obrigatoria: true,
     },
     { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
   ],
@@ -214,13 +308,21 @@ const ESQUELETOS: Record<EspeciePecaJec, SecaoEsqueletoJec[]> = {
 };
 
 export function metaEspecie(id: EspeciePecaJec): MetaEspecieJec {
+  const canon =
+    id === "recurso"
+      ? "recurso-inominado"
+      : id;
   return (
-    ESPECIES_PECA_JEC.find((e) => e.id === id) ?? ESPECIES_PECA_JEC[0]!
+    ESPECIES_PECA_JEC.find((e) => e.id === canon) ?? ESPECIES_PECA_JEC[0]!
   );
 }
 
 export function esqueletoPorEspecie(id: EspeciePecaJec): SecaoEsqueletoJec[] {
-  return ESQUELETOS[id] ?? ESQUELETOS["peticao-inicial"];
+  const canon =
+    id === "recurso"
+      ? "recurso-inominado"
+      : id;
+  return ESQUELETOS[canon] ?? ESQUELETOS["peticao-inicial"];
 }
 
 /** Seções numeradas (pula provas opcionais do sistema — injetadas depois). */
@@ -251,9 +353,12 @@ export function normalizarEspeciePeca(
     id === "peticao-inicial" ||
     id === "contestacao" ||
     id === "embargos" ||
-    id === "recurso" ||
+    id === "recurso-inominado" ||
+    id === "agravo-instrumento" ||
+    id === "contrarrazoes-inominado" ||
     id === "replica" ||
-    id === "execucao"
+    id === "execucao" ||
+    id === "defesa-preliminar"
   ) {
     return id;
   }
@@ -262,6 +367,16 @@ export function normalizarEspeciePeca(
   if (id === "contestação") return "contestacao";
   if (id === "réplica" || id === "replica") return "replica";
   if (id === "execução" || id === "cumprimento") return "execucao";
+  if (id === "recurso" || id.includes("inominado") && !id.includes("contra")) {
+    return "recurso-inominado";
+  }
+  if (id.includes("agravo") && id.includes("instrumento")) {
+    return "agravo-instrumento";
+  }
+  if (id.includes("contrarraz")) return "contrarrazoes-inominado";
+  if (id.includes("defesa") && id.includes("preliminar")) {
+    return "defesa-preliminar";
+  }
   return null;
 }
 
@@ -281,10 +396,15 @@ export function tituloPecaCabivel(
         return "Embargos à Execução";
       }
       return "Embargos de Declaração";
+    case "recurso-inominado":
+      return "Recurso Inominado";
+    case "agravo-instrumento":
+      return "Agravo de Instrumento";
+    case "contrarrazoes-inominado":
+      return "Contrarrazões ao Recurso Inominado";
+    case "defesa-preliminar":
+      return "Defesa Preliminar";
     case "recurso":
-      if (/agravo de instrumento/.test(blob)) return "Agravo de Instrumento";
-      if (/\bagravo\b/.test(blob)) return "Agravo de Instrumento";
-      if (/contrarraz/.test(blob)) return "Contrarrazões ao Recurso Inominado";
       return "Recurso Inominado";
     case "contestacao":
       return "Contestação";
@@ -312,9 +432,18 @@ export function inferirEspeciePeca(
 
   const t = `${tipoAcao ?? ""} ${fatos ?? ""}`.toLowerCase();
 
-  if (/contrarraz|contrarraz[oõ]es/.test(t) || /recurso inominado|agravo|recurso\b/.test(t)) {
+  if (/contrarraz|contrarraz[oõ]es/.test(t)) {
+    return "contrarrazoes-inominado";
+  }
+  if (/agravo de instrumento|\bagravo\b/.test(t) && !/inominado/.test(t)) {
+    return "agravo-instrumento";
+  }
+  if (/recurso inominado|turma recursal|\binominado\b/.test(t)) {
+    return "recurso-inominado";
+  }
+  if (/recurso\b/.test(t) && !/contrarraz/.test(t)) {
     if (/embargos de declara/.test(t)) return "embargos";
-    return "recurso";
+    return "recurso-inominado";
   }
   if (/embargos/.test(t)) return "embargos";
   if (/r[eé]plica/.test(t)) return "replica";
@@ -363,11 +492,30 @@ export function blocoEstruturaPrompt(especie: EspeciePecaJec): string {
       "   Tempestividade/cabimento: arts. aplicáveis (Lei 9.099/95 e/ou CPC conforme a espécie de embargos).",
       "   Não invente número de processo nem datas de intimação — use só o que estiver nos fatos/formulário."
     );
-  } else if (especie === "recurso") {
+  } else if (especie === "recurso-inominado" || especie === "recurso") {
     extras.push(
       "   Abertura: partes já qualificadas nos autos (só nomes); não invente CPF/CNPJ/endereço.",
-      "   Histórico: sentença/acórdão recorrido em síntese objetiva.",
-      "   Razões: erros de fato/direito com subsunção; pedidos = reforma/anulação + eventual efeito."
+      "   Histórico: sentença recorrida em síntese objetiva.",
+      "   Razões: erros de fato/direito com subsunção; pedidos = reforma/anulação + efeito.",
+      "   Lei 9.099/95, art. 41 — Turma Recursal. NÃO use apelação do CPC."
+    );
+  } else if (especie === "agravo-instrumento") {
+    extras.push(
+      "   Decisão interlocutória agravada (tutela, indeferimento de prova, etc.) — distinga de recurso contra sentença.",
+      "   Cabimento e tempestividade conforme Lei 9.099/95 e CPC supletivo; não confunda com recurso inominado.",
+      "   Pedidos: reforma da decisão agravada e, se cabível, efeito suspensivo/ativo."
+    );
+  } else if (especie === "contrarrazoes-inominado") {
+    extras.push(
+      "   Resposta ao recurso inominado da parte adversa: demonstre o acerto da sentença ou a improcedência do recurso.",
+      "   Não reproduza a peça recursal integralmente — impugne ponto a ponto.",
+      "   Pedidos: desprovimento do recurso e manutenção da sentença (ou provimento parcial favorável ao recorrido)."
+    );
+  } else if (especie === "defesa-preliminar") {
+    extras.push(
+      "   Art. 395 do CPP — rejeição da denúncia ou absolvição sumária. NÃO entre no mérito da acusação (isso é resposta à acusação, art. 396-A).",
+      "   Preliminares taxativas do art. 395: incompetência, litispendência, coisa julgada, extinção da punibilidade, ausência de pressupostos processuais ou condições da ação penal.",
+      "   Só argua hipóteses sustentadas pelos FATOS — não invente nulidades."
     );
   } else if (especie === "replica") {
     extras.push(

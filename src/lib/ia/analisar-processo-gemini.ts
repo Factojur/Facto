@@ -104,7 +104,9 @@ function idsEspecieDaArea(areaId: string): string[] {
     "peticao-inicial",
     "contestacao",
     "embargos",
-    "recurso",
+    "recurso-inominado",
+    "agravo-instrumento",
+    "contrarrazoes-inominado",
     "replica",
     "execucao",
   ];
