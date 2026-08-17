@@ -4,15 +4,14 @@ Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou
 
 **Juris / seed:** depois de cada lote ou dia de cota, atualizar a seção **Lacunas da base (áreas falhas)** abaixo — tribunal errado, 0 insert, ou API sem aquele tribunal. Não deixar falha só no chat.
 
-## Alerta — seed automático 01h (16/08)
+## Alerta — seed automático 01h (17/08)
 
-Tarefa Windows `FACTO-seed-juris-01h` reinstalada (`npx --yes`; script também desativa bloqueio em bateria). Próxima: **17/08/2026 01:00**.
-Estado: lotes **84–646**. Vencimento assinatura **2026-09-13** (pausa automática ~06/09).
-Na madrugada de 16/08 o log parou no prompt interativo do `npx` (sem `--yes`) — corrigido.
+Tarefa Windows `FACTO-seed-juris-01h` ok (`npx --yes`). Última execução: **17/08/2026 01:00** — lotes **84–115** completos; **116** parcial (cota 429); **reindex +1607**. Próximo: **18/08/2026 01:00** retoma no lote **116**.
+Estado: `proximoLote` **116** · fila até **646**. Vencimento assinatura **2026-09-13** (pausa automática ~06/09).
 
 **Vencimento Jurisprudências.ai: 13/09/2026.** Pausa automática a partir de **06/09** (última semana para pontos fracos). Inflação: madrugadas **17/08–05/09**.
 
-Fila: lotes **84–646**. Cada madrugada usa as **7 contas** até 429 e reindexa.
+Fila: lotes **116–646**. Cada madrugada usa as **7 contas** até 429 e reindexa.
 
 PC ligado, sem dormir. Notebook: o instalador da tarefa **permite** rodar na bateria; ainda assim prefira **na tomada** na madrugada.
 
@@ -112,6 +111,25 @@ Fonte viva também em `src/lib/abertura-areas.ts`. Trabalhar **uma de cada vez**
 10. **Empresarial** — _preview admin (15/08)_ — notificação vs. ação.
 11. **Digital, ambiental, PI, internacional, médico, agrário** — _preview admin (15/08)_.
 12. **Eleitoral** — _aberto no catálogo 16/08_ — lastro TRE/TSE **depois** (consultar Datajud ou ingestão manual). API Jurisprudências.ai não tem TRE/TSE.
+13. **Constitucional** — _aberto no catálogo + produção 16/08_ (`/dashboard/constitucional`, 30 espécies auditadas). Ver pendências abaixo — o que **ainda não** está no ar.
+
+### Constitucional — no ar vs. pendente (16/08)
+
+**No ar (produção Ready):** rota `/dashboard/constitucional`; `available: true` (Completo/Pro + OAB); kit com **30** espécies (polo ativo + passivo); rito/endereçamento STF; sem MLE; auditoria Gemini das 30 ok.
+
+**Ainda não está no ar / falta fechar:**
+
+- [ ] **Lastro próprio da área** — seed/lote(s) focados em remédios, RE, reclamação e controle concentrado (STF/STJ); hoje o módulo gera peça, mas a base não foi reforçada de propósito para Constitucional (diferente do “esqueleto no ar”).
+- [ ] **Casos-ouro / smoke Constitucional** — suíte dedicada (MS, RE, ADI/ADPF, informações em MS, contrarrazões ao RE) além do genérico.
+- [ ] **Espécies opcionais** (fora do kit atual de 30):
+  - [ ] ADI / ADC / ADO **estadual** (controle concentrado no TJ)
+  - [ ] Suspensão de liminar / suspensão de segurança (SL/SS)
+  - [ ] Amicus curiae / memorial de terceiro
+  - [ ] Contrarrazões ao **agravo em RE** (hoje há contrarrazões ao RE e ao ROC)
+  - [ ] Informações em **habeas corpus** (autoridade coatora)
+  - [ ] ACP com ênfase constitucional (hoje mais Ambiental/Administrativo)
+
+Não misturar com “módulo morto”: a área **já gera minuta**. O que falta é lastro forte + espécies opcionais acima.
 
 Sobreposição (dica nos cards 16/08): consumidor × JEC × civil × médico; empresarial × civil. Contratos (minutas) não competem com essas áreas.
 
@@ -407,6 +425,7 @@ API **não tem:** TSE, TRE-SP (nem outro TRE), TRF1/2/5/6, TNU, STM. Listagem 14
 | Área | Evidência | Status |
 |------|-----------|--------|
 | **Eleitoral** | Lote 22: **0** insert (TJSP). TRE/TSE fora da API. | Lote **63** pronto (STJ). Segunda API depois. |
+| **Constitucional** | Módulo no ar (16/08); **sem lote dedicado** de remédios/RE/ADI/ADPF. STF já entra em lotes genéricos. | Priorizar termos STF (MS, RE, reclamação, ADI/ADPF) na fila 84+ ou lote novo. |
 | **Previdenciário** | Lote 7 STJ fraco (+5); lote 36 STJ: **0**. | Lotes **57–59** prontos (TRF3/TRF4). |
 | **Trabalhista** | Lotes 9 e 32 no TJSP fracos (11+11); muitos termos 0 úteis. | Lotes **60–62** prontos (TST). |
 | **Tributário** | Lote 12 +5 (STJ/municipal misturado). Lote **64** (CARF) rendeu pouco (temas de STJ/ITCMD). | Lotes **81** e **96** (CARF IRPJ/CSLL/PIS/multa/ágio). IPTU/ISS: lote **95**. |
@@ -425,7 +444,8 @@ Critério de “falha”: lote com **0** insert, ou &lt;10 insert em tema que de
 - [x] Lotes **40–55** (15/08) — faixa rodou; **~180 insert** até o 56 (cota 429 no lote 56). Vazios: 41, 43, 50, 54.
 - [x] Lotes **65–80** (16/08) — **+277** insert; vazios/fracos: 74 (LGPD STJ), 77 (IPTU TJSP), 79 (conselhos STJ). Retomas em **94–95**.
 - [x] Lotes **81–83** (16/08) — **+139** insert (CARF 55, TJCE 32, TJGO 52). Cota 429 no **84**.
-- [ ] Lotes **84–96** — `npx tsx scripts/seed-juris-ai-faixa.ts 84 96`.
+- [x] Lotes **84–115** (17/08 madrugada) — seed diário 01h; cota 429 no **116**; `reindex` **+1607**.
+- [ ] Lotes **116–646** — retoma amanhã 01h ou `npx tsx scripts/seed-juris-ai-faixa.ts 116 646`.
 - [ ] Lotes **97–200** — prontos no código; depois de 96 o diário segue ou `npx tsx scripts/seed-juris-ai-faixa.ts 97 200` (~1248 consultas, vários dias).
 - [ ] Após cada dia de seed: `npm run reindex:embeddings`.
 - [ ] Segunda API quando 40–64 fechar: priorizar **eleitoral (TRE/TSE)** e o que ainda estiver na tabela de lacunas.
