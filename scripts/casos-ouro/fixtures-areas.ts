@@ -289,6 +289,33 @@ REsp nº 7006666 — nulidade de CDA por ausência de fundamento legal.
     }),
   },
   {
+    id: "constitucional-ms",
+    areaId: "constitucional",
+    tema: "Mandado de segurança — direito líquido e certo (CF/88)",
+    fatosChave: ["direito líquido e certo", "autoridade coatora"],
+    leisComLastro: ["Lei 12.016/09", "CF art. 5º"],
+    jurisComLastro: ["REsp 8109999"],
+    jurisSemLastro: ["REsp 8181818"],
+    contextoLastro: `
+CF art. 5º, LXIX — mandado de segurança. Lei nº 12.016/09 — direito líquido e certo, 120 dias.
+REsp nº 8109999 — MS contra ato de autoridade e prova pré-constituída.
+    `.trim(),
+    pecaIaBruta: pecaCompleta({
+      foro: "DA __ VARA CÍVEL DA COMARCA DE SÃO PAULO - SP",
+      autor: "IMPETRANTE FICTO",
+      reu: "AUTORIDADE COATORA FICTA",
+      nomePeca: "MANDADO DE SEGURANÇA",
+      fatos:
+        "A autoridade coatora praticou ato ilegal e abusivo, violando direito líquido e certo do impetrante, com prova documental pré-constituída.",
+      direito:
+        "Aplicam-se a CF/88 (art. 5º, LXIX) e a Lei nº 12.016/09. Cita-se o REsp nº 8109999 e o REsp nº 8181818.",
+      pedidos: [
+        "Concessão da ordem de segurança",
+        "Anulação do ato coator",
+      ],
+    }),
+  },
+  {
     id: "administrativo-ms",
     areaId: "administrativo",
     tema: "Mandado de segurança / licitação",

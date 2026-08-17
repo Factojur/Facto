@@ -1,73 +1,65 @@
 /**
  * Polo em que o advogado (ou a parte em causa própria) atua no processo.
- * Usado para filtrar espécies no JEC e orientar a redação da IA.
+ * Matriz espécie × polo: `polo-especies-por-area.ts`.
  */
 
 import type { MetaEspecieJec } from "@/lib/jec-especie-peca";
 import { ESPECIES_PECA_JEC } from "@/lib/jec-especie-peca";
+import {
+  areaUsaPoloAdvocacia,
+  especieCompativelComPolo,
+  filtrarEspeciesPorPolo,
+  inferirPoloPorEspecie,
+  normalizarEspeciePoloArea,
+  type PoloAdvocacia,
+} from "@/lib/polo-especies-por-area";
 
-export type PoloAdvocacia = "ativo" | "passivo";
+export type { PoloAdvocacia } from "@/lib/polo-especies-por-area";
 
-/** Espécies típicas de quem atua pelo polo ativo (autor/exequente/recorrente). */
-const ESPECIES_JEC_ATIVO = new Set([
-  "peticao-inicial",
-  "replica",
-  "recurso-inominado",
-  "agravo-instrumento",
-  "execucao",
-]);
+export {
+  areaUsaPoloAdvocacia,
+  AREAS_COM_POLO_ADVOCACIA,
+  MATRIZ_POLO_POR_AREA,
+  especieCompativelComPolo,
+  filtrarEspeciesPorPolo,
+  inferirPoloPorEspecie,
+  normalizarEspeciePoloArea,
+  type AreaComPoloAdvocacia,
+  type MatrizPoloArea,
+} from "@/lib/polo-especies-por-area";
 
-/** Espécies típicas de quem atua pelo polo passivo (réu/executado/recorrido). */
-const ESPECIES_JEC_PASSIVO = new Set([
-  "contestacao",
-  "contrarrazoes-inominado",
-  "agravo-instrumento",
-]);
-
-/** Embargos de declaração / à execução podem ser de ambos os polos. */
-const ESPECIES_JEC_AMBOS = new Set(["embargos", "agravo-instrumento"]);
-
-/** Alias legado → espécie canônica. */
+/** @deprecated use normalizarEspeciePoloArea("jec", especie) */
 export function normalizarEspecieJecCanonica(especie: string): string {
-  const id = especie.trim().toLowerCase();
-  if (id === "recurso") return "recurso-inominado";
-  if (id === "contrarrazoes" || id === "contrarrazões") {
-    return "contrarrazoes-inominado";
-  }
-  return id;
+  return normalizarEspeciePoloArea("jec", especie);
 }
 
+/** @deprecated use especieCompativelComPolo("jec", …) */
 export function especieCompativelComPoloJec(
   especie: string,
   polo: PoloAdvocacia
 ): boolean {
-  const id = normalizarEspecieJecCanonica(especie);
-  if (ESPECIES_JEC_AMBOS.has(id)) return true;
-  if (polo === "ativo") return ESPECIES_JEC_ATIVO.has(id);
-  return ESPECIES_JEC_PASSIVO.has(id);
+  return especieCompativelComPolo("jec", especie, polo);
 }
 
+/** @deprecated use inferirPoloPorEspecie("jec", …) */
 export function inferirPoloPorEspecieJec(
   especie: string
 ): PoloAdvocacia | null {
-  const id = normalizarEspecieJecCanonica(especie);
-  if (ESPECIES_JEC_AMBOS.has(id)) return null;
-  if (ESPECIES_JEC_ATIVO.has(id)) return "ativo";
-  if (ESPECIES_JEC_PASSIVO.has(id)) return "passivo";
-  return null;
+  return inferirPoloPorEspecie("jec", especie);
 }
 
+/** @deprecated use filtrarEspeciesPorPolo("jec", …) */
 export function filtrarEspeciesJecPorPolo(
   especies: readonly MetaEspecieJec[],
   polo: PoloAdvocacia
 ): MetaEspecieJec[] {
-  return especies.filter((e) => especieCompativelComPoloJec(e.id, polo));
+  return filtrarEspeciesPorPolo("jec", especies, polo);
 }
 
 export function listaEspeciesJecFiltradas(
   polo: PoloAdvocacia
 ): MetaEspecieJec[] {
-  return filtrarEspeciesJecPorPolo(ESPECIES_PECA_JEC, polo);
+  return filtrarEspeciesPorPolo("jec", ESPECIES_PECA_JEC, polo);
 }
 
 export function normalizarPoloAdvocacia(

@@ -16,6 +16,7 @@ import { enfileirarUploadsJurisDoCaso } from "@/lib/juris-provedores/salvar-na-b
 import { areaAbertaParaCliente } from "@/lib/acesso-areas";
 import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
 import { moduloDaArea, normalizarAreaIdMinuta } from "@/lib/minuta-modulo";
+import { areaUsaPoloAdvocacia } from "@/lib/polo-especies-por-area";
 import {
   buscarConhecimentoRelacionado,
   extrairTextoDeArquivo,
@@ -550,8 +551,9 @@ async function postGerarPeca(request: Request) {
     leiMunicipal,
     jurisDoCaso,
     casoReal: true,
-    poloAdvocacia:
-      areaId === "jec" ? body.poloAdvocacia ?? "ativo" : body.poloAdvocacia,
+    poloAdvocacia: areaUsaPoloAdvocacia(areaId)
+      ? body.poloAdvocacia ?? "ativo"
+      : body.poloAdvocacia,
     atuarLeigo: Boolean(body.atuarLeigo),
     instrucoes: {
       enderecamento,

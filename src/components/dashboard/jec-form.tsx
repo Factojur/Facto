@@ -39,9 +39,10 @@ import {
   type EspeciePecaJec,
 } from "@/lib/jec-especie-peca";
 import {
-  especieCompativelComPoloJec,
-  inferirPoloPorEspecieJec,
-  listaEspeciesJecFiltradas,
+  areaUsaPoloAdvocacia,
+  especieCompativelComPolo,
+  filtrarEspeciesPorPolo,
+  inferirPoloPorEspecie,
   normalizarPoloAdvocacia,
   rotuloPoloAdvocacia,
   type PoloAdvocacia,
@@ -752,26 +753,31 @@ export function JecForm({
   const idsInicial = idsPeticaoInicialDaArea(areaId);
   const especiesOpcoes = useMemo(() => {
     const base = listaEspeciesDaArea(areaId) ?? ESPECIES_PECA_JEC;
-    if (areaId !== "jec") return base;
-    return listaEspeciesJecFiltradas(poloAdvocacia);
+    if (!areaUsaPoloAdvocacia(areaId)) return base;
+    return filtrarEspeciesPorPolo(
+      areaId,
+      base as readonly { id: string }[],
+      poloAdvocacia
+    ) as typeof base;
   }, [areaId, poloAdvocacia]);
   const moduloUi = moduloDaArea(areaId);
+  const comPoloAdvocacia = areaUsaPoloAdvocacia(areaId);
 
   useEffect(() => {
-    if (areaId !== "jec") return;
-    if (!especieCompativelComPoloJec(especiePeca, poloAdvocacia)) {
+    if (!comPoloAdvocacia) return;
+    if (!especieCompativelComPolo(areaId, especiePeca, poloAdvocacia)) {
       const primeira = especiesOpcoes[0]?.id;
       if (primeira) setEspeciePeca(primeira);
     }
-  }, [areaId, poloAdvocacia, especiePeca, especiesOpcoes]);
+  }, [areaId, comPoloAdvocacia, poloAdvocacia, especiePeca, especiesOpcoes]);
 
   useEffect(() => {
-    if (areaId !== "jec" || !especieManual) return;
-    const inferido = inferirPoloPorEspecieJec(especiePeca);
+    if (!comPoloAdvocacia || !especieManual) return;
+    const inferido = inferirPoloPorEspecie(areaId, especiePeca);
     if (inferido && inferido !== poloAdvocacia) {
       setPoloAdvocacia(inferido);
     }
-  }, [areaId, especieManual, especiePeca, poloAdvocacia]);
+  }, [areaId, comPoloAdvocacia, especieManual, especiePeca, poloAdvocacia]);
 
   const tituloAcaoCompleto = useMemo(() => {
     if (!tipoAcaoDefinido) return "";
@@ -900,13 +906,13 @@ export function JecForm({
       inferirEspeciePeca(titulo, analise.ficha.fatosSugeridos, peca.especiePeca)
     );
     setEspecieManual(true);
-    if (areaId === "jec") {
+    if (comPoloAdvocacia) {
       const esp = inferirEspeciePeca(
         titulo,
         analise.ficha.fatosSugeridos,
         peca.especiePeca
       );
-      const poloInferido = inferirPoloPorEspecieJec(esp);
+      const poloInferido = inferirPoloPorEspecie(areaId, esp);
       if (poloInferido) setPoloAdvocacia(poloInferido);
     }
     setTutelaUrgencia(peca.tutelaUrgencia);
@@ -1130,7 +1136,7 @@ export function JecForm({
           fatos,
           tipoSelecionado: tituloAcaoCompleto || tipoAcaoTexto || ASSISTENTE_FACTO,
           especiePeca,
-          poloAdvocacia: areaId === "jec" ? poloAdvocacia : undefined,
+          poloAdvocacia: comPoloAdvocacia ? poloAdvocacia : undefined,
           tutelaUrgencia,
           comarca,
           valoresCausa,
@@ -1268,7 +1274,7 @@ export function JecForm({
     const payload = {
       tipoAcao,
       especiePeca,
-      poloAdvocacia: areaId === "jec" ? poloAdvocacia : undefined,
+      poloAdvocacia: comPoloAdvocacia ? poloAdvocacia : undefined,
       atuarLeigo: leigo,
       areaId,
       dispositivoSentenca:
@@ -1507,7 +1513,7 @@ export function JecForm({
           </p>
 
           <div className="space-y-4 sm:max-w-2xl">
-            {areaId === "jec" ? (
+            {comPoloAdvocacia ? (
               <div>
                 <span className="mb-1.5 block text-sm font-medium text-slate-700">
                   Estou atuando pelo…
