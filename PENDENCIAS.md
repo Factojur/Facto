@@ -4,6 +4,14 @@ Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou
 
 **Juris / seed:** depois de cada lote ou dia de cota, atualizar a seção **Lacunas da base (áreas falhas)** abaixo — tribunal errado, 0 insert, ou API sem aquele tribunal. Não deixar falha só no chat.
 
+## Retomar quando voltar (17/08 — manhã)
+
+1. **Seed** — PC ligado na madrugada; próximo lote **116** (18/08 01h). Não rodar seed manual no mesmo dia após cota 429.
+2. **Constitucional** — testar peças reais (MS, RE, ADI/ADPF); anotar falhas de rito/endereçamento aqui.
+3. **Compra real MP** — webhook + e-mail + convite + cadastro + cancelamento CDC (único bloqueio comercial crítico).
+4. **Análise de autos** — PDF real no JEC em produção.
+5. **Deploy** — `main` em **c07df56** (Constitucional **4ce5bd6** + estado seed); [factoia.com.br](https://factoia.com.br) ok; Vercel redeploy automático no push.
+
 ## Alerta — seed automático 01h (17/08)
 
 Tarefa Windows `FACTO-seed-juris-01h` ok (`npx --yes`). Última execução: **17/08/2026 01:00** — lotes **84–115** completos; **116** parcial (cota 429); **reindex +1607**. Próximo: **18/08/2026 01:00** retoma no lote **116**.
@@ -43,6 +51,14 @@ Só para o agente no Cursor — **o cliente não vê**.
 - [x] Regra Cursor `jec-base-dashboard` — mudança genérica na dashboard JEC replica nas outras áreas.
 - [ ] **`facto-ship`** (quando fizer falta): o que entra no `main`/Vercel, copy PT-BR, convite pós-pagamento, cotas, não misturar seed/diag no deploy. Não implementar agora.
 
+## Feito nesta sessão (17/08 — manhã)
+
+- [x] Confirmado seed diário **01h** de 17/08: lotes **84–115** + reindex **+1607**; cota no **116**.
+- [x] `scripts/seed-juris-estado.json` → `proximoLote: 116` commitado.
+- [x] Build produção ok (`/dashboard/constitucional` e demais rotas).
+- [x] Site [factoia.com.br](https://factoia.com.br) no ar (landing + planos JEC/Completo/Pro).
+- [x] Push `main` **c07df56** (estado seed + pendências Constitucional). Constitucional já estava em **4ce5bd6**.
+
 ## Feito nesta sessão (15/08) — dashboard / minuta
 
 - [x] Menu do usuário: ícones 2D traço dourado (não emoji); sair em vermelho.
@@ -51,21 +67,15 @@ Só para o agente no Cursor — **o cliente não vê**.
 - [x] Sequência de abertura das demais áreas na pendência + `abertura-areas.ts` (ainda **não** implementar Consumidor).
 - [x] Preview interno só `admin@facto.com` e `factoassessoria.jur@gmail.com` (`/dashboard/preview/<id>`). Catálogo público continua `available: false` (exceto JEC).
 
-## Abertura de áreas (auditoria 15/08) — **não estão prontas para ligar**
+## Abertura de áreas (atualizado 17/08)
 
-Hoje **só o JEC** tem produto: rota `/dashboard/jec`, formulário, espécies, teto leigo, análise de autos, Assistente, lastro no fluxo real.
+**Parou em Constitucional (16/08):** módulo no ar com 30 espécies auditadas. Demais áreas do catálogo também estão **`available: true`** com rota `/dashboard/<area>` (exceto **Contratual**, fora da grade).
 
-O catálogo (`AREAS_ATUACAO`) + ilustração + tags + **casos-ouro** (teste de lastro, 0 tokens) **não** são módulo. Ligar `available: true` sem o restante gera Completo/Pro caindo num card morto (sem `href`, exceto JEC).
+**O que ainda falta por área (não é “ligar card”):** lastro dedicado na base, casos-ouro/smoke, testes reais do usuário e espécies opcionais (ver Constitucional abaixo e recursos superiores).
 
-**Contrato compartilhado (15/08):** `src/lib/minuta-modulo.ts` + `docs-conferencia-protocolo.ts` + regra Cursor `jec-base-dashboard`. JEC continua a base; o genérico não fica só no `jec-form`.
+**Preview interno** continua em `/dashboard/preview/<id>` para admins.
 
-**Reaproveitar do JEC (estrutura, todas as áreas):** já qualificado, JG/MLE só texto, provas do fato ≠ protocolo, 3 etapas, justificado, timbre/Gerar no fim, cotas, busca juris.
-
-**Não reaproveitar cego (rito):** espécies 9.099, teto 20 SM, “Juiz de Direito” do Juizado, polos e prazos do JEC, prompt amarrado a `jec-especie-peca.ts`. Cada área ganha tabela própria de peças (ex. penal: resposta à acusação, HC — sem contestação cível). Incluir ou remover campos inúteis àquele rito. Pesquisar leis/códigos da área na implementação.
-
-**Seed vs. dashboard:** independentes por enquanto. Upload/juris não trava o esqueleto; `available` para cliente espera lastro mínimo da área da vez.
-
-Checklist **por área** antes de `available` + `href`:
+Checklist **por área** antes de considerar área “fechada” para cliente exigente:
 
 1. Rota `/dashboard/<area>` + formulário na **estrutura** compartilhada (não clone cego do JEC).
 2. Tabela de **espécies do rito** (não copiar contestação/embargos do JEC se o juízo não usa esses nomes).
@@ -97,21 +107,21 @@ Fonte viva também em `src/lib/abertura-areas.ts`. Trabalhar **uma de cada vez**
 
 **Varredura de produto (15/08, tarde):** rito, espécies, polos, endereçamento, JG/MLE, checklist e análise alinhados. Lastro de juris segue no seed diário.
 
-**Testes de qualidade da peça (16/08):** o usuário vai gerar peças reais nas áreas recém-abertas. Anotar falhas de rito/endereçamento/formatação aqui — não tratar como “só lastro”.
+**Testes de qualidade da peça (16/08+):** gerar peças reais nas áreas abertas. Anotar falhas de rito/endereçamento/formatação aqui — não tratar como “só lastro”. **Próximo foco:** Constitucional.
 
-1. **Consumidor (justiça comum)** — _preview admin (15/08)_ — espécies CPC; Vara Cível; CDC+CPC; sem teto 20 SM e sem recurso inominado. Catálogo `available: false`.
-2. **Civil (justiça comum)** — _preview admin (15/08)_ — `/dashboard/civil`; CC+CPC; sem CDC; sem teto 20 SM. Catálogo `available: false`.
-3. **Trabalhista** — _preview admin (15/08)_ — `/dashboard/trabalhista`; CLT; reclamante/reclamado; RO 8d. Catálogo `available: false`.
-4. **Família** — _preview admin (15/08)_ — `/dashboard/familia`; divórcio, guarda, alimentos, inventário; Vara de Família; segredo de justiça. Catálogo `available: false`.
-5. **Imobiliário** — _preview admin (15/08)_ — `/dashboard/imobiliario`; despejo (8.245), usucapião, consignação de aluguéis, condomínio; Vara Cível. **Contratual** fora da grade (16/08). Catálogo `available: false`.
-6. **JECRIM** — _preview admin (15/08)_ — `/dashboard/jecr`.
-7. **Penal comum** — _preview admin (15/08)_ — `/dashboard/criminal`; HC, resposta à acusação, apelação CPP.
-8. **Previdenciário** — _preview admin (15/08)_ — `/dashboard/previdenciario`; JEF/INSS.
-9. **Tributário / administrativo** — _preview admin (15/08)_ — LEF/MS.
-10. **Empresarial** — _preview admin (15/08)_ — notificação vs. ação.
-11. **Digital, ambiental, PI, internacional, médico, agrário** — _preview admin (15/08)_.
-12. **Eleitoral** — _aberto no catálogo 16/08_ — lastro TRE/TSE **depois** (consultar Datajud ou ingestão manual). API Jurisprudências.ai não tem TRE/TSE.
-13. **Constitucional** — _aberto no catálogo + produção 16/08_ (`/dashboard/constitucional`, 30 espécies auditadas). Ver pendências abaixo — o que **ainda não** está no ar.
+1. **Consumidor** — _produção 16/08+_ — `available: true`; falta lastro forte + testes reais.
+2. **Civil** — _produção_ — idem.
+3. **Trabalhista** — _produção_ — idem; lotes TST na fila seed.
+4. **Família** — _produção_ — idem.
+5. **Imobiliário** — _produção_ — idem.
+6. **JECRIM** — _produção_.
+7. **Penal comum** — _produção_.
+8. **Previdenciário** — _produção_ — lastro TRF ainda fraco.
+9. **Tributário / administrativo** — _produção_.
+10. **Empresarial** — _produção_.
+11. **Digital, ambiental, PI, internacional, médico, agrário** — _produção_.
+12. **Eleitoral** — _produção_ — lastro TRE/TSE **depois** (API sem TRE/TSE).
+13. **Constitucional** — _produção 16/08_ — **parada atual**; ver pendências abaixo.
 
 ### Constitucional — no ar vs. pendente (16/08)
 
@@ -139,7 +149,7 @@ Prazos: o FACTO **não conta prazo processual sozinho** hoje. Abrir área implic
 
 ## Prioridade sugerida (próximos passos)
 
-0. **[P0] Seed juris** — retomar `npx tsx scripts/seed-juris-ai-faixa.ts 56 64` + reindex. Atualizar **Lacunas da base** se algum lote vier vazio.
+0. **[P0] Seed juris** — _em dia 17/08_ — lotes **84–115** ok; retoma **116** na madrugada de **18/08**. Atualizar **Lacunas da base** se algum lote vier vazio.
 
 1. **[P0] Qualidade da peça JEC (lastro + anti-alucinação)** — _parcial_
    - [x] Anotar jurisprudência sem lastro com `[NÃO ENCONTRADO NA BASE]`
@@ -217,7 +227,7 @@ Prazos: o FACTO **não conta prazo processual sozinho** hoje. Abrir área implic
 
 10. **[P1] Segundo tribunal (STJ) em produção** — _exige Pro + cache com TTL_ (API já busca STJ via seletor)  
 11. **[P2] Política CDC / cota-teste 7 dias**  
-12. **[P2] Expandir áreas** — _aberto 16/08_ no catálogo (Contratual fora da grade). Ver testes do usuário.
+12. **[P2] Expandir áreas** — _catálogo aberto 16/08_; **parada em Constitucional**. Próximo: lastro + testes reais + espécies opcionais (Constitucional) e lacunas da base.
 13. **[P2] Obsidian → `base_conhecimento` (sync)** — _especificado; não implementar ainda_
     - Spec: `docs/obsidian-sync-spec.md` · template: `docs/obsidian-templates/exemplo-juris.md`
     - Agora: alimentar base via admin/seeds; Obsidian só como notas pessoais se quiser
@@ -425,12 +435,11 @@ API **não tem:** TSE, TRE-SP (nem outro TRE), TRF1/2/5/6, TNU, STM. Listagem 14
 | Área | Evidência | Status |
 |------|-----------|--------|
 | **Eleitoral** | Lote 22: **0** insert (TJSP). TRE/TSE fora da API. | Lote **63** pronto (STJ). Segunda API depois. |
-| **Constitucional** | Módulo no ar (16/08); **sem lote dedicado** de remédios/RE/ADI/ADPF. STF já entra em lotes genéricos. | Priorizar termos STF (MS, RE, reclamação, ADI/ADPF) na fila 84+ ou lote novo. |
-| **Previdenciário** | Lote 7 STJ fraco (+5); lote 36 STJ: **0**. | Lotes **57–59** prontos (TRF3/TRF4). |
-| **Trabalhista** | Lotes 9 e 32 no TJSP fracos (11+11); muitos termos 0 úteis. | Lotes **60–62** prontos (TST). |
-| **Tributário** | Lote 12 +5 (STJ/municipal misturado). Lote **64** (CARF) rendeu pouco (temas de STJ/ITCMD). | Lotes **81** e **96** (CARF IRPJ/CSLL/PIS/multa/ágio). IPTU/ISS: lote **95**. |
-| **Internacional** | Lote 24 +5. | Sem tribunal extra na API. Segunda fonte depois. |
-| **Lote 56** | Cota 429 (15/08) após 1–55 ok. | Retomar `seed-juris-ai-faixa.ts 56 64`. |
+| **Constitucional** | Módulo no ar (16/08); **sem lote dedicado** STF (MS, RE, ADI/ADPF). Lotes 84–115 (17/08) reforçaram TJs/família — não foco STF. | Priorizar termos STF na fila **116+** ou lote novo. |
+| **Previdenciário** | Lote 7 STJ fraco (+5); lote 36 STJ: **0**. | Lotes **57–59** (TRF3/TRF4) na fila seed. |
+| **Trabalhista** | Lotes 9 e 32 no TJSP fracos (11+11). | Lotes **60–62** (TST) na fila seed. |
+| **Tributário** | Lote 64 (CARF) fraco. | Lotes **81**, **95**, **96** na fila **116+**. |
+| **Internacional** | Lote 24 +5. | Segunda fonte depois. |
 
 Critério de “falha”: lote com **0** insert, ou &lt;10 insert em tema que deveria ter acórdão no tribunal usado, ou tribunal inexistente na API.
 
@@ -445,10 +454,9 @@ Critério de “falha”: lote com **0** insert, ou &lt;10 insert em tema que de
 - [x] Lotes **65–80** (16/08) — **+277** insert; vazios/fracos: 74 (LGPD STJ), 77 (IPTU TJSP), 79 (conselhos STJ). Retomas em **94–95**.
 - [x] Lotes **81–83** (16/08) — **+139** insert (CARF 55, TJCE 32, TJGO 52). Cota 429 no **84**.
 - [x] Lotes **84–115** (17/08 madrugada) — seed diário 01h; cota 429 no **116**; `reindex` **+1607**.
-- [ ] Lotes **116–646** — retoma amanhã 01h ou `npx tsx scripts/seed-juris-ai-faixa.ts 116 646`.
-- [ ] Lotes **97–200** — prontos no código; depois de 96 o diário segue ou `npx tsx scripts/seed-juris-ai-faixa.ts 97 200` (~1248 consultas, vários dias).
-- [ ] Após cada dia de seed: `npm run reindex:embeddings`.
-- [ ] Segunda API quando 40–64 fechar: priorizar **eleitoral (TRE/TSE)** e o que ainda estiver na tabela de lacunas.
+- [ ] Lotes **116–646** — retoma **18/08 01h** (automático) ou `npx tsx scripts/seed-juris-ai-faixa.ts 116 646`.
+- [x] Após seed diário 17/08: `reindex:embeddings` (+1607).
+- [ ] Segunda API (pós-646 ou lacunas): priorizar **eleitoral (TRE/TSE)** e TRF1/2/5/6 / TNU.
 - [ ] Reaquecer cache TJSP (`npm run aquecer:cache-tjsp`) — 14/08 cache vazio; scrape 0/15 (captcha). Base_conhecimento intacta.
 - [ ] **7º token** Jurisprudências.ai — menos urgente com plano pago no `.env.local` (não precisa ir à Vercel se o plano for cancelado pós-seed).
 - [ ] Provedor secundário STJ estável em prod.
