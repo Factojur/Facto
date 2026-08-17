@@ -11,6 +11,7 @@
     "test:casos-ouro": "npx tsx scripts/casos-ouro.ts",
     "test:qualificacao-partes": "npx tsx scripts/testar-qualificacao-partes.ts",
     "test:pecas": "npm run test:qualificacao-partes && npm run test:casos-ouro && npm run test:formatacao-peca",
+    "excluir:conta-teste": "npx tsx scripts/excluir-conta-teste.ts",
     "test:scraper-tjsp": "npx tsx scripts/testar-scraper-tjsp.ts",
     "aquecer:cache-tjsp": "npx tsx scripts/aquecer-cache-tjsp.ts",
     "limpar:cache-tjsp": "npx tsx scripts/aquecer-cache-tjsp.ts --limpar-only",

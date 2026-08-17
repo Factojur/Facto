@@ -223,7 +223,21 @@ async function main() {
   }
 
   if (userId) {
-    // 7) Tabelas por user_id
+    // 7) Casos JEC na nuvem (eventos caem em cascade)
+    const { data: casosJec } = await admin
+      .from("jec_casos")
+      .select("id")
+      .eq("profile_id", userId);
+    if ((casosJec ?? []).length) {
+      const { error: errCasos } = await admin
+        .from("jec_casos")
+        .delete()
+        .eq("profile_id", userId);
+      if (errCasos) warn(`jec_casos: ${errCasos.message}`);
+      else ok(`jec_casos removidos: ${(casosJec ?? []).length}`);
+    } else ok("nenhum jec_casos na nuvem");
+
+    // 8) Tabelas por user_id
     for (const tabela of ["aceites_termos", "cota_pecas_ciclo", "pagamentos_extras"] as const) {
       const { error } = await admin.from(tabela).delete().eq("user_id", userId);
       if (error) warn(`${tabela}: ${error.message}`);
@@ -237,12 +251,12 @@ async function main() {
     if (errEmUser) warn(`email_eventos user_id: ${errEmUser.message}`);
     else ok("email_eventos por user_id limpo");
 
-    // 8) Profile
+    // 9) Profile
     const { error: errProf } = await admin.from("profiles").delete().eq("id", userId);
     if (errProf) warn(`profiles: ${errProf.message}`);
     else ok("perfil removido");
 
-    // 9) Auth
+    // 10) Auth
     const { error: errAuth } = await admin.auth.admin.deleteUser(userId);
     if (errAuth) {
       console.error("FALHA auth.deleteUser:", errAuth.message);
