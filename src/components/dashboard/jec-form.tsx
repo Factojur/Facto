@@ -67,6 +67,8 @@ import {
   pecaUsaPartesJaQualificadas,
   reuOkParaChecklist,
   reusAPartirDosNomes,
+  resolverPoloClienteQualificacao,
+  textoAjudaQualificacaoPeca,
 } from "@/lib/partes-ja-qualificadas";
 import type { FaseCasoJec } from "@/lib/jec-caso-types";
 import { metaFase } from "@/lib/jec-caso-types";
@@ -813,6 +815,15 @@ export function JecForm({
   ]);
 
   const jaQualificadas = pecaUsaPartesJaQualificadas(especiePeca, idsInicial);
+  const ajudaQualificacao = textoAjudaQualificacaoPeca(
+    areaId,
+    especiePeca,
+    comPoloAdvocacia
+      ? poloAdvocacia
+      : resolverPoloClienteQualificacao(areaId, especiePeca, null),
+    moduloUi.rotuloPoloAtivo,
+    moduloUi.rotuloPoloPassivo
+  );
   const checklistItens = montarChecklistJec({
     tipoSelecionado: tipoAcaoDefinido || (assistentePendente ? ASSISTENTE_FACTO : ""),
     fatos,
@@ -1551,8 +1562,9 @@ export function JecForm({
                 </div>
                 <p className="mt-1.5 text-xs text-slate-500">
                   O tipo de peça abaixo é filtrado conforme o polo escolhido.
-                  Recursos e embargos podem aparecer nos dois lados, conforme o
-                  caso.
+                  {areaId === "jec"
+                    ? " Recurso inominado, contrarrazões, agravo, embargos e execução aparecem nos dois polos — quem recorre ou responde depende do seu cliente (autor ou réu)."
+                    : " Recursos e incidentes podem aparecer nos dois polos, conforme o caso."}
                 </p>
               </div>
             ) : null}
@@ -1915,6 +1927,13 @@ export function JecForm({
         </section>
 
         <ComarcaSection areaId={areaId} value={comarca} onChange={setComarca} />
+
+        {ajudaQualificacao ? (
+          <p className="rounded-lg border border-sky-100 bg-sky-50/90 px-4 py-3 text-xs leading-relaxed text-sky-950">
+            <span className="font-semibold">Qualificação das partes: </span>
+            {ajudaQualificacao}
+          </p>
+        ) : null}
 
         <AutorSection
           value={autores}

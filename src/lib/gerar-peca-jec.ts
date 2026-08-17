@@ -577,6 +577,8 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
         enderecoAdvogado: null,
         especie,
         dispositivoSentenca: input.dispositivoSentenca,
+        areaId: "jec",
+        poloAdvocacia: input.poloAdvocacia,
       })
     : formatarBlocoQualificacaoAutor({
         autores: input.autores ?? (input.autor ? [input.autor] : []),

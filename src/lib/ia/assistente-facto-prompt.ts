@@ -15,6 +15,10 @@ import {
   metaEspecieDaArea,
 } from "@/lib/peca-especie-area";
 import {
+  blocoInstrucoesQualificacaoPrompt,
+  pecaUsaPartesJaQualificadas,
+} from "@/lib/partes-ja-qualificadas";
+import {
   montarBlocoPromptJurisCaso,
   type BlocoJurisCaso,
 } from "@/lib/juris-caso-types";
@@ -158,6 +162,17 @@ export function montarSystemPromptRedacaoTier1(
           areaId,
         })
       : null;
+  const blocoQualificacao = blocoInstrucoesQualificacaoPrompt({
+    areaId,
+    especie,
+    partesJaQualificadas: pecaUsaPartesJaQualificadas(
+      especie,
+      modulo.idsPeticaoInicial
+    ),
+    polo: opcoesPolo?.polo,
+    rotuloAtivo: modulo.rotuloPoloAtivo,
+    rotuloPassivo: modulo.rotuloPoloPassivo,
+  });
 
   return [
     `Você é um Advogado Sênior de elite, especialista em ${especialidade}, conhecido por redigir peças forenses impecáveis (${meta.rotulo}).`,
@@ -218,6 +233,8 @@ export function montarSystemPromptRedacaoTier1(
     "   - PROIBIDO colocar o nome da ação logo abaixo do endereçamento.",
     "   - Se a qualificação da parte adversa vier pronta, NÃO invente CNPJ, razão social nem endereço.",
     "   - NUNCA escreva marcadores literais como [[ESPACO_1_LINHA]] ou [[ESPACO_6_LINHAS]] — use apenas linhas em branco reais.",
+    "",
+    blocoQualificacao,
     "",
     "================================================================================",
     "REGRAS RÍGIDAS DE ESTRUTURA E FORMATAÇÃO (OBRIGATÓRIO)",

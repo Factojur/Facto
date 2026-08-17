@@ -176,13 +176,12 @@ export function formatarEnderecamentoPadrao(opcoes: {
   const comarcaTxt =
     cidade && uf ? `${cidade.toUpperCase()}/${uf}` : "___/__";
 
+  const juizado = (info.numeroJuizado ?? "").trim();
   const varaEmBranco =
-    opcoes.varaEmBranco !== false &&
-    (opcoes.varaEmBranco === true || !info.numeroJuizado?.trim());
-
+    opcoes.varaEmBranco === true || !juizado;
   const vara = varaEmBranco
     ? "___"
-    : info.numeroJuizado!.trim().replace(/[ªº°]/g, "");
+    : juizado.replace(/[ªº°]/g, "");
 
   const areaId = opcoes.areaId ?? "";
   const especie = (opcoes.especiePeca ?? "").toLowerCase();

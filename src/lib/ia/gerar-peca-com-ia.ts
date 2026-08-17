@@ -41,6 +41,7 @@ import {
   type PoloAdvocacia,
 } from "@/lib/polo-advocacia";
 import { moduloDaArea } from "@/lib/minuta-modulo";
+import { blocoInstrucoesQualificacaoPrompt } from "@/lib/partes-ja-qualificadas";
 import { formatarOabAssinatura } from "@/lib/formatar-oab";
 import {
   contextoVerificacaoJurisCaso,
@@ -278,6 +279,25 @@ function montarUserPromptRedacao(params: {
     partes.push(
       "",
       "Esta peça é INCIDENTAL (não é petição inicial). Depois do bloco de introdução, 1 linha em branco, NOME DA PEÇA em caixa alta, 2 linhas em branco, primeiro tópico romano. NÃO repita 'em face de' com qualificação completa."
+    );
+  }
+
+  if (
+    params.instrucoes?.qualificacaoAutor?.trim() ||
+    params.instrucoes?.partesJaQualificadas != null
+  ) {
+    const areaId = params.areaId ?? "jec";
+    const modulo = moduloDaArea(areaId);
+    partes.push(
+      "",
+      blocoInstrucoesQualificacaoPrompt({
+        areaId,
+        especie: params.especiePeca ?? "peticao-inicial",
+        partesJaQualificadas: Boolean(params.instrucoes?.partesJaQualificadas),
+        polo: params.poloAdvocacia,
+        rotuloAtivo: modulo.rotuloPoloAtivo,
+        rotuloPassivo: modulo.rotuloPoloPassivo,
+      })
     );
   }
 

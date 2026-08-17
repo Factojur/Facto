@@ -34,16 +34,17 @@ export type AreaComPoloAdvocacia = (typeof AREAS_COM_POLO_ADVOCACIA)[number];
 export const MATRIZ_POLO_POR_AREA: Record<AreaComPoloAdvocacia, MatrizPoloArea> =
   {
     jec: m(
+      ["peticao-inicial", "replica"],
+      ["contestacao"],
       [
-        "peticao-inicial",
-        "replica",
         "recurso-inominado",
         "recurso",
+        "contrarrazoes-inominado",
+        "contrarrazoes",
         "agravo-instrumento",
+        "embargos",
         "execucao",
-      ],
-      ["contestacao", "contrarrazoes-inominado", "contrarrazoes", "agravo-instrumento"],
-      ["embargos", "agravo-instrumento"]
+      ]
     ),
     constitucional: m(
       [
@@ -94,15 +95,14 @@ export const MATRIZ_POLO_POR_AREA: Record<AreaComPoloAdvocacia, MatrizPoloArea> 
       ["apelacao", "embargos-declaracao"]
     ),
     trabalhista: m(
-      [
-        "reclamacao",
-        "manifestacao",
-        "recurso-ordinario",
-        "agravo-instrumento",
-        "execucao-titulo",
-      ],
+      ["reclamacao", "manifestacao", "agravo-instrumento"],
       ["defesa"],
-      ["embargos-declaracao", "agravo-peticao"]
+      [
+        "recurso-ordinario",
+        "embargos-declaracao",
+        "agravo-peticao",
+        "execucao-titulo",
+      ]
     ),
   };
 

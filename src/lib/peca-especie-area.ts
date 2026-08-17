@@ -58,6 +58,7 @@ import {
   type EspeciePecaJecr,
 } from "@/lib/jecr-especie-peca";
 import { moduloDaArea } from "@/lib/minuta-modulo";
+import { extrasQualificacaoEstruturaPrompt } from "@/lib/partes-ja-qualificadas";
 import {
   blocoEstruturaKit,
   inferirEspecieKit,
@@ -118,28 +119,26 @@ export function inferirEspecieDaArea(
 }
 
 export function blocoEstruturaDaArea(areaId: string, especie: string): string {
+  let base: string;
   if (areaId === "consumidor") {
-    return blocoEstruturaPromptConsumidor(especie as EspeciePecaConsumidor);
+    base = blocoEstruturaPromptConsumidor(especie as EspeciePecaConsumidor);
+  } else if (areaId === "civil") {
+    base = blocoEstruturaPromptCivil(especie as EspeciePecaCivil);
+  } else if (areaId === "trabalhista") {
+    base = blocoEstruturaPromptTrabalhista(especie as EspeciePecaTrabalhista);
+  } else if (areaId === "familia") {
+    base = blocoEstruturaPromptFamilia(especie as EspeciePecaFamilia);
+  } else if (areaId === "imobiliario") {
+    base = blocoEstruturaPromptImobiliario(especie as EspeciePecaImobiliario);
+  } else if (areaId === "jecr") {
+    base = blocoEstruturaPromptJecr(especie as EspeciePecaJecr);
+  } else if (kitDaArea(areaId)) {
+    base = blocoEstruturaKit(areaId, especie);
+  } else {
+    base = blocoEstruturaPrompt(especie as EspeciePecaJec);
   }
-  if (areaId === "civil") {
-    return blocoEstruturaPromptCivil(especie as EspeciePecaCivil);
-  }
-  if (areaId === "trabalhista") {
-    return blocoEstruturaPromptTrabalhista(especie as EspeciePecaTrabalhista);
-  }
-  if (areaId === "familia") {
-    return blocoEstruturaPromptFamilia(especie as EspeciePecaFamilia);
-  }
-  if (areaId === "imobiliario") {
-    return blocoEstruturaPromptImobiliario(especie as EspeciePecaImobiliario);
-  }
-  if (areaId === "jecr") {
-    return blocoEstruturaPromptJecr(especie as EspeciePecaJecr);
-  }
-  if (kitDaArea(areaId)) {
-    return blocoEstruturaKit(areaId, especie);
-  }
-  return blocoEstruturaPrompt(especie as EspeciePecaJec);
+  const qual = extrasQualificacaoEstruturaPrompt(areaId, especie);
+  return qual.length ? `${base}\n${qual.join("\n")}` : base;
 }
 
 export function metaEspecieDaArea(areaId: string, especie: string) {

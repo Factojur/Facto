@@ -88,7 +88,7 @@ export const ESPECIES_PECA_JEC: MetaEspecieJec[] = [
     id: "recurso-inominado",
     rotulo: "Recurso inominado",
     descricao:
-      "Recurso contra sentença do Juizado à Turma Recursal (Lei 9.099/95, art. 41).",
+      "Recurso contra sentença à Turma Recursal (Lei 9.099/95, art. 41). Autor ou réu podem recorrer, conforme o polo em que você atua.",
     nomePecaHint: "Recurso inominado",
     exigeProcesso: true,
     conectivoPartes:
@@ -108,7 +108,7 @@ export const ESPECIES_PECA_JEC: MetaEspecieJec[] = [
     id: "contrarrazoes-inominado",
     rotulo: "Contrarrazões ao recurso inominado",
     descricao:
-      "Resposta do recorrido ao recurso inominado interposto pela parte adversa.",
+      "Resposta ao recurso inominado interposto pela parte adversa. Cabível em qualquer polo (ex.: réu contra recurso do autor, ou autor contra recurso do réu).",
     nomePecaHint: "Contrarrazões ao recurso inominado",
     exigeProcesso: true,
     conectivoPartes:
@@ -495,6 +495,7 @@ export function blocoEstruturaPrompt(especie: EspeciePecaJec): string {
   } else if (especie === "recurso-inominado" || especie === "recurso") {
     extras.push(
       "   Abertura: partes já qualificadas nos autos (só nomes); não invente CPF/CNPJ/endereço.",
+      "   O recorrente é a parte que você representa (autor ou réu) — respeite o polo processual informado no formulário.",
       "   Histórico: sentença recorrida em síntese objetiva.",
       "   Razões: erros de fato/direito com subsunção; pedidos = reforma/anulação + efeito.",
       "   Lei 9.099/95, art. 41 — Turma Recursal. NÃO use apelação do CPC."
@@ -508,6 +509,7 @@ export function blocoEstruturaPrompt(especie: EspeciePecaJec): string {
   } else if (especie === "contrarrazoes-inominado") {
     extras.push(
       "   Resposta ao recurso inominado da parte adversa: demonstre o acerto da sentença ou a improcedência do recurso.",
+      "   O recorrido é a parte que você representa — pode ser autor ou réu, conforme o polo escolhido.",
       "   Não reproduza a peça recursal integralmente — impugne ponto a ponto.",
       "   Pedidos: desprovimento do recurso e manutenção da sentença (ou provimento parcial favorável ao recorrido)."
     );

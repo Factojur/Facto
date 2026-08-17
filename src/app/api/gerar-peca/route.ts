@@ -55,6 +55,7 @@ import {
 import {
   formatarBlocoPartesJaQualificadas,
   pecaUsaPartesJaQualificadas,
+  resolverPoloClienteQualificacao,
 } from "@/lib/partes-ja-qualificadas";
 import {
   MAX_JURIS_CASO,
@@ -230,6 +231,11 @@ function finalizarTextoPeca(
   );
   const idsInicial = idsPeticaoInicialDaArea(areaId);
   const modulo = moduloDaArea(areaId);
+  const poloCliente = resolverPoloClienteQualificacao(
+    areaId,
+    especie,
+    body.poloAdvocacia
+  );
   const blocoAutor = pecaUsaPartesJaQualificadas(especie, idsInicial)
     ? formatarBlocoPartesJaQualificadas({
         autores,
@@ -240,6 +246,8 @@ function finalizarTextoPeca(
         dispositivoSentenca: body.dispositivoSentenca,
         rotuloPoloAtivo: modulo.rotuloPoloAtivo,
         rotuloPoloPassivo: modulo.rotuloPoloPassivo,
+        areaId,
+        poloAdvocacia: poloCliente,
       })
     : formatarBlocoQualificacaoAutor({
         autores,
@@ -458,6 +466,12 @@ async function postGerarPeca(request: Request) {
         dispositivoSentenca: body.dispositivoSentenca,
         rotuloPoloAtivo: modulo.rotuloPoloAtivo,
         rotuloPoloPassivo: modulo.rotuloPoloPassivo,
+        areaId,
+        poloAdvocacia: resolverPoloClienteQualificacao(
+          areaId,
+          especieParaPartes,
+          body.poloAdvocacia
+        ),
       })
     : formatarBlocoQualificacaoAutor({
         autores: autoresBody,

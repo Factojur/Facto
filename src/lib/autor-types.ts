@@ -269,6 +269,12 @@ export function injetarQualificacaoAutor(
   );
   if (jaQualificado !== texto) return jaQualificado;
 
+  const passivoPrimeiro = texto.replace(
+    /^.+?em face de .+?na presente a[cç][aã]o, igualmente j[aá] qualificado[\s\S]*?à presença de Vossa Excelência/im,
+    substituto
+  );
+  if (passivoPrimeiro !== texto) return passivoPrimeiro;
+
   return texto.replace(
     /^.+?por seu advogado(?: comum)? que esta subscreve[\s\S]*?propor a presente/im,
     substituto
