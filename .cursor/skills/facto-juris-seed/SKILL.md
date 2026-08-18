@@ -21,10 +21,13 @@ Não muda a minuta sozinho. Alimenta a base que a Pesquisa usa.
 - Depois de cada dia: o diário já chama `reindex:embeddings`.
 - API: `stf stj tst trf3 trf4 tjce tjgo tjma tjmg tjmt tjpr tjrj tjrs tjsc tjsp carf`. Sem TSE, TRE, TRF1/2/5/6, TNU.
 
-## Estado (16/08)
+## Estado (18/08 noite)
 
-- Na base até **83**. Próximo **84**. `LOTE_MAX` **646**. Vencimento **2026-09-13** → pausa automática **06/09**. Tarefa 01h: **17/08** (reinstalada com `npx --yes`).
-- Se a madrugada falhar: conferir `scripts/seed-juris-diario.log` e rodar de novo `powershell -ExecutionPolicy Bypass -File scripts\instalar-tarefa-seed-juris.ps1`.
+- Na base até **148** (+29 insert no **149** antes do 429). Próximo **149** — **19/08 01h**. `LOTE_MAX` **673**. Vencimento **2026-09-13** → pausa **06/09**.
+- Pack imobiliário **149** já está com queries curtas (a madrugada 18/08 ainda usou lei/número e zerou várias). Não rodar seed manual no mesmo dia após 429.
+- **201–227** = lacunas (STF constitucional, TRF prev, TST, CARF, retomas). Não misturar o mesmo query em TST e CARF.
+- Reindex da madrugada 18/08 foi cortado (`^C`). Tentativa manual 18/08 noite: Gemini embedding **429** em loop — **não** deixar rodando até as 01h. O diário reindexa no fim da faixa.
+- Tarefa `FACTO-seed-juris-01h` diária 01:00. Se a madrugada falhar: `scripts/seed-juris-diario.log` e `powershell -ExecutionPolicy Bypass -File scripts\instalar-tarefa-seed-juris.ps1`.
 
 ## Produto vs seed
 

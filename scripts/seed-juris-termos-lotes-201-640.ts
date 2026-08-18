@@ -1,13 +1,17 @@
 /**
- * Lotes 201–640 — inflar TJs/áreas até a última semana da assinatura.
+ * Lotes 201+ — volume TJs/áreas até a última semana da assinatura.
  *
- * ~440 lotes × 12 termos. Com ~28 lotes/noite (cota real do pool), dá ~15–20
- * madrugadas. O diário para 7 dias antes de `vencimento` em seed-juris-estado.json.
+ * Prefixados com lacunas (STF, TRF, TST, CARF, retomas) em
+ * seed-juris-termos-lotes-prioridade.ts. Cortes federais deixam de repetir
+ * o mesmo “volume A–F” em todos os tribunais.
  *
- * 201–380: 18 packs × 10 TJs (admin, médico, digital, ambiental, empresarial + volume)
- * 381–460: 8 packs × 10 TJs (fazenda, execução, plano, trânsito, agrário, PI…)
- * 461–640: 30 packs × 6 cortes federais (TST TRF3 TRF4 CARF STJ STF)
+ * O diário para 7 dias antes de `vencimento` em seed-juris-estado.json.
  */
+
+import {
+  FEDERAIS_POR_CORTE,
+  LACUNAS_PRIORIDADE,
+} from "./seed-juris-termos-lotes-prioridade";
 
 type TermoSeed = {
   q: string;
@@ -323,75 +327,6 @@ const ESTADUAIS: { rotulo: string; termos: TermoSeed[] }[] = [
   },
 ];
 
-const FEDERAIS: { rotulo: string; termos: TermoSeed[] }[] = [
-  {
-    rotulo: "volume A",
-    termos: pack(
-      ["horas extras intervalo", "jornada cartão ponto"],
-      ["aposentadoria tempo especial", "EPI eficaz"],
-      ["IRPJ glosa despesa", "despesa comprovada"],
-      ["recurso repetitivo", "distinguishing"],
-      ["repercussão geral", "questão infraconstitucional"],
-      ["mandado de segurança federal", "direito líquido"]
-    ),
-  },
-  {
-    rotulo: "volume B",
-    termos: pack(
-      ["rescisão indireta", "justa causa proporcional"],
-      ["BPC miserabilidade", "renda familiar"],
-      ["PIS COFINS insumo", "crédito glosado"],
-      ["dano moral in re ipsa", "mero aborrecimento"],
-      ["habeas corpus", "prisão preventiva"],
-      ["licitação federal", "inexigibilidade"]
-    ),
-  },
-  {
-    rotulo: "volume C",
-    termos: pack(
-      ["equiparação salarial", "diferença de tempo"],
-      ["auxílio-acidente", "redução capacidade"],
-      ["multa de ofício", "sonegação não comprovada"],
-      ["CDC instituições financeiras", "relação de consumo"],
-      ["execução penal", "falta grave"],
-      ["improbidade federal", "dolo específico"]
-    ),
-  },
-  {
-    rotulo: "volume D",
-    termos: pack(
-      ["terceirização vínculo", "atividade-meio"],
-      ["pensão por morte INSS", "união estável"],
-      ["compensação PERDCOMP", "crédito não homologado"],
-      ["plano de saúde rol ANS", "rol taxativo"],
-      ["prisão em flagrante", "liberdade provisória"],
-      ["servidor federal adicional", "adicional indevido"]
-    ),
-  },
-  {
-    rotulo: "volume E",
-    termos: pack(
-      ["assédio moral trabalho", "poder diretivo"],
-      ["revisão da vida toda", "tese superada"],
-      ["ágio interno", "substância econômica"],
-      ["Súmula 479 STJ", "culpa exclusiva"],
-      ["foro por prerrogativa", "crime alheio ao cargo"],
-      ["desapropriação federal", "indenização"]
-    ),
-  },
-  {
-    rotulo: "volume F",
-    termos: pack(
-      ["FGTS diferenças", "prescrição"],
-      ["segurado especial rural", "prova material"],
-      ["CSLL trava 30 por cento", "prejuízo fiscal"],
-      ["homologação sentença estrangeira", "ordem pública"],
-      ["ADPF saúde", "reserva do possível"],
-      ["auto de infração IBAMA", "contraditório"]
-    ),
-  },
-];
-
 /** Volume extra para ~20 madrugadas até 05/09 (pausa 06/09; vence 13/09). */
 const ESTADUAIS_2: { rotulo: string; termos: TermoSeed[] }[] = [
   {
@@ -443,7 +378,7 @@ const ESTADUAIS_2: { rotulo: string; termos: TermoSeed[] }[] = [
     termos: pack(
       ["usucapião urbana especial", "usucapião urbana área pública"],
       ["adjudicação compulsória registro", "adjudicação falta de pagamento"],
-      ["compromisso de compra distrato lei 13786", "distrato retenção 50 por cento"],
+      ["compromisso de compra distrato", "distrato retenção 50 por cento"],
       ["vizinhança construções perigosas", "construção regular alvará"],
       ["servidão de passagem", "servidão não caracterizada"],
       ["condomínio de lotes convenção", "loteamento obrigação de fazer"]
@@ -580,6 +515,12 @@ function montar(): {
   const rotulos: Record<number, string> = {};
   let n = 201;
 
+  for (const p of LACUNAS_PRIORIDADE) {
+    lotes[n] = noTribunal(p.termos, p.tribunal);
+    rotulos[n] = p.rotulo;
+    n++;
+  }
+
   for (const p of ESTADUAIS) {
     for (const tj of TJS) {
       lotes[n] = noTribunal(p.termos, tj);
@@ -588,8 +529,12 @@ function montar(): {
     }
   }
 
-  for (const p of FEDERAIS) {
-    for (const trib of FED) {
+  for (const trib of FED) {
+    const packs = FEDERAIS_POR_CORTE[trib];
+    if (!packs?.length) {
+      throw new Error(`FEDERAIS_POR_CORTE sem packs para ${trib}`);
+    }
+    for (const p of packs) {
       lotes[n] = noTribunal(p.termos, trib);
       rotulos[n] = `${trib.toUpperCase()} · ${p.rotulo}`;
       n++;

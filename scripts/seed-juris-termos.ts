@@ -6,7 +6,8 @@
  * Lotes 57–64: lacunas no tribunal certo — seed-juris-termos-lotes-57-64.ts.
  * Lotes 65–80: TJs da API + rito das áreas + retomas vazias — seed-juris-termos-lotes-65-80.ts.
  * Lotes 81–96: TJs rasos + reforço TJSP + CARF — seed-juris-termos-lotes-81-96.ts.
- * Lotes 201–486: packs que faltavam (admin, médico, digital…) × 10 TJs + cortes federais.
+ * Lotes 97–200: 10 TJs × áreas de volume + TST/TRF/CARF/STJ/STF.
+ * Lotes 201+: lacunas (constitucional, prev, TST, CARF, retomas) + volume TJs.
  */
 
 import { LOTES_7_A_30, ROTULO_LOTE as ROTULO_7_30 } from "./seed-juris-termos-lotes-7-30";

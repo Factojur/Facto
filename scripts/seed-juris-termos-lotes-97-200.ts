@@ -172,28 +172,28 @@ const PACKS: Record<PackId, { rotulo: string; termos: TermoSeed[] }> = {
     rotulo: "imobiliário",
     termos: [
       ...par(
-        "ação renovatória locação comercial lei 8245",
-        "renovatória locação decadência proposta incompatível"
+        "despejo locação aluguel",
+        "despejo mora purgada"
       ),
       ...par(
-        "consignação de aluguéis mora locador recusa",
-        "consignação aluguéis valor insuficiente"
+        "renovatória de locação comercial",
+        "renovatória decadência"
       ),
       ...par(
-        "bem de família impenhorabilidade lei 8009",
-        "bem de família penhora dívida do próprio imóvel"
+        "consignação de aluguel",
+        "consignação valor insuficiente"
       ),
       ...par(
-        "compra imóvel atraso obra atraso entrega",
-        "atraso obra caso fortuito prorrogação contratual"
+        "bem de família impenhorabilidade",
+        "penhora bem de família"
       ),
       ...par(
-        "compromisso de compra e venda rescisão mutuário",
-        "distrato imobiliário lei 13786 retenção"
+        "atraso na entrega do imóvel",
+        "atraso de obra caso fortuito"
       ),
       ...par(
-        "nunciação de obra nova embargo",
-        "nunciação obra nova exercício regular construir"
+        "distrato imobiliário retenção",
+        "distrato percentual de retenção"
       ),
     ],
   },
@@ -235,7 +235,7 @@ const PACKS: Record<PackId, { rotulo: string; termos: TermoSeed[] }> = {
       ),
       ...par(
         "tráfico de drogas quantidade insignificante",
-        "tráfico drogas associação art 35 lei 11343"
+        "tráfico drogas associação"
       ),
       ...par(
         "furto privilegiado pequeno valor",
@@ -503,7 +503,7 @@ const FEDERAL: { lote: number; tribunal: string; rotulo: string; termos: TermoSe
           "licitação inexigibilidade hipótese legal"
         ),
         ...par(
-          "improbidade administrativa lei 8429",
+          "improbidade administrativa",
           "improbidade ausência dolo específico"
         ),
         ...par(
@@ -802,7 +802,7 @@ const FEDERAL: { lote: number; tribunal: string; rotulo: string; termos: TermoSe
       termos: [
         ...par(
           "inelegibilidade condenação órgão colegiado",
-          "inelegibilidade LC 64 ausência condenação"
+          "inelegibilidade ausência condenação"
         ),
         ...par(
           "abuso de poder econômico eleitoral",
@@ -1038,7 +1038,7 @@ const FEDERAL: { lote: number; tribunal: string; rotulo: string; termos: TermoSe
           "ITCMD fato gerador legislação estadual"
         ),
         ...par(
-          "ISS local da prestação LC 116",
+          "ISS local da prestação",
           "ISS estabelecimento prestador"
         ),
       ],
