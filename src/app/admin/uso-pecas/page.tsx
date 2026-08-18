@@ -109,19 +109,41 @@ export default async function AdminUsoPecasPage({
   const estimativaUnitaria = estimarCustoGemini(1);
   const estimativaAnalise = estimarCustoAnalises(1);
 
+  const ciclosConsultaSql = (() => {
+    if (periodo === "tudo") return null;
+    if (periodo === "ciclo" && cicloParam) return [cicloParam];
+    if (periodo === "3m" || periodo === "6m") {
+      const n = periodo === "3m" ? 3 : 6;
+      const todos = listarCiclosMensais(
+        new Date(new Date().getFullYear() - 2, 0, 1).toISOString()
+      );
+      return todos.slice(-n);
+    }
+    return [cicloAtual];
+  })();
+
   try {
     const admin = createAdminClient();
+
+    let cotasQuery = admin
+      .from("cota_pecas_ciclo")
+      .select("user_id, ciclo, usadas, extras, analises");
+    if (ciclosConsultaSql?.length) {
+      cotasQuery = cotasQuery.in("ciclo", ciclosConsultaSql);
+    }
 
     const [perfisResp, cotasResp, assinaturasResp] = await Promise.all([
       admin
         .from("profiles")
         .select("id, email, nome_completo, created_at, tipo_usuario")
         .order("created_at", { ascending: false }),
-      admin.from("cota_pecas_ciclo").select("user_id, ciclo, usadas, extras, analises"),
+      cotasQuery,
       admin
         .from("assinaturas")
         .select("email, plano, status, criado_em, acesso_valido_ate")
-        .order("criado_em", { ascending: false }),
+        .in("status", ["authorized", "canceled", "cancelled"])
+        .order("criado_em", { ascending: false })
+        .limit(500),
     ]);
 
     if (perfisResp.error) throw perfisResp.error;
@@ -169,11 +191,7 @@ export default async function AdminUsoPecasPage({
       if (periodo === "tudo") return null;
       if (periodo === "ciclo" && cicloParam) return new Set([cicloParam]);
       if (periodo === "3m" || periodo === "6m") {
-        const n = periodo === "3m" ? 3 : 6;
-        const todos = listarCiclosMensais(
-          new Date(new Date().getFullYear() - 2, 0, 1).toISOString()
-        );
-        return new Set(todos.slice(-n));
+        return new Set(ciclosConsultaSql ?? []);
       }
       return new Set([cicloAtual]);
     })();

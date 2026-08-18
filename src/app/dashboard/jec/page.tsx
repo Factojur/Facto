@@ -1,23 +1,16 @@
 import { Suspense } from "react";
-import { createClient } from "@/lib/supabase/server";
 import { JecForm } from "@/components/dashboard/jec-form";
 import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
+import { getUsuarioServidor, getPerfilServidor } from "@/lib/sessao-servidor";
 
 export default async function JecDashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUsuarioServidor();
 
   let tipoUsuario =
     (user?.user_metadata?.tipo_usuario as string | undefined) ?? "advogado";
 
   if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("tipo_usuario")
-      .eq("id", user.id)
-      .maybeSingle();
+    const profile = await getPerfilServidor(user.id);
     if (profile?.tipo_usuario) {
       tipoUsuario = profile.tipo_usuario;
     }

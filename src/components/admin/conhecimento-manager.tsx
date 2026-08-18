@@ -1,16 +1,11 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CATEGORIAS_LASTRO } from "@/lib/base-conhecimento";
+import type { ItemConhecimentoLista } from "@/lib/base-conhecimento";
 
-type Item = {
-  id: string;
-  titulo: string;
-  categoria: string;
-  texto: string;
-  criado_em: string;
-  arquivo_nome?: string | null;
-  arquivo_path?: string | null;
+type Item = ItemConhecimentoLista & {
+  texto?: string;
   arquivo_url?: string | null;
 };
 
@@ -153,13 +148,47 @@ function ItemLinha({
   item,
   removendoId,
   onRemover,
+  onDetalheCarregado,
 }: {
   item: Item;
   removendoId: string | null;
   onRemover: (id: string) => void;
+  onDetalheCarregado: (id: string, patch: Pick<Item, "texto" | "arquivo_url">) => void;
 }) {
+  const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  async function carregarDetalhe() {
+    if (item.texto !== undefined || carregando) return;
+    setCarregando(true);
+    setErro(null);
+    try {
+      const resposta = await fetch(`/api/admin/conhecimento?id=${item.id}`);
+      const dados = await resposta.json();
+      if (!resposta.ok) {
+        setErro(dados.error ?? "Não foi possível carregar o texto.");
+        return;
+      }
+      onDetalheCarregado(item.id, {
+        texto: dados.item?.texto ?? "",
+        arquivo_url: dados.item?.arquivo_url ?? null,
+      });
+    } catch {
+      setErro("Falha ao carregar o conteúdo.");
+    } finally {
+      setCarregando(false);
+    }
+  }
+
   return (
-    <details className="group rounded-lg border border-white/10 bg-black/20 px-3 py-2.5">
+    <details
+      className="group rounded-lg border border-white/10 bg-black/20 px-3 py-2.5"
+      onToggle={(e) => {
+        if ((e.currentTarget as HTMLDetailsElement).open) {
+          void carregarDetalhe();
+        }
+      }}
+    >
       <summary className="flex cursor-pointer list-none items-start justify-between gap-3 [&::-webkit-details-marker]:hidden">
         <div className="min-w-0 flex-1">
           <span className="text-sm font-medium text-white">{item.titulo}</span>
@@ -173,9 +202,9 @@ function ItemLinha({
           ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          {item.arquivo_url ? (
+          {item.arquivo_path ? (
             <a
-              href={item.arquivo_url}
+              href={`/api/admin/conhecimento?id=${item.id}&arquivo=1`}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
@@ -198,9 +227,15 @@ function ItemLinha({
           </button>
         </div>
       </summary>
-      <p className="mt-2 max-h-64 overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed text-stone-400">
-        {item.texto}
-      </p>
+      {carregando ? (
+        <p className="mt-2 text-sm text-stone-500">Carregando texto…</p>
+      ) : erro ? (
+        <p className="mt-2 text-sm text-red-400">{erro}</p>
+      ) : item.texto !== undefined ? (
+        <p className="mt-2 max-h-64 overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed text-stone-400">
+          {item.texto}
+        </p>
+      ) : null}
       <p className="mt-2 text-xs text-stone-600">
         Para atualizar: remova este item e cadastre a versão nova (evita
         sobrescrita silenciosa).
@@ -218,6 +253,10 @@ export function ConhecimentoManager({
   totalDb?: number;
 }) {
   const [itens, setItens] = useState<Item[]>(itensIniciais);
+  const [carregandoLista, setCarregandoLista] = useState(
+    itensIniciais.length === 0 && (totalDb ?? 0) > 0
+  );
+  const [erroLista, setErroLista] = useState<string | null>(null);
   const [modo, setModo] = useState<Modo>("texto");
   const [titulo, setTitulo] = useState("");
   const [categoria, setCategoria] = useState<string>(CATEGORIAS_LASTRO[0]);
@@ -231,6 +270,38 @@ export function ConhecimentoManager({
 
   /** Categorias abertas; tribunais abertos: chave `Jurisprudência::TJSP`. */
   const [abertas, setAbertas] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (itensIniciais.length > 0) return;
+    if ((totalDb ?? 0) === 0) return;
+
+    let cancelado = false;
+    async function carregarLista() {
+      setCarregandoLista(true);
+      setErroLista(null);
+      try {
+        const resposta = await fetch("/api/admin/conhecimento?lista=1");
+        const dados = await resposta.json();
+        if (cancelado) return;
+        if (!resposta.ok) {
+          setErroLista(dados.error ?? "Não foi possível carregar o acervo.");
+          return;
+        }
+        setItens(dados.itens ?? []);
+      } catch {
+        if (!cancelado) {
+          setErroLista("Falha ao carregar o índice da base.");
+        }
+      } finally {
+        if (!cancelado) setCarregandoLista(false);
+      }
+    }
+
+    void carregarLista();
+    return () => {
+      cancelado = true;
+    };
+  }, [itensIniciais.length, totalDb]);
 
   function toggle(chave: string) {
     setAbertas((prev) => ({ ...prev, [chave]: !prev[chave] }));
@@ -362,6 +433,15 @@ export function ConhecimentoManager({
     } finally {
       setRemovendoId(null);
     }
+  }
+
+  function handleDetalheCarregado(
+    id: string,
+    patch: Pick<Item, "texto" | "arquivo_url">
+  ) {
+    setItens((atuais) =>
+      atuais.map((item) => (item.id === id ? { ...item, ...patch } : item))
+    );
   }
 
   return (
@@ -525,7 +605,14 @@ export function ConhecimentoManager({
           Seções recolhidas por padrão — expanda para editar/remover.
         </p>
 
-        {itens.length === 0 ? (
+        {carregandoLista ? (
+          <div className="mt-6 flex items-center gap-3 text-sm text-stone-500">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-facto-gold/30 border-t-facto-gold" />
+            Carregando índice ({totalExibido.toLocaleString("pt-BR")} itens)…
+          </div>
+        ) : erroLista ? (
+          <p className="mt-3 text-sm text-red-400">{erroLista}</p>
+        ) : itens.length === 0 ? (
           <p className="mt-3 text-sm text-stone-500">
             Nenhum item cadastrado ainda.
           </p>
@@ -566,6 +653,7 @@ export function ConhecimentoManager({
                                   item={item}
                                   removendoId={removendoId}
                                   onRemover={handleRemover}
+                                  onDetalheCarregado={handleDetalheCarregado}
                                 />
                               ))}
                             </div>
@@ -593,6 +681,7 @@ export function ConhecimentoManager({
                                   item={item}
                                   removendoId={removendoId}
                                   onRemover={handleRemover}
+                                  onDetalheCarregado={handleDetalheCarregado}
                                 />
                               ))}
                             </div>
@@ -608,6 +697,7 @@ export function ConhecimentoManager({
                           item={item}
                           removendoId={removendoId}
                           onRemover={handleRemover}
+                          onDetalheCarregado={handleDetalheCarregado}
                         />
                       ))}
                     </div>

@@ -1,30 +1,23 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { SessionGuard } from "@/components/dashboard/session-guard";
 import { DashboardLayoutClient } from "@/components/dashboard/dashboard-layout-client";
 import { mesclarPerfil } from "@/lib/perfil-merge";
 import { temAceiteTermos } from "@/lib/aceite-termos";
 import type { PerfilResumo } from "@/lib/perfil-types";
+import { getUsuarioServidor, getPerfilServidor } from "@/lib/sessao-servidor";
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUsuarioServidor();
 
   if (!user) {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .maybeSingle();
+  const profile = await getPerfilServidor(user.id);
 
   const merged = mesclarPerfil(
     user.id,

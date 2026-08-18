@@ -6,6 +6,9 @@ import { EMAIL_ADMIN } from "@/lib/admin-auth";
 import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
 
 const COOKIE_SESSAO = "facto_sessao";
+/** Evita consultar assinaturas a cada clique no dashboard (5 min). */
+const COOKIE_ACESSO_OK = "facto_acesso_ok";
+const ACESSO_OK_TTL_S = 300;
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -89,21 +92,35 @@ export async function middleware(request: NextRequest) {
     // Corta quem não tem assinatura vigente (exceto e-mails de acesso livre)
     // e quem cancelou/expirou fora da janela de acesso.
     if (!isEmailAcessoLivre(user.email)) {
-      const liberado = await acessoAssinaturaLiberado(user.email);
-      if (!liberado) {
-        await supabase.auth.signOut();
-        const loginUrl = request.nextUrl.clone();
-        loginUrl.pathname = "/login";
-        loginUrl.searchParams.set("acesso", "expirado");
-        const redirectResponse = NextResponse.redirect(loginUrl);
-        supabaseResponse.cookies.getAll().forEach((cookie) => {
-          redirectResponse.cookies.set(cookie.name, cookie.value);
-        });
-        redirectResponse.cookies.set(COOKIE_SESSAO, "", {
+      const acessoEmCache =
+        request.cookies.get(COOKIE_ACESSO_OK)?.value === "1";
+      if (!acessoEmCache) {
+        const liberado = await acessoAssinaturaLiberado(user.email);
+        if (!liberado) {
+          await supabase.auth.signOut();
+          const loginUrl = request.nextUrl.clone();
+          loginUrl.pathname = "/login";
+          loginUrl.searchParams.set("acesso", "expirado");
+          const redirectResponse = NextResponse.redirect(loginUrl);
+          supabaseResponse.cookies.getAll().forEach((cookie) => {
+            redirectResponse.cookies.set(cookie.name, cookie.value);
+          });
+          redirectResponse.cookies.set(COOKIE_SESSAO, "", {
+            path: "/",
+            maxAge: 0,
+          });
+          redirectResponse.cookies.set(COOKIE_ACESSO_OK, "", {
+            path: "/",
+            maxAge: 0,
+          });
+          return redirectResponse;
+        }
+        supabaseResponse.cookies.set(COOKIE_ACESSO_OK, "1", {
           path: "/",
-          maxAge: 0,
+          maxAge: ACESSO_OK_TTL_S,
+          httpOnly: true,
+          sameSite: "lax",
         });
-        return redirectResponse;
       }
     }
   }

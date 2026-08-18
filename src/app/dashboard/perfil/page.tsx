@@ -1,18 +1,10 @@
-import { createClient } from "@/lib/supabase/server";
 import { mesclarPerfil } from "@/lib/perfil-merge";
 import { PerfilForm } from "@/components/dashboard/perfil-form";
+import { getUsuarioServidor, getPerfilServidor } from "@/lib/sessao-servidor";
 
 export default async function PerfilPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user!.id)
-    .maybeSingle();
+  const user = await getUsuarioServidor();
+  const profile = await getPerfilServidor(user!.id);
 
   const perfil = mesclarPerfil(
     user!.id,

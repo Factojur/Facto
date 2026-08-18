@@ -1,12 +1,9 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { JecCasosLista } from "@/components/dashboard/jec-casos-lista";
+import { getUsuarioServidor } from "@/lib/sessao-servidor";
 
 export default async function JecCasosPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUsuarioServidor();
   if (!user) redirect("/login");
 
   return <JecCasosLista emailUsuario={user.email ?? ""} />;

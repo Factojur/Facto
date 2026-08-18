@@ -34,6 +34,9 @@ export type ItemConhecimento = {
   arquivo_tipo?: string | null;
 };
 
+/** Metadados para listagem admin (sem campo `texto`). */
+export type ItemConhecimentoLista = Omit<ItemConhecimento, "texto" | "arquivo_tipo">;
+
 /**
  * Um trecho relevante extraído de um item da base de conhecimento. Documentos
  * grandes (uma lei inteira, um código, a Constituição) são cadastrados por

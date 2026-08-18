@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getUsuarioServidor } from "@/lib/sessao-servidor";
 import { getAreaById } from "@/lib/areas-atuacao";
 import { hrefMinutaSeExistir } from "@/lib/minuta-modulo";
 import { aberturaPorAreaId } from "@/lib/abertura-areas";
@@ -14,10 +14,7 @@ export default async function PreviewAreaPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUsuarioServidor();
 
   if (!isEmailPreviewAreas(user?.email)) {
     notFound();

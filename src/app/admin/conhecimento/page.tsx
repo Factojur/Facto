@@ -6,60 +6,6 @@ import { FactoLogo } from "@/components/brand/facto-logo";
 import { ConhecimentoManager } from "@/components/admin/conhecimento-manager";
 
 const EMAIL_ADMIN = "admin@facto.com";
-/** PostgREST/Supabase limita ~1000 linhas por request — paginar. */
-const PAGE = 1000;
-
-type ItemConhecimento = {
-  id: string;
-  titulo: string;
-  categoria: string;
-  texto: string;
-  criado_em: string;
-  arquivo_nome?: string | null;
-  arquivo_path?: string | null;
-  arquivo_tipo?: string | null;
-  arquivo_url?: string | null;
-};
-
-async function carregarTodosItens(
-  admin: ReturnType<typeof createAdminClient>
-): Promise<{ itens: ItemConhecimento[]; totalDb: number }> {
-  const { count: totalDb } = await admin
-    .from("base_conhecimento")
-    .select("*", { count: "exact", head: true });
-
-  const bruto: Omit<ItemConhecimento, "arquivo_url">[] = [];
-  let from = 0;
-  for (;;) {
-    const { data, error } = await admin
-      .from("base_conhecimento")
-      .select(
-        "id, titulo, categoria, texto, criado_em, arquivo_nome, arquivo_path, arquivo_tipo"
-      )
-      .order("criado_em", { ascending: false })
-      .range(from, from + PAGE - 1);
-
-    if (error) throw error;
-    if (!data?.length) break;
-    bruto.push(...data);
-    if (data.length < PAGE) break;
-    from += PAGE;
-  }
-
-  const itens = await Promise.all(
-    bruto.map(async (item) => {
-      if (!item.arquivo_path) return { ...item, arquivo_url: null };
-
-      const { data: signed } = await admin.storage
-        .from("base-conhecimento")
-        .createSignedUrl(item.arquivo_path, 60 * 10);
-
-      return { ...item, arquivo_url: signed?.signedUrl ?? null };
-    })
-  );
-
-  return { itens, totalDb: totalDb ?? itens.length };
-}
 
 export default async function ConhecimentoPage() {
   const supabase = await createClient();
@@ -72,14 +18,14 @@ export default async function ConhecimentoPage() {
   }
 
   let tabelaPronta = true;
-  let itens: ItemConhecimento[] = [];
   let totalDb = 0;
 
   try {
     const admin = createAdminClient();
-    const carregado = await carregarTodosItens(admin);
-    itens = carregado.itens;
-    totalDb = carregado.totalDb;
+    const { count } = await admin
+      .from("base_conhecimento")
+      .select("*", { count: "exact", head: true });
+    totalDb = count ?? 0;
   } catch {
     tabelaPronta = false;
   }
@@ -123,9 +69,6 @@ export default async function ConhecimentoPage() {
             </p>
             <p className="mt-2 text-sm text-facto-gold/90">
               Total no banco: <strong>{totalDb}</strong>
-              {itens.length !== totalDb
-                ? ` · listados nesta tela: ${itens.length}`
-                : null}
             </p>
           </div>
           <div className="flex gap-2">
@@ -145,7 +88,7 @@ export default async function ConhecimentoPage() {
         </div>
 
         <div className="mt-8">
-          <ConhecimentoManager itensIniciais={itens} totalDb={totalDb} />
+          <ConhecimentoManager itensIniciais={[]} totalDb={totalDb} />
         </div>
       </div>
     </div>

@@ -185,7 +185,6 @@ async function criarViaTexto(request: Request, userId: string) {
 
     if (error) throw error;
 
-    // Indexação semântica em background (não bloqueia o save se falhar)
     if (data?.id) {
       void import("@/lib/ia/indexar-conhecimento").then(({ indexarConhecimentoPorId }) =>
         indexarConhecimentoPorId(data.id)
@@ -199,6 +198,95 @@ async function criarViaTexto(request: Request, userId: string) {
         error:
           "Não foi possível salvar. Verifique se a migration supabase/migration-base-conhecimento.sql já foi executada.",
       },
+      { status: 500 }
+    );
+  }
+}
+
+/** Detalhe de um item (texto + URL de arquivo) ou listagem de metadados. */
+export async function GET(request: Request) {
+  const user = await exigirAdmin();
+  if (!user) {
+    return NextResponse.json({ error: "Não autorizado." }, { status: 403 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+
+  if (searchParams.get("lista") === "1") {
+    const PAGE = 1000;
+    try {
+      const admin = createAdminClient();
+      const { count: total } = await admin
+        .from("base_conhecimento")
+        .select("*", { count: "exact", head: true });
+
+      const itens: Array<{
+        id: string;
+        titulo: string;
+        categoria: string;
+        criado_em: string;
+        arquivo_nome: string | null;
+        arquivo_path: string | null;
+      }> = [];
+      let from = 0;
+      for (;;) {
+        const { data, error } = await admin
+          .from("base_conhecimento")
+          .select("id, titulo, categoria, criado_em, arquivo_nome, arquivo_path")
+          .order("criado_em", { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        if (!data?.length) break;
+        itens.push(...data);
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+
+      return NextResponse.json({ itens, total: total ?? itens.length });
+    } catch {
+      return NextResponse.json(
+        { error: "Não foi possível listar o acervo." },
+        { status: 500 }
+      );
+    }
+  }
+
+  if (!id) {
+    return NextResponse.json({ error: "id é obrigatório." }, { status: 400 });
+  }
+
+  try {
+    const admin = createAdminClient();
+    const { data: item, error } = await admin
+      .from("base_conhecimento")
+      .select(
+        "id, titulo, categoria, texto, criado_em, arquivo_nome, arquivo_path, arquivo_tipo"
+      )
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!item) {
+      return NextResponse.json({ error: "Item não encontrado." }, { status: 404 });
+    }
+
+    let arquivo_url: string | null = null;
+    if (item.arquivo_path) {
+      const { data: signed } = await admin.storage
+        .from(BUCKET)
+        .createSignedUrl(item.arquivo_path, 60 * 10);
+      arquivo_url = signed?.signedUrl ?? null;
+    }
+
+    if (searchParams.get("arquivo") === "1" && arquivo_url) {
+      return NextResponse.redirect(arquivo_url);
+    }
+
+    return NextResponse.json({ item: { ...item, arquivo_url } });
+  } catch {
+    return NextResponse.json(
+      { error: "Não foi possível carregar o item." },
       { status: 500 }
     );
   }
