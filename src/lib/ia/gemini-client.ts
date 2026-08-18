@@ -112,6 +112,11 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export type AnexoGemini = {
+  mimeType: string;
+  dataBase64: string;
+};
+
 async function chamarGemini(params: {
   systemPrompt: string;
   userPrompt: string;
@@ -119,9 +124,20 @@ async function chamarGemini(params: {
   apiKey: string;
   temperature?: number;
   maxOutputTokens?: number;
-  /** Grounding com Google Search (Assistente Facto / nomenclatura). */
+  /** Grounding com Google Search — não usar na minuta. */
   usarBuscaGoogle?: boolean;
+  anexos?: AnexoGemini[];
 }): Promise<ResultadoGemini> {
+  const userParts: Record<string, unknown>[] = [];
+  for (const anexo of params.anexos ?? []) {
+    const data = anexo.dataBase64.replace(/^data:[^;]+;base64,/, "");
+    if (!data) continue;
+    userParts.push({
+      inline_data: { mime_type: anexo.mimeType, data },
+    });
+  }
+  userParts.push({ text: params.userPrompt });
+
   const corpo: Record<string, unknown> = {
     systemInstruction: {
       parts: [{ text: params.systemPrompt }],
@@ -129,7 +145,7 @@ async function chamarGemini(params: {
     contents: [
       {
         role: "user",
-        parts: [{ text: params.userPrompt }],
+        parts: userParts,
       },
     ],
     generationConfig: {
@@ -233,6 +249,7 @@ export async function gerarTextoComGemini(params: {
   maxOutputTokens?: number;
   /** Ativa grounding com Google Search (quando o modelo permitir). */
   usarBuscaGoogle?: boolean;
+  anexos?: AnexoGemini[];
 }): Promise<ResultadoGemini> {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) {
@@ -257,6 +274,7 @@ export async function gerarTextoComGemini(params: {
     temperature: params.temperature,
     maxOutputTokens: params.maxOutputTokens,
     apiKey,
+    anexos: params.anexos,
   };
 
   try {

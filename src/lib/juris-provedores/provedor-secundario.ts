@@ -50,10 +50,17 @@ async function fallbackBaseFacto(
   query: string,
   excluirTitulos: Set<string>,
   faltam: number,
-  tribunais?: string[]
+  tribunais?: string[],
+  opcoes?: { areaId?: string; polo?: "ativo" | "passivo" | null }
 ): Promise<PrecedenteInterno[]> {
   if (faltam <= 0) return [];
-  const trechos = await buscarConhecimentoRelacionado(query, 20, query);
+  const trechos = await buscarConhecimentoRelacionado(
+    query,
+    20,
+    query,
+    opcoes?.areaId,
+    { polo: opcoes?.polo }
+  );
   const candidatos: { p: PrecedenteInterno; bonus: number }[] = [];
   const vistos = new Set(excluirTitulos);
 
@@ -99,6 +106,8 @@ export async function buscarJulgadosProvedorSecundario(
     min?: number;
     max?: number;
     tribunais?: string[];
+    areaId?: string;
+    polo?: "ativo" | "passivo" | null;
   }
 ): Promise<ResultadoProvedorSecundario> {
   const q = query.trim();
@@ -149,7 +158,8 @@ export async function buscarJulgadosProvedorSecundario(
       q,
       excluir,
       maxAlvo - out.length,
-      opcoes?.tribunais
+      opcoes?.tribunais,
+      { areaId: opcoes?.areaId, polo: opcoes?.polo }
     );
     out.push(...extra);
   }

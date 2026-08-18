@@ -1,7 +1,7 @@
 /**
  * Workflow agentic da equipe FACTO (Pacote A) — Gemini:
  * Maestro (plano) → Analista+Estrategista → Pesquisa & súmulas (RAG curado)
- * → Redator → Auditor (citações / regras).
+ * → Redator → Auditor (espécie, forma, lacunas, pedidos, citações).
  */
 
 import {
@@ -29,9 +29,22 @@ import {
   type CitacaoVerificada,
 } from "@/lib/ia/verificacao-citacoes";
 import {
-  planoMaestroEquipe,
-  type EtapaEquipeFacto,
-} from "@/lib/ia/agentes-facto";
+  auditarPecaGerada,
+  mesclarEtapaAuditor,
+  type ResultadoAuditorPeca,
+} from "@/lib/ia/auditor-peca";
+import type { EtapaEquipeFacto } from "@/lib/ia/agentes-facto";
+import {
+  blocoPecaCabivelPrompt,
+  detalheAnalista,
+  detalheEstrategista,
+  detalhePesquisa,
+  detalheRedator,
+  montarEtapaMaestro,
+  montarQueryPesquisa,
+  reforcarEstrategiaParaRedator,
+  resolverVinculosPeca,
+} from "@/lib/ia/skins-facto";
 import {
   inferirEspecieDaArea,
 } from "@/lib/peca-especie-area";
@@ -47,6 +60,10 @@ import {
   contextoVerificacaoJurisCaso,
   type BlocoJurisCaso,
 } from "@/lib/juris-caso-types";
+import {
+  blocoPromptTesesCanonicas,
+  detectarTesesCanonicas,
+} from "@/lib/teses-canonicas";
 
 function enriquecerQueryLastro(areaId: string, q: string): string {
   const map: Record<string, string> = {
@@ -93,6 +110,8 @@ export type InstrucoesDeterministicas = {
   /** Bloco da parte autora até "propor a presente" ou "Vossa Excelência". */
   qualificacaoAutor?: string | null;
   partesJaQualificadas?: boolean;
+  nomePeca?: string | null;
+  epigrafe?: string[] | null;
 };
 
 export type AnaliseEstrategica = {
@@ -126,6 +145,7 @@ export type ResultadoPecaIA =
       contextoVerificacao?: string;
       /** Etapas da equipe FACTO (skins) para UI / transparência. */
       equipeEtapas?: EtapaEquipeFacto[];
+      auditoria?: ResultadoAuditorPeca;
     }
   | {
       ok: false;
@@ -144,20 +164,33 @@ function parseEstrategiaJuridica(texto: string): AnaliseEstrategica {
   const pedidosMatch = bruto.match(
     /(?:pedidos\s+essenciais)[^\n]*[:\-–]?\s*([\s\S]*?)(?=\n\s*\d+\.|$)/i
   );
+  const riscosMatch = bruto.match(
+    /(?:riscos?\s*(?:ou\s+lacunas?)?|lacunas?)\s*[:\-–]?\s*([\s\S]*?)(?=\n\s*\d+\.|$)/i
+  );
+  const artigosMatch = bruto.match(
+    /(?:s[uú]mulas?\/artigos|artigos?-chave|artigos?\s+chave)[^\n]*[:\-–]?\s*([\s\S]*?)(?=\n\s*\d+\.|$)/i
+  );
 
-  const pedidosEssenciais = pedidosMatch?.[1]
-    ? pedidosMatch[1]
-        .split(/\n|;|•|-/)
-        .map((p) => p.replace(/^\s*\d+[.)]\s*/, "").trim())
-        .filter((p) => p.length > 3)
-        .slice(0, 8)
-    : undefined;
+  const lista = (bloco?: string) =>
+    bloco
+      ? bloco
+          .split(/\n|;|•|-/)
+          .map((p) => p.replace(/^\s*\d+[.)]\s*/, "").trim())
+          .filter((p) => p.length > 3)
+          .slice(0, 8)
+      : undefined;
+
+  const pedidosEssenciais = lista(pedidosMatch?.[1]);
+  const riscosOuLacunas = lista(riscosMatch?.[1]);
+  const artigosChave = lista(artigosMatch?.[1]);
 
   return {
     bruto,
     tesePrincipal: teseMatch?.[1]?.trim().slice(0, 500) || bruto.slice(0, 280),
     nomeAcao: acaoMatch?.[1]?.trim(),
     pedidosEssenciais,
+    riscosOuLacunas,
+    artigosChave,
   };
 }
 
@@ -183,6 +216,7 @@ function montarUserPromptTriagem(params: {
   especiePeca?: string;
   poloAdvocacia?: PoloAdvocacia | null;
   areaId?: string;
+  vinculosPeca?: string | null;
 }): string {
   return [
     "Processe o relato abaixo e devolva APENAS o resumo estruturado pedido no system prompt.",
@@ -191,6 +225,7 @@ function montarUserPromptTriagem(params: {
     params.especiePeca
       ? `Espécie da peça (formulário): ${params.especiePeca}`
       : null,
+    params.vinculosPeca,
     linhaPoloUsuario(params.poloAdvocacia, params.areaId ?? "jec"),
     params.tutelaUrgencia != null
       ? `Tutela marcada no formulário: ${params.tutelaUrgencia ? "Sim" : "Não"}`
@@ -215,6 +250,7 @@ function montarUserPromptRedacao(params: {
   especiePeca?: string;
   poloAdvocacia?: PoloAdvocacia | null;
   areaId?: string;
+  vinculosPeca?: string | null;
 }): string {
   const partes = [
     "TAREFA: redija a PEÇA COMPLETA seguindo o system prompt e o resumo estratégico abaixo.",
@@ -228,16 +264,21 @@ function montarUserPromptRedacao(params: {
     params.especiePeca
       ? `Espécie da peça: ${params.especiePeca} — use exatamente a estrutura romana dessa espécie.`
       : null,
+    params.vinculosPeca,
     linhaPoloUsuario(params.poloAdvocacia, params.areaId ?? "jec"),
     params.instrucoes?.tutelaUrgencia != null
       ? `Tutela no formulário: ${params.instrucoes.tutelaUrgencia ? "Sim — incluir se confirmada na estratégia/fatos" : "Não — só se os fatos revelarem urgência manifesta"}`
       : null,
-    params.instrucoes?.pedirJusticaGratuita
+    params.instrucoes?.pedirJusticaGratuita === true
       ? "Justiça gratuita: SIM — incluir subtítulo no direito e pedido de JG; mencionar declaração de hipossuficiência."
-      : null,
-    params.instrucoes?.temMle
+      : params.instrucoes?.pedirJusticaGratuita === false
+        ? "Justiça gratuita: NÃO — checkbox desligado; não incluir pedido de JG."
+        : null,
+    params.instrucoes?.temMle === true
       ? "MLE: SIM — prever nos pedidos a expedição/utilização do Mandado de Levantamento Eletrônico, se cabível."
-      : null,
+      : params.instrucoes?.temMle === false
+        ? "MLE: NÃO — checkbox desligado; não pedir Mandado de Levantamento Eletrônico."
+        : null,
     "",
     params.casoReal
       ? "<RELATO_BRUTO_DO_USUARIO> (insumo complementar — reescrever, nunca colar):"
@@ -251,6 +292,22 @@ function montarUserPromptRedacao(params: {
       "",
       "ENDEREÇAMENTO DETERMINÍSTICO (usar literalmente no início):",
       params.instrucoes.enderecamento.trim()
+    );
+  }
+
+  if (params.instrucoes?.epigrafe?.length) {
+    partes.push(
+      "",
+      "EPÍGRAFE DETERMINÍSTICA (após o endereçamento, alinhada à esquerda, nas linhas em branco; reproduzir literalmente):",
+      params.instrucoes.epigrafe.join("\n")
+    );
+  }
+
+  if (params.instrucoes?.nomePeca?.trim()) {
+    partes.push(
+      "",
+      "NOME DA PEÇA DETERMINÍSTICO (caixa alta, sozinho na linha, após a introdução das partes):",
+      params.instrucoes.nomePeca.trim().toUpperCase()
     );
   }
 
@@ -398,6 +455,7 @@ export async function gerarPecaComIA(params: {
   casoReal?: boolean;
   poloAdvocacia?: PoloAdvocacia | null;
   atuarLeigo?: boolean;
+  tesesIds?: string[];
 }): Promise<ResultadoPecaIA> {
   if (!geminiConfigurado()) {
     return {
@@ -422,24 +480,56 @@ export async function gerarPecaComIA(params: {
     params.fatos,
     params.especiePeca
   );
-  const equipe: EtapaEquipeFacto[] = [...planoMaestroEquipe()];
-  if (equipe[0]) {
-    equipe[0] = {
-      ...equipe[0],
-      detalhe: `Espécie: ${especie} · Analista → Pesquisa & súmulas → Estrategista → Redator → Auditor`,
-    };
-  }
+  const teses = detectarTesesCanonicas(
+    areaId,
+    params.fatos,
+    params.tesesIds ?? []
+  );
+  const vinculos = resolverVinculosPeca({
+    areaId,
+    especie,
+    tipoAcao: params.tipoAcao,
+    fatos: params.fatos,
+  });
+  const especieFinal = vinculos.especie;
+  const blocoVinculos = blocoPecaCabivelPrompt(vinculos);
+  const equipe: EtapaEquipeFacto[] = [
+    montarEtapaMaestro({
+      areaId,
+      vinculos,
+      polo,
+      teses,
+      pedirJusticaGratuita: params.instrucoes?.pedirJusticaGratuita,
+      temMle: params.instrucoes?.temMle,
+    }),
+  ];
 
+  const opcoesLastro = { polo, especie: especieFinal };
   const itens =
     params.itensConhecimento ??
     (await buscarConhecimentoRelacionado(
-      enriquecerQueryLastro(areaId, params.tipoAcao),
+      enriquecerQueryLastro(
+        areaId,
+        montarQueryPesquisa({
+          areaId,
+          tipoAcao: params.tipoAcao,
+          vinculos,
+          teses,
+          fatos: params.fatos,
+        })
+      ),
       8,
       params.fatos,
-      areaId
+      areaId,
+      opcoesLastro
     ));
 
-  const contextoBase = montarContextoConhecimento(itens);
+  const contextoBase = [
+    montarContextoConhecimento(itens),
+    blocoPromptTesesCanonicas(teses),
+  ]
+    .filter(Boolean)
+    .join("\n\n");
   const leiMunicipal = params.leiMunicipal?.texto?.trim()
     ? {
         nome: params.leiMunicipal.nome || "Lei municipal anexada",
@@ -468,18 +558,20 @@ export async function gerarPecaComIA(params: {
       contextoBase,
       leiMunicipal,
       jurisDoCaso,
-      especie,
+      especieFinal,
       areaId,
-      opcoesPolo
+      opcoesPolo,
+      blocoVinculos
     ),
     userPrompt: montarUserPromptTriagem({
       tipoAcao: params.tipoAcao,
       fatos: params.fatos,
       tutelaUrgencia: params.instrucoes?.tutelaUrgencia,
       casoReal,
-      especiePeca: especie,
+      especiePeca: especieFinal,
       poloAdvocacia: polo,
       areaId,
+      vinculosPeca: blocoVinculos,
     }),
     modelos: MODELOS_TRIAGEM,
     temperature: 0.25,
@@ -504,17 +596,26 @@ export async function gerarPecaComIA(params: {
     id: "analista",
     skin: "Analista Facto",
     titulo: "Análise do caso",
-    status: "ok",
-    detalhe: analiseEstrategica.nomeAcao
-      ? `Ação sugerida: ${analiseEstrategica.nomeAcao}`
-      : "Caso analisado (tese e riscos).",
+    status:
+      vinculos.incidenteAberto &&
+      vinculos.cabivel &&
+      vinculos.especie !== vinculos.cabivel
+        ? "parcial"
+        : "ok",
+    detalhe: detalheAnalista({
+      nomeAcao: analiseEstrategica.nomeAcao,
+      vinculos,
+      riscos: analiseEstrategica.riscosOuLacunas,
+    }),
     modelo: triagemRes.modelo,
   });
 
   // Amplia RAG com tese / nome da ação (Pesquisa & súmulas)
   const queryExtra = [
+    vinculos.tituloPeca,
     analiseEstrategica.nomeAcao,
     analiseEstrategica.tesePrincipal,
+    ...teses.map((t) => t.rotulo),
   ]
     .filter(Boolean)
     .join(" ");
@@ -525,7 +626,8 @@ export async function gerarPecaComIA(params: {
       enriquecerQueryLastro(areaId, queryExtra),
       8,
       params.fatos,
-      areaId
+      areaId,
+      opcoesLastro
     );
     const vistos = new Set(
       itens.map((i) => `${i.categoria}|${i.titulo}|${i.texto.slice(0, 80)}`)
@@ -550,28 +652,45 @@ export async function gerarPecaComIA(params: {
     skin: "Pesquisa & súmulas",
     titulo: "Fundamentos encontrados",
     status: itensFinais.length > 0 || nJurisUpload > 0 ? "ok" : "parcial",
-    detalhe: [
-      `${itensFinais.length} trecho(s) da base curada/admin`,
-      nLeisF || nLeis ? `${nLeisF || nLeis} lei(s)` : null,
-      nSumulasF || nSumulas ? `${nSumulasF || nSumulas} súmula(s)` : null,
-      nJurisUpload ? `${nJurisUpload} juris do caso` : null,
-    ]
-      .filter(Boolean)
-      .join(" · "),
+    detalhe: detalhePesquisa({
+      nBase: itensFinais.length,
+      nLeis: nLeisF || nLeis,
+      nSumulas: nSumulasF || nSumulas,
+      nJurisCaso: nJurisUpload,
+      nTeses: teses.length,
+      polo: polo ?? undefined,
+    }),
   });
 
+  const nPedidosForm = (params.instrucoes?.pedidosUsuario ?? []).filter(
+    (p) => p.trim().length > 0
+  ).length;
   equipe.push({
     id: "estrategista",
     skin: "Estrategista",
     titulo: "Tese e DO DIREITO",
     status: "ok",
-    detalhe: analiseEstrategica.tesePrincipal
-      ? analiseEstrategica.tesePrincipal.slice(0, 160)
-      : "Estratégia jurídica montada.",
+    detalhe: detalheEstrategista({
+      tesePrincipal: analiseEstrategica.tesePrincipal,
+      nPedidos: nPedidosForm,
+      nTeses: teses.length,
+    }),
     modelo: triagemRes.modelo,
   });
 
-  const contextoRedacao = montarContextoConhecimento(itensFinais);
+  const tesesPrompt = blocoPromptTesesCanonicas(teses);
+  const contextoRedacao = [montarContextoConhecimento(itensFinais), tesesPrompt]
+    .filter(Boolean)
+    .join("\n\n");
+  const estrategiaParaRedator = reforcarEstrategiaParaRedator({
+    estrategia: estrategiaJuridica,
+    vinculos,
+    teses,
+    pedidosUsuario: params.instrucoes?.pedidosUsuario,
+    pedirJusticaGratuita: params.instrucoes?.pedirJusticaGratuita,
+    temMle: params.instrucoes?.temMle,
+    tutelaUrgencia: params.instrucoes?.tutelaUrgencia,
+  });
 
   // —— Redator forense ——
   const redacaoRes = await gerarTextoComGemini({
@@ -579,19 +698,21 @@ export async function gerarPecaComIA(params: {
       contextoRedacao,
       leiMunicipal,
       jurisDoCaso,
-      especie,
+      especieFinal,
       areaId,
-      opcoesPolo
+      opcoesPolo,
+      blocoVinculos
     ),
     userPrompt: montarUserPromptRedacao({
       tipoAcao: analiseEstrategica.nomeAcao || params.tipoAcao,
       fatos: params.fatos,
       instrucoes: params.instrucoes,
       casoReal,
-      estrategiaJuridica,
-      especiePeca: especie,
+      estrategiaJuridica: estrategiaParaRedator,
+      especiePeca: especieFinal,
       poloAdvocacia: polo,
       areaId,
+      vinculosPeca: blocoVinculos,
     }),
     modelos: modelosRedacao(),
     temperature: 0.35,
@@ -621,7 +742,10 @@ export async function gerarPecaComIA(params: {
     skin: "Redator forense",
     titulo: "Redação da peça",
     status: "ok",
-    detalhe: `Minuta gerada (${textoGerado.length.toLocaleString("pt-BR")} caracteres).`,
+    detalhe: detalheRedator({
+      caracteres: textoGerado.length,
+      tituloPeca: vinculos.tituloPeca,
+    }),
     modelo: redacaoRes.modelo,
   });
 
@@ -642,24 +766,18 @@ export async function gerarPecaComIA(params: {
     citacoes
   );
   const marcadores = contarMarcadoresNaoEncontrado(textoComLastro);
-  const citacoesOk = citacoes.filter((c) => c.verificada).length;
-  const jurisSemLastro = citacoes.filter(
-    (c) => c.tipo === "jurisprudencia" && !c.verificada
-  ).length;
-
-  equipe.push({
-    id: "auditor",
-    skin: "Auditor",
-    titulo: "Revisão de citações",
-    status: jurisSemLastro > 0 || marcadores > 0 ? "parcial" : "ok",
-    detalhe:
-      `${citacoesOk}/${citacoes.length} citações conferidas` +
-      (jurisSemLastro > 0
-        ? ` · ${jurisSemLastro} julgado(s) sem lastro (marcados)`
-        : "") +
-      (marcadores > 0 && jurisSemLastro === 0
-        ? ` · ${marcadores} marcador(es)`
-        : ""),
+  const auditoria = auditarPecaGerada({
+    peca: textoComLastro,
+    areaId,
+    especie: especieFinal,
+    tipoAcao: analiseEstrategica.nomeAcao || params.tipoAcao,
+    fatos: params.fatos,
+    pecaInaugural: moduloDaArea(areaId).idsPeticaoInicial.includes(especieFinal),
+    pedirJusticaGratuita: params.instrucoes?.pedirJusticaGratuita,
+    temMle: params.instrucoes?.temMle,
+    pedidosUsuario: params.instrucoes?.pedidosUsuario,
+    citacoes,
+    marcadoresNaoEncontrado: marcadores,
   });
 
   return {
@@ -675,6 +793,7 @@ export async function gerarPecaComIA(params: {
     itensConhecimento: itensFinais,
     analiseEstrategica,
     contextoVerificacao: contextoParaVerificacao,
-    equipeEtapas: equipe,
+    equipeEtapas: mesclarEtapaAuditor(equipe, auditoria),
+    auditoria,
   };
 }

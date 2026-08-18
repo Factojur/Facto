@@ -7,6 +7,7 @@ import {
   inferirEspeciePeca,
   metaEspecie,
   tituloPecaCabivel,
+  ESPECIES_PECA_JEC,
   type EspeciePecaJec,
 } from "@/lib/jec-especie-peca";
 import {
@@ -66,6 +67,7 @@ import {
   metaEspecieKit,
   tituloPecaKit,
 } from "@/lib/especies-restantes";
+import { ajustarEspecieCabivel } from "@/lib/peca-cabivel-autos";
 
 export function ehJusticaComumCpc(areaId: string): boolean {
   return (
@@ -94,28 +96,30 @@ export function inferirEspecieDaArea(
   fatos?: string,
   especieExplicita?: string | null
 ): string {
+  let especie: string;
   if (areaId === "consumidor") {
-    return inferirEspecieConsumidor(tipoAcao, fatos, especieExplicita);
+    especie = inferirEspecieConsumidor(tipoAcao, fatos, especieExplicita);
+  } else if (areaId === "civil") {
+    especie = inferirEspecieCivil(tipoAcao, fatos, especieExplicita);
+  } else if (areaId === "trabalhista") {
+    especie = inferirEspecieTrabalhista(tipoAcao, fatos, especieExplicita);
+  } else if (areaId === "familia") {
+    especie = inferirEspecieFamilia(tipoAcao, fatos, especieExplicita);
+  } else if (areaId === "imobiliario") {
+    especie = inferirEspecieImobiliario(tipoAcao, fatos, especieExplicita);
+  } else if (areaId === "jecr") {
+    especie = inferirEspecieJecr(tipoAcao, fatos, especieExplicita);
+  } else if (kitDaArea(areaId)) {
+    especie = inferirEspecieKit(areaId, tipoAcao, fatos, especieExplicita);
+  } else {
+    especie = inferirEspeciePeca(tipoAcao, fatos, especieExplicita);
   }
-  if (areaId === "civil") {
-    return inferirEspecieCivil(tipoAcao, fatos, especieExplicita);
-  }
-  if (areaId === "trabalhista") {
-    return inferirEspecieTrabalhista(tipoAcao, fatos, especieExplicita);
-  }
-  if (areaId === "familia") {
-    return inferirEspecieFamilia(tipoAcao, fatos, especieExplicita);
-  }
-  if (areaId === "imobiliario") {
-    return inferirEspecieImobiliario(tipoAcao, fatos, especieExplicita);
-  }
-  if (areaId === "jecr") {
-    return inferirEspecieJecr(tipoAcao, fatos, especieExplicita);
-  }
-  if (kitDaArea(areaId)) {
-    return inferirEspecieKit(areaId, tipoAcao, fatos, especieExplicita);
-  }
-  return inferirEspeciePeca(tipoAcao, fatos, especieExplicita);
+  return ajustarEspecieCabivel({
+    areaId,
+    especie,
+    tipoAcao,
+    fatos,
+  });
 }
 
 export function blocoEstruturaDaArea(areaId: string, especie: string): string {
@@ -313,6 +317,8 @@ export function especieParaScaffoldJec(
     case "cumprimento-alimentos":
     case "execucao-titulo":
       return "execucao";
+    case "reconvencao":
+      return "pedido-contraposto";
     case "inventario":
     case "despejo":
     case "usucapiao":
@@ -331,13 +337,93 @@ export function especieParaScaffoldJec(
 }
 
 export function listaEspeciesDaArea(areaId: string) {
-  if (areaId === "consumidor") return ESPECIES_PECA_CONSUMIDOR;
-  if (areaId === "civil") return ESPECIES_PECA_CIVIL;
-  if (areaId === "trabalhista") return ESPECIES_PECA_TRABALHISTA;
-  if (areaId === "familia") return ESPECIES_PECA_FAMILIA;
-  if (areaId === "imobiliario") return ESPECIES_PECA_IMOBILIARIO;
-  if (areaId === "jecr") return ESPECIES_PECA_JECR;
-  const kit = kitDaArea(areaId);
-  if (kit) return kit.especies;
-  return null;
+  const bruta =
+    areaId === "jec"
+      ? ESPECIES_PECA_JEC
+      : areaId === "consumidor"
+      ? ESPECIES_PECA_CONSUMIDOR
+      : areaId === "civil"
+        ? ESPECIES_PECA_CIVIL
+        : areaId === "trabalhista"
+          ? ESPECIES_PECA_TRABALHISTA
+          : areaId === "familia"
+            ? ESPECIES_PECA_FAMILIA
+            : areaId === "imobiliario"
+              ? ESPECIES_PECA_IMOBILIARIO
+              : areaId === "jecr"
+                ? ESPECIES_PECA_JECR
+                : kitDaArea(areaId)?.especies ?? null;
+  if (!bruta) return null;
+  return bruta.filter(
+    (e) => e.id !== "reconvencao" && e.id !== "pedido-contraposto"
+  );
+}
+
+const AREAS_CHECKBOX_RECONVENCAO = [
+  "jec",
+  "civil",
+  "consumidor",
+  "familia",
+  "imobiliario",
+] as const;
+
+/** Contestação + checkbox (não espécie no seletor). */
+export function areaMostraCheckboxReconvencao(areaId: string): boolean {
+  return (AREAS_CHECKBOX_RECONVENCAO as readonly string[]).includes(areaId);
+}
+
+export function rotuloCheckboxReconvencao(areaId: string): {
+  titulo: string;
+  ajuda: string;
+} {
+  if (areaId === "jec") {
+    return {
+      titulo: "Pedido contraposto",
+      ajuda:
+        "Lei 9.099/95, art. 31: o réu pede em seu favor na mesma contestação, com os mesmos fatos. Reconvenção do CPC não se admite no Juizado.",
+    };
+  }
+  return {
+    titulo: "Reconvenção",
+    ajuda:
+      "Art. 343 do CPC: o réu (reconvinte) formula pedido próprio contra o autor (reconvindo) na mesma peça da contestação.",
+  };
+}
+
+/**
+ * Contestação + checkbox vira espécie interna (esqueleto/prompt).
+ * IDs internos no payload antigo também são aceitos.
+ */
+export function aplicarFlagReconvencao(
+  areaId: string,
+  especie: string,
+  comReconvencao?: boolean
+): string {
+  const id = String(especie ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-");
+  if (id === "pedido-contraposto") return "pedido-contraposto";
+  if (id === "reconvencao") {
+    return areaId === "jec" ? "pedido-contraposto" : "reconvencao";
+  }
+  if (!comReconvencao || id !== "contestacao") return especie;
+  if (areaId === "jec") return "pedido-contraposto";
+  if (areaMostraCheckboxReconvencao(areaId)) return "reconvencao";
+  return especie;
+}
+
+/** Seletor só mostra Contestação; o flag vai no checkbox. */
+export function especiePublicaDoFormulario(especie: string): {
+  especie: string;
+  comReconvencao: boolean;
+} {
+  const id = String(especie ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-");
+  if (id === "pedido-contraposto" || id === "reconvencao") {
+    return { especie: "contestacao", comReconvencao: true };
+  }
+  return { especie, comReconvencao: false };
 }

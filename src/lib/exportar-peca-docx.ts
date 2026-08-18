@@ -133,21 +133,29 @@ function blocoParaParagrafo(
     if (marcador.linhas === 6) {
       const linhas: Paragraph[] = [];
       for (let i = 1; i <= 6; i++) {
-        if (i === 4 && marcador.processo) {
-          linhas.push(
-            new Paragraph({
-              alignment: AlignmentType.LEFT,
-              spacing: { after: 0, line: ESPACO_LINHA },
-              children: [
-                new TextRun({
-                  text: marcador.processo,
-                  font: FONTE,
-                  size: TAMANHO,
-                }),
-              ],
-            })
-          );
-        } else {
+              const extra =
+                marcador.epigrafe && marcador.epigrafe.length > 0
+                  ? marcador.epigrafe
+                  : marcador.processo
+                    ? [marcador.processo]
+                    : [];
+              const inicio = extra.length >= 3 ? 2 : 4;
+              const idx = i - inicio;
+              if (idx >= 0 && idx < extra.length) {
+                linhas.push(
+                  new Paragraph({
+                    alignment: AlignmentType.LEFT,
+                    spacing: { after: 0, line: ESPACO_LINHA },
+                    children: [
+                      new TextRun({
+                        text: extra[idx]!,
+                        font: FONTE,
+                        size: TAMANHO,
+                      }),
+                    ],
+                  })
+                );
+              } else {
           linhas.push(
             new Paragraph({
               spacing: { after: 0, line: ESPACO_LINHA },

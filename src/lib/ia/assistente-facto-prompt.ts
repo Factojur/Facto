@@ -76,7 +76,8 @@ export function montarSystemPromptAnaliseEstrategica(
   opcoesPolo?: {
     polo?: PoloAdvocacia | null;
     atuarLeigo?: boolean;
-  }
+  },
+  vinculosPeca?: string | null
 ): string {
   const especie = especiePeca
     ? inferirEspecieDaArea(areaId, "", "", especiePeca)
@@ -113,21 +114,28 @@ export function montarSystemPromptAnaliseEstrategica(
     "6. Pedidos essenciais sugeridos (lista curta, adequados à espécie);",
     "7. Súmulas/artigos-chave pertinentes (só se realmente aplicáveis);",
     "8. Se houver <JURISPRUDENCIA_DO_CASO>, liste quais fontes usar e a tese de cada uma (sem inventar);",
-    "9. Valores mencionados no relato (materiais, morais, valor da causa) quando houver.",
+    "9. Valores mencionados no relato (materiais, morais, valor da causa) quando houver;",
+    "10. Riscos ou lacunas (prova faltando, prazo, incompetência, teto do juizado) — lista curta;",
+    "11. Se o relato for autos em curso: qual o ÚLTIMO ATO e se a peça a protocolar reabre incidente já instaurado (a resposta correta é NÃO reabrir).",
     "",
     "REGRAS:",
     "- NÃO redija a petição nesta etapa.",
     "- Seja objetivo, específico ao caso (datas, valores, condutas do relato).",
     "- Indicação do formulário é só pista; a ação vem dos FATOS.",
     "- Golpe/fraude/PIX/cartão/falsa central/falha de segurança bancária → indenização (consumo), NÃO execução de título.",
+    "- Cumprimento/execução JÁ instaurado + decisão posterior → a peça é a do último ato (embargos, agravo). NÃO sugira reabrir o incidente.",
+    "- No item da ação cabível, NÃO use o nome do incidente já aberto se o último ato pedir outra peça.",
     "- Acórdãos com número de processo: só se estiverem na base ou na jurisprudência do caso.",
     "- NÃO invente número de processo, REsp, AREsp, apelação ou relator. Se a base não trouxer julgado, fundamente em lei/súmula.",
+    vinculosPeca ? `- ${vinculosPeca}` : null,
     "",
     "Formato livre em texto claro (pode usar numeração). Sem saudações.",
     "",
     blocoBaseMunicipalEJuris(contextoBase, leiMunicipal, jurisDoCaso),
     blocoPolo,
-  ].join("\n");
+  ]
+    .filter((l): l is string => l != null)
+    .join("\n");
 }
 
 /**
@@ -143,7 +151,8 @@ export function montarSystemPromptRedacaoTier1(
   opcoesPolo?: {
     polo?: PoloAdvocacia | null;
     atuarLeigo?: boolean;
-  }
+  },
+  vinculosPeca?: string | null
 ): string {
   const especie = inferirEspecieDaArea(areaId, "", "", especiePeca);
   const meta = metaEspecieDaArea(areaId, especie);
@@ -178,8 +187,12 @@ export function montarSystemPromptRedacaoTier1(
     `Você é um Advogado Sênior de elite, especialista em ${especialidade}, conhecido por redigir peças forenses impecáveis (${meta.rotulo}).`,
     ritoLinha,
     "",
-    `Missão: redigir a peça completa da espécie "${meta.rotulo}", utilizando os Fatos fornecidos pelo usuário e a Estratégia Jurídica (Teses e Leis) mapeada pelo Agente 1 (Paralegal).`,
+    `Missão: redigir a peça completa da espécie "${meta.rotulo}" (id ${especie}), utilizando os Fatos fornecidos pelo usuário e a Estratégia Jurídica (Teses e Leis) mapeada pelo Agente 1 (Paralegal).`,
     "Escreva em 3ª pessoa. Não inclua saudações nem o resumo estratégico — apenas a peça.",
+    "PROIBIDO redigir petição inicial, cumprimento ou execução se a espécie travada for outra (embargos, agravo, contestação, recurso).",
+    "PROIBIDO reabrir cumprimento/execução se os autos já estão nesse incidente.",
+    "Após “Vossa Excelência”, use o conectivo da espécie (opor os presentes / interpor o presente / apresentar a presente / propor a presente) e, na linha seguinte, o nome da peça em caixa alta — não cole o nome colado na mesma linha.",
+    vinculosPeca ?? "",
     "",
     "================================================================================",
     "DIRETRIZES DE REDAÇÃO (CONTEÚDO)",
@@ -196,8 +209,8 @@ export function montarSystemPromptRedacaoTier1(
     "2) DIREITO / MÉRITO / RAZÕES (conforme a espécie):",
     "   - Utilize as teses jurídicas mapeadas pelo Agente 1.",
     "   - Desenvolva argumentação ROBUSTA e CONVINCENTE: não basta citar artigo + frase genérica.",
-    "   - Em cada subtópico: (i) enuncie a norma; (ii) explique o sentido; (iii) FAÇA A SUBSUNÇÃO aos fatos deste caso;",
-    "     (iv) quando útil, use analogia com situações típicas.",
+    "   - Em cada subtópico: (i) enuncie a norma; (ii) explique o sentido; (iii) FAÇA A SUBSUNÇÃO aos fatos deste caso.",
+    "   - PROIBIDO analogia com outro instituto, julgado ou situação que não esteja nos FATOS, nas TESES_CANONICAS_DO_CODIGO ou na BASE.",
     "   - Linguagem forense: use conectivos e fórmulas cultas (\"impõe-se\", \"outrossim\", \"destarte\", \"in casu\", \"ante o conjunto normativo\", \"merece acolhimento\"), sem coloquialismos.",
     "   - Português revisado: não invente grafias (escreva \"aplica-se\", \"patamar\"). Revise a peça mentalmente antes de devolver.",
     "   - Latim só no padrão *\"in casu\"* — nunca aspas com asterisco solto (\"In casu\"*).",
@@ -241,7 +254,7 @@ export function montarSystemPromptRedacaoTier1(
     "================================================================================",
     "",
     "1) ESPAÇAMENTOS DO CABEÇALHO:",
-    "   - Após o endereçamento (1 linha, caixa alta), deixe 6 linhas em branco antes da qualificação da parte. Se houver número de processo, coloque \"Processo nº …\" na 4ª dessas 6 linhas, alinhado à esquerda.",
+    "   - Após o endereçamento (1 linha, caixa alta), deixe 6 linhas em branco antes da qualificação da parte. Se houver EPÍGRAFE DETERMINÍSTICA (Processo nº, Exequente/Executado, Autor/Réu, Reclamante/Reclamado, Reconvinte/Reconvindo), reproduza-a alinhada à esquerda nessas linhas. Sem epígrafe, se houver número de processo, coloque \"Processo nº …\" na 4ª linha.",
     "   - Após a qualificação introdutória, 1 linha em branco → NOME DA PEÇA/AÇÃO (caixa alta, sozinho). Em petição inicial: 1 linha em branco → \"em face de\" (qualificação da parte adversa) → 2 linhas em branco → primeiro tópico romano. Em peça incidental: 2 linhas em branco → primeiro tópico romano (partes já qualificadas nos autos).",
     "   - \"em face de…\" DEVE começar em linha própria (nunca na mesma linha do nome da ação).",
     "",

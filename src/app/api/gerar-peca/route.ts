@@ -11,6 +11,8 @@ import {
   inferirEspecieDaArea,
   idsPeticaoInicialDaArea,
   especieParaScaffoldJec,
+  aplicarFlagReconvencao,
+  tituloPecaDaArea,
 } from "@/lib/peca-especie-area";
 import { enfileirarUploadsJurisDoCaso } from "@/lib/juris-provedores/salvar-na-base";
 import { areaAbertaParaCliente } from "@/lib/acesso-areas";
@@ -34,6 +36,7 @@ import {
   contarMarcadoresNaoEncontrado,
   verificarCitacoes,
 } from "@/lib/ia/verificacao-citacoes";
+import { anexarAuditoria } from "@/lib/ia/auditor-peca";
 import { geminiConfigurado } from "@/lib/ia/gemini-client";
 import { consumirUmaPeca, verificarSaldoCota } from "@/lib/cota-pecas-server";
 import { formatarOabAssinatura } from "@/lib/formatar-oab";
@@ -57,6 +60,10 @@ import {
   pecaUsaPartesJaQualificadas,
   resolverPoloClienteQualificacao,
 } from "@/lib/partes-ja-qualificadas";
+import {
+  formatarEnderecoAdvogado,
+  linhasEpigrafePeca,
+} from "@/lib/peca-cabivel-autos";
 import {
   MAX_JURIS_CASO,
   truncarTextoJuris,
@@ -84,6 +91,7 @@ type GerarPecaBody = GerarPecaJecInput & {
   jurisDoCaso?: JurisCasoPayload[] | null;
   pedidosUsuario?: string[];
   areaId?: string;
+  tesesIds?: string[];
 };
 
 const LIMITE_TEXTO_LEI_MUNICIPAL = 40_000;
@@ -213,7 +221,11 @@ async function extrairJurisDoCaso(
 function finalizarTextoPeca(
   texto: string,
   body: GerarPecaBody,
-  opcoes?: { advogadoNome?: string; oabQualificacao?: string },
+  opcoes?: {
+    advogadoNome?: string;
+    oabQualificacao?: string;
+    enderecoAdvogado?: string | null;
+  },
   areaId: string = "jec"
 ): string {
   const comProvas = injetarProvasELinkNuvem(normalizarPecaGerada(texto), {
@@ -223,11 +235,15 @@ function finalizarTextoPeca(
   });
   const autores =
     body.autores ?? (body.autor ? [body.autor] : []);
-  const especie = inferirEspecieDaArea(
+  const especie = aplicarFlagReconvencao(
     areaId,
-    body.tipoAcao,
-    body.fatos,
-    body.especiePeca
+    inferirEspecieDaArea(
+      areaId,
+      body.tipoAcao,
+      body.fatos,
+      body.especiePeca
+    ),
+    body.comReconvencao
   );
   const idsInicial = idsPeticaoInicialDaArea(areaId);
   const modulo = moduloDaArea(areaId);
@@ -242,6 +258,7 @@ function finalizarTextoPeca(
         reus: body.reus ?? [],
         advogadoNome: opcoes?.advogadoNome ?? "",
         oabQualificacao: opcoes?.oabQualificacao ?? "",
+        enderecoAdvogado: opcoes?.enderecoAdvogado,
         especie,
         dispositivoSentenca: body.dispositivoSentenca,
         rotuloPoloAtivo: modulo.rotuloPoloAtivo,
@@ -253,6 +270,7 @@ function finalizarTextoPeca(
         autores,
         advogadoNome: opcoes?.advogadoNome ?? "",
         oabQualificacao: opcoes?.oabQualificacao ?? "",
+        enderecoAdvogado: opcoes?.enderecoAdvogado,
         fundamentoLei: modulo.fundamentoQualificacao,
       });
   const comReus = pecaUsaPartesJaQualificadas(especie, idsInicial)
@@ -339,16 +357,36 @@ async function postGerarPeca(request: Request) {
   const areaId = normalizarAreaIdMinuta(body.areaId);
   let tipoUsuario =
     (user.user_metadata?.tipo_usuario as string | undefined) ?? "advogado";
+  let perfilEndereco: {
+    endereco?: string | null;
+    numero?: string | null;
+    complemento?: string | null;
+    bairro?: string | null;
+    cidade?: string | null;
+    uf?: string | null;
+    cep?: string | null;
+  } = {};
   try {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("tipo_usuario")
+      .select("tipo_usuario, endereco, numero, complemento, bairro, cidade, uf, cep")
       .eq("id", user.id)
       .maybeSingle();
     if (profile?.tipo_usuario) tipoUsuario = profile.tipo_usuario;
+    if (profile) perfilEndereco = profile;
   } catch {
     /* metadata */
   }
+  const enderecoAdvogado = formatarEnderecoAdvogado({
+    escritorio: body.escritorio,
+    logradouro: perfilEndereco.endereco,
+    numero: perfilEndereco.numero,
+    complemento: perfilEndereco.complemento,
+    bairro: perfilEndereco.bairro,
+    cidade: perfilEndereco.cidade,
+    uf: perfilEndereco.uf,
+    cep: perfilEndereco.cep,
+  });
   const acesso = resolverAcessoConta(email, saldo.cota.plano, tipoUsuario);
   if (
     !areaAbertaParaCliente(areaId, {
@@ -428,11 +466,29 @@ async function postGerarPeca(request: Request) {
       ? jurisDoCaso.map((j) => ({ titulo: j.titulo }))
       : null;
 
-  // RAG: tipo da ação + palavras dos fatos (tese do caso).
+  const especieRag = aplicarFlagReconvencao(
+    areaId,
+    inferirEspecieDaArea(
+      areaId,
+      body.tipoAcao,
+      body.fatos,
+      body.especiePeca
+    ),
+    body.comReconvencao
+  );
+  const poloRag = resolverPoloClienteQualificacao(
+    areaId,
+    especieRag,
+    body.poloAdvocacia
+  );
+
+  // RAG: fatos do caso + julgados favoráveis ao polo da peça.
   const baseConhecimento = await buscarConhecimentoRelacionado(
     body.tipoAcao,
-    6,
-    body.fatos
+    8,
+    body.fatos,
+    areaId,
+    { polo: poloRag, especie: especieRag }
   );
 
   const oabBruta = user.user_metadata?.oab_numero as string | undefined;
@@ -441,16 +497,21 @@ async function postGerarPeca(request: Request) {
   const opcoesAdvogadoQualificacao = {
     advogadoNome: (user.user_metadata?.nome_completo as string | undefined) ?? "",
     oabQualificacao: oabFormatada,
+    enderecoAdvogado,
   };
   const autoresBody =
     body.autores ?? (body.autor ? [body.autor] : []);
   const idsInicial = idsPeticaoInicialDaArea(areaId);
   const modulo = moduloDaArea(areaId);
-  const especieParaPartes = inferirEspecieDaArea(
+  const especieParaPartes = aplicarFlagReconvencao(
     areaId,
-    body.tipoAcao,
-    body.fatos,
-    body.especiePeca
+    inferirEspecieDaArea(
+      areaId,
+      body.tipoAcao,
+      body.fatos,
+      body.especiePeca
+    ),
+    body.comReconvencao
   );
   const blocoQualificacaoAutor = pecaUsaPartesJaQualificadas(
     especieParaPartes,
@@ -477,8 +538,27 @@ async function postGerarPeca(request: Request) {
         fundamentoLei: modulo.fundamentoQualificacao,
       });
 
+  const paramsAuditor = {
+    areaId,
+    especie: especieParaPartes,
+    tipoAcao: body.tipoAcao,
+    fatos: body.fatos,
+    numeroProcesso: body.comarca?.numeroProcesso,
+    pecaInaugural: !pecaUsaPartesJaQualificadas(especieParaPartes, idsInicial),
+    pedirJusticaGratuita: Boolean(
+      body.pedirJusticaGratuita ||
+        (body.documentos?.declaracaoHipossuficiencia?.length ?? 0) > 0
+    ),
+    temMle: Boolean(body.temMle),
+    comReconvencao: Boolean(body.comReconvencao),
+    pedidosUsuario: body.pedidosUsuario,
+    autores: autoresBody,
+    reus: body.reus,
+  };
+
   const scaffold = gerarPecaJec({
     ...body,
+    areaId,
     especiePeca: especieParaScaffoldJec(areaId, especieParaPartes),
     autorNome: user.user_metadata?.nome_completo,
     autorOab: oabBruta,
@@ -513,7 +593,7 @@ async function postGerarPeca(request: Request) {
       avisoIA:
         "A redação completa por IA está indisponível no momento. Foi gerada uma peça de reserva com estrutura forense e fundamentação-modelo — revise antes de protocolar e tente gerar novamente em instantes.",
     };
-    return debitarEResponder(semIa);
+    return debitarEResponder(anexarAuditoria(semIa, paramsAuditor));
   }
 
   const valorCausaResumo = (() => {
@@ -530,20 +610,22 @@ async function postGerarPeca(request: Request) {
     );
   })();
 
-  const especieResolvida = inferirEspecieDaArea(
+  const especieResolvida = aplicarFlagReconvencao(
     areaId,
-    tipoResolvido,
-    body.fatos,
-    body.especiePeca
+    inferirEspecieDaArea(
+      areaId,
+      tipoResolvido,
+      body.fatos,
+      body.especiePeca
+    ),
+    body.comReconvencao
   );
   const enderecamento = formatarEnderecamentoPadrao({
     comarca: body.comarca ?? { cidade: "", uf: "" },
     areaJudiciaria: rotuloAreaJudiciaria(areaId),
     areaId,
     especiePeca: especieResolvida,
-    varaEmBranco:
-      idsPeticaoInicialDaArea(areaId).includes(especieResolvida) ||
-      ehPeticaoInicial(tipoResolvido),
+    varaEmBranco: idsPeticaoInicialDaArea(areaId).includes(especieResolvida),
   });
   const extraidoForo = body.comarca?.foro
     ? extrairCidadeUfDoForo(body.comarca.foro)
@@ -557,7 +639,7 @@ async function postGerarPeca(request: Request) {
   const ia = await gerarPecaComIA({
     tipoAcao: tipoResolvido,
     fatos: body.fatos,
-    especiePeca: body.especiePeca,
+    especiePeca: especieResolvida,
     areaId,
     itensConhecimento: baseConhecimento,
     leiMunicipal,
@@ -567,6 +649,9 @@ async function postGerarPeca(request: Request) {
       ? body.poloAdvocacia ?? "ativo"
       : body.poloAdvocacia,
     atuarLeigo: Boolean(body.atuarLeigo),
+    tesesIds: Array.isArray(body.tesesIds)
+      ? body.tesesIds.map((id) => String(id)).filter(Boolean)
+      : undefined,
     instrucoes: {
       enderecamento,
       valorCausa: montarSecaoValorCausa(valorCausaResumo).join("\n"),
@@ -596,6 +681,16 @@ async function postGerarPeca(request: Request) {
         especieResolvida,
         idsInicial
       ),
+      nomePeca: tituloPecaDaArea(areaId, especieResolvida, tipoResolvido),
+      epigrafe: linhasEpigrafePeca({
+        areaId,
+        especie: especieResolvida,
+        numeroProcesso: body.comarca?.numeroProcesso,
+        autores: autoresBody,
+        reus: body.reus ?? [],
+        fatos: body.fatos,
+        pecaInaugural: idsInicial.includes(especieResolvida),
+      }),
       pedidosUsuario: body.pedidosUsuario
         ?.map((p) => String(p ?? "").trim())
         .filter(Boolean),
@@ -625,7 +720,7 @@ async function postGerarPeca(request: Request) {
       avisoIA:
         "A redação por IA não foi concluída. Foi usada uma peça de reserva com estrutura forense — revise e não protocolar assim. Gere novamente.",
     };
-    return debitarEResponder(fallback);
+    return debitarEResponder(anexarAuditoria(fallback, paramsAuditor));
   }
 
   const pecaBrutaIa = normalizarPecaGerada(ia.textoGerado);
@@ -664,22 +759,28 @@ async function postGerarPeca(request: Request) {
       pecaAnotada,
       body.escritorio?.usarTimbre ? body.escritorio : undefined
     );
-    return debitarEResponder({
-      ...scaffold,
-      peca: pecaAnotada,
-      pecaHtml,
-      timbrado: Boolean(body.escritorio?.usarTimbre),
-      geradoPorIA: true,
-      modeloIA: ia.modelo,
-      citacoes: citacoesHibrida,
-      marcadoresNaoEncontrado: contarMarcadoresNaoEncontrado(pecaAnotada),
-      leiMunicipalUtilizada: leiMunicipal
-        ? { nome: leiMunicipal.nome }
-        : null,
-      jurisDoCasoUtilizada: jurisMeta,
-      avisoIA:
-        "O DO DIREITO da IA veio genérico demais; os fatos reescritos pela IA foram mantidos e a fundamentação foi reforçada com o modelo forense FACTO. Revise antes de protocolar.",
-    });
+    return debitarEResponder(
+      anexarAuditoria(
+        {
+          ...scaffold,
+          peca: pecaAnotada,
+          pecaHtml,
+          timbrado: Boolean(body.escritorio?.usarTimbre),
+          geradoPorIA: true,
+          modeloIA: ia.modelo,
+          citacoes: citacoesHibrida,
+          marcadoresNaoEncontrado: contarMarcadoresNaoEncontrado(pecaAnotada),
+          leiMunicipalUtilizada: leiMunicipal
+            ? { nome: leiMunicipal.nome }
+            : null,
+          jurisDoCasoUtilizada: jurisMeta,
+          equipeEtapas: ia.equipeEtapas,
+          avisoIA:
+            "O DO DIREITO da IA veio genérico demais; os fatos reescritos pela IA foram mantidos e a fundamentação foi reforçada com o modelo forense FACTO. Revise antes de protocolar.",
+        },
+        paramsAuditor
+      )
+    );
   }
 
   const pecaComValor = garantirSecaoValorCausa(
@@ -713,6 +814,7 @@ async function postGerarPeca(request: Request) {
     jurisDoCasoUtilizada: jurisMeta,
     avisoIA: null,
     equipeEtapas: ia.equipeEtapas,
+    contextoVerificacao: ia.contextoVerificacao,
     analiseEstrategica: ia.analiseEstrategica
       ? {
           tesePrincipal: ia.analiseEstrategica.tesePrincipal,
@@ -724,5 +826,5 @@ async function postGerarPeca(request: Request) {
       : null,
   };
 
-  return debitarEResponder(resultado);
+  return debitarEResponder(anexarAuditoria(resultado, paramsAuditor));
 }

@@ -1,14 +1,19 @@
 /**
- * Base de conhecimento jurídico — fundação do sistema de RAG (Retrieval
- * Augmented Generation) do FACTO. Leis, súmulas e jurisprudências cadastradas
- * pelo admin em /admin/conhecimento são buscadas aqui por palavra-chave e
- * injetadas como contexto obrigatório antes de qualquer geração de peça.
+ * Base de conhecimento jurídico — RAG da minuta FACTO.
+ * Busca casos semelhantes aos fatos e prioriza julgado favorável ao polo
+ * da peça (ativo/passivo). Súmulas e leis não entram no filtro de desfecho.
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CONHECIMENTO_CURADO_JEC } from "@/lib/conhecimento-curado-jec";
 import { SUMULAS_ATIVAS_CURADAS } from "@/lib/sumulas";
 import { gerarEmbedding } from "@/lib/ia/embeddings";
+import {
+  bonusLastroPolo,
+  lastroContrarioAoPolo,
+  pistaQueryPolo,
+} from "@/lib/lastro-favoravel-polo";
+import type { PoloAdvocacia } from "@/lib/polo-especies-por-area";
 
 export const CATEGORIAS_LASTRO = ["Súmula", "Jurisprudência"] as const;
 /** Inclui Lei só por linhas antigas no banco — não cadastrar nem retrieve. */
@@ -168,15 +173,37 @@ const STOPWORDS = new Set([
   "tambem",
 ]);
 
-function palavrasChave(tipoAcao: string, textoExtra?: string): string[] {
-  const bruto = normalizar([tipoAcao, textoExtra ?? ""].filter(Boolean).join(" "));
+function ritoPalavrasArea(areaId?: string): string[] {
+  if (!areaId || areaId === "jec") return ["juizado", "9099"];
+  if (areaId === "consumidor") return ["cdc", "consumidor"];
+  if (areaId === "civil") return ["obrigacoes", "codigo civil"];
+  if (areaId === "trabalhista") return ["clt", "reclamacao"];
+  if (areaId === "familia") return ["alimentos", "guarda"];
+  if (areaId === "imobiliario") return ["locacao", "despejo"];
+  if (areaId === "tributario") return ["tributario", "execucao fiscal"];
+  if (areaId === "previdenciario") return ["inss", "beneficio"];
+  if (areaId === "criminal") return ["penal", "cpp"];
+  if (areaId === "jecr") return ["jecrim", "transacao"];
+  if (areaId === "constitucional") return ["constituicao", "mandado"];
+  if (areaId === "administrativo") return ["fazenda", "mandado"];
+  return [];
+}
+
+function palavrasChave(
+  tipoAcao: string,
+  textoExtra?: string,
+  areaId?: string
+): string[] {
+  const bruto = normalizar(
+    [tipoAcao, textoExtra ?? ""].filter(Boolean).join(" ")
+  );
   const palavras = bruto
     .split(/[^a-z0-9]+/)
     .filter((p) => p.length > 3 && !STOPWORDS.has(p));
 
   return Array.from(
-    new Set([...palavras, "juizado especial civel", "9099", "9.099"])
-  ).slice(0, 24);
+    new Set([...palavras, ...ritoPalavrasArea(areaId)])
+  ).slice(0, 28);
 }
 
 // Tamanho máximo de um trecho individual — grande o bastante para caber um
@@ -494,17 +521,29 @@ function descartarLastroPorArea(
   return false;
 }
 
+export type OpcoesBuscaConhecimento = {
+  polo?: PoloAdvocacia | null;
+  especie?: string | null;
+};
+
 export async function buscarConhecimentoRelacionado(
   tipoAcao: string,
   limite = 6,
   /** Fatos / tese do caso — amplia as palavras-chave da busca (RAG). */
   textoExtra?: string,
-  areaId?: string
+  areaId?: string,
+  opcoes?: OpcoesBuscaConhecimento
 ): Promise<TrechoConhecimento[]> {
-  const palavras = palavrasChave(tipoAcao, textoExtra);
+  const polo = opcoes?.polo ?? null;
+  const pistaPolo = pistaQueryPolo(polo);
+  const tipoComPolo = [tipoAcao, opcoes?.especie, pistaPolo]
+    .filter(Boolean)
+    .join("\n");
+  const palavras = palavrasChave(tipoComPolo, textoExtra, areaId);
   if (palavras.length === 0) return [];
 
-  const consulta = [tipoAcao, textoExtra ?? ""].filter(Boolean).join("\n");
+  const consulta = [tipoComPolo, textoExtra ?? ""].filter(Boolean).join("\n");
+  const limiteBusca = Math.max(limite * 3, 18);
 
   try {
     const admin = createAdminClient();
@@ -522,7 +561,7 @@ export async function buscarConhecimentoRelacionado(
         "match_base_conhecimento",
         {
           query_embedding: queryEmb,
-          match_count: 24,
+          match_count: 32,
         }
       );
       if (!semErr && Array.isArray(sem)) {
@@ -557,7 +596,7 @@ export async function buscarConhecimentoRelacionado(
       .neq("categoria", "Lei")
       .or(condicoes)
       .order("criado_em", { ascending: false })
-      .limit(30);
+      .limit(limiteBusca);
 
     if (error && porId.size === 0) throw error;
 
@@ -576,8 +615,16 @@ export async function buscarConhecimentoRelacionado(
       const trechos = dividirEmTrechos(documento.texto);
       for (const trecho of trechos) {
         const scoreKw = pontuarTrecho(normalizar(trecho), palavras);
+        const scorePolo = bonusLastroPolo(
+          `${documento.titulo}\n${trecho}`,
+          documento.categoria,
+          polo
+        );
         const score =
-          scoreKw + bonusCategoria(documento.categoria) + boostSemantico;
+          scoreKw +
+          bonusCategoria(documento.categoria) +
+          boostSemantico +
+          scorePolo;
         if (score > 0 || boostSemantico >= 4) {
           candidatos.push({
             titulo: documento.titulo,
@@ -593,7 +640,13 @@ export async function buscarConhecimentoRelacionado(
 
     for (const curado of CONHECIMENTO_CURADO) {
       if (!ehCategoriaLastro(curado.categoria)) continue;
-      const score = pontuarItemCurado(curado, palavras);
+      const score =
+        pontuarItemCurado(curado, palavras) +
+        bonusLastroPolo(
+          `${curado.titulo}\n${curado.texto}`,
+          curado.categoria,
+          polo
+        );
       if (score > 0) {
         candidatos.push({ ...curado, score });
       }
@@ -604,6 +657,9 @@ export async function buscarConhecimentoRelacionado(
     const unicos: TrechoConhecimento[] = [];
     for (const c of candidatos) {
       if (descartarLastroPorArea(areaId, c.titulo, c.texto, c.categoria)) {
+        continue;
+      }
+      if (lastroContrarioAoPolo(`${c.titulo}\n${c.texto}`, c.categoria, polo)) {
         continue;
       }
       const k = `${c.categoria}|${c.titulo}|${c.texto.slice(0, 60)}`;
@@ -624,7 +680,13 @@ export async function buscarConhecimentoRelacionado(
     return CONHECIMENTO_CURADO.filter((item) => ehCategoriaLastro(item.categoria))
       .map((item) => ({
       item,
-      score: pontuarItemCurado(item, palavras),
+      score:
+        pontuarItemCurado(item, palavras) +
+        bonusLastroPolo(
+          `${item.titulo}\n${item.texto}`,
+          item.categoria,
+          polo
+        ),
     }))
       .filter((x) => x.score > 0)
       .filter(
@@ -634,6 +696,11 @@ export async function buscarConhecimentoRelacionado(
             x.item.titulo,
             x.item.texto,
             x.item.categoria
+          ) &&
+          !lastroContrarioAoPolo(
+            `${x.item.titulo}\n${x.item.texto}`,
+            x.item.categoria,
+            polo
           )
       )
       .sort((a, b) => b.score - a.score)

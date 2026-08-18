@@ -43,10 +43,17 @@ const MARCADORES_LEGADOS = new Set([
   "[[ESPACO_10_LINHAS_APOS_ENDEREÇAMENTO]]",
 ]);
 
-export function montarMarcadorEspaco6(numeroProcesso?: string | null): string {
+export function montarMarcadorEspaco6(
+  numeroProcesso?: string | null,
+  epigrafe?: string[] | null
+): string {
+  const extras = (epigrafe ?? []).map((l) => l.trim()).filter(Boolean);
+  if (extras.length) {
+    return `[[ESPACO_6_LINHAS|${extras.join(";;")}]]`;
+  }
   const n = numeroProcesso?.trim();
   if (n) {
-    const rotulo = /^processo/i.test(n) ? n : `Processo nº ${n}`;
+    const rotulo = /^processo/i.test(n) ? n : `Processo nº: ${n}`;
     return `[[ESPACO_6_LINHAS|${rotulo}]]`;
   }
   return MARCADOR_ESPACO_6;
@@ -55,6 +62,7 @@ export function montarMarcadorEspaco6(numeroProcesso?: string | null): string {
 export type MarcadorEspacoParseado = {
   linhas: 1 | 2 | 6;
   processo?: string;
+  epigrafe?: string[];
 };
 
 export function parseMarcadorEspaco(
@@ -65,7 +73,17 @@ export function parseMarcadorEspaco(
   if (t === MARCADOR_ESPACO_2) return { linhas: 2 };
 
   const comProc = /^\[\[ESPACO_6_LINHAS\|(.+?)\]\]$/.exec(t);
-  if (comProc) return { linhas: 6, processo: comProc[1]!.trim() };
+  if (comProc) {
+    const epigrafe = comProc[1]!
+      .split(";;")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return {
+      linhas: 6,
+      processo: epigrafe[0],
+      epigrafe: epigrafe.length ? epigrafe : undefined,
+    };
+  }
 
   if (MARCADORES_LEGADOS.has(t) || t.startsWith("[[ESPACO_6_LINHAS")) {
     return { linhas: 6 };

@@ -24,8 +24,11 @@ export {
   filtrarEspeciesPorPolo,
   inferirPoloPorEspecie,
   normalizarEspeciePoloArea,
+  ladoPoloDaEspecie,
+  agruparEspeciesPorPolo,
   type AreaComPoloAdvocacia,
   type MatrizPoloArea,
+  type LadoPoloEspecie,
 } from "@/lib/polo-especies-por-area";
 
 /** @deprecated use normalizarEspeciePoloArea("jec", especie) */

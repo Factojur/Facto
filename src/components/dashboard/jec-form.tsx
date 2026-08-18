@@ -40,6 +40,7 @@ import {
 } from "@/lib/jec-especie-peca";
 import {
   areaUsaPoloAdvocacia,
+  agruparEspeciesPorPolo,
   especieCompativelComPolo,
   filtrarEspeciesPorPolo,
   inferirPoloPorEspecie,
@@ -52,6 +53,10 @@ import {
   listaEspeciesDaArea,
   metaEspecieDaArea,
   tituloPecaDaArea,
+  aplicarFlagReconvencao,
+  areaMostraCheckboxReconvencao,
+  rotuloCheckboxReconvencao,
+  especiePublicaDoFormulario,
 } from "@/lib/peca-especie-area";
 import {
   GUIAS_MINUTA,
@@ -101,6 +106,7 @@ import {
 } from "@/components/dashboard/valores-causa-form";
 import {
   PedidosSection,
+  pedidoVazio,
   type PedidoItem,
 } from "@/components/dashboard/pedidos-form";
 import { ReusSection } from "@/components/dashboard/reus-form";
@@ -118,9 +124,12 @@ import {
 import type { JurisCasoPayload } from "@/lib/juris-caso-types";
 import type { ResumoCota } from "@/lib/cota-pecas";
 import { PacotesExtrasPainel } from "@/components/dashboard/pacotes-extras-painel";
-import { AnalisarProcessoSection } from "@/components/dashboard/analisar-processo-section";
-import type { AnaliseProcessoResultado } from "@/lib/analisar-processo-types";
-import { ROTULO_DOC_LABEL } from "@/lib/analisar-processo-types";
+import { EntradaCasoSection } from "@/components/dashboard/entrada-caso-section";
+import { BotaoFalarCampo } from "@/components/dashboard/botao-falar-campo";
+import { juntarTranscricao } from "@/lib/transcrever-audio";
+import type { PreenchimentoEntradaCaso } from "@/lib/entrada-caso-types";
+import { detectarTesesCanonicas } from "@/lib/teses-canonicas";
+import { AJUSTES_POR_GERACAO } from "@/lib/ia/ajustar-trecho-peca";
 
 type GuiaJec = GuiaMinuta;
 const GUIAS_JEC = GUIAS_MINUTA;
@@ -310,13 +319,87 @@ function PecasResultado({
   resultado,
   escritorio,
   onFechar,
+  onPecaAjustada,
+  ajustesFeitos,
+  auditorContexto,
 }: {
   resultado: GerarPecaJecOutput;
   escritorio?: EscritorioConfig;
   onFechar: () => void;
+  onPecaAjustada: (next: {
+    peca: string;
+    pecaHtml: string;
+    citacoes?: GerarPecaJecOutput["citacoes"];
+    auditoria?: GerarPecaJecOutput["auditoria"];
+    equipeEtapas?: GerarPecaJecOutput["equipeEtapas"];
+  }) => void;
+  ajustesFeitos: number;
+  auditorContexto?: {
+    areaId: string;
+    especie: string;
+    tipoAcao: string;
+    fatos: string;
+    numeroProcesso?: string;
+    pecaInaugural: boolean;
+    pedirJusticaGratuita: boolean;
+    temMle: boolean;
+    comReconvencao: boolean;
+    pedidosUsuario: string[];
+  };
 }) {
   async function copiar(texto: string) {
     await navigator.clipboard.writeText(texto);
+  }
+
+  const [pedidoAjuste, setPedidoAjuste] = useState("");
+  const [ajustando, setAjustando] = useState(false);
+  const [erroAjuste, setErroAjuste] = useState<string | null>(null);
+  const ajustesRestantes = Math.max(0, AJUSTES_POR_GERACAO - ajustesFeitos);
+
+  async function handleAjustarTrecho() {
+    if (pedidoAjuste.trim().length < 8) {
+      setErroAjuste("Descreva o ajuste (um trecho ou pedido).");
+      return;
+    }
+    setAjustando(true);
+    setErroAjuste(null);
+    try {
+      const res = await fetch("/api/ajustar-peca", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          peca: resultado.peca,
+          pedido: pedidoAjuste.trim(),
+          contextoVerificacao: resultado.contextoVerificacao,
+          ajustesJaFeitos: ajustesFeitos,
+          auditor: auditorContexto,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        peca?: string;
+        pecaHtml?: string;
+        citacoes?: GerarPecaJecOutput["citacoes"];
+        auditoria?: GerarPecaJecOutput["auditoria"];
+        equipeEtapas?: GerarPecaJecOutput["equipeEtapas"];
+      };
+      if (!res.ok || !data.peca || !data.pecaHtml) {
+        setErroAjuste(data.error ?? "Não foi possível ajustar.");
+        return;
+      }
+      onPecaAjustada({
+        peca: data.peca,
+        pecaHtml: data.pecaHtml,
+        citacoes: data.citacoes,
+        auditoria: data.auditoria,
+        equipeEtapas: data.equipeEtapas,
+      });
+      setPedidoAjuste("");
+    } catch {
+      setErroAjuste("Falha de rede ao ajustar.");
+    } finally {
+      setAjustando(false);
+    }
   }
 
   const citacoes = resultado.citacoes ?? [];
@@ -390,6 +473,42 @@ function PecasResultado({
                     </span>
                   ) : null}
                 </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {resultado.auditoria && resultado.auditoria.achados.length > 0 && (
+        <section
+          className={
+            resultado.auditoria.achados.some((a) => a.gravidade === "bloqueante")
+              ? "rounded-lg border border-red-200 bg-red-50/80 p-4"
+              : "rounded-lg border border-amber-200 bg-amber-50/70 p-4"
+          }
+        >
+          <h3 className="mb-2 text-sm font-semibold text-slate-800">
+            Auditor — conferência da minuta
+          </h3>
+          <ul className="space-y-2">
+            {resultado.auditoria.achados.map((a) => (
+              <li key={a.id} className="text-sm text-slate-700">
+                <span
+                  className={
+                    a.gravidade === "bloqueante"
+                      ? "font-semibold text-red-800"
+                      : a.gravidade === "alerta"
+                        ? "font-semibold text-amber-900"
+                        : "font-medium text-slate-700"
+                  }
+                >
+                  {a.gravidade === "bloqueante"
+                    ? "Impede protocolo — "
+                    : a.gravidade === "alerta"
+                      ? "Revise — "
+                      : ""}
+                  {a.titulo}.
+                </span>{" "}
+                <span className="text-slate-600">{a.detalhe}</span>
               </li>
             ))}
           </ul>
@@ -513,7 +632,9 @@ function PecasResultado({
               </p>
               <ul className="mt-1 list-inside list-disc text-sm text-emerald-800">
                 {jurisVerificada.map((c) => (
-                  <li key={c.trecho}>{c.trecho}</li>
+                  <li key={c.trecho} title="Consta na base FACTO ou no anexo do caso">
+                    {c.trecho}
+                  </li>
                 ))}
               </ul>
             </div>
@@ -582,6 +703,36 @@ function PecasResultado({
           escritorio={escritorio}
           onCopiarTexto={() => copiar(resultado.peca)}
         />
+        <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50/80 p-4">
+          <p className="text-sm font-medium text-slate-800">
+            Ajuste pontual ({ajustesRestantes} restante
+            {ajustesRestantes === 1 ? "" : "s"} nesta minuta)
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Um trecho ou pedido. Não muda endereçamento nem inventa julgado. Não
+            é chat — se precisar de outra peça, volte ao formulário e gere de
+            novo.
+          </p>
+          <textarea
+            rows={2}
+            value={pedidoAjuste}
+            onChange={(e) => setPedidoAjuste(e.target.value)}
+            disabled={ajustesRestantes <= 0 || ajustando}
+            placeholder="Ex.: incluir pedido de tutela para o estorno; tirar o parágrafo sobre juros"
+            className="mt-2 w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-stone-500 disabled:opacity-50"
+          />
+          <button
+            type="button"
+            onClick={() => void handleAjustarTrecho()}
+            disabled={ajustesRestantes <= 0 || ajustando}
+            className="mt-2 rounded-lg border border-stone-600 px-3 py-1.5 text-sm font-medium text-stone-800 hover:bg-stone-50 disabled:opacity-50"
+          >
+            {ajustando ? "Ajustando…" : "Aplicar ajuste"}
+          </button>
+          {erroAjuste ? (
+            <p className="mt-2 text-sm text-red-700">{erroAjuste}</p>
+          ) : null}
+        </div>
         <p className="mt-3 text-xs text-slate-500">
           <strong>Word</strong> pode incluir cabeçalho/rodapé do timbre configurado
           no Perfil. <strong>PDF</strong> e <strong>copiar texto</strong> exportam
@@ -627,6 +778,7 @@ function estadoInicialFormulario() {
     mostrarMidiasOpcionais: false,
     pedirJusticaGratuita: false,
     temMle: false,
+    comReconvencao: false,
     justificativaAssistente: null as string | null,
     notaAssistente: false,
   };
@@ -656,6 +808,9 @@ export function JecForm({
   const [poloAdvocacia, setPoloAdvocacia] = useState<PoloAdvocacia>("ativo");
   const [especieManual, setEspecieManual] = useState(false);
   const [fatos, setFatos] = useState("");
+  const [avisoEntrada, setAvisoEntrada] = useState<string | null>(null);
+  const [tesesOff, setTesesOff] = useState<string[]>([]);
+  const [ajustesFeitos, setAjustesFeitos] = useState(0);
   const [tutelaUrgencia, setTutelaUrgencia] = useState(false);
   const [cumuloDanosMorais, setCumuloDanosMorais] = useState(false);
   const [cumuloDanosMateriais, setCumuloDanosMateriais] = useState(false);
@@ -670,6 +825,7 @@ export function JecForm({
   const [mostrarMidiasOpcionais, setMostrarMidiasOpcionais] = useState(false);
   const [pedirJusticaGratuita, setPedirJusticaGratuita] = useState(false);
   const [temMle, setTemMle] = useState(false);
+  const [comReconvencao, setComReconvencao] = useState(false);
   const [linkNuvem, setLinkNuvem] = useState("");
   const [reus, setReus] = useState<ReuValue[]>([]);
   const [autores, setAutores] = useState<AutorValue[]>([]);
@@ -682,18 +838,14 @@ export function JecForm({
     string | null
   >(null);
   const [analisandoAssistente, setAnalisandoAssistente] = useState(false);
-  const [analiseProcesso, setAnaliseProcesso] =
-    useState<AnaliseProcessoResultado | null>(null);
-  const [processoConfirmado, setProcessoConfirmado] = useState(false);
   const [rascunhos, setRascunhos] = useState<JecRascunhoSalvo[]>([]);
   const [rascunhoAtivoId, setRascunhoAtivoId] = useState<string | null>(null);
   const [msgRascunho, setMsgRascunho] = useState<string | null>(null);
   const [cota, setCota] = useState<ResumoCota | null>(null);
 
   const isAssistente = modoAcao === "assistente";
-  const isProcesso = modoAcao === "processo";
   const assistentePendente =
-    (isAssistente || isProcesso) && tipoAcaoTexto.trim().length < 8;
+    isAssistente && tipoAcaoTexto.trim().length < 8;
   const tipoAcaoDefinido = formatarNomeAcaoForense(tipoAcaoTexto, areaId);
 
   useEffect(() => {
@@ -727,7 +879,7 @@ export function JecForm({
       if (fase) setFaseVinculo(fase);
     }
     if (especieParam) {
-      setEspeciePeca(especieParam);
+      aplicarEspecieInferida(especieParam);
       setEspecieManual(true);
     }
     if (processo || foro) {
@@ -753,41 +905,38 @@ export function JecForm({
     leigo &&
     ultrapassaTetoJec(resumoValores.totalCentavos, false);
   const idsInicial = idsPeticaoInicialDaArea(areaId);
-  const especiesOpcoes = useMemo(() => {
-    const base = listaEspeciesDaArea(areaId) ?? ESPECIES_PECA_JEC;
-    if (!areaUsaPoloAdvocacia(areaId)) return base;
-    return filtrarEspeciesPorPolo(
-      areaId,
-      base as readonly { id: string }[],
-      poloAdvocacia
-    ) as typeof base;
-  }, [areaId, poloAdvocacia]);
+  const especiesTodas = useMemo(
+    () => listaEspeciesDaArea(areaId) ?? ESPECIES_PECA_JEC,
+    [areaId]
+  );
+  const especiesOpcoes = especiesTodas;
+  const especiesPorPolo = useMemo(
+    () =>
+      areaUsaPoloAdvocacia(areaId)
+        ? agruparEspeciesPorPolo(areaId, especiesTodas)
+        : null,
+    [areaId, especiesTodas]
+  );
   const moduloUi = moduloDaArea(areaId);
   const comPoloAdvocacia = areaUsaPoloAdvocacia(areaId);
 
   useEffect(() => {
-    if (!comPoloAdvocacia) return;
-    if (!especieCompativelComPolo(areaId, especiePeca, poloAdvocacia)) {
-      const primeira = especiesOpcoes[0]?.id;
-      if (primeira) setEspeciePeca(primeira);
-    }
-  }, [areaId, comPoloAdvocacia, poloAdvocacia, especiePeca, especiesOpcoes]);
+    if (especiePeca !== "contestacao") setComReconvencao(false);
+  }, [especiePeca]);
 
-  useEffect(() => {
-    if (!comPoloAdvocacia || !especieManual) return;
-    const inferido = inferirPoloPorEspecie(areaId, especiePeca);
-    if (inferido && inferido !== poloAdvocacia) {
-      setPoloAdvocacia(inferido);
-    }
-  }, [areaId, comPoloAdvocacia, especieManual, especiePeca, poloAdvocacia]);
+  const especieEfetiva = aplicarFlagReconvencao(
+    areaId,
+    especiePeca,
+    comReconvencao
+  );
 
   const tituloAcaoCompleto = useMemo(() => {
     if (!tipoAcaoDefinido) return "";
-    if (pecaUsaPartesJaQualificadas(especiePeca, idsInicial)) {
+    if (pecaUsaPartesJaQualificadas(especieEfetiva, idsInicial)) {
       return formatarNomeAcaoForense(
         tituloPecaDaArea(
           areaId,
-          especiePeca,
+          especieEfetiva,
           tipoAcaoDefinido,
           justificativaAssistente ?? ""
         ),
@@ -805,7 +954,7 @@ export function JecForm({
     );
   }, [
     tipoAcaoDefinido,
-    especiePeca,
+    especieEfetiva,
     areaId,
     idsInicial,
     justificativaAssistente,
@@ -814,10 +963,10 @@ export function JecForm({
     tutelaUrgencia,
   ]);
 
-  const jaQualificadas = pecaUsaPartesJaQualificadas(especiePeca, idsInicial);
+  const jaQualificadas = pecaUsaPartesJaQualificadas(especieEfetiva, idsInicial);
   const ajudaQualificacao = textoAjudaQualificacaoPeca(
     areaId,
-    especiePeca,
+    especieEfetiva,
     comPoloAdvocacia
       ? poloAdvocacia
       : resolverPoloClienteQualificacao(areaId, especiePeca, null),
@@ -827,23 +976,13 @@ export function JecForm({
   const checklistItens = montarChecklistJec({
     tipoSelecionado: tipoAcaoDefinido || (assistentePendente ? ASSISTENTE_FACTO : ""),
     fatos,
-    autorOk: autorOkParaChecklist(
-      autores,
-      jaQualificadas,
-      analiseProcesso?.ficha.partesAutor
-    ),
-    reusOk: reuOkParaChecklist(
-      reus,
-      jaQualificadas,
-      analiseProcesso?.ficha.partesReu
-    ),
+    autorOk: autorOkParaChecklist(autores, jaQualificadas),
+    reusOk: reuOkParaChecklist(reus, jaQualificadas),
     comarcaForo: comarca.foro ?? "",
     temValor: resumoValores.totalCentavos > 0,
     assistentePendente:
       assistentePendente ||
       (modoAcao === "livre" && tipoAcaoTexto.trim().length < 8),
-    processoPendenteConfirmacao:
-      isProcesso && Boolean(analiseProcesso) && !processoConfirmado,
     partesJaQualificadas: jaQualificadas,
   });
 
@@ -852,11 +991,20 @@ export function JecForm({
   const itemOk = (id: string) =>
     Boolean(checklistItens.find((i) => i.id === id)?.ok);
   const guiaIdentificacaoOk =
-    itemOk("tipo") && itemOk("autor") && itemOk("reus");
+    itemOk("tipo") && itemOk("autor") && itemOk("reus") && itemOk("comarca");
   const guiaFatosOk = itemOk("fatos");
   const guiaPedidosOk =
     itemOk("valores") ||
     pedidos.some((p) => p.descricao.trim().length > 0);
+
+  const tesesAtivas = useMemo(
+    () =>
+      detectarTesesCanonicas(
+        areaId,
+        [tipoAcaoTexto, fatos].filter(Boolean).join("\n")
+      ).filter((t) => !tesesOff.includes(t.id)),
+    [areaId, tipoAcaoTexto, fatos, tesesOff]
+  );
 
   useEffect(() => {
     setEscritorio(carregarEscritorioConfig());
@@ -881,9 +1029,19 @@ export function JecForm({
     salvarEscritorioConfig(next);
   }
 
+  function aplicarEspecieInferida(raw: string) {
+    const pub = especiePublicaDoFormulario(raw);
+    setEspeciePeca(pub.especie);
+    if (pub.comReconvencao) setComReconvencao(true);
+    if (areaUsaPoloAdvocacia(areaId)) {
+      const inferido = inferirPoloPorEspecie(areaId, pub.especie);
+      if (inferido) setPoloAdvocacia(inferido);
+    }
+  }
+
   function sincronizarEspecieDoTipo(texto: string, forcar = false) {
     if (especieManual && !forcar) return;
-    setEspeciePeca(inferirEspeciePeca(texto, fatos));
+    aplicarEspecieInferida(inferirEspeciePeca(texto, fatos));
   }
 
   function aplicarDecisaoAssistente(decisao: DecisaoAssistente) {
@@ -891,7 +1049,7 @@ export function JecForm({
     const titulo = decisao.tituloCompleto || decisao.tipoAcao;
     setTipoAcaoTexto(titulo);
     if (!especieManual) {
-      setEspeciePeca(inferirEspeciePeca(titulo, fatos));
+      aplicarEspecieInferida(inferirEspeciePeca(titulo, fatos));
     }
     setTutelaUrgencia(decisao.tutelaUrgencia);
     setCumuloDanosMorais(decisao.danosMorais);
@@ -901,57 +1059,57 @@ export function JecForm({
     setDecisaoSugerida(decisao);
   }
 
-  function aplicarAnaliseProcesso(analise: AnaliseProcessoResultado) {
-    setAnaliseProcesso(analise);
-    setProcessoConfirmado(false);
-    setModoAcao("processo");
-    const peca = analise.pecaCandidata;
-    const titulo = pecaUsaPartesJaQualificadas(
-      peca.especiePeca,
-      idsInicial
-    )
-      ? peca.tituloCompleto || peca.tipoAcao
-      : peca.tituloCompleto || peca.tipoAcao;
-    setTipoAcaoTexto(titulo);
-    setEspeciePeca(
-      inferirEspeciePeca(titulo, analise.ficha.fatosSugeridos, peca.especiePeca)
-    );
-    setEspecieManual(true);
-    if (comPoloAdvocacia) {
-      const esp = inferirEspeciePeca(
-        titulo,
-        analise.ficha.fatosSugeridos,
-        peca.especiePeca
-      );
-      const poloInferido = inferirPoloPorEspecie(areaId, esp);
-      if (poloInferido) setPoloAdvocacia(poloInferido);
+  function aplicarEntradaCaso(preenchimento: PreenchimentoEntradaCaso) {
+    setAvisoEntrada(preenchimento.resumoConferencia);
+    setTesesOff([]);
+    if (preenchimento.fatos) setFatos(preenchimento.fatos);
+    if (preenchimento.tipoAcao) {
+      setModoAcao("livre");
+      setTipoAcaoTexto(preenchimento.tipoAcao);
     }
-    setTutelaUrgencia(peca.tutelaUrgencia);
-    setCumuloDanosMorais(peca.danosMorais);
-    setCumuloDanosMateriais(peca.danosMateriais);
-    setJustificativaAssistente(peca.justificativa);
-    setNotaAssistente(true);
-    if (analise.ficha.fatosSugeridos.trim()) {
-      setFatos(analise.ficha.fatosSugeridos.trim());
+    if (preenchimento.especiePeca) {
+      aplicarEspecieInferida(preenchimento.especiePeca);
+      setEspecieManual(true);
     }
-    if (analise.ficha.numeroProcesso.trim()) {
+    if (preenchimento.autoresNomes.length) {
+      setAutores(autoresAPartirDosNomes(preenchimento.autoresNomes.join("; ")));
+    }
+    if (preenchimento.reusNomes.length) {
+      setReus(reusAPartirDosNomes(preenchimento.reusNomes.join("; ")));
+    }
+    if (preenchimento.foro || preenchimento.numeroProcesso || preenchimento.cidade) {
       setComarca((c) => ({
         ...c,
-        numeroProcesso: analise.ficha.numeroProcesso.trim(),
+        foro: preenchimento.foro?.trim() || c.foro,
+        numeroProcesso:
+          preenchimento.numeroProcesso?.trim() || c.numeroProcesso,
+        cidade: preenchimento.cidade?.trim() || c.cidade,
+        uf: preenchimento.uf?.trim() || c.uf,
+        numeroJuizado:
+          preenchimento.numeroVara?.trim() || c.numeroJuizado,
       }));
     }
-    if (analise.ficha.partesAutor.trim()) {
-      setAutores(autoresAPartirDosNomes(analise.ficha.partesAutor));
+    if (preenchimento.pedidos.length) {
+      setPedidos(
+        preenchimento.pedidos.map((descricao) => ({
+          ...pedidoVazio(),
+          descricao,
+        }))
+      );
     }
-    if (analise.ficha.partesReu.trim()) {
-      setReus(reusAPartirDosNomes(analise.ficha.partesReu));
+    if (preenchimento.pedirJusticaGratuita != null) {
+      setPedirJusticaGratuita(preenchimento.pedirJusticaGratuita);
     }
-  }
-
-  function confirmarPecaDoProcesso() {
-    if (!analiseProcesso) return;
-    setProcessoConfirmado(true);
-    setError(null);
+    if (preenchimento.tutelaUrgencia != null) {
+      setTutelaUrgencia(preenchimento.tutelaUrgencia);
+    }
+    if (preenchimento.danosMorais != null) {
+      setCumuloDanosMorais(preenchimento.danosMorais);
+    }
+    if (preenchimento.danosMateriais != null) {
+      setCumuloDanosMateriais(preenchimento.danosMateriais);
+    }
+    setGuiaAtiva("identificacao");
   }
 
   async function handleAnalisarAssistente() {
@@ -1028,6 +1186,9 @@ export function JecForm({
     setPoloAdvocacia(ini.poloAdvocacia);
     setEspecieManual(ini.especieManual);
     setFatos(ini.fatos);
+    setAvisoEntrada(null);
+    setTesesOff([]);
+    setAjustesFeitos(0);
     setTutelaUrgencia(ini.tutelaUrgencia);
     setCumuloDanosMorais(ini.cumuloDanosMorais);
     setCumuloDanosMateriais(ini.cumuloDanosMateriais);
@@ -1044,11 +1205,10 @@ export function JecForm({
     setMostrarMidiasOpcionais(ini.mostrarMidiasOpcionais);
     setPedirJusticaGratuita(ini.pedirJusticaGratuita);
     setTemMle(ini.temMle);
+    setComReconvencao(ini.comReconvencao);
     setDecisaoSugerida(null);
     setJustificativaAssistente(ini.justificativaAssistente);
     setNotaAssistente(ini.notaAssistente);
-    setAnaliseProcesso(null);
-    setProcessoConfirmado(false);
     setResultado(null);
     setRascunhoAtivoId(null);
     setMsgRascunho(null);
@@ -1072,8 +1232,12 @@ export function JecForm({
       p.fatos,
       p.especiePeca
     );
-    setEspeciePeca(espSalva);
-    setPoloAdvocacia(normalizarPoloAdvocacia(p.poloAdvocacia));
+    const pub = especiePublicaDoFormulario(espSalva);
+    aplicarEspecieInferida(espSalva);
+    setComReconvencao(Boolean(p.comReconvencao) || pub.comReconvencao);
+    if (!inferirPoloPorEspecie(areaId, pub.especie)) {
+      setPoloAdvocacia(normalizarPoloAdvocacia(p.poloAdvocacia));
+    }
     setEspecieManual(Boolean(p.especiePeca));
     setTutelaUrgencia(Boolean(p.tutelaUrgencia));
     setComarca(normalizarComarcaValue(p.comarca, areaId));
@@ -1149,6 +1313,7 @@ export function JecForm({
           especiePeca,
           poloAdvocacia: comPoloAdvocacia ? poloAdvocacia : undefined,
           tutelaUrgencia,
+          comReconvencao,
           comarca,
           valoresCausa,
           usaLeiMunicipal,
@@ -1288,11 +1453,13 @@ export function JecForm({
       poloAdvocacia: comPoloAdvocacia ? poloAdvocacia : undefined,
       atuarLeigo: leigo,
       areaId,
-      dispositivoSentenca:
-        analiseProcesso?.ficha.dispositivo?.trim() || undefined,
       tutelaUrgencia,
       pedirJusticaGratuita,
       temMle: areaMostraMle(areaId) ? temMle : false,
+      comReconvencao:
+        especiePeca === "contestacao" &&
+        areaMostraCheckboxReconvencao(areaId) &&
+        comReconvencao,
       fatos: fatos.trim(),
       pedidosUsuario,
       documentos: {
@@ -1324,6 +1491,7 @@ export function JecForm({
       })(),
       valoresCausa,
       leiMunicipal,
+      tesesIds: tesesAtivas.map((t) => t.id),
     };
 
     try {
@@ -1369,6 +1537,7 @@ export function JecForm({
 
       if (data.cota) setCota(data.cota);
       setResultado(data as GerarPecaJecOutput);
+      setAjustesFeitos(0);
       setMsgCaso(null);
       window.setTimeout(() => {
         document
@@ -1410,6 +1579,10 @@ export function JecForm({
           </h1>
           <p className="mt-1 text-sm text-slate-500">
             {moduloUi.copyCabecalho}
+          </p>
+          <p className="mt-2 text-sm text-slate-600">
+            Pode começar pela entrada do caso (preenche as abas). O formulário
+            é conferência — Gerar fica só em Pedidos.
           </p>
           {cota?.trackingAtivo && cota.usoLabel && !cota.esgotada && (
             <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
@@ -1510,6 +1683,20 @@ export function JecForm({
         )}
 
         <div className={guiaAtiva === "identificacao" ? "space-y-6" : "hidden"}>
+        <EntradaCasoSection
+          areaId={areaId}
+          onPreenchido={({ preenchimento }) => {
+            aplicarEntradaCaso(preenchimento);
+            setError(null);
+          }}
+          onErro={(msg) => setError(msg || null)}
+        />
+        {avisoEntrada ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+            <p className="font-medium">Revise as três abas — a peça ainda não foi gerada.</p>
+            <p className="mt-1">{avisoEntrada}</p>
+          </div>
+        ) : null}
         <section
           id="secao-acao"
           className="scroll-mt-24 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
@@ -1539,7 +1726,26 @@ export function JecForm({
                         type="radio"
                         name="poloAdvocacia"
                         checked={poloAdvocacia === polo}
-                        onChange={() => setPoloAdvocacia(polo)}
+                        onChange={() => {
+                          setPoloAdvocacia(polo);
+                          if (
+                            !especieCompativelComPolo(
+                              areaId,
+                              especiePeca,
+                              polo
+                            )
+                          ) {
+                            const primeira = filtrarEspeciesPorPolo(
+                              areaId,
+                              especiesTodas,
+                              polo
+                            )[0];
+                            if (primeira) {
+                              setEspeciePeca(primeira.id);
+                              setEspecieManual(true);
+                            }
+                          }
+                        }}
                         className="mt-0.5 h-4 w-4 border-slate-300 text-stone-700 focus:ring-stone-500"
                       />
                       <span>
@@ -1561,10 +1767,11 @@ export function JecForm({
                   ))}
                 </div>
                 <p className="mt-1.5 text-xs text-slate-500">
-                  O tipo de peça abaixo é filtrado conforme o polo escolhido.
+                  Contestação e defesa ficam no polo passivo; petição inicial e
+                  réplica, no ativo. Ao escolher a peça, o polo é ajustado.
                   {areaId === "jec"
-                    ? " Recurso inominado, contrarrazões, agravo, embargos e execução aparecem nos dois polos — quem recorre ou responde depende do seu cliente (autor ou réu)."
-                    : " Recursos e incidentes podem aparecer nos dois polos, conforme o caso."}
+                    ? " Recurso inominado, contrarrazões, agravo, embargos e execução cabem nos dois polos."
+                    : " Recursos e incidentes cabem nos dois polos, conforme o caso."}
                 </p>
               </div>
             ) : null}
@@ -1584,26 +1791,62 @@ export function JecForm({
                   const proxima = e.target.value;
                   setEspeciePeca(proxima);
                   setEspecieManual(true);
+                  const inferido = inferirPoloPorEspecie(areaId, proxima);
+                  if (inferido) setPoloAdvocacia(inferido);
                   if (pecaUsaPartesJaQualificadas(proxima, idsInicial)) {
                     setTipoAcaoTexto(
                       tituloPecaDaArea(
                         areaId,
                         proxima,
                         tipoAcaoTexto,
-                        justificativaAssistente ??
-                          analiseProcesso?.pecaCandidata.justificativa ??
-                          ""
+                        justificativaAssistente ?? ""
                       )
                     );
                   }
                 }}
                 className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-stone-500 focus:outline-none focus:ring-1 focus:ring-stone-500"
               >
-                {especiesOpcoes.map((esp) => (
-                  <option key={esp.id} value={esp.id}>
-                    {esp.rotulo}
-                  </option>
-                ))}
+                {especiesPorPolo ? (
+                  <>
+                    {especiesPorPolo.ativo.length > 0 ? (
+                      <optgroup
+                        label={`Polo ativo (${moduloUi.rotuloPoloAtivo})`}
+                      >
+                        {especiesPorPolo.ativo.map((esp) => (
+                          <option key={esp.id} value={esp.id}>
+                            {esp.rotulo}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ) : null}
+                    {especiesPorPolo.passivo.length > 0 ? (
+                      <optgroup
+                        label={`Polo passivo (${moduloUi.rotuloPoloPassivo})`}
+                      >
+                        {especiesPorPolo.passivo.map((esp) => (
+                          <option key={esp.id} value={esp.id}>
+                            {esp.rotulo}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ) : null}
+                    {especiesPorPolo.ambos.length > 0 ? (
+                      <optgroup label="Ambos os polos">
+                        {especiesPorPolo.ambos.map((esp) => (
+                          <option key={esp.id} value={esp.id}>
+                            {esp.rotulo}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ) : null}
+                  </>
+                ) : (
+                  especiesOpcoes.map((esp) => (
+                    <option key={esp.id} value={esp.id}>
+                      {esp.rotulo}
+                    </option>
+                  ))
+                )}
               </select>
               <p className="mt-1.5 text-xs text-slate-500">
                 {(() => {
@@ -1635,8 +1878,6 @@ export function JecForm({
                     setJustificativaAssistente(null);
                     setDecisaoSugerida(null);
                     setTipoAcaoTexto("");
-                    setAnaliseProcesso(null);
-                    setProcessoConfirmado(false);
                   }}
                   className="mt-0.5 h-4 w-4 border-slate-300 text-stone-700 focus:ring-stone-500"
                 />
@@ -1653,40 +1894,12 @@ export function JecForm({
                 <input
                   type="radio"
                   name="modoAcao"
-                  checked={modoAcao === "processo"}
-                  onChange={() => {
-                    setModoAcao("processo");
-                    setNotaAssistente(false);
-                    setJustificativaAssistente(null);
-                    setDecisaoSugerida(null);
-                    setTipoAcaoTexto("");
-                    setAnaliseProcesso(null);
-                    setProcessoConfirmado(false);
-                  }}
-                  className="mt-0.5 h-4 w-4 border-slate-300 text-stone-700 focus:ring-stone-500"
-                />
-                <span>
-                  <span className="font-medium text-slate-800">
-                    Analisar processo
-                  </span>
-                  <span className="mt-0.5 block text-xs text-slate-500">
-                    Envie PDF/DOCX dos autos (até 40 MB no total); sugerimos a
-                    peça cabível para você confirmar. Não gasta cota de peça.
-                  </span>
-                </span>
-              </label>
-              <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm has-[:checked]:border-stone-500 has-[:checked]:bg-stone-50">
-                <input
-                  type="radio"
-                  name="modoAcao"
                   checked={modoAcao === "livre"}
                   onChange={() => {
                     setModoAcao("livre");
                     setNotaAssistente(false);
                     setJustificativaAssistente(null);
                     setDecisaoSugerida(null);
-                    setAnaliseProcesso(null);
-                    setProcessoConfirmado(false);
                   }}
                   className="mt-0.5 h-4 w-4 border-slate-300 text-stone-700 focus:ring-stone-500"
                 />
@@ -1707,79 +1920,6 @@ export function JecForm({
               value={tituloAcaoCompleto || ASSISTENTE_FACTO}
             />
 
-            {modoAcao === "processo" && !analiseProcesso && (
-              <AnalisarProcessoSection
-                areaId={areaId}
-                onResultado={(a) => {
-                  aplicarAnaliseProcesso(a);
-                  setError(null);
-                }}
-                onErro={(msg) => setError(msg || null)}
-              />
-            )}
-
-            {modoAcao === "processo" && analiseProcesso && !processoConfirmado && (
-              <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-50/70 p-4">
-                <p className="text-sm font-medium text-stone-800">
-                  Peça sugerida — confirme para continuar
-                </p>
-                <p className="text-sm text-slate-700">
-                  <span className="font-semibold">Espécie:</span>{" "}
-                  {metaEspecieDaArea(
-                    areaId,
-                    analiseProcesso.pecaCandidata.especiePeca
-                  ).rotulo}
-                  {" · "}
-                  <span className="font-semibold">Confiança:</span>{" "}
-                  {Math.round(analiseProcesso.pecaCandidata.confianca * 100)}%
-                </p>
-                <p className="text-sm font-medium uppercase tracking-wide text-stone-800">
-                  {analiseProcesso.pecaCandidata.tituloCompleto}
-                </p>
-                <p className="text-xs leading-relaxed text-stone-600">
-                  {analiseProcesso.pecaCandidata.justificativa}
-                </p>
-                {analiseProcesso.documentos.length > 0 && (
-                  <ul className="text-xs text-slate-600">
-                    {analiseProcesso.documentos.map((d, i) => (
-                      <li key={`${d.nome}-${i}`}>
-                        {ROTULO_DOC_LABEL[d.rotulo]} — {d.nome}
-                        {d.resumo ? `: ${d.resumo}` : ""}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {analiseProcesso.avisos.length > 0 && (
-                  <ul className="text-xs text-amber-900/80">
-                    {analiseProcesso.avisos.map((a) => (
-                      <li key={a}>• {a}</li>
-                    ))}
-                  </ul>
-                )}
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={confirmarPecaDoProcesso}
-                    className="rounded-lg bg-stone-700 px-4 py-2 text-sm font-medium text-amber-50 hover:bg-stone-600"
-                  >
-                    Confirmar peça sugerida
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAnaliseProcesso(null);
-                      setProcessoConfirmado(false);
-                      setTipoAcaoTexto("");
-                      setNotaAssistente(false);
-                    }}
-                    className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                  >
-                    Enviar outros documentos
-                  </button>
-                </div>
-              </div>
-            )}
-
             {modoAcao === "assistente" && !tipoAcaoTexto.trim() && (
               <div className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/80 p-4">
                 <p className="text-sm text-slate-600">
@@ -1799,9 +1939,7 @@ export function JecForm({
               </div>
             )}
 
-            {(modoAcao === "livre" ||
-              (tipoAcaoTexto.trim().length > 0 &&
-                !(isProcesso && analiseProcesso && !processoConfirmado))) && (
+            {(modoAcao === "livre" || tipoAcaoTexto.trim().length > 0) && (
               <div className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/80 p-4">
                 {notaAssistente && justificativaAssistente && (
                   <p className="text-xs leading-relaxed text-stone-600">
@@ -1823,9 +1961,7 @@ export function JecForm({
                   >
                     {modoAcao === "assistente"
                       ? "Nome da ação (editável)"
-                      : modoAcao === "processo"
-                        ? "Nome da ação (confirmada — editável)"
-                        : "Tipo de ação"}
+                      : "Tipo de ação"}
                   </label>
                   <textarea
                     id="tipoAcaoLivre"
@@ -1906,21 +2042,6 @@ export function JecForm({
                     Analisar de novo com o Assistente
                   </button>
                 )}
-                {modoAcao === "processo" && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAnaliseProcesso(null);
-                      setProcessoConfirmado(false);
-                      setTipoAcaoTexto("");
-                      setNotaAssistente(false);
-                      setJustificativaAssistente(null);
-                    }}
-                    className="text-xs font-medium text-stone-600 underline hover:text-stone-900"
-                  >
-                    Analisar outro processo / documentos
-                  </button>
-                )}
               </div>
             )}
           </div>
@@ -1940,60 +2061,7 @@ export function JecForm({
           onChange={setAutores}
           jaQualificado={pecaUsaPartesJaQualificadas(especiePeca, idsInicial)}
           rotuloPolo={moduloUi.rotuloPoloAtivo}
-        >
-          <div className="space-y-4">
-            <div>
-              <h3 className="mb-1 text-sm font-semibold text-slate-800">
-                Opções na peça
-              </h3>
-              <p className="mb-3 text-xs leading-relaxed text-slate-500">
-                Marque só o que deve constar no texto gerado. Documentos de
-                hipossuficiência
-                {areaMostraMle(areaId) ? " e do MLE" : ""} o FACTO não recebe:
-                você junta depois, no protocolo (e-proc, PJe, ESAJ ou
-                presencial).
-              </p>
-            </div>
-
-            <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-sm text-slate-700">
-              <input
-                type="checkbox"
-                checked={pedirJusticaGratuita}
-                onChange={(e) => setPedirJusticaGratuita(e.target.checked)}
-                className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
-              />
-              <span>
-                <span className="font-medium text-slate-800">
-                  Pedir justiça gratuita (hipossuficiência)
-                </span>
-                <span className="mt-0.5 block text-xs text-slate-500">
-                  Inclui subtítulo e pedido de JG na peça. A declaração de
-                  hipossuficiência você junta no protocolo, não aqui.
-                </span>
-              </span>
-            </label>
-
-            {areaMostraMle(areaId) && (
-            <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-sm text-slate-700">
-              <input
-                type="checkbox"
-                checked={temMle}
-                onChange={(e) => setTemMle(e.target.checked)}
-                className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
-              />
-              <span>
-                <span className="font-medium text-slate-800">
-                  Há Mandado de Levantamento Eletrônico (MLE)
-                </span>
-                <span className="mt-0.5 block text-xs text-slate-500">
-                  Inclui pedido de expedição/utilização do MLE, quando cabível.
-                  Os documentos do MLE você junta no protocolo, não aqui.
-                </span>
-              </span>
-            </label>
-            )}
-          </div>
-        </AutorSection>
+        />
 
         <div id="secao-reus" className="scroll-mt-24">
           <ReusSection
@@ -2039,7 +2107,41 @@ export function JecForm({
               )}
               className="w-full resize-y rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-800 placeholder-slate-400 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
             />
-            <div className="mt-3 flex flex-wrap items-center gap-2">
+            {tesesAtivas.length > 0 && (
+              <div className="mt-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Teses do código (conferir)
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  A redação usa estes artigos. Clique para tirar o que não
+                  couber. Julgado continua só da base.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {tesesAtivas.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      title={t.artigos}
+                      onClick={() =>
+                        setTesesOff((prev) =>
+                          prev.includes(t.id) ? prev : [...prev, t.id]
+                        )
+                      }
+                      className="rounded-full border border-stone-300 bg-white px-2.5 py-1 text-xs text-stone-800 hover:border-stone-500"
+                    >
+                      {t.rotulo}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="mt-3 flex flex-wrap items-end gap-2">
+              <BotaoFalarCampo
+                disabled={analisandoAssistente}
+                onTranscrito={(texto) =>
+                  setFatos((atual) => juntarTranscricao(atual, texto))
+                }
+              />
               {isAssistente && (
                 <button
                   type="button"
@@ -2208,6 +2310,8 @@ export function JecForm({
                 .filter(Boolean)
                 .join("\n")
                 .slice(0, 2500)}
+              areaId={areaId}
+              polo={comPoloAdvocacia ? poloAdvocacia : null}
               ufForo={
                 comarca.uf?.trim().toUpperCase() ||
                 (() => {
@@ -2317,6 +2421,73 @@ export function JecForm({
             comAdvogado={comAdvogado}
           />
         </div>
+
+        <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-1 text-lg font-semibold text-slate-800">
+            Pedidos na peça
+          </h2>
+          <p className="mb-4 text-xs leading-relaxed text-slate-500">
+            Marque só o que deve constar no texto. Documentos de
+            hipossuficiência
+            {areaMostraMle(areaId) ? " e do MLE" : ""} você junta no protocolo,
+            não aqui.
+          </p>
+          <div className="space-y-3">
+            <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={pedirJusticaGratuita}
+                onChange={(e) => setPedirJusticaGratuita(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
+              />
+              <span>
+                <span className="font-medium text-slate-800">
+                  Pedir justiça gratuita (hipossuficiência)
+                </span>
+                <span className="mt-0.5 block text-xs text-slate-500">
+                  Inclui o pedido de JG na peça.
+                </span>
+              </span>
+            </label>
+            {especiePeca === "contestacao" &&
+              areaMostraCheckboxReconvencao(areaId) && (
+                <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={comReconvencao}
+                    onChange={(e) => setComReconvencao(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
+                  />
+                  <span>
+                    <span className="font-medium text-slate-800">
+                      {rotuloCheckboxReconvencao(areaId).titulo}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-slate-500">
+                      {rotuloCheckboxReconvencao(areaId).ajuda}
+                    </span>
+                  </span>
+                </label>
+              )}
+            {areaMostraMle(areaId) && (
+              <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={temMle}
+                  onChange={(e) => setTemMle(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
+                />
+                <span>
+                  <span className="font-medium text-slate-800">
+                    Há Mandado de Levantamento Eletrônico (MLE)
+                  </span>
+                  <span className="mt-0.5 block text-xs text-slate-500">
+                    Inclui o pedido de MLE, quando cabível.
+                  </span>
+                </span>
+              </label>
+            )}
+          </div>
+        </section>
 
         <PedidosSection value={pedidos} onChange={setPedidos} />
 
@@ -2493,6 +2664,37 @@ export function JecForm({
             resultado={resultado}
             escritorio={escritorio}
             onFechar={() => setResultado(null)}
+            ajustesFeitos={ajustesFeitos}
+            auditorContexto={{
+              areaId,
+              especie: especiePeca,
+              tipoAcao: tipoAcaoTexto,
+              fatos,
+              numeroProcesso: comarca.numeroProcesso,
+              pecaInaugural: !pecaUsaPartesJaQualificadas(
+                especiePeca,
+                idsInicial
+              ),
+              pedirJusticaGratuita,
+              temMle,
+              comReconvencao,
+              pedidosUsuario: pedidos.map((p) => p.descricao.trim()).filter(Boolean),
+            }}
+            onPecaAjustada={(next) => {
+              setResultado((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      peca: next.peca,
+                      pecaHtml: next.pecaHtml,
+                      citacoes: next.citacoes ?? prev.citacoes,
+                      auditoria: next.auditoria ?? prev.auditoria,
+                      equipeEtapas: next.equipeEtapas ?? prev.equipeEtapas,
+                    }
+                  : prev
+              );
+              setAjustesFeitos((n) => n + 1);
+            }}
           />
 
           <div className="mt-8">

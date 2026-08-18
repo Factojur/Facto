@@ -42,8 +42,12 @@ export function resolverPoloClienteQualificacao(
   const id = String(especie ?? "").toLowerCase();
   if (
     id === "contestacao" ||
+    id === "pedido-contraposto" ||
+    id === "reconvencao" ||
     id.startsWith("contestacao-") ||
     id === "defesa" ||
+    id.includes("defesa") ||
+    id === "resposta-acusacao" ||
     id.startsWith("informacoes-")
   ) {
     return "passivo";
@@ -67,8 +71,12 @@ function ehRespostaProcessual(especie: string): boolean {
   const e = String(especie ?? "").toLowerCase();
   return (
     e === "contestacao" ||
+    e === "pedido-contraposto" ||
+    e === "reconvencao" ||
     e.startsWith("contestacao-") ||
     e === "defesa" ||
+    e.includes("defesa") ||
+    e === "resposta-acusacao" ||
     e === "replica" ||
     e === "manifestacao" ||
     e.startsWith("informacoes-")
@@ -170,6 +178,8 @@ export function fraseAnteSentenca(
 ): string | null {
   if (
     especie === "contestacao" ||
+    especie === "pedido-contraposto" ||
+    especie === "reconvencao" ||
     especie === "replica" ||
     especie === "defesa" ||
     especie === "manifestacao"
@@ -254,6 +264,38 @@ function montarTrechoPartesIntro(
   );
 }
 
+/** Infinitivo após "Vossa Excelência", antes do nome da peça em caixa alta. */
+export function prefixoAntesDoNomePeca(especie: string): string {
+  const e = String(especie ?? "").toLowerCase();
+  if (e.includes("embargos")) return "opor os presentes";
+  if (
+    e.includes("agravo") ||
+    e.includes("apelacao") ||
+    e.includes("recurso")
+  ) {
+    return "interpor o presente";
+  }
+  if (
+    e.includes("contestacao") ||
+    e.includes("defesa") ||
+    e.includes("resposta")
+  ) {
+    return "apresentar a presente";
+  }
+  if (e.includes("replica") || e.includes("manifestacao")) {
+    return "oferecer a presente";
+  }
+  if (
+    e === "execucao" ||
+    e === "cumprimento-sentenca" ||
+    e === "cumprimento-alimentos" ||
+    e === "execucao-titulo"
+  ) {
+    return "requerer o presente";
+  }
+  return "";
+}
+
 /** Parágrafo único até "Vossa Excelência" (sem CPF/endereço das partes). */
 export function formatarBlocoPartesJaQualificadas(opcoes: {
   autores?: AutorValue[] | null;
@@ -303,11 +345,13 @@ export function formatarBlocoPartesJaQualificadas(opcoes: {
     trechoAnte
   );
 
+  const prefixo = prefixoAntesDoNomePeca(especie);
   return (
     `${intro}, por ${pronomeAdv} que esta subscreve ` +
     `(procuração anexa), ${adv}, inscrito na ${oab}, ` +
     `com escritório profissional na ${endAdv}, onde recebe intimações, ` +
-    "vem, respeitosamente, à presença de Vossa Excelência"
+    `vem, respeitosamente, à presença de Vossa Excelência` +
+    (prefixo ? `, ${prefixo}` : "")
   );
 }
 
@@ -416,9 +460,15 @@ export function extrasQualificacaoEstruturaPrompt(
     linhas.push(
       "   Recurso/contrarrazões: sem \"movido em face de\"; recorrente/recorrido = cliente do formulário."
     );
-  } else if (e === "contestacao" || e.startsWith("contestacao-") || e === "defesa") {
+  } else if (
+    e === "contestacao" ||
+    e === "pedido-contraposto" ||
+    e === "reconvencao" ||
+    e.startsWith("contestacao-") ||
+    e === "defesa"
+  ) {
     linhas.push(
-      "   Contestação/defesa: polo passivo primeiro; polo ativo citado como já qualificado nos autos."
+      "   Contestação/defesa/reconvenção: polo passivo primeiro; polo ativo citado como já qualificado nos autos."
     );
   } else if (e === "replica" || e === "manifestacao") {
     linhas.push(

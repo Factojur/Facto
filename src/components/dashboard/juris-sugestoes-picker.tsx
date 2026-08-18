@@ -20,6 +20,8 @@ type Props = {
   uploads: JurisCasoSalvo[];
   /** UF do foro (ex.: SP) para pré-marcar o TJ local. */
   ufForo?: string | null;
+  areaId?: string;
+  polo?: "ativo" | "passivo" | null;
   onAplicar: (itens: JurisCasoSalvo[]) => void;
 };
 
@@ -47,6 +49,8 @@ export function JurisSugestoesPicker({
   consulta,
   uploads,
   ufForo,
+  areaId,
+  polo,
   onAplicar,
 }: Props) {
   const opcoesTribunal = useMemo(
@@ -144,6 +148,8 @@ export function JurisSugestoesPicker({
           consulta,
           somenteBase,
           tribunais: tribunaisSel,
+          areaId,
+          polo,
           uploads: uploads
             .filter((u) => (u.texto ?? "").trim().length > 20 || u.titulo)
             .map((u) => ({
@@ -248,7 +254,7 @@ export function JurisSugestoesPicker({
         <p className="mb-2 text-xs font-medium text-slate-700">
           Tribunais da busca
           <span className="ml-1 font-normal text-slate-500">
-            (mín. 1 · máx. {MAX_TRIBUNAIS_POR_BUSCA} · vale para os dois botões)
+            (mín. 1 · máx. {MAX_TRIBUNAIS_POR_BUSCA} · filtra a base FACTO)
           </span>
         </p>
         <div className="flex flex-wrap gap-2">
@@ -294,54 +300,23 @@ export function JurisSugestoesPicker({
         )}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="flex flex-col rounded-lg border border-slate-200 bg-slate-50/80 p-3">
-          <button
-            type="button"
-            onClick={() => void abrirEBuscar(false)}
-            disabled={consulta.trim().length < 8 || tribunaisSel.length < 1}
-            className="rounded-lg border border-stone-700 bg-stone-800 px-4 py-2.5 text-sm font-medium text-amber-50 hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Buscar nos tribunais
-          </button>
-          {cota?.ilimitado ? (
-            <p className="mt-2 text-xs font-medium text-slate-700">
-              Cota ilimitada neste perfil
-            </p>
-          ) : cota && provedorExterno ? (
-            <p className="mt-2 text-xs font-medium tabular-nums text-slate-700">
-              Cota deste mês: {cota.usadas}/{cota.limite}
-            </p>
-          ) : (
-            <p className="mt-2 text-xs font-medium text-slate-600">
-              Cota deste mês: 15 buscas
-            </p>
-          )}
-          <p className="mt-1 text-xs leading-relaxed text-slate-500">
-            Usa os tribunais marcados acima (mín. 1, máx.{" "}
-            {MAX_TRIBUNAIS_POR_BUSCA}).
-            {cota?.ilimitado
-              ? " Perfil interno: buscas externas sem limite mensal."
-              : " Cada tribunal marcado consome 1 das 15 buscas do mês. Renova no dia 1º."}
-          </p>
-        </div>
-        <div className="flex flex-col rounded-lg border border-slate-200 bg-white p-3">
-          <button
-            type="button"
-            onClick={() => void abrirEBuscar(true)}
-            disabled={consulta.trim().length < 8 || tribunaisSel.length < 1}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Buscar na base FACTO
-          </button>
-          <p className="mt-2 text-xs font-medium text-emerald-800">
-            Não consome a cota mensal
-          </p>
-          <p className="mt-1 text-xs leading-relaxed text-slate-500">
-            Usa os mesmos tribunais marcados acima. Não consome a cota — só a
-            base curada da FACTO.
-          </p>
-        </div>
+      <div className="flex flex-col rounded-lg border border-stone-200 bg-white p-3">
+        <button
+          type="button"
+          onClick={() => void abrirEBuscar(true)}
+          disabled={consulta.trim().length < 8 || tribunaisSel.length < 1}
+          className="rounded-lg bg-stone-800 px-4 py-2.5 text-sm font-medium text-amber-50 hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Buscar na base FACTO
+        </button>
+        <p className="mt-2 text-xs font-medium text-emerald-800">
+          Sem cota de tribunal — só a base curada
+        </p>
+        <p className="mt-1 text-xs leading-relaxed text-slate-500">
+          Busca casos semelhantes aos fatos, com decisão favorável ao polo
+          desta peça. Filtra pelos tribunais marcados. Julgado que não estiver
+          na base: anexe a ementa abaixo.
+        </p>
       </div>
 
       {aberto && (
@@ -371,8 +346,8 @@ export function JurisSugestoesPicker({
                 ) : null}
               </div>
               <p className="mt-1 text-sm text-slate-500">
-                Marque as que quiser usar na minuta. Anexos que você já enviou
-                entram na geração; aqui é só para conferir e escolher.
+                Resultados da base FACTO. Marque as que entram nesta minuta.
+                Anexe ementa se o julgado ainda não estiver na base.
               </p>
               {totais && !carregando ? (
                 <p className="mt-2 text-xs text-slate-600">

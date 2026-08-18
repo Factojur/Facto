@@ -75,17 +75,50 @@ export function extrairCidadeUfDoForo(foro: string | null | undefined): {
   const t = String(foro ?? "").trim();
   if (!t) return { cidade: "", uf: "" };
 
-  const m =
+  const candidatos = [
     t.match(
       /(?:de|da comarca de)\s+([A-Za-zÀ-ÿ'.\s]+?)\s*[-–/]\s*([A-Za-z]{2})\s*$/i
-    ) ??
-    t.match(/([A-Za-zÀ-ÿ'.\s]+?)\s*[-–/]\s*([A-Za-z]{2})\s*$/i);
+    ),
+    t.match(/([A-Za-zÀ-ÿ'.\s]+?)\s*[-–/]\s*([A-Za-z]{2})\s*$/i),
+    t.match(/\b([A-Za-zÀ-ÿ']{3,}(?:\s+[A-Za-zÀ-ÿ']+){0,3})\s*[\/–-]\s*([A-Za-z]{2})\b/i),
+  ];
 
-  if (!m) return { cidade: "", uf: "" };
-  const cidade = m[1]!.replace(/\s+/g, " ").trim();
-  const uf = m[2]!.trim().toUpperCase();
-  if (!ufValida(uf) || cidade.length < 2) return { cidade: "", uf: "" };
-  return { cidade, uf };
+  for (const m of candidatos) {
+    if (!m) continue;
+    const cidade = m[1]!.replace(/\s+/g, " ").trim();
+    const uf = m[2]!.trim().toUpperCase();
+    if (ufValida(uf) && cidade.length >= 2 && !/^(fls|tel|cep)$/i.test(cidade)) {
+      return { cidade, uf };
+    }
+  }
+  return { cidade: "", uf: "" };
+}
+
+export type ComponentesForo = {
+  cidade: string;
+  uf: string;
+  numeroVara: string;
+  complementoOrgao: string;
+};
+
+/** Vara, anexo, foro e município a partir do texto livre do campo Foro. */
+export function extrairComponentesForo(
+  foro: string | null | undefined
+): ComponentesForo {
+  const t = String(foro ?? "").replace(/\s+/g, " ").trim();
+  const { cidade, uf } = extrairCidadeUfDoForo(t);
+  const vara =
+    t.match(/(\d{1,3})\s*[ªºo°]?\s*(?:vara|juizado|zona)/i)?.[1] ?? "";
+  const anexo = t.match(/anexo\s+([A-Za-zÀ-ÿ]{3,40})/i)?.[1];
+  const partes: string[] = [];
+  if (/foro central/i.test(t)) partes.push("FORO CENTRAL");
+  if (anexo) partes.push(`ANEXO ${anexo.trim().toUpperCase()}`);
+  return {
+    cidade,
+    uf,
+    numeroVara: vara,
+    complementoOrgao: partes.join(" "),
+  };
 }
 
 type ViaCepResposta = {
@@ -145,6 +178,38 @@ export function ehPeticaoInicial(tipoAcao: string | null | undefined): boolean {
   return true;
 }
 
+function daNVara(vara: string, nomeVara: string): string {
+  if (vara === "___") return `DA ___ ${nomeVara}`;
+  if (!vara) return `DA ${nomeVara}`;
+  return `DA ${vara} ${nomeVara}`;
+}
+
+function enderecoJecPrimeiraInstancia(
+  vara: string,
+  organExtra: string,
+  comarcaTxt: string
+): string {
+  const cargo =
+    "EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO";
+  if (/ANEXO/.test(organExtra)) {
+    const anexo = organExtra
+      .replace(/\bFORO CENTRAL\b/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    const foro = /\bFORO CENTRAL\b/.test(organExtra)
+      ? " DO FORO CENTRAL"
+      : "";
+    return `${cargo} DO JUIZADO ESPECIAL CÍVEL ${anexo}${foro} DA COMARCA DE ${comarcaTxt}`;
+  }
+  if (vara && vara !== "___") {
+    return `${cargo} DA ${vara} VARA DO JUIZADO ESPECIAL CÍVEL DO FÓRUM DA COMARCA DE ${comarcaTxt}`;
+  }
+  if (vara === "___") {
+    return `${cargo} DA ___ VARA DO JUIZADO ESPECIAL CÍVEL DO FÓRUM DA COMARCA DE ${comarcaTxt}`;
+  }
+  return `${cargo} DO JUIZADO ESPECIAL CÍVEL DO FÓRUM DA COMARCA DE ${comarcaTxt}`;
+}
+
 /**
  * Endereçamento padrão FACTO (todas as áreas).
  */
@@ -164,24 +229,19 @@ export function formatarEnderecamentoPadrao(opcoes: {
     .trim()
     .toUpperCase();
 
-  let cidade = (info.cidade ?? "").trim();
-  let uf = (info.uf ?? "").trim().toUpperCase();
-
-  if ((!cidade || !uf) && info.foro?.trim()) {
-    const extraido = extrairCidadeUfDoForo(info.foro);
-    if (!cidade) cidade = extraido.cidade;
-    if (!uf) uf = extraido.uf;
-  }
+  const doForo = extrairComponentesForo(info.foro);
+  let cidade = (info.cidade ?? "").trim() || doForo.cidade;
+  let uf = (info.uf ?? "").trim().toUpperCase() || doForo.uf;
 
   const comarcaTxt =
     cidade && uf ? `${cidade.toUpperCase()}/${uf}` : "___/__";
 
-  const juizado = (info.numeroJuizado ?? "").trim();
-  const varaEmBranco =
-    opcoes.varaEmBranco === true || !juizado;
+  const juizado = (info.numeroJuizado ?? "").trim() || doForo.numeroVara;
+  const varaEmBranco = opcoes.varaEmBranco === true;
   const vara = varaEmBranco
     ? "___"
     : juizado.replace(/[ªº°]/g, "");
+  const organExtra = doForo.complementoOrgao;
 
   const areaId = opcoes.areaId ?? "";
   const especie = (opcoes.especiePeca ?? "").toLowerCase();
@@ -197,13 +257,9 @@ export function formatarEnderecamentoPadrao(opcoes: {
       especie === "contestacao-adpf" ||
       especie === "contestacao-adc" ||
       especie === "contestacao-ado" ||
-      especie === "informacoes-mandado-injuncao" ||
       especie === "recurso-extraordinario" ||
       especie === "agravo-recurso-extraordinario" ||
       especie === "contrarrazoes-recurso-extraordinario" ||
-      especie === "contrarrazoes-recurso-ordinario" ||
-      especie === "recurso-ordinario-constitucional" ||
-      especie === "agravo-regimental" ||
       especie.includes("extraordinario") ||
       especie.includes("extraordinário"))
   ) {
@@ -211,12 +267,21 @@ export function formatarEnderecamentoPadrao(opcoes: {
   }
   if (
     areaId === "constitucional" &&
-    (especie === "reclamacao-constitucional" || especie.includes("reclama"))
+    (especie === "reclamacao-constitucional" ||
+      especie === "contestacao-reclamacao")
   ) {
+    const foro = (info.foro ?? "").toLowerCase();
+    if (/\bstj\b|superior tribunal de justi[cç]a/.test(foro)) {
+      return "EXCELENTÍSSIMO(A) SENHOR(A) MINISTRO(A) PRESIDENTE DO COLENDO SUPERIOR TRIBUNAL DE JUSTIÇA";
+    }
     return "EXCELENTÍSSIMO(A) SENHOR(A) MINISTRO(A) PRESIDENTE DO COLENDO SUPREMO TRIBUNAL FEDERAL";
   }
 
-  if (especie === "habeas-corpus" || especie.includes("habeas")) {
+  // Habeas corpus (não habeas data — competência distinta, 1ª instância ou juízo da autoridade).
+  const ehHabeasCorpus =
+    especie === "habeas-corpus" ||
+    (especie.includes("habeas") && !especie.includes("data"));
+  if (ehHabeasCorpus) {
     if (areaId === "constitucional") {
       // HC constitucional pode ser TJ, TRF ou STF — use o foro dos FATOS se indicar STF
       const foro = (info.foro ?? "").toLowerCase();
@@ -231,6 +296,17 @@ export function formatarEnderecamentoPadrao(opcoes: {
       uf || "___"
     }`;
   }
+
+  // Revisão criminal: tribunal que proferiu a condenação (CPP art. 624), não a vara de origem.
+  if (especie === "revisao-criminal") {
+    const foro = (info.foro ?? "").toLowerCase();
+    if (/\btrf\b|tribunal regional federal|justi[cç]a federal/.test(foro)) {
+      return "EXCELENTÍSSIMO(A) SENHOR(A) DESEMBARGADOR(A) FEDERAL PRESIDENTE DO EGRÉGIO TRIBUNAL REGIONAL FEDERAL";
+    }
+    return `EXCELENTÍSSIMO(A) SENHOR(A) DESEMBARGADOR(A) PRESIDENTE DO EGRÉGIO TRIBUNAL DE JUSTIÇA DO ESTADO DE ${
+      uf || "___"
+    }`;
+  }
   // Notificação extrajudicial não se endereça a juiz.
   if (
     especie === "notificacao-extrajudicial" ||
@@ -239,6 +315,41 @@ export function formatarEnderecamentoPadrao(opcoes: {
   ) {
     return "NOTIFICAÇÃO EXTRAJUDICIAL";
   }
+  // ROC (CF arts. 102, II e 105, II): STF ou STJ conforme o foro; default STF no módulo constitucional.
+  if (
+    areaId === "constitucional" &&
+    (especie === "recurso-ordinario-constitucional" ||
+      especie === "contrarrazoes-recurso-ordinario")
+  ) {
+    const foro = (info.foro ?? "").toLowerCase();
+    if (/\bstj\b|superior tribunal de justi[cç]a/.test(foro)) {
+      return "EXCELENTÍSSIMO(A) SENHOR(A) MINISTRO(A) PRESIDENTE DO COLENDO SUPERIOR TRIBUNAL DE JUSTIÇA";
+    }
+    return "EXCELENTÍSSIMO(A) SENHOR(A) MINISTRO(A) PRESIDENTE DO COLENDO SUPREMO TRIBUNAL FEDERAL";
+  }
+
+  // Agravo regimental no módulo constitucional: STF, salvo foro que indique STJ.
+  if (areaId === "constitucional" && especie === "agravo-regimental") {
+    const foro = (info.foro ?? "").toLowerCase();
+    if (/\bstj\b|superior tribunal de justi[cç]a/.test(foro)) {
+      return "EXCELENTÍSSIMO(A) SENHOR(A) MINISTRO(A) PRESIDENTE DO COLENDO SUPERIOR TRIBUNAL DE JUSTIÇA";
+    }
+    return "EXCELENTÍSSIMO(A) SENHOR(A) MINISTRO(A) PRESIDENTE DO COLENDO SUPREMO TRIBUNAL FEDERAL";
+  }
+
+  // Juizado: agravo de instrumento não segue o CPC 1.016 (TJ). Endereça a Turma Recursal.
+  if (
+    areaId === "jec" &&
+    (especie === "agravo-instrumento" ||
+      especie.includes("agravo-instrumento") ||
+      especie.includes("agravo de instrumento"))
+  ) {
+    return (
+      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO PRESIDENTE DA COLENDA ` +
+      `TURMA RECURSAL DO JUIZADO ESPECIAL CÍVEL DE ${comarcaTxt}`
+    );
+  }
+
   // CLT art. 897: agravo de instrumento e agravo de petição vão ao TRT, não ao TJ.
   if (
     areaId === "trabalhista" &&
@@ -279,34 +390,37 @@ export function formatarEnderecamentoPadrao(opcoes: {
       uf || "___"
     }`;
   }
+  if (areaId === "jec" || area === "JUIZADO ESPECIAL CÍVEL") {
+    return enderecoJecPrimeiraInstancia(vara, organExtra, comarcaTxt);
+  }
   if (areaId === "trabalhista") {
     return (
-      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DO TRABALHO DA ${vara} ` +
-      `VARA DO TRABALHO DE ${comarcaTxt}`
+      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DO TRABALHO ` +
+      `${daNVara(vara, "VARA DO TRABALHO")} DE ${comarcaTxt}`
     );
   }
   if (areaId === "familia") {
     return (
-      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA ${vara} ` +
-      `VARA DE FAMÍLIA E SUCESSÕES DO FÓRUM DA COMARCA DE ${comarcaTxt}`
+      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO ` +
+      `${daNVara(vara, "VARA DE FAMÍLIA E SUCESSÕES")} DO FÓRUM DA COMARCA DE ${comarcaTxt}`
     );
   }
   if (areaId === "jecr") {
     return (
-      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA ${vara} ` +
-      `VARA DO JUIZADO ESPECIAL CRIMINAL DO FÓRUM DA COMARCA DE ${comarcaTxt}`
+      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO ` +
+      `${daNVara(vara, "VARA DO JUIZADO ESPECIAL CRIMINAL")} DO FÓRUM DA COMARCA DE ${comarcaTxt}`
     );
   }
   if (areaId === "criminal") {
     return (
-      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA ${vara} ` +
-      `VARA CRIMINAL DO FÓRUM DA COMARCA DE ${comarcaTxt}`
+      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO ` +
+      `${daNVara(vara, "VARA CRIMINAL")} DO FÓRUM DA COMARCA DE ${comarcaTxt}`
     );
   }
   if (areaId === "previdenciario") {
     return (
-      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) FEDERAL DA ${vara} ` +
-      `VARA DO JUIZADO ESPECIAL FEDERAL DE ${comarcaTxt}`
+      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) FEDERAL ` +
+      `${daNVara(vara, "VARA DO JUIZADO ESPECIAL FEDERAL")} DE ${comarcaTxt}`
     );
   }
   if (areaId === "tributario" || areaId === "administrativo") {
@@ -317,22 +431,27 @@ export function formatarEnderecamentoPadrao(opcoes: {
       )
     ) {
       return (
-        `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) FEDERAL DA ${vara} ` +
-        `VARA FEDERAL DE ${comarcaTxt}`
+        `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) FEDERAL ` +
+        `${daNVara(vara, "VARA FEDERAL")} DE ${comarcaTxt}`
       );
     }
     return (
-      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA ${vara} ` +
-      `VARA DA FAZENDA PÚBLICA DO FÓRUM DA COMARCA DE ${comarcaTxt}`
+      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO ` +
+      `${daNVara(vara, "VARA DA FAZENDA PÚBLICA")} DO FÓRUM DA COMARCA DE ${comarcaTxt}`
     );
   }
   if (areaId === "eleitoral") {
     return (
-      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) ELEITORAL DA ${vara} ` +
-      `ZONA ELEITORAL DE ${comarcaTxt}`
+      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) ELEITORAL ` +
+      `${daNVara(vara, "ZONA ELEITORAL")} DE ${comarcaTxt}`
     );
   }
-  if (areaId === "internacional") {
+  // Homologação de sentença estrangeira: competência do STJ (CF art. 105, I, i).
+  // Demais peças do módulo (contrato internacional, apelação, cumprimento) seguem a justiça comum.
+  if (
+    areaId === "internacional" &&
+    (especie === "homologacao" || especie.includes("homologa"))
+  ) {
     return `EXCELENTÍSSIMO(A) SENHOR(A) MINISTRO(A) PRESIDENTE DO SUPERIOR TRIBUNAL DE JUSTIÇA`;
   }
   if (areaId === "constitucional") {
@@ -346,13 +465,13 @@ export function formatarEnderecamentoPadrao(opcoes: {
       )
     ) {
       return (
-        `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) FEDERAL DA ${vara} ` +
-        `VARA FEDERAL DE ${comarcaTxt}`
+        `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) FEDERAL ` +
+        `${daNVara(vara, "VARA FEDERAL")} DE ${comarcaTxt}`
       );
     }
     return (
-      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA ${vara} ` +
-      `VARA DO FÓRUM DA COMARCA DE ${comarcaTxt}`
+      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO ` +
+      `${daNVara(vara, "VARA")} DO FÓRUM DA COMARCA DE ${comarcaTxt}`
     );
   }
   if (
@@ -364,17 +483,18 @@ export function formatarEnderecamentoPadrao(opcoes: {
     areaId === "medico" ||
     areaId === "agrario" ||
     areaId === "ambiental" ||
-    areaId === "propriedade-intelectual"
+    areaId === "propriedade-intelectual" ||
+    areaId === "internacional"
   ) {
     return (
-      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA ${vara} ` +
-      `VARA CÍVEL DO FÓRUM DA COMARCA DE ${comarcaTxt}`
+      `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO ` +
+      `${daNVara(vara, "VARA CÍVEL")} DO FÓRUM DA COMARCA DE ${comarcaTxt}`
     );
   }
 
   return (
-    `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA ${vara} VARA ` +
-    `DO ${area} DO FÓRUM DA COMARCA DE ${comarcaTxt}`
+    `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO ` +
+    `${daNVara(vara, "VARA")} DO ${area} DO FÓRUM DA COMARCA DE ${comarcaTxt}`
   );
 }
 

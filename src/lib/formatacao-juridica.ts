@@ -41,16 +41,28 @@ function formatarInlineHtml(texto: string): string {
     .join("");
 }
 
-function htmlEspaco(linhas: 1 | 2 | 6, processo?: string): string {
+function htmlEspaco(
+  linhas: 1 | 2 | 6,
+  processo?: string,
+  epigrafe?: string[]
+): string {
   if (linhas !== 6) {
     return `<div class="espaco-linhas espaco-${linhas}" aria-hidden="true"></div>`;
   }
 
+  const extra =
+    epigrafe && epigrafe.length > 0
+      ? epigrafe
+      : processo
+        ? [processo]
+        : [];
+  const inicio = extra.length >= 3 ? 2 : 4;
   const itens: string[] = [];
   for (let i = 1; i <= 6; i++) {
-    if (i === 4 && processo) {
+    const idx = i - inicio;
+    if (idx >= 0 && idx < extra.length) {
       itens.push(
-        `<p class="numero-processo">${escapeHtml(processo)}</p>`
+        `<p class="numero-processo">${escapeHtml(extra[idx]!)}</p>`
       );
     } else {
       itens.push(`<div class="espaco-linha" aria-hidden="true"></div>`);
@@ -63,7 +75,11 @@ function blocoParaHtml(bloco: string): string {
   return classificarPeca(bloco)
     .map((b) => {
       if (b.tipo === "marcador" && b.marcador) {
-        return htmlEspaco(b.marcador.linhas, b.marcador.processo);
+        return htmlEspaco(
+          b.marcador.linhas,
+          b.marcador.processo,
+          b.marcador.epigrafe
+        );
       }
       const html = formatarInlineHtml(b.texto);
       switch (b.tipo) {

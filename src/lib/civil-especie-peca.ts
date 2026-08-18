@@ -6,6 +6,7 @@
 export type EspeciePecaCivil =
   | "peticao-inicial"
   | "contestacao"
+  | "reconvencao"
   | "replica"
   | "embargos-declaracao"
   | "apelacao"
@@ -41,12 +42,23 @@ export const ESPECIES_PECA_CIVIL: MetaEspecieCivil[] = [
     id: "contestacao",
     rotulo: "Contestação",
     descricao:
-      "Defesa do réu no rito comum (art. 335 do CPC). Preliminares, mérito e honorários sucumbenciais.",
+      "Defesa do réu no rito comum (art. 335 do CPC). Preliminares, mérito e honorários sucumbenciais. Reconvenção (art. 343) é checkbox na aba Pedidos, não espécie à parte.",
     nomePecaHint: "Contestação",
     exigeProcesso: true,
     conectivoPartes:
       "apresentando a presente contestação, pelos fundamentos a seguir.",
     prazoAviso: "Prazo típico: 15 dias úteis (art. 335 do CPC), salvo regra especial.",
+  },
+  {
+    id: "reconvencao",
+    rotulo: "Contestação com reconvenção",
+    descricao:
+      "Defesa do réu com reconvenção na mesma peça (art. 343 do CPC). O réu (reconvinte) formula pedido próprio contra o autor (reconvindo), no prazo da contestação.",
+    nomePecaHint: "Contestação com reconvenção",
+    exigeProcesso: true,
+    conectivoPartes:
+      "apresentando a presente contestação com reconvenção, pelos fundamentos a seguir.",
+    prazoAviso: "Prazo típico: o da contestação (art. 343 c/c art. 335 do CPC).",
   },
   {
     id: "replica",
@@ -148,6 +160,27 @@ const ESQUELETOS: Record<EspeciePecaCivil, Secao[]> = {
       obrigatoria: false,
       opcionalSistema: true,
     },
+    { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
+  ],
+  reconvencao: [
+    { chave: "preliminares", titulo: "DAS PRELIMINARES", obrigatoria: true },
+    {
+      chave: "merito",
+      titulo: "DO MÉRITO — DOS FATOS E DO DIREITO",
+      obrigatoria: true,
+    },
+    {
+      chave: "reconvencao",
+      titulo: "DA RECONVENÇÃO — DOS FATOS E DO DIREITO",
+      obrigatoria: true,
+    },
+    {
+      chave: "provas",
+      titulo: "DAS PROVAS E ANEXOS",
+      obrigatoria: false,
+      opcionalSistema: true,
+    },
+    { chave: "valor", titulo: "DO VALOR DA RECONVENÇÃO", obrigatoria: true },
     { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
   ],
   replica: [
@@ -252,6 +285,7 @@ export function normalizarEspecieCivil(
   const ids: EspeciePecaCivil[] = [
     "peticao-inicial",
     "contestacao",
+    "reconvencao",
     "replica",
     "embargos-declaracao",
     "apelacao",
@@ -264,6 +298,7 @@ export function normalizarEspecieCivil(
   }
   if (id === "inicial" || id === "peticao") return "peticao-inicial";
   if (id === "contestação") return "contestacao";
+  if (id.includes("reconven")) return "reconvencao";
   if (id === "réplica") return "replica";
   if (id === "embargos" || id.includes("declara")) return "embargos-declaracao";
   if (id === "recurso" || id.includes("apela")) return "apelacao";
@@ -285,6 +320,7 @@ export function inferirEspecieCivil(
   if (/apela[cç][aã]o/.test(t)) return "apelacao";
   if (/embargos de declara/.test(t)) return "embargos-declaracao";
   if (/r[eé]plica/.test(t)) return "replica";
+  if (/reconven/.test(t)) return "reconvencao";
   if (/contesta[cç][aã]o/.test(t)) return "contestacao";
   if (/cumprimento de senten[cç]a/.test(t)) return "cumprimento-sentenca";
   if (/execu[cç][aã]o/.test(t)) return "execucao-titulo";
@@ -298,6 +334,8 @@ export function tituloPecaCivil(
   switch (especie) {
     case "contestacao":
       return "Contestação";
+    case "reconvencao":
+      return "Contestação com Reconvenção";
     case "replica":
       return "Réplica";
     case "embargos-declaracao":
@@ -346,6 +384,11 @@ export function blocoEstruturaPromptCivil(
     extras.push(
       "   Preliminares só se cabíveis (inépcia, ilegitimidade, incompetência, falta de interesse…). Não invente.",
       "   Pedidos: improcedência + honorários sucumbenciais na forma do art. 85 do CPC (não cite 9.099)."
+    );
+  } else if (especie === "reconvencao") {
+    extras.push(
+      "   Art. 343 do CPC: reconvenção no prazo da contestação. Réu = reconvinte; autor = reconvindo. NÃO use pedido contraposto da Lei 9.099/95.",
+      "   Defesa (improcedência da inicial) + pretensão reconvencional própria. Pedidos: improcedência da inicial, procedência da reconvenção e honorários (art. 85 do CPC)."
     );
   } else if (especie === "replica") {
     extras.push(

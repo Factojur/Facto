@@ -75,6 +75,8 @@ export async function POST(request: Request) {
     uploads?: UploadIn[];
     tribunais?: unknown;
     somenteBase?: boolean;
+    areaId?: string;
+    polo?: string;
   };
   try {
     body = await request.json();
@@ -90,7 +92,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const somenteBase = Boolean(body.somenteBase);
+  const areaId = String(body.areaId ?? "").trim() || undefined;
+  const poloRaw = String(body.polo ?? "").trim().toLowerCase();
+  const polo =
+    poloRaw === "passivo" || poloRaw === "ativo"
+      ? poloRaw
+      : null;
 
   const tribunaisNorm = normalizarTribunaisEscolhidos(body.tribunais);
   if (!tribunaisNorm.ok) {
@@ -114,7 +121,13 @@ export async function POST(request: Request) {
 
   let melhorSumula: Bruto | null = null;
   try {
-    const trechos = await buscarConhecimentoRelacionado(consulta, 14, consulta);
+    const trechos = await buscarConhecimentoRelacionado(
+      consulta,
+      14,
+      consulta,
+      areaId,
+      { polo }
+    );
     for (const t of trechos) {
       const cat = t.categoria.toLowerCase();
       const isSumula = cat.includes("súmula") || cat.includes("sumula");
@@ -230,6 +243,8 @@ export async function POST(request: Request) {
       min: somenteBase ? 5 : undefined,
       max: somenteBase ? 8 : undefined,
       tribunais,
+      areaId,
+      polo,
     });
     secundarios = r.precedentes;
     usandoFallbackSecundario = r.usandoFallbackLocal;

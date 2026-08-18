@@ -24,10 +24,10 @@ export const TOKENS_MEDIOS_POR_PECA = {
   redacaoOut: 6_000,
 } as const;
 
-/** Tokens médios por análise de processo (1 chamada Flash estruturada). */
+/** Tokens médios por análise / entrada (1 chamada; PDF longo ~capa+fim). */
 export const TOKENS_MEDIOS_POR_ANALISE = {
-  input: 18_000,
-  output: 2_500,
+  input: 45_000,
+  output: 3_000,
 } as const;
 
 /** Câmbio aproximado para exibição em BRL (atualize periodicamente). */

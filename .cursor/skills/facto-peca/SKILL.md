@@ -20,13 +20,21 @@ Se alterar a dashboard JEC e **não** for específico do JEC, extrair/atualizar 
 ## Sempre
 
 - Minuta para **revisar e protocolar fora** do FACTO. Não enviar arquivo ao juízo.
-- **JG e MLE:** checkbox só inclui o **pedido no texto**. MLE não aparece em Penal, JECRIM, Eleitoral nem Constitucional. Declaração e docs do MLE o usuário junta no protocolo.
+- **JG e MLE:** checkbox na aba Pedidos; só inclui o **pedido no texto**. MLE não aparece em Penal, JECRIM, Eleitoral nem Constitucional. Declaração e docs do MLE o usuário junta no protocolo.
+- **Pedido contraposto / reconvenção:** checkbox na **Contestação** (aba Pedidos), não espécie no seletor. JEC = art. 31 da Lei 9.099 (mesmos fatos; reconvenção do CPC não cabe). Justiça comum (Civil, Consumidor, Família, Imobiliário) = art. 343 do CPC. Danos morais e tutela, se o réu também pedir, continuam c/c **dentro** desse pedido.
 - **Provas do fato:** insumos para a IA (contrato, print, nota). Não confundir com checklist de protocolo.
 - **Já qualificado:** peças incidentais = só nome; petição inicial = qualificação mínima.
+- **Polo ativo/passivo:** seletor em JEC, Civil, Consumidor, Família, Imobiliário, Constitucional, Administrativo, Tributário e Trabalhista. Contestação/defesa = polo passivo; inicial/réplica = polo ativo; recursos = ambos. O seletor lista **todas** as peças, agrupadas por polo — contestação não some no polo ativo. Ao escolher a peça, o polo é ajustado.
 - **Corpo justificado:** fatos/direito em parágrafos de 2–3 períodos. Uma frase por linha parece alinhada à esquerda.
 - Endereçamento, nome da ação, títulos, pedidos/provas e fechamento já têm regra própria — não unificar com o corpo.
-- Três etapas de formulário (identificação → fatos → pedidos). Timbre + Gerar **só na aba Pedidos**.
-- Copy em PT-BR. Não inventar tribunal, prazo ou rito de outra área no módulo JEC.
+- Três etapas de formulário (identificação → fatos → pedidos). **Entrada única** no topo preenche as abas (PDF/autos inclusive); Gerar só na aba Pedidos. Campo incerto fica vazio — não gerar “sem contexto”. Identificação: só **Assistente FACTO** e **Digitar o nome** — sem rádio “Analisar processo”.
+- **Falar:** botão na Entrada do caso e na aba Fatos. Transcreve (~3 min, Gemini Flash-Lite) para o textarea; o usuário lê e edita. **Não** dispara “Preencher as três abas”, **não** consome cota de análise nem de peça, **não** grava o arquivo de áudio. Em campo já preenchido, anexa o texto.
+- **Peça cabível:** a entrada interpreta o **último ato** dos autos (não o nome do incidente já aberto). Cumprimento/execução já instaurado + decisão posterior (astreintes, penhora, tutela) → embargos ou agravo — nunca reabrir o incidente.
+- **Teto de leitura da triagem:** `LIMITE_RELATO_TRIAGEM_CHARS` (180 mil) em `peca-cabivel-autos.ts`. PDF maior: capa + decisões do miolo + fim. Não voltar a 24 mil.
+- Epígrafe em peça incidental: Processo nº + polos do rito (Autor/Réu, Exequente/Executado, Reclamante/Reclamado, Reconvinte/Reconvindo). Endereçamento usa foro/comarca preenchidos; incidental sem número de vara não leva `___`.
+- **JG e MLE** e **pedido contraposto / reconvenção:** checkboxes na aba Pedidos.
+- **Auditor:** regras, sem Gemini. Confere espécie vs último ato, endereçamento/epígrafe, lacunas (`___`, endereço, OAB), JG/MLE/pedidos e citações com lastro. Achados visíveis na minuta; não cria skin nova.
+- **Skins visíveis:** Maestro, Analista, Pesquisa & súmulas, Estrategista, Redator, Auditor. Sem 7ª skin. Sem chamada Gemini extra. Maestro monta o plano (espécie, polo, teses, JG/MLE, último ato). Pesquisa busca na base FACTO **casos semelhantes aos fatos** e **julgados favoráveis ao polo da peça** (ativo = procedência/condenação; passivo = improcedência). Ementa contrária ao polo não entra no lastro. Estrategista injeta `<VINCULOS_FACTO>` na estratégia antes do Redator. Analista/Redator recebem a peça cabível (não reabrir cumprimento). Pesquisador/Sumulista continuam ocultos.
 - **Juris do caso vs lei municipal:** campos distintos. Juris/súmula anexada = citação nesta peça + fila `juris_verificacao` (admin pode incluir na base). Lei municipal = só este município/caso; **nunca** `base_conhecimento` nem `juris_verificacao`. Não misturar os uploads.
 
 ## JEC (módulo vivo)

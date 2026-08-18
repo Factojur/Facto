@@ -43,6 +43,52 @@ OAB/SP 404040
     `.trim(),
   },
   {
+    id: "civil-reconvencao",
+    especie: "reconvencao",
+    tema: "Civil — contestação com reconvenção (art. 343)",
+    secoesObrigatorias: [
+      "DAS PRELIMINARES",
+      "DO MÉRITO",
+      "DA RECONVENÇÃO",
+      "DOS PEDIDOS",
+    ],
+    jurisComLastro: ["1008105-55.2024.8.26.0100"],
+    jurisSemLastro: ["1008106-66.2024.8.26.0100"],
+    contextoLastro: `
+CPC art. 343. Código Civil art. 186.
+TJSP Processo nº 1008105-55.2024.8.26.0100 — reconvenção na justiça comum.
+    `.trim(),
+    pecaIaBruta: `
+EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DE DIREITO DA __ VARA CÍVEL DA COMARCA DE SÃO PAULO - SP
+
+RÉU FICTO apresenta
+
+CONTESTAÇÃO COM RECONVENÇÃO
+
+em face de AUTOR FICTO.
+
+I - DAS PRELIMINARES
+a) Da inépcia — pedidos genéricos.
+
+II - DO MÉRITO — DOS FATOS E DO DIREITO
+Ausência de nexo causal. Cita-se o Processo nº 1008105-55.2024.8.26.0100.
+
+III - DA RECONVENÇÃO — DOS FATOS E DO DIREITO
+O reconvinte formula pedido próprio contra o reconvindo, na forma do art. 343 do CPC. Cita-se o Processo nº 1008106-66.2024.8.26.0100.
+
+IV - DOS PEDIDOS
+a) Improcedência da inicial;
+b) Procedência da reconvenção;
+c) Honorários, se cabível.
+
+Nestes termos,
+pede deferimento.
+
+São Paulo/SP, 18 de agosto de 2026.
+OAB/SP 414141
+    `.trim(),
+  },
+  {
     id: "civil-apelacao",
     especie: "apelacao",
     tema: "Civil — apelação",

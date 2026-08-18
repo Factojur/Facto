@@ -1,0 +1,99 @@
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import {
+  AJUSTES_POR_GERACAO,
+  ajustarTrechoPeca,
+} from "@/lib/ia/ajustar-trecho-peca";
+import { gerarDocumentoTimbrado } from "@/lib/formatacao-juridica";
+import { anotarJurisprudenciasSemLastro, verificarCitacoes } from "@/lib/ia/verificacao-citacoes";
+import { anexarAuditoria } from "@/lib/ia/auditor-peca";
+import { normalizarPecaGerada } from "@/lib/ia/normalizar-peca-gerada";
+
+export const maxDuration = 45;
+
+/**
+ * POST /api/ajustar-peca — até 2 ajustes por geração (controle no cliente).
+ * Não consome cota de peça.
+ */
+export async function POST(request: Request) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    }
+
+    const body = (await request.json().catch(() => null)) as {
+      peca?: string;
+      pedido?: string;
+      contextoVerificacao?: string;
+      ajustesJaFeitos?: number;
+      auditor?: {
+        areaId?: string;
+        especie?: string | null;
+        tipoAcao?: string | null;
+        fatos?: string | null;
+        numeroProcesso?: string | null;
+        pecaInaugural?: boolean;
+        pedirJusticaGratuita?: boolean;
+        temMle?: boolean;
+        comReconvencao?: boolean;
+        pedidosUsuario?: string[] | null;
+      };
+    } | null;
+
+    const feitos = Math.max(0, Number(body?.ajustesJaFeitos) || 0);
+    if (feitos >= AJUSTES_POR_GERACAO) {
+      return NextResponse.json(
+        {
+          error: `Limite de ${AJUSTES_POR_GERACAO} ajustes nesta minuta. Gere de novo se precisar de mais.`,
+          codigo: "LIMITE_AJUSTES",
+        },
+        { status: 429 }
+      );
+    }
+
+    const resultado = await ajustarTrechoPeca({
+      peca: String(body?.peca ?? ""),
+      pedido: String(body?.pedido ?? ""),
+    });
+    if (!resultado.ok) {
+      return NextResponse.json({ error: resultado.erro }, { status: 400 });
+    }
+
+    const peca = normalizarPecaGerada(resultado.peca);
+    const contexto = String(body?.contextoVerificacao ?? "");
+    const citacoes = contexto
+      ? verificarCitacoes(peca, contexto)
+      : [];
+    const pecaComLastro = contexto
+      ? anotarJurisprudenciasSemLastro(peca, citacoes)
+      : peca;
+    const { pecaHtml } = gerarDocumentoTimbrado(pecaComLastro);
+    const auditado = anexarAuditoria(
+      {
+        peca: pecaComLastro,
+        pecaHtml,
+        citacoes,
+      },
+      body?.auditor ?? {}
+    );
+
+    return NextResponse.json({
+      peca: auditado.peca,
+      pecaHtml,
+      citacoes,
+      auditoria: auditado.auditoria,
+      equipeEtapas: auditado.equipeEtapas,
+      ajustesRestantes: AJUSTES_POR_GERACAO - feitos - 1,
+    });
+  } catch (erro) {
+    console.error("[ajustar-peca]", erro);
+    return NextResponse.json(
+      { error: "Falha ao ajustar a minuta." },
+      { status: 500 }
+    );
+  }
+}

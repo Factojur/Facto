@@ -16,6 +16,7 @@ import {
   MATRIZ_POLO_POR_AREA,
   type PoloAdvocacia,
 } from "../src/lib/polo-especies-por-area";
+import { aplicarFlagReconvencao } from "../src/lib/peca-especie-area";
 import {
   formatarBlocoPartesJaQualificadas,
   pecaUsaPartesJaQualificadas,
@@ -101,7 +102,7 @@ function assertBlocoIncidental(
       !/movido em face de/i.test(bloco),
       `${p}recursal/contrarrazões sem \"movido em face de\"`
     );
-  } else if (polo === "passivo" && especie === "contestacao") {
+  } else if (polo === "passivo" && (especie === "contestacao" || especie === "pedido-contraposto")) {
     assert(
       bloco.includes(`em face de ${NOME_AUTOR}`),
       `${p}contestação cita autor em face de`
@@ -240,6 +241,26 @@ function rodarScaffoldJec(): SuiteStats {
     }
   }
 
+  const contraposto = gerarPecaJec({
+    ...baseInput,
+    especiePeca: "contestacao",
+    comReconvencao: true,
+    poloAdvocacia: "passivo",
+  });
+  const pecaC = contraposto.peca.replace(/\r\n/g, "\n");
+  assert(
+    /PEDIDO CONTRAPOSTO/i.test(pecaC),
+    "contestação + checkbox: seção do contraposto"
+  );
+  assert(/já qualificado/i.test(pecaC), "contraposto: partes já qualificadas");
+  const introC =
+    pecaC.split("\n").find((l) => /já qualificado/i.test(l)) ?? pecaC;
+  assert(
+    introC.includes(NOME_REU) &&
+      introC.indexOf(NOME_REU) < introC.indexOf(NOME_AUTOR),
+    "contraposto: réu abre o parágrafo"
+  );
+
   return stats();
 }
 
@@ -279,6 +300,22 @@ function rodarMatrizPolos(): SuiteStats {
   assert(
     resolverPoloClienteQualificacao("jec", "contestacao", null) === "passivo",
     "inferência: contestação → passivo"
+  );
+  assert(
+    aplicarFlagReconvencao("jec", "contestacao", true) === "pedido-contraposto",
+    "flag JEC: contestação + checkbox → contraposto"
+  );
+  assert(
+    aplicarFlagReconvencao("civil", "contestacao", true) === "reconvencao",
+    "flag Civil: contestação + checkbox → reconvenção"
+  );
+  assert(
+    aplicarFlagReconvencao("jec", "contestacao", false) === "contestacao",
+    "flag: sem checkbox permanece contestação"
+  );
+  assert(
+    !especieCompativelComPolo("jec", "pedido-contraposto", "ativo"),
+    "JEC: contraposto interno não cabe no polo ativo"
   );
   assert(
     resolverPoloClienteQualificacao("jec", "replica", null) === "ativo",

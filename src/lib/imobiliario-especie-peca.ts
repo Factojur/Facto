@@ -10,6 +10,7 @@ export type EspeciePecaImobiliario =
   | "consignacao"
   | "condominio"
   | "contestacao"
+  | "reconvencao"
   | "replica"
   | "embargos-declaracao"
   | "apelacao"
@@ -89,6 +90,17 @@ export const ESPECIES_PECA_IMOBILIARIO: MetaEspecieImobiliario[] = [
     conectivoPartes:
       "apresentando a presente contestação, pelos fundamentos a seguir.",
     prazoAviso: "Prazo típico: 15 dias úteis (art. 335 do CPC), salvo rito da locação.",
+  },
+  {
+    id: "reconvencao",
+    rotulo: "Contestação com reconvenção",
+    descricao:
+      "Defesa com reconvenção (art. 343 do CPC) em demanda imobiliária — ex.: locatário reconvém por benfeitorias ou perdas e danos.",
+    nomePecaHint: "Contestação com reconvenção",
+    exigeProcesso: true,
+    conectivoPartes:
+      "apresentando a presente contestação com reconvenção, pelos fundamentos a seguir.",
+    prazoAviso: "Prazo típico: o da contestação (art. 343 c/c art. 335 do CPC), salvo rito da locação.",
   },
   {
     id: "replica",
@@ -183,6 +195,27 @@ const ESQUELETOS: Record<EspeciePecaImobiliario, Secao[]> = {
     },
     { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
   ],
+  reconvencao: [
+    { chave: "preliminares", titulo: "DAS PRELIMINARES", obrigatoria: true },
+    {
+      chave: "merito",
+      titulo: "DO MÉRITO — DOS FATOS E DO DIREITO",
+      obrigatoria: true,
+    },
+    {
+      chave: "reconvencao",
+      titulo: "DA RECONVENÇÃO — DOS FATOS E DO DIREITO",
+      obrigatoria: true,
+    },
+    {
+      chave: "provas",
+      titulo: "DAS PROVAS E ANEXOS",
+      obrigatoria: false,
+      opcionalSistema: true,
+    },
+    { chave: "valor", titulo: "DO VALOR DA RECONVENÇÃO", obrigatoria: true },
+    { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
+  ],
   replica: [
     { chave: "tempestividade", titulo: "DA TEMPESTIVIDADE", obrigatoria: true },
     { chave: "impugnacao", titulo: "DA IMPUGNAÇÃO ESPECÍFICA", obrigatoria: true },
@@ -250,6 +283,7 @@ export function normalizarEspecieImobiliario(
     "consignacao",
     "condominio",
     "contestacao",
+    "reconvencao",
     "replica",
     "embargos-declaracao",
     "apelacao",
@@ -267,6 +301,7 @@ export function normalizarEspecieImobiliario(
   if (id.includes("agravo")) return "agravo-instrumento";
   if (id.includes("declara")) return "embargos-declaracao";
   if (id.includes("replica") || id.includes("réplica")) return "replica";
+  if (id.includes("reconven")) return "reconvencao";
   if (id.includes("contesta")) return "contestacao";
   if (id.includes("cumprimento")) return "cumprimento-sentenca";
   return null;
@@ -288,6 +323,7 @@ export function inferirEspecieImobiliario(
   if (/apela[cç][aã]o/.test(t)) return "apelacao";
   if (/embargos de declara/.test(t)) return "embargos-declaracao";
   if (/r[eé]plica/.test(t)) return "replica";
+  if (/reconven/.test(t)) return "reconvencao";
   if (/contesta[cç][aã]o/.test(t)) return "contestacao";
   if (/cumprimento de senten[cç]a/.test(t)) return "cumprimento-sentenca";
   return "peticao-inicial";
@@ -308,6 +344,8 @@ export function tituloPecaImobiliario(
       return "Ação de Cobrança de Cotas Condominiais";
     case "contestacao":
       return "Contestação";
+    case "reconvencao":
+      return "Contestação com Reconvenção";
     case "replica":
       return "Réplica";
     case "embargos-declaracao":
@@ -354,6 +392,10 @@ export function blocoEstruturaPromptImobiliario(
   } else if (especie === "condominio") {
     extras.push(
       "   Convenção, assembleia e planilha de débito só se estiverem nos FATOS/provas. Não invente valores de cota."
+    );
+  } else if (especie === "reconvencao") {
+    extras.push(
+      "   Art. 343 do CPC. NÃO use pedido contraposto da Lei 9.099/95. Pedidos: improcedência da inicial + procedência da reconvenção + honorários (art. 85 do CPC)."
     );
   }
 

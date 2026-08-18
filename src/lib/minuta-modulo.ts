@@ -22,7 +22,7 @@ export const LOADING_STAGES_GERACAO = [
   "Pesquisa & súmulas: buscando fundamentos…",
   "Estrategista: definindo a tese…",
   "Redator forense: escrevendo a peça…",
-  "Auditor: conferindo citações…",
+  "Auditor: conferindo a minuta…",
 ] as const;
 
 /**
@@ -241,7 +241,7 @@ export const MODULO_AMBIENTAL: AreaModuloConfig = {
   tituloDashboard: "Geração de Peça — Direito Ambiental",
   leiResumo: "Lei 6.938/81 · ACP",
   href: "/dashboard/ambiental",
-  idsPeticaoInicial: ["acp-ambiental", "peticao-inicial", "defesa-infracao"],
+  idsPeticaoInicial: ["acp-ambiental", "peticao-inicial"],
   copyCabecalho:
     "Peças ambientais: ACP, defesa de auto de infração, obrigação de fazer. Não invente licença nem auto. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
   fundamentoQualificacao: "na legislação ambiental",

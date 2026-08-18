@@ -6,6 +6,7 @@
 export type EspeciePecaFamilia =
   | "peticao-inicial"
   | "contestacao"
+  | "reconvencao"
   | "replica"
   | "embargos-declaracao"
   | "apelacao"
@@ -47,6 +48,17 @@ export const ESPECIES_PECA_FAMILIA: MetaEspecieFamilia[] = [
     conectivoPartes:
       "apresentando a presente contestação, pelos fundamentos a seguir.",
     prazoAviso: "Prazo típico: 15 dias úteis (art. 335 do CPC), salvo rito especial (ex.: alimentos).",
+  },
+  {
+    id: "reconvencao",
+    rotulo: "Contestação com reconvenção",
+    descricao:
+      "Defesa com reconvenção (art. 343 do CPC) em demanda de família — ex.: alimentos/guarda contrapostos. Réu = reconvinte; autor = reconvindo.",
+    nomePecaHint: "Contestação com reconvenção",
+    exigeProcesso: true,
+    conectivoPartes:
+      "apresentando a presente contestação com reconvenção, pelos fundamentos a seguir.",
+    prazoAviso: "Prazo típico: o da contestação (art. 343 c/c art. 335 do CPC), salvo rito especial.",
   },
   {
     id: "replica",
@@ -150,6 +162,27 @@ const ESQUELETOS: Record<EspeciePecaFamilia, Secao[]> = {
     },
     { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
   ],
+  reconvencao: [
+    { chave: "preliminares", titulo: "DAS PRELIMINARES", obrigatoria: true },
+    {
+      chave: "merito",
+      titulo: "DO MÉRITO — DOS FATOS E DO DIREITO",
+      obrigatoria: true,
+    },
+    {
+      chave: "reconvencao",
+      titulo: "DA RECONVENÇÃO — DOS FATOS E DO DIREITO",
+      obrigatoria: true,
+    },
+    {
+      chave: "provas",
+      titulo: "DAS PROVAS E ANEXOS",
+      obrigatoria: false,
+      opcionalSistema: true,
+    },
+    { chave: "valor", titulo: "DO VALOR DA RECONVENÇÃO", obrigatoria: true },
+    { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
+  ],
   replica: [
     { chave: "tempestividade", titulo: "DA TEMPESTIVIDADE", obrigatoria: true },
     {
@@ -228,6 +261,7 @@ export function normalizarEspecieFamilia(
   const ids: EspeciePecaFamilia[] = [
     "peticao-inicial",
     "contestacao",
+    "reconvencao",
     "replica",
     "embargos-declaracao",
     "apelacao",
@@ -244,6 +278,7 @@ export function normalizarEspecieFamilia(
   if (id.includes("agravo")) return "agravo-instrumento";
   if (id.includes("declara")) return "embargos-declaracao";
   if (id.includes("réplica") || id.includes("replica")) return "replica";
+  if (id.includes("reconven")) return "reconvencao";
   if (id.includes("contesta")) return "contestacao";
   if (id.includes("divor") || id.includes("guarda") || id.includes("visita")) {
     return "peticao-inicial";
@@ -264,6 +299,7 @@ export function inferirEspecieFamilia(
   if (/apela[cç][aã]o/.test(t)) return "apelacao";
   if (/embargos de declara/.test(t)) return "embargos-declaracao";
   if (/r[eé]plica/.test(t)) return "replica";
+  if (/reconven/.test(t)) return "reconvencao";
   if (/contesta[cç][aã]o/.test(t)) return "contestacao";
   if (/cumprimento|execu[cç][aã]o.*alimento|pris[aã]o civil/.test(t)) {
     return "cumprimento-alimentos";
@@ -278,6 +314,8 @@ export function tituloPecaFamilia(
   switch (especie) {
     case "contestacao":
       return "Contestação";
+    case "reconvencao":
+      return "Contestação com Reconvenção";
     case "replica":
       return "Réplica";
     case "embargos-declaracao":
@@ -337,6 +375,11 @@ export function blocoEstruturaPromptFamilia(especie: EspeciePecaFamilia): string
     );
   } else if (especie === "apelacao") {
     extras.push("   Arts. 1.009 e 1.003, §5º, do CPC. Não chame de recurso inominado.");
+  } else if (especie === "reconvencao") {
+    extras.push(
+      "   Art. 343 do CPC. Em família, reconvenção é o veículo correto para alimentos/guarda contrapostos — não use pedido contraposto da Lei 9.099/95.",
+      "   Pedidos: improcedência da inicial (ou procedência parcial) + procedência da reconvenção + honorários (art. 85 do CPC)."
+    );
   }
 
   return [

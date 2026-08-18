@@ -17,25 +17,21 @@ export function montarChecklistJec(opcoes: {
   comarcaForo: string;
   temValor: boolean;
   assistentePendente?: boolean;
-  processoPendenteConfirmacao?: boolean;
   partesJaQualificadas?: boolean;
 }): ItemChecklistJec[] {
   const fatosOk = opcoes.fatos.trim().length >= 40;
   const tipoOk =
     Boolean(opcoes.tipoSelecionado.trim()) &&
     opcoes.tipoSelecionado !== "assistente-facto" &&
-    !opcoes.assistentePendente &&
-    !opcoes.processoPendenteConfirmacao;
+    !opcoes.assistentePendente;
   const comarcaOk = opcoes.comarcaForo.trim().length >= 12;
 
   return [
     {
       id: "tipo",
-      label: opcoes.processoPendenteConfirmacao
-        ? "Confirmar a peça sugerida a partir do processo"
-        : opcoes.assistentePendente
-          ? "Definir o tipo de ação (Assistente, processo ou texto livre)"
-          : "Tipo de ação definido",
+      label: opcoes.assistentePendente
+        ? "Definir o tipo de ação (Assistente FACTO ou texto livre)"
+        : "Tipo de ação definido",
       ok: tipoOk,
       bloqueante: true,
     },
@@ -65,7 +61,7 @@ export function montarChecklistJec(opcoes: {
       id: "comarca",
       label: "Foro / Juizado (endereçamento)",
       ok: comarcaOk,
-      bloqueante: false,
+      bloqueante: true,
     },
     {
       id: "valores",

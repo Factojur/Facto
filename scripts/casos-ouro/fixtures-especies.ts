@@ -315,4 +315,49 @@ São Paulo/SP, 12 de agosto de 2026.
 OAB/SP 919191
     `.trim(),
   },
+  {
+    id: "pedido-contraposto-jec",
+    especie: "pedido-contraposto",
+    tema: "Contestação com pedido contraposto (art. 31)",
+    secoesObrigatorias: [
+      "DAS PRELIMINARES",
+      "DO MÉRITO",
+      "DO PEDIDO CONTRAPOSTO",
+      "DOS PEDIDOS",
+    ],
+    jurisComLastro: ["1007201-11.2024.8.26.0100"],
+    jurisSemLastro: ["1007202-22.2024.8.26.0100"],
+    contextoLastro: `
+Lei 9.099/95 art. 31 — pedido contraposto; reconvenção não se admite no Juizado.
+TJSP Processo nº 1007201-11.2024.8.26.0100 — contraposto em JEC.
+    `.trim(),
+    pecaIaBruta: `
+EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DE DIREITO DO JUIZADO ESPECIAL CÍVEL
+
+RÉU FICTO apresenta
+
+CONTESTAÇÃO COM PEDIDO CONTRAPOSTO
+
+em face de AUTOR FICTO.
+
+I - DAS PRELIMINARES
+Não há preliminares relevantes além da análise do mérito.
+
+II - DO MÉRITO — DOS FATOS E DO DIREITO
+A inicial não demonstra falha na prestação. Cita-se o Processo nº 1007201-11.2024.8.26.0100.
+
+III - DO PEDIDO CONTRAPOSTO
+O réu formula pedido em seu favor, fundado nos mesmos fatos, na forma do art. 31 da Lei nº 9.099/95. Cita-se o Processo nº 1007202-22.2024.8.26.0100.
+
+IV - DOS PEDIDOS
+a) Improcedência da inicial;
+b) Procedência do pedido contraposto.
+
+Nestes termos,
+pede deferimento.
+
+São Paulo/SP, 18 de agosto de 2026.
+OAB/SP 929292
+    `.trim(),
+  },
 ];

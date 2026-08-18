@@ -21,6 +21,8 @@ export type JecRascunhoPayload = {
   /** Polo em que o advogado/parte atua (JEC). */
   poloAdvocacia?: "ativo" | "passivo";
   tutelaUrgencia: boolean;
+  /** Contestação: pedido contraposto (JEC) ou reconvenção (CPC). */
+  comReconvencao?: boolean;
   comarca: ComarcaValue;
   valoresCausa: ValoresPorCategoria;
   usaLeiMunicipal: boolean;
@@ -115,6 +117,7 @@ export function payloadLeveParaRascunho(opcoes: {
   especiePeca?: string;
   poloAdvocacia?: "ativo" | "passivo";
   tutelaUrgencia: boolean;
+  comReconvencao?: boolean;
   comarca: ComarcaValue;
   valoresCausa: ValoresPorCategoria;
   usaLeiMunicipal: boolean;
@@ -141,6 +144,7 @@ export function payloadLeveParaRascunho(opcoes: {
     especiePeca: opcoes.especiePeca,
     poloAdvocacia: opcoes.poloAdvocacia,
     tutelaUrgencia: opcoes.tutelaUrgencia,
+    comReconvencao: opcoes.comReconvencao,
     comarca: opcoes.comarca,
     valoresCausa: opcoes.valoresCausa,
     usaLeiMunicipal: opcoes.usaLeiMunicipal,

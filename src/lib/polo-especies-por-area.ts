@@ -23,6 +23,10 @@ function m(
 /** Áreas com seletor "Estou atuando pelo…" no formulário. */
 export const AREAS_COM_POLO_ADVOCACIA = [
   "jec",
+  "civil",
+  "consumidor",
+  "familia",
+  "imobiliario",
   "constitucional",
   "administrativo",
   "tributario",
@@ -46,6 +50,50 @@ export const MATRIZ_POLO_POR_AREA: Record<AreaComPoloAdvocacia, MatrizPoloArea> 
         "execucao",
       ]
     ),
+    civil: m(
+      ["peticao-inicial", "replica"],
+      ["contestacao"],
+      [
+        "embargos-declaracao",
+        "apelacao",
+        "agravo-instrumento",
+        "cumprimento-sentenca",
+        "execucao-titulo",
+      ]
+    ),
+    consumidor: m(
+      ["peticao-inicial", "replica"],
+      ["contestacao"],
+      [
+        "embargos-declaracao",
+        "apelacao",
+        "agravo-instrumento",
+        "cumprimento-sentenca",
+        "execucao-titulo",
+      ]
+    ),
+    familia: m(
+      ["peticao-inicial", "replica", "inventario"],
+      ["contestacao"],
+      [
+        "embargos-declaracao",
+        "apelacao",
+        "agravo-instrumento",
+        "cumprimento-alimentos",
+      ]
+    ),
+    imobiliario: m(
+      [
+        "peticao-inicial",
+        "despejo",
+        "usucapiao",
+        "consignacao",
+        "condominio",
+        "replica",
+      ],
+      ["contestacao"],
+      ["embargos-declaracao", "apelacao", "agravo-instrumento", "cumprimento-sentenca"]
+    ),
     constitucional: m(
       [
         "mandado-seguranca",
@@ -54,9 +102,6 @@ export const MATRIZ_POLO_POR_AREA: Record<AreaComPoloAdvocacia, MatrizPoloArea> 
         "mandado-injuncao",
         "acao-popular",
         "reclamacao-constitucional",
-        "recurso-extraordinario",
-        "agravo-recurso-extraordinario",
-        "recurso-ordinario-constitucional",
         "adpf",
         "adi",
         "adc",
@@ -68,8 +113,6 @@ export const MATRIZ_POLO_POR_AREA: Record<AreaComPoloAdvocacia, MatrizPoloArea> 
         "contestacao-habeas-data",
         "informacoes-mandado-injuncao",
         "contestacao-reclamacao",
-        "contrarrazoes-recurso-extraordinario",
-        "contrarrazoes-recurso-ordinario",
         "contestacao-adi",
         "contestacao-adpf",
         "contestacao-adc",
@@ -77,6 +120,11 @@ export const MATRIZ_POLO_POR_AREA: Record<AreaComPoloAdvocacia, MatrizPoloArea> 
         "contestacao-acao-popular",
       ],
       [
+        "recurso-extraordinario",
+        "agravo-recurso-extraordinario",
+        "recurso-ordinario-constitucional",
+        "contrarrazoes-recurso-extraordinario",
+        "contrarrazoes-recurso-ordinario",
         "apelacao",
         "agravo-instrumento",
         "agravo-regimental",
@@ -85,20 +133,31 @@ export const MATRIZ_POLO_POR_AREA: Record<AreaComPoloAdvocacia, MatrizPoloArea> 
       ]
     ),
     administrativo: m(
-      ["mandado-seguranca", "peticao-inicial", "replica", "cumprimento-sentenca"],
+      ["mandado-seguranca", "peticao-inicial", "replica"],
       ["contestacao"],
-      ["apelacao", "agravo-instrumento", "embargos-declaracao"]
+      [
+        "apelacao",
+        "agravo-instrumento",
+        "embargos-declaracao",
+        "cumprimento-sentenca",
+      ]
     ),
     tributario: m(
-      ["peticao-inicial", "mandado-seguranca"],
-      ["embargos-execucao-fiscal", "excecao-pre-executividade", "contestacao"],
+      [
+        "peticao-inicial",
+        "mandado-seguranca",
+        "embargos-execucao-fiscal",
+        "excecao-pre-executividade",
+      ],
+      ["contestacao"],
       ["apelacao", "embargos-declaracao"]
     ),
     trabalhista: m(
-      ["reclamacao", "manifestacao", "agravo-instrumento"],
+      ["reclamacao", "manifestacao"],
       ["defesa"],
       [
         "recurso-ordinario",
+        "agravo-instrumento",
         "embargos-declaracao",
         "agravo-peticao",
         "execucao-titulo",
@@ -143,6 +202,9 @@ export function normalizarEspeciePoloArea(
     if (id === "contrarrazoes" || id === "contrarrazões") {
       return "contrarrazoes-inominado";
     }
+    if (id.includes("reconven") || id === "contraposto" || id === "pedido-contraposto") {
+      return "contestacao";
+    }
   }
   return id;
 }
@@ -180,4 +242,36 @@ export function filtrarEspeciesPorPolo<T extends { id: string }>(
 ): T[] {
   if (!areaUsaPoloAdvocacia(areaId)) return [...especies];
   return especies.filter((e) => especieCompativelComPolo(areaId, e.id, polo));
+}
+
+export type LadoPoloEspecie = PoloAdvocacia | "ambos";
+
+/** Lado da matriz. `null` = espécie fora da matriz (não deve ocorrer no seletor). */
+export function ladoPoloDaEspecie(
+  areaId: string,
+  especie: string
+): LadoPoloEspecie | null {
+  if (!areaUsaPoloAdvocacia(areaId)) return null;
+  const sets = SETS_POR_AREA[areaId];
+  const id = normalizarEspeciePoloArea(areaId, especie);
+  if (sets.ambos.has(id)) return "ambos";
+  if (sets.ativo.has(id)) return "ativo";
+  if (sets.passivo.has(id)) return "passivo";
+  return null;
+}
+
+export function agruparEspeciesPorPolo<T extends { id: string }>(
+  areaId: string,
+  especies: readonly T[]
+): { ativo: T[]; passivo: T[]; ambos: T[] } {
+  const ativo: T[] = [];
+  const passivo: T[] = [];
+  const ambos: T[] = [];
+  for (const e of especies) {
+    const lado = ladoPoloDaEspecie(areaId, e.id);
+    if (lado === "passivo") passivo.push(e);
+    else if (lado === "ambos") ambos.push(e);
+    else ativo.push(e);
+  }
+  return { ativo, passivo, ambos };
 }

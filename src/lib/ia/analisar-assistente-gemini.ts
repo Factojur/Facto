@@ -1,6 +1,6 @@
 /**
- * Assistente Facto via Gemini — nomeia a ação forense livremente
- * (com grounding Google Search quando disponível).
+ * Assistente Facto via Gemini — nomeia a ação forense a partir dos fatos
+ * (sem busca na web: lastro fica na base e no relato).
  */
 
 import {
@@ -100,7 +100,7 @@ export async function analisarCaseComGemini(input: {
     modelos: MODELOS_ASSISTENTE_BUSCA,
     temperature: 0.25,
     maxOutputTokens: 1024,
-    usarBuscaGoogle: true,
+    usarBuscaGoogle: false,
   });
 
   if (!res.ok) {

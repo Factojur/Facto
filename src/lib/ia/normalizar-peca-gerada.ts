@@ -23,7 +23,7 @@ import {
 import { normalizarParagrafosDoDireito } from "@/lib/ia/mesclar-peca-hibrida";
 
 const PADRAO_NOME_ACAO =
-  /^(?:PETI[CÇ][AÃ]O\s+INICIAL\s*[—–-]?\s*)?(?:A[CÇ][AÃ]O\s+|EXECU[CÇ][AÃ]O\s+|EMBARGOS\s+|RECURSO\s+|CONTESTA)/i;
+  /^(?:PETI[CÇ][AÃ]O\s+INICIAL\s*[—–-]?\s*)?(?:A[CÇ][AÃ]O\s+|EXECU[CÇ][AÃ]O\s+|EMBARGOS\s+|RECURSO\s+|CONTESTA|AGRAVO\s+|CUMPRIMENTO\s+|R[EÉ]PLICA|RECLAMA[CÇ]|MANIFESTA)/i;
 
 function ehLinhaEnderecamento(t: string): boolean {
   return /^(EXCELENT[IÍ]SSIMO|DA COMARCA|JU[IÍ]ZO\s+DA)/i.test(t);

@@ -264,13 +264,13 @@ export function injetarQualificacaoAutor(
   if (comPlaceholder !== texto) return comPlaceholder;
 
   const jaQualificado = texto.replace(
-    /^.+?já qualificado(?:a|os|as)? no processo em ep[ií]grafe[\s\S]*?à presença de Vossa Excelência/im,
+    /^.+?já qualificado(?:a|os|as)? no processo em ep[ií]grafe[\s\S]*?à presença de Vossa Excelência(?:, [^\n]+)?/im,
     substituto
   );
   if (jaQualificado !== texto) return jaQualificado;
 
   const passivoPrimeiro = texto.replace(
-    /^.+?em face de .+?na presente a[cç][aã]o, igualmente j[aá] qualificado[\s\S]*?à presença de Vossa Excelência/im,
+    /^.+?em face de .+?na presente a[cç][aã]o, igualmente j[aá] qualificado[\s\S]*?à presença de Vossa Excelência(?:, [^\n]+)?/im,
     substituto
   );
   if (passivoPrimeiro !== texto) return passivoPrimeiro;

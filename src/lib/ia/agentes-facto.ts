@@ -1,7 +1,7 @@
 /**
  * Skins da equipe FACTO (Pacote A).
- * Na prática: 7 papéis; chamadas LLM enxutas (Analista+Estrategista juntos;
- * Pesquisa+Súmulas = recuperação; Auditor = regras baratas).
+ * Na prática: 6 papéis visíveis; chamadas LLM enxutas (Analista+Estrategista juntos;
+ * Pesquisa+Súmulas = recuperação; Maestro/Auditor = regras). Plano real: `skins-facto.ts`.
  */
 
 export const AGENTES_FACTO = [
@@ -9,7 +9,8 @@ export const AGENTES_FACTO = [
     id: "maestro",
     skin: "Maestro",
     titulo: "Orquestração",
-    descricao: "Monta o plano da equipe e coordena as etapas.",
+    descricao:
+      "Monta o plano real: espécie, polo, teses, JG/MLE e último ato — sem LLM.",
     visivel: true,
   },
   {
@@ -45,8 +46,8 @@ export const AGENTES_FACTO = [
   {
     id: "auditor",
     skin: "Auditor",
-    titulo: "Revisão de citações",
-    descricao: "Confere citações e marca o que não achou na base.",
+    titulo: "Conferência da minuta",
+    descricao: "Confere espécie, endereçamento, epígrafe, lacunas, pedidos e citações.",
     visivel: true,
   },
   {
@@ -76,7 +77,7 @@ export type EtapaEquipeFacto = {
   modelo?: string;
 };
 
-/** Plano determinístico mostrado ao advogado (Maestro — sem LLM). */
+/** Plano genérico (antes de haver espécie/teses). Preferir `montarEtapaMaestro`. */
 export function planoMaestroEquipe(): EtapaEquipeFacto[] {
   return [
     {

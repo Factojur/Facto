@@ -7,6 +7,8 @@
 export type EspeciePecaJec =
   | "peticao-inicial"
   | "contestacao"
+  /** Contestação com pedido em favor do réu (art. 31 da Lei 9.099/95). */
+  | "pedido-contraposto"
   | "embargos"
   | "recurso-inominado"
   | "agravo-instrumento"
@@ -32,6 +34,7 @@ export type ChaveSecaoJec =
   | "medidas"
   | "provas"
   | "valor"
+  | "contraposto"
   | "pedidos";
 
 export type SecaoEsqueletoJec = {
@@ -69,7 +72,7 @@ export const ESPECIES_PECA_JEC: MetaEspecieJec[] = [
   {
     id: "contestacao",
     rotulo: "Contestação",
-    descricao: "Defesa do réu — preliminares, mérito e pedidos.",
+    descricao: "Defesa do réu — preliminares, mérito e pedidos. Pedido contraposto (art. 31) é checkbox na aba Pedidos, não espécie à parte.",
     nomePecaHint: "Contestação",
     exigeProcesso: true,
     conectivoPartes:
@@ -160,6 +163,27 @@ const ESQUELETOS: Record<EspeciePecaJec, SecaoEsqueletoJec[]> = {
       obrigatoria: false,
       opcionalSistema: true,
     },
+    { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
+  ],
+  "pedido-contraposto": [
+    { chave: "preliminares", titulo: "DAS PRELIMINARES", obrigatoria: true },
+    {
+      chave: "merito",
+      titulo: "DO MÉRITO — DOS FATOS E DO DIREITO",
+      obrigatoria: true,
+    },
+    {
+      chave: "contraposto",
+      titulo: "DO PEDIDO CONTRAPOSTO",
+      obrigatoria: true,
+    },
+    {
+      chave: "provas",
+      titulo: "DAS PROVAS E ANEXOS",
+      obrigatoria: false,
+      opcionalSistema: true,
+    },
+    { chave: "valor", titulo: "DO VALOR DO PEDIDO CONTRAPOSTO", obrigatoria: true },
     { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
   ],
   embargos: [
@@ -311,7 +335,21 @@ export function metaEspecie(id: EspeciePecaJec): MetaEspecieJec {
   const canon =
     id === "recurso"
       ? "recurso-inominado"
-      : id;
+      : id === "pedido-contraposto"
+        ? "pedido-contraposto"
+        : id;
+  if (canon === "pedido-contraposto") {
+    return {
+      id: "pedido-contraposto",
+      rotulo: "Contestação com pedido contraposto",
+      descricao:
+        "Contestação com pedido do réu na mesma peça (Lei 9.099/95, art. 31).",
+      nomePecaHint: "Contestação com pedido contraposto",
+      exigeProcesso: true,
+      conectivoPartes:
+        "apresentando a presente contestação com pedido contraposto, pelos fundamentos a seguir.",
+    };
+  }
   return (
     ESPECIES_PECA_JEC.find((e) => e.id === canon) ?? ESPECIES_PECA_JEC[0]!
   );
@@ -352,6 +390,7 @@ export function normalizarEspeciePeca(
   if (
     id === "peticao-inicial" ||
     id === "contestacao" ||
+    id === "pedido-contraposto" ||
     id === "embargos" ||
     id === "recurso-inominado" ||
     id === "agravo-instrumento" ||
@@ -365,6 +404,14 @@ export function normalizarEspeciePeca(
   // aliases
   if (id === "inicial" || id === "peticao") return "peticao-inicial";
   if (id === "contestação") return "contestacao";
+  if (
+    id === "pedido-contraposto" ||
+    id === "contraposto" ||
+    id.includes("reconven") ||
+    (id.includes("contesta") && id.includes("contraposto"))
+  ) {
+    return "pedido-contraposto";
+  }
   if (id === "réplica" || id === "replica") return "replica";
   if (id === "execução" || id === "cumprimento") return "execucao";
   if (id === "recurso" || id.includes("inominado") && !id.includes("contra")) {
@@ -408,6 +455,8 @@ export function tituloPecaCabivel(
       return "Recurso Inominado";
     case "contestacao":
       return "Contestação";
+    case "pedido-contraposto":
+      return "Contestação com Pedido Contraposto";
     case "replica":
       return "Réplica";
     case "execucao":
@@ -446,6 +495,9 @@ export function inferirEspeciePeca(
     return "recurso-inominado";
   }
   if (/embargos/.test(t)) return "embargos";
+  if (/reconven|pedido contraposto|contraposto/.test(t)) {
+    return "pedido-contraposto";
+  }
   if (/r[eé]plica/.test(t)) return "replica";
   if (/contesta[cç][aã]o/.test(t)) return "contestacao";
   if (
@@ -486,6 +538,13 @@ export function blocoEstruturaPrompt(especie: EspeciePecaJec): string {
       "   Em DAS PRELIMINARES: a)/b)/… (inépcia, ilegitimidade, incompetência, etc.) só se cabíveis — não invente.",
       "   No MÉRITO: reescreva a versão fática do réu e rebata o direito do autor com subtópicos.",
       "   Pedidos típicos: acolhimento de preliminares (se houver), improcedência, ônus da sucumbência na forma da Lei 9.099/95."
+    );
+  } else if (especie === "pedido-contraposto") {
+    extras.push(
+      "   Lei 9.099/95, art. 31: NÃO se admite reconvenção. O réu formula pedido em seu favor NA contestação (pedido contraposto), fundado nos MESMOS fatos da demanda.",
+      "   NÃO cite o art. 343 do CPC como fundamento do contraposto. Título da peça: CONTESTAÇÃO COM PEDIDO CONTRAPOSTO.",
+      "   Em DAS PRELIMINARES: só matérias cabíveis. No MÉRITO: defesa (improcedência da inicial). Em DO PEDIDO CONTRAPOSTO: pretensão do réu com os mesmos fatos — sem inaugurar demanda estranha ao objeto.",
+      "   Pedidos: improcedência da inicial + procedência do contraposto + sucumbência na forma da Lei 9.099/95."
     );
   } else if (especie === "embargos") {
     extras.push(
@@ -586,6 +645,11 @@ export function paragrafoReservaSecao(
     case "impugnacao":
       return [
         "Impugna-se, de forma específica, a contestação apresentada, rebatendo as alegações que divergem da narrativa e dos documentos da inicial:",
+        trecho,
+      ];
+    case "contraposto":
+      return [
+        "Na forma do art. 31 da Lei nº 9.099/95, o(a) réu(ré) formula pedido em seu favor, fundado nos mesmos fatos que constituem objeto da demanda — sem reconvenção autônoma do CPC:",
         trecho,
       ];
     default:

@@ -23,6 +23,7 @@ import {
   type TrechoConhecimento,
 } from "@/lib/base-conhecimento";
 import type { CitacaoVerificada } from "@/lib/ia/verificacao-citacoes";
+import type { ResultadoAuditorPeca } from "@/lib/ia/auditor-peca";
 import {
   MARCADOR_ESPACO_1,
   MARCADOR_ESPACO_2,
@@ -57,6 +58,11 @@ import {
   tituloRomano,
   type EspeciePecaJec,
 } from "@/lib/jec-especie-peca";
+import { aplicarFlagReconvencao, tituloPecaDaArea } from "@/lib/peca-especie-area";
+import {
+  formatarEnderecoAdvogado,
+  linhasEpigrafePeca,
+} from "@/lib/peca-cabivel-autos";
 
 export type GerarPecaJecInput = {
   tipoAcao: string;
@@ -79,6 +85,11 @@ export type GerarPecaJecInput = {
   /** Flags explícitas (preferíveis aos nomes de arquivo). */
   pedirJusticaGratuita?: boolean;
   temMle?: boolean;
+  /**
+   * Na contestação: JEC = pedido contraposto (art. 31);
+   * justiça comum = reconvenção (art. 343).
+   */
+  comReconvencao?: boolean;
   provas: string[];
   fotos: string[];
   midias: string[];
@@ -102,6 +113,7 @@ export type GerarPecaJecInput = {
   poloAdvocacia?: "ativo" | "passivo" | null;
   /** Causa própria (JEC leigo) — ajusta prompt partidário. */
   atuarLeigo?: boolean;
+  areaId?: string;
 };
 
 export type GerarPecaJecOutput = {
@@ -145,6 +157,10 @@ export type GerarPecaJecOutput = {
     direitosViolados?: string[];
     topicosPlanejados?: string[];
   } | null;
+  /** Contexto da base usado no auditor — para ajuste pontual. */
+  contextoVerificacao?: string;
+  /** Conferência determinística do Auditor (após a minuta pronta). */
+  auditoria?: ResultadoAuditorPeca;
 };
 
 function localFechamento(comarca?: ComarcaInfo): string {
@@ -202,6 +218,25 @@ function extrairPedidos(
     if (pedirJG) {
       itens.splice(
         2,
+        0,
+        "A concessão dos benefícios da justiça gratuita, na forma da Lei nº 9.099/95 e da legislação processual pertinente;"
+      );
+    }
+    return itens
+      .map((texto, i) => `${String.fromCharCode(97 + i)}) ${texto}`)
+      .join("\n");
+  }
+
+  if (especie === "pedido-contraposto") {
+    const itens = [
+      "O acolhimento das preliminares eventualmente arguidas, com a extinção do processo sem resolução do mérito, se for o caso;",
+      "No mérito, a total improcedência dos pedidos formulados na inicial;",
+      "A procedência do pedido contraposto formulado pelo(a) réu(ré), na forma do art. 31 da Lei nº 9.099/95;",
+      "A condenação da parte autora ao pagamento das custas e honorários, na forma da Lei nº 9.099/95, se cabível.",
+    ];
+    if (pedirJG) {
+      itens.splice(
+        3,
         0,
         "A concessão dos benefícios da justiça gratuita, na forma da Lei nº 9.099/95 e da legislação processual pertinente;"
       );
@@ -497,11 +532,12 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     analisePartes.push(decisaoAssistente.justificativa, "", "---", "");
   }
 
-  const especie = inferirEspeciePeca(
-    tipoAcao,
-    input.fatos,
-    input.especiePeca
-  );
+  const areaIdPeca = input.areaId ?? "jec";
+  const especie = aplicarFlagReconvencao(
+    areaIdPeca,
+    inferirEspeciePeca(tipoAcao, input.fatos, input.especiePeca),
+    input.comReconvencao
+  ) as EspeciePecaJec;
   const metaEsp = metaEspecie(especie);
   const ehInicial = ehPeticaoInicialPorEspecie(especie);
 
@@ -559,7 +595,9 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
 
   const enderecamento = formatarEnderecamentoPadrao({
     comarca: input.comarca ?? { cidade: "", uf: "" },
-    areaJudiciaria: rotuloAreaJudiciaria("jec"),
+    areaJudiciaria: rotuloAreaJudiciaria(areaIdPeca),
+    areaId: areaIdPeca,
+    especiePeca: especie,
     varaEmBranco: ehInicial,
   });
 
@@ -567,6 +605,9 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     formatarQualificacaoReus(input.reus ?? []) ??
     "[NOME COMPLETO DO(A) RÉU(RÉ)], [qualificação completa do(a) réu(ré)]";
 
+  const enderecoAdvogado = formatarEnderecoAdvogado({
+    escritorio: input.escritorio,
+  });
   const jaQualificadas = pecaUsaPartesJaQualificadas(especie);
   const blocoPartes = jaQualificadas
     ? formatarBlocoPartesJaQualificadas({
@@ -574,17 +615,17 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
         reus: input.reus ?? [],
         advogadoNome: autor,
         oabQualificacao,
-        enderecoAdvogado: null,
+        enderecoAdvogado,
         especie,
         dispositivoSentenca: input.dispositivoSentenca,
-        areaId: "jec",
+        areaId: areaIdPeca,
         poloAdvocacia: input.poloAdvocacia,
       })
     : formatarBlocoQualificacaoAutor({
         autores: input.autores ?? (input.autor ? [input.autor] : []),
         advogadoNome: autor,
         oabQualificacao,
-        enderecoAdvogado: null,
+        enderecoAdvogado,
       });
 
   const fatosNormalizados = normalizarTextoFatos(input.fatos);
@@ -602,7 +643,8 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     } else if (
       secao.chave === "direito" ||
       secao.chave === "merito" ||
-      secao.chave === "razoes"
+      secao.chave === "razoes" ||
+      secao.chave === "contraposto"
     ) {
       // fundamentos incluem o título — usamos o romano correto desta espécie
       const fundamentos = montarFundamentosDireitoJec({
@@ -639,13 +681,25 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
   }
 
   const numeroProcesso = input.comarca?.numeroProcesso?.trim() || null;
+  const tituloPeca = (
+    tituloPecaDaArea(areaIdPeca, especie, tipoAcao) || tipoAcao
+  ).toUpperCase();
+  const epigrafe = linhasEpigrafePeca({
+    areaId: areaIdPeca,
+    especie,
+    numeroProcesso,
+    autores: input.autores ?? (input.autor ? [input.autor] : []),
+    reus: input.reus ?? [],
+    fatos: input.fatos,
+    pecaInaugural: ehInicial,
+  });
 
   const pecaBruta = [
     enderecamento,
-    montarMarcadorEspaco6(ehInicial ? null : numeroProcesso),
+    montarMarcadorEspaco6(numeroProcesso, epigrafe),
     blocoPartes,
     MARCADOR_ESPACO_1,
-    `${tipoAcao.toUpperCase()}`,
+    tituloPeca,
     ...(jaQualificadas
       ? [MARCADOR_ESPACO_2]
       : [
