@@ -310,7 +310,6 @@ export function DashboardHome({
   const gateAreas = {
     plano,
     tipoUsuario: leigo ? "leigo" : "advogado",
-    acessoLivre,
   } as const;
 
   const areasVisiveis = useMemo(() => {
@@ -338,7 +337,7 @@ export function DashboardHome({
         .toLowerCase();
       return blob.includes(q);
     });
-  }, [filtro, favoritos, plano, leigo, acessoLivre, previewAreas, buscaArea, areasCatalogo]);
+  }, [filtro, favoritos, plano, leigo, previewAreas, buscaArea, areasCatalogo]);
 
   const areaJec = getAreaById("jec");
 

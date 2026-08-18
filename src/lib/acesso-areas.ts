@@ -5,7 +5,9 @@
  * - Plano JEC: só JEC
  * - Plano Completo (mensal/anual) + advogado (OAB): todas as áreas disponíveis
  * - Plano Completo + leigo (sem OAB): só JEC; demais áreas exigem verificação OAB
- * - Sem plano: nenhuma área (exceto contas de acesso livre)
+ * - Sem plano: nenhuma área (pagar ou conta interna com persona)
+ * - Contas internas: `resolverAcessoConta` define plano/tipo (jec@ = só JEC;
+ *   admin/assessoria = Completo). Acesso livre ≠ todas as áreas.
  *
  * O teto de 20 SM para leigos no JEC é validado na geração da peça (jec-teto),
  * não neste gate de área.
@@ -19,10 +21,7 @@ export type TipoUsuario = "advogado" | "leigo" | string | null | undefined;
 export function areasPermitidas(opcoes: {
   plano: PlanoId | null;
   tipoUsuario?: TipoUsuario;
-  acessoLivre?: boolean;
 }): Set<string> | "todas" | "nenhuma" {
-  if (opcoes.acessoLivre) return "todas";
-
   if (!opcoes.plano) return "nenhuma";
 
   // Todo plano pago inclui JEC; o plano JEC fica restrito a essa área.
@@ -43,7 +42,6 @@ export function areaEstaLiberada(
   opcoes: {
     plano: PlanoId | null;
     tipoUsuario?: TipoUsuario;
-    acessoLivre?: boolean;
   }
 ): boolean {
   const liberadas = areasPermitidas(opcoes);
@@ -58,7 +56,6 @@ export function areaAbertaParaCliente(
   opcoes: {
     plano: PlanoId | null;
     tipoUsuario?: TipoUsuario;
-    acessoLivre?: boolean;
   }
 ): boolean {
   if (!areaEstaLiberada(areaId, opcoes)) return false;

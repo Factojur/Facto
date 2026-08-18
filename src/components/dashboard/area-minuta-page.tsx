@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { JecForm } from "@/components/dashboard/jec-form";
 import { areaAbertaParaCliente } from "@/lib/acesso-areas";
-import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
+import { resolverAcessoConta } from "@/lib/emails-acesso-livre";
 import type { AreaIdMinuta } from "@/lib/minuta-modulo";
 import {
   getUsuarioServidor,
@@ -12,7 +12,6 @@ import {
 
 export async function AreaMinutaPage({ areaId }: { areaId: AreaIdMinuta }) {
   const user = await getUsuarioServidor();
-  const acessoLivre = isEmailAcessoLivre(user?.email);
 
   let tipoUsuario =
     (user?.user_metadata?.tipo_usuario as string | undefined) ?? "advogado";
@@ -22,19 +21,19 @@ export async function AreaMinutaPage({ areaId }: { areaId: AreaIdMinuta }) {
     if (profile?.tipo_usuario) tipoUsuario = profile.tipo_usuario;
   }
 
-  const plano = user ? await getPlanoAtivoServidor(user.email) : null;
+  const planoDb = user ? await getPlanoAtivoServidor(user.email) : null;
+  const acesso = resolverAcessoConta(user?.email, planoDb, tipoUsuario);
 
   if (
     !areaAbertaParaCliente(areaId, {
-      plano,
-      tipoUsuario,
-      acessoLivre,
+      plano: acesso.plano,
+      tipoUsuario: acesso.tipoUsuario,
     })
   ) {
     notFound();
   }
 
-  const leigo = tipoUsuario === "leigo" && !acessoLivre && areaId === "jec";
+  const leigo = acesso.leigo && areaId === "jec";
 
   return (
     <Suspense

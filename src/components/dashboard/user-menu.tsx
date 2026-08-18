@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { PerfilResumo } from "@/lib/perfil-types";
 
-import { EMAIL_ADMIN } from "@/lib/admin-auth";
+import { isAdminEmail } from "@/lib/admin-auth";
 import { MenuIcon } from "@/components/dashboard/menu-icons";
 
 const LINKS_ADMIN = [
@@ -71,7 +71,7 @@ export function UserMenu({ perfil }: { perfil: PerfilResumo }) {
   const [adminAbertas, setAdminAbertas] = useState(false);
   const [ferramentasAbertas, setFerramentasAbertas] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const isAdmin = perfil.email === EMAIL_ADMIN;
+  const isAdmin = isAdminEmail(perfil.email);
 
   useEffect(() => {
     function fechar(e: MouseEvent) {

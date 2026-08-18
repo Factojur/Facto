@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { limparFotoDeMetadata } from "@/lib/perfil-merge";
 import { acessoAssinaturaLiberado } from "@/lib/acesso-assinatura";
-import { EMAIL_ADMIN } from "@/lib/admin-auth";
+import { isAdminEmail } from "@/lib/admin-auth";
 import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
 
 const COOKIE_SESSAO = "facto_sessao";
@@ -133,7 +133,7 @@ export async function middleware(request: NextRequest) {
     }
     // Painel administrativo (financeiro) restrito a uma única conta por
     // enquanto. Quem não for o e-mail autorizado nem sabe que a rota existe.
-    if (user.email !== EMAIL_ADMIN) {
+    if (!isAdminEmail(user.email)) {
       const dashboardUrl = request.nextUrl.clone();
       dashboardUrl.pathname = "/dashboard";
       return NextResponse.redirect(dashboardUrl);

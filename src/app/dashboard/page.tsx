@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { filtrarFavoritosValidos } from "@/lib/areas-atuacao";
 import { DashboardHome } from "@/components/dashboard/dashboard-home";
-import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
+import { resolverAcessoConta } from "@/lib/emails-acesso-livre";
 import { isEmailPreviewAreas } from "@/lib/emails-preview-areas";
 import {
   getUsuarioServidor,
@@ -19,8 +19,6 @@ export default async function DashboardPage() {
   let favoritos: string[] = [];
   let tipoUsuario =
     (user?.user_metadata?.tipo_usuario as string | undefined) ?? "advogado";
-  const acessoLivre = isEmailAcessoLivre(user?.email);
-
   if (user) {
     const profile = await getPerfilServidor(user.id);
 
@@ -40,16 +38,17 @@ export default async function DashboardPage() {
     }
   }
 
-  const plano = user ? await getPlanoAtivoServidor(user.email) : null;
+  const planoDb = user ? await getPlanoAtivoServidor(user.email) : null;
+  const acesso = resolverAcessoConta(user?.email, planoDb, tipoUsuario);
 
   return (
     <DashboardHome
       nome={nome}
       userId={user!.id}
       favoritosIniciais={favoritos}
-      leigo={tipoUsuario === "leigo" && !acessoLivre}
-      plano={plano}
-      acessoLivre={acessoLivre}
+      leigo={acesso.leigo}
+      plano={acesso.plano}
+      acessoLivre={acesso.cotasIlimitadas}
       previewAreas={isEmailPreviewAreas(user?.email)}
     />
   );

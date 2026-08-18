@@ -14,7 +14,7 @@ import {
 } from "@/lib/peca-especie-area";
 import { enfileirarUploadsJurisDoCaso } from "@/lib/juris-provedores/salvar-na-base";
 import { areaAbertaParaCliente } from "@/lib/acesso-areas";
-import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
+import { resolverAcessoConta } from "@/lib/emails-acesso-livre";
 import { moduloDaArea, normalizarAreaIdMinuta } from "@/lib/minuta-modulo";
 import { areaUsaPoloAdvocacia } from "@/lib/polo-especies-por-area";
 import {
@@ -349,11 +349,11 @@ async function postGerarPeca(request: Request) {
   } catch {
     /* metadata */
   }
+  const acesso = resolverAcessoConta(email, saldo.cota.plano, tipoUsuario);
   if (
     !areaAbertaParaCliente(areaId, {
-      plano: saldo.cota.plano,
-      tipoUsuario,
-      acessoLivre: isEmailAcessoLivre(email),
+      plano: acesso.plano,
+      tipoUsuario: acesso.tipoUsuario,
     })
   ) {
     return NextResponse.json(
@@ -374,18 +374,16 @@ async function postGerarPeca(request: Request) {
   }
 
   // Teto JEC para leigos (sem OAB): 20 SM — só no módulo JEC
-  if (areaId === "jec" && !isEmailAcessoLivre(email)) {
-    if (tipoUsuario === "leigo" && body.valoresCausa) {
-      const resumoTeto = calcularResumoValorCausa(body.valoresCausa);
-      if (ultrapassaTetoJec(resumoTeto.totalCentavos, false)) {
-        return NextResponse.json(
-          {
-            error: mensagemBloqueioTetoLeigo(resumoTeto.totalCentavos),
-            codigo: "TETO_JEC_LEIGO",
-          },
-          { status: 403 }
-        );
-      }
+  if (areaId === "jec" && acesso.leigo && body.valoresCausa) {
+    const resumoTeto = calcularResumoValorCausa(body.valoresCausa);
+    if (ultrapassaTetoJec(resumoTeto.totalCentavos, false)) {
+      return NextResponse.json(
+        {
+          error: mensagemBloqueioTetoLeigo(resumoTeto.totalCentavos),
+          codigo: "TETO_JEC_LEIGO",
+        },
+        { status: 403 }
+      );
     }
   }
 

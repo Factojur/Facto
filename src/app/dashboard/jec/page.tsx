@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { JecForm } from "@/components/dashboard/jec-form";
-import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
+import { resolverAcessoConta } from "@/lib/emails-acesso-livre";
 import { getUsuarioServidor, getPerfilServidor } from "@/lib/sessao-servidor";
 
 export default async function JecDashboardPage() {
@@ -16,8 +16,7 @@ export default async function JecDashboardPage() {
     }
   }
 
-  const acessoLivre = isEmailAcessoLivre(user?.email);
-  const leigo = tipoUsuario === "leigo" && !acessoLivre;
+  const acesso = resolverAcessoConta(user?.email, null, tipoUsuario);
 
   return (
     <Suspense
@@ -25,7 +24,7 @@ export default async function JecDashboardPage() {
         <div className="p-8 text-sm text-slate-500">Carregando formulário…</div>
       }
     >
-      <JecForm leigo={leigo} />
+      <JecForm leigo={acesso.leigo} />
     </Suspense>
   );
 }
