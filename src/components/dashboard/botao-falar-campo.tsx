@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { DURACAO_MAX_AUDIO_SEGUNDOS } from "@/lib/transcrever-audio";
+import {
+  DURACAO_MAX_AUDIO_SEGUNDOS,
+  DURACAO_MIN_AUDIO_SEGUNDOS,
+} from "@/lib/transcrever-audio";
 
 type Props = {
   onTranscrito: (texto: string) => void;
@@ -29,6 +32,34 @@ function formatarSegundos(s: number): string {
   return `${m}:${String(r).padStart(2, "0")}`;
 }
 
+function IconeMicrofone({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+      <line x1="12" y1="19" x2="12" y2="23" />
+      <line x1="8" y1="23" x2="16" y2="23" />
+    </svg>
+  );
+}
+
+function IconeParar({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+      <rect x="6" y="6" width="12" height="12" rx="2" />
+    </svg>
+  );
+}
+
 export function BotaoFalarCampo({ onTranscrito, onErro, disabled, areaId }: Props) {
   const [fase, setFase] = useState<Fase>("idle");
   const [segundos, setSegundos] = useState(0);
@@ -38,6 +69,7 @@ export function BotaoFalarCampo({ onTranscrito, onErro, disabled, areaId }: Prop
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<number | null>(null);
   const limiteRef = useRef<number | null>(null);
+  const segundosRef = useRef(0);
 
   function limparStream() {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -105,6 +137,7 @@ export function BotaoFalarCampo({ onTranscrito, onErro, disabled, areaId }: Prop
     } finally {
       setFase("idle");
       setSegundos(0);
+      segundosRef.current = 0;
     }
   }
 
@@ -127,7 +160,7 @@ export function BotaoFalarCampo({ onTranscrito, onErro, disabled, areaId }: Prop
     }
     const mime = mimeGravacao();
     if (!mime && typeof MediaRecorder === "undefined") {
-      emitirErro("Gravação de áudio não está disponível neste navegador.");
+      emitirErro("Gravação de áudio não disponível neste navegador.");
       return;
     }
     try {
@@ -148,12 +181,23 @@ export function BotaoFalarCampo({ onTranscrito, onErro, disabled, areaId }: Prop
         chunksRef.current = [];
         recorderRef.current = null;
         limparStream();
+        if (segundosRef.current < DURACAO_MIN_AUDIO_SEGUNDOS) {
+          setFase("idle");
+          setSegundos(0);
+          segundosRef.current = 0;
+          emitirErro(
+            `Fale pelo menos ${DURACAO_MIN_AUDIO_SEGUNDOS} segundos antes de parar.`
+          );
+          return;
+        }
         void enviarBlob(blob, tipo);
       };
       rec.start(250);
       setFase("gravando");
       setSegundos(0);
+      segundosRef.current = 0;
       timerRef.current = window.setInterval(() => {
+        segundosRef.current += 1;
         setSegundos((s) => s + 1);
       }, 1000);
       limiteRef.current = window.setTimeout(() => {
@@ -170,6 +214,9 @@ export function BotaoFalarCampo({ onTranscrito, onErro, disabled, areaId }: Prop
     }
   }
 
+  const labelParado = "Falar — transcrever áudio";
+  const labelGravando = `Parar gravação · ${formatarSegundos(segundos)}`;
+
   return (
     <div className="flex flex-col gap-1">
       <button
@@ -182,22 +229,45 @@ export function BotaoFalarCampo({ onTranscrito, onErro, disabled, areaId }: Prop
           if (fase === "idle") void iniciarGravacao();
         }}
         disabled={disabled || fase === "enviando"}
-        className={`rounded-lg px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
+        aria-label={
+          fase === "enviando"
+            ? "Transcrevendo áudio"
+            : fase === "gravando"
+              ? labelGravando
+              : labelParado
+        }
+        title={
+          fase === "enviando"
+            ? "Transcrevendo…"
+            : fase === "gravando"
+              ? labelGravando
+              : labelParado
+        }
+        className={`inline-flex items-center justify-center gap-2 rounded-lg transition disabled:cursor-not-allowed disabled:opacity-60 ${
           fase === "gravando"
-            ? "border border-red-300 bg-red-50 text-red-800 hover:bg-red-100"
-            : "border border-stone-600 bg-white text-stone-800 hover:bg-stone-50"
+            ? "border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-red-800 hover:bg-red-100"
+            : fase === "enviando"
+              ? "border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600"
+              : "border border-stone-600 bg-white p-2.5 text-stone-800 hover:bg-stone-50"
         }`}
       >
-        {fase === "enviando"
-          ? "Transcrevendo…"
-          : fase === "gravando"
-            ? `Parar · ${formatarSegundos(segundos)}`
-            : "Falar"}
+        {fase === "enviando" ? (
+          <span className="text-sm">Transcrevendo…</span>
+        ) : fase === "gravando" ? (
+          <>
+            <IconeParar className="h-4 w-4 shrink-0" />
+            <span className="text-sm font-medium tabular-nums">
+              {formatarSegundos(segundos)}
+            </span>
+          </>
+        ) : (
+          <IconeMicrofone className="h-5 w-5 shrink-0" />
+        )}
       </button>
       {fase === "gravando" ? (
         <span className="text-[11px] text-slate-500">
-          Até {Math.floor(DURACAO_MAX_AUDIO_SEGUNDOS / 60)} min. O áudio não é
-          gravado — só o texto.
+          Até {Math.floor(DURACAO_MAX_AUDIO_SEGUNDOS / 60)} min · mín.{" "}
+          {DURACAO_MIN_AUDIO_SEGUNDOS}s. O áudio não é gravado — só o texto.
         </span>
       ) : null}
       {aviso ? <span className="text-xs text-red-700">{aviso}</span> : null}

@@ -41,9 +41,8 @@ import {
 import {
   areaUsaPoloAdvocacia,
   agruparEspeciesPorPolo,
-  especieCompativelComPolo,
-  filtrarEspeciesPorPolo,
   inferirPoloPorEspecie,
+  ladoPoloDaEspecie,
   normalizarPoloAdvocacia,
   rotuloPoloAdvocacia,
   type PoloAdvocacia,
@@ -131,6 +130,14 @@ import type { ConferenciaEntrada, PreenchimentoEntradaCaso } from "@/lib/entrada
 import { montarConferenciaEntrada } from "@/lib/conferencia-entrada";
 import { paginaDoTrechoNoTexto, rotuloCitacaoAnexo } from "@/lib/pagina-anexo-pdf";
 import { detectarTesesCanonicas } from "@/lib/teses-canonicas";
+import { extrairMetadadosAutos } from "@/lib/peca-cabivel-autos";
+import { sugerirPrazoDaPeca } from "@/lib/prazo-intimacao";
+import {
+  buscarPerfilCliente,
+  nomeClientePrincipal,
+  salvarPerfilCliente,
+  type PerfilClienteSalvo,
+} from "@/lib/memoria-cliente-local";
 import { AJUSTES_POR_GERACAO } from "@/lib/ia/ajustar-trecho-peca";
 
 type GuiaJec = GuiaMinuta;
@@ -967,6 +974,22 @@ export function JecForm({
   );
   const moduloUi = moduloDaArea(areaId);
   const comPoloAdvocacia = areaUsaPoloAdvocacia(areaId);
+  const ladoEspecieAtual = comPoloAdvocacia
+    ? ladoPoloDaEspecie(areaId, especiePeca)
+    : null;
+  const poloExigeEscolha = ladoEspecieAtual === "ambos";
+  const dicaPrazo = useMemo(
+    () =>
+      sugerirPrazoDaPeca({
+        fatos,
+        especiePeca,
+      }),
+    [fatos, especiePeca]
+  );
+  const perfilMemoriaCliente = useMemo(() => {
+    const nome = nomeClientePrincipal(autores, reus, poloAdvocacia);
+    return buscarPerfilCliente(nome);
+  }, [autores, reus, poloAdvocacia]);
 
   useEffect(() => {
     if (especiePeca !== "contestacao") setComReconvencao(false);
@@ -1077,6 +1100,46 @@ export function JecForm({
     setEscritorio(next);
     salvarEscritorioConfig(next);
   }
+
+  function aplicarMemoriaCliente(perfil: PerfilClienteSalvo) {
+    setAutores(
+      perfil.autores.map((a) => ({
+        ...a,
+        id:
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `autor-${Date.now()}-${Math.random()}`,
+      }))
+    );
+    setReus(
+      perfil.reus.map((r) => ({
+        ...r,
+        id:
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `reu-${Date.now()}-${Math.random()}`,
+      }))
+    );
+  }
+
+  useEffect(() => {
+    if (!fatos.trim()) return;
+    const meta = extrairMetadadosAutos(fatos);
+    if (!meta.numeroProcesso && !meta.foro) return;
+    setComarca((c) => {
+      let mudou = false;
+      const next = { ...c };
+      if (meta.numeroProcesso && !c.numeroProcesso?.trim()) {
+        next.numeroProcesso = meta.numeroProcesso;
+        mudou = true;
+      }
+      if (meta.foro && !c.foro?.trim()) {
+        next.foro = meta.foro;
+        mudou = true;
+      }
+      return mudou ? next : c;
+    });
+  }, [fatos]);
 
   function aplicarEspecieInferida(raw: string) {
     const pub = especiePublicaDoFormulario(raw);
@@ -1383,6 +1446,13 @@ export function JecForm({
       setRascunhoAtivoId(salvo.id);
       setRascunhos(listarRascunhosJec());
       setMsgRascunho("Salvo neste navegador.");
+      if (comPoloAdvocacia) {
+        salvarPerfilCliente({
+          autores,
+          reus,
+          polo: poloAdvocacia,
+        });
+      }
     } catch {
       setMsgRascunho(
         "Não foi possível salvar (armazenamento do navegador cheio ou bloqueado)."
@@ -1591,6 +1661,13 @@ export function JecForm({
       setResultado(data as GerarPecaJecOutput);
       setAjustesFeitos(0);
       setMsgCaso(null);
+      if (comPoloAdvocacia) {
+        salvarPerfilCliente({
+          autores,
+          reus,
+          polo: poloAdvocacia,
+        });
+      }
       window.setTimeout(() => {
         document
           .getElementById("peca-gerada")
@@ -1792,68 +1869,52 @@ export function JecForm({
           </p>
 
           <div className="space-y-4 sm:max-w-2xl">
-            {comPoloAdvocacia ? (
+            {comPoloAdvocacia && !poloExigeEscolha && ladoEspecieAtual ? (
+              <p className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-700">
+                Peça redigida pelo{" "}
+                <span className="font-semibold">
+                  polo {ladoEspecieAtual === "ativo" ? "ativo" : "passivo"}
+                </span>{" "}
+                ({rotuloPoloAdvocacia(
+                  ladoEspecieAtual,
+                  moduloUi.rotuloPoloAtivo,
+                  moduloUi.rotuloPoloPassivo
+                )}
+                ){leigo ? " — em causa própria" : ""}. Ao trocar a peça, o polo
+                ajusta sozinho.
+              </p>
+            ) : null}
+
+            {comPoloAdvocacia && poloExigeEscolha ? (
               <div>
                 <span className="mb-1.5 block text-sm font-medium text-slate-700">
                   Estou atuando pelo…
                 </span>
-                <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
+                <p className="mb-2 text-xs text-slate-500">
+                  {metaEspecieDaArea(areaId, especiePeca).rotulo} cabe nos dois
+                  polos — escolha de quem você representa.
+                </p>
+                <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
                   {(["ativo", "passivo"] as const).map((polo) => (
                     <label
                       key={polo}
-                      className="flex flex-1 cursor-pointer items-start gap-2.5 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm has-[:checked]:border-stone-500 has-[:checked]:bg-stone-50"
+                      className="flex flex-1 cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm has-[:checked]:border-stone-500 has-[:checked]:bg-stone-50"
                     >
                       <input
                         type="radio"
                         name="poloAdvocacia"
                         checked={poloAdvocacia === polo}
-                        onChange={() => {
-                          setPoloAdvocacia(polo);
-                          if (
-                            !especieCompativelComPolo(
-                              areaId,
-                              especiePeca,
-                              polo
-                            )
-                          ) {
-                            const primeira = filtrarEspeciesPorPolo(
-                              areaId,
-                              especiesTodas,
-                              polo
-                            )[0];
-                            if (primeira) {
-                              setEspeciePeca(primeira.id);
-                              setEspecieManual(true);
-                            }
-                          }
-                        }}
-                        className="mt-0.5 h-4 w-4 border-slate-300 text-stone-700 focus:ring-stone-500"
+                        onChange={() => setPoloAdvocacia(polo)}
+                        className="h-4 w-4 border-slate-300 text-stone-700 focus:ring-stone-500"
                       />
-                      <span>
-                        <span className="font-medium text-slate-800">
-                          {polo === "ativo" ? "Polo ativo" : "Polo passivo"}
-                        </span>
-                        <span className="mt-0.5 block text-xs text-slate-500">
-                          {rotuloPoloAdvocacia(
-                            polo,
-                            moduloUi.rotuloPoloAtivo,
-                            moduloUi.rotuloPoloPassivo
-                          )}
-                          {leigo
-                            ? " — em causa própria"
-                            : " — a peça será redigida em favor deste polo"}
-                        </span>
+                      <span className="font-medium text-slate-800">
+                        {polo === "ativo"
+                          ? `Polo ativo (${moduloUi.rotuloPoloAtivo})`
+                          : `Polo passivo (${moduloUi.rotuloPoloPassivo})`}
                       </span>
                     </label>
                   ))}
                 </div>
-                <p className="mt-1.5 text-xs text-slate-500">
-                  Contestação e defesa ficam no polo passivo; petição inicial e
-                  réplica, no ativo. Ao escolher a peça, o polo é ajustado.
-                  {areaId === "jec"
-                    ? " Recurso inominado, contrarrazões, agravo, embargos e execução cabem nos dois polos."
-                    : " Recursos e incidentes cabem nos dois polos, conforme o caso."}
-                </p>
               </div>
             ) : null}
 
@@ -1945,6 +2006,11 @@ export function JecForm({
                   }${prazo ? ` ${prazo}` : ""}`;
                 })()}
               </p>
+              {dicaPrazo ? (
+                <p className="mt-2 rounded-md border border-amber-200/80 bg-amber-50/80 px-3 py-2 text-xs text-amber-950">
+                  {dicaPrazo.aviso}
+                </p>
+              ) : null}
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-4">
@@ -2143,6 +2209,23 @@ export function JecForm({
           jaQualificado={pecaUsaPartesJaQualificadas(especiePeca, idsInicial)}
           rotuloPolo={moduloUi.rotuloPoloAtivo}
         />
+
+        {perfilMemoriaCliente ? (
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50/80 px-4 py-3">
+            <p className="text-xs text-emerald-950">
+              Já temos qualificação salva de{" "}
+              <span className="font-semibold">{perfilMemoriaCliente.rotulo}</span>{" "}
+              neste navegador.
+            </p>
+            <button
+              type="button"
+              onClick={() => aplicarMemoriaCliente(perfilMemoriaCliente)}
+              className="mt-2 text-xs font-medium text-emerald-900 underline hover:text-emerald-950"
+            >
+              Preencher autor e réu com os dados salvos
+            </button>
+          </div>
+        ) : null}
 
         <div id="secao-reus" className="scroll-mt-24">
           <ReusSection

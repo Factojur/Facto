@@ -21,13 +21,12 @@ Não muda a minuta sozinho. Alimenta a base que a Pesquisa usa.
 - Depois de cada dia: o diário já chama `reindex:embeddings`.
 - API: `stf stj tst trf3 trf4 tjce tjgo tjma tjmg tjmt tjpr tjrj tjrs tjsc tjsp carf`. Sem TSE, TRE, TRF1/2/5/6, TNU.
 
-## Estado (18/08 noite)
+## Estado (19/08 noite)
 
-- Na base até **148** (+29 insert no **149** antes do 429). Próximo **149** — **19/08 01h**. `LOTE_MAX` **673**. Vencimento **2026-09-13** → pausa **06/09**.
-- Pack imobiliário **149** já está com queries curtas (a madrugada 18/08 ainda usou lei/número e zerou várias). Não rodar seed manual no mesmo dia após 429.
-- **201–227** = lacunas (STF constitucional, TRF prev, TST, CARF, retomas). Não misturar o mesmo query em TST e CARF.
-- Reindex da madrugada 18/08 foi cortado (`^C`). Tentativa manual 18/08 noite: Gemini embedding **429** em loop — **não** deixar rodando até as 01h. O diário reindexa no fim da faixa.
-- Tarefa `FACTO-seed-juris-01h` diária 01:00. Se a madrugada falhar: `scripts/seed-juris-diario.log` e `powershell -ExecutionPolicy Bypass -File scripts\instalar-tarefa-seed-juris.ps1`.
+- Na base até **185** (+45 insert parcial no **186** antes do 429). Próximo **186** — **20/08 01h**. `LOTE_MAX` **673**. Vencimento **2026-09-13** → pausa **06/09**.
+- Lotes **149–185** concluídos na madrugada 19/08 (imobiliário + prev TRF4). **186** = ambiental TRF4; retoma do termo que parou.
+- Reindex da madrugada 19/08 pode ter sido cortado (`^C` / exit 3221225786). O diário reindexa no fim da próxima faixa.
+- Tarefa `FACTO-seed-juris-01h` **Ready** · próxima **20/08 01:00**. Pool **7** contas confirmado.
 
 ## Produto vs seed
 

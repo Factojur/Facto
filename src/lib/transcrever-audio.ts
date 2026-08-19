@@ -1,6 +1,7 @@
 /** Transcrição de voz para o campo de texto — sem gravar arquivo e sem cota de análise. */
 
-export const DURACAO_MAX_AUDIO_SEGUNDOS = 180;
+export const DURACAO_MIN_AUDIO_SEGUNDOS = 2;
+export const DURACAO_MAX_AUDIO_SEGUNDOS = 300;
 export const LIMITE_AUDIO_TRANSCRICAO_BYTES = 3_500_000;
 
 const MIMES_AUDIO = [

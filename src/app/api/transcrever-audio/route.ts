@@ -7,7 +7,7 @@ import {
 import { exigirAcessoAreaMinuta } from "@/lib/acesso-minuta-api";
 import { dentroDoLimite } from "@/lib/rate-limit-memoria";
 
-export const maxDuration = 45;
+export const maxDuration = 60;
 
 const TRANSCRICOES_POR_HORA = 8;
 
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     }
     if (bytes.length > LIMITE_AUDIO_TRANSCRICAO_BYTES) {
       return NextResponse.json(
-        { error: "Áudio grande demais. Fale em até cerca de 3 minutos." },
+        { error: "Áudio grande demais. Fale em até cerca de 5 minutos." },
         { status: 400 }
       );
     }

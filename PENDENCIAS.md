@@ -6,18 +6,18 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 
 **Juris / seed:** depois de cada lote ou dia de cota, atualizar a seção **Lacunas da base (áreas falhas)** abaixo — tribunal errado, 0 insert, ou API sem aquele tribunal. Não deixar falha só no chat.
 
-## Retomar quando voltar (18/08 — noite)
+## Retomar quando voltar (19/08 — noite)
 
-1. **Seed** — próximo lote **149** (**19/08 01h**). Não rodar seed manual hoje: cota 429. PC ligado, na tomada, sem dormir.
+1. **Seed** — próximo lote **186** (**20/08 01h**). Última madrugada: **185** ok; **186** parou no 429. PC ligado, na tomada, sem dormir. Pool **7** contas ok.
 2. **Constitucional** — testar peças reais (MS, RE, ADI/ADPF); anotar falhas de rito/endereçamento aqui.
 3. **Compra real MP** — webhook + e-mail + convite + cadastro + cancelamento CDC (único bloqueio comercial crítico).
 4. **Análise de autos** — PDF real no JEC em produção.
-5. **Deploy** — conferir no localhost as melhorias desta sessão **antes** de subir. Não misturar seed no mesmo commit.
+5. **Deploy** — melhorias desta sessão (polo enxuto, Falar, CNJ/prazo/memória cliente) subindo em commit separado do seed.
 
-## Alerta — seed automático 01h (18/08 noite)
+## Alerta — seed automático 01h (19/08 noite)
 
-Tarefa Windows `FACTO-seed-juris-01h` ok. Próxima: **19/08/2026 01:00**. Última: **18/08/2026 01:00** — lotes **116–148** ok; **149** começou e parou no 429. Windows last result `-1073741510` = `^C` no reindex (o seed em si gravou `proximoLote` 149).
-Estado: `proximoLote` **149** · `LOTE_MAX` **673**. Vencimento **2026-09-13** (pausa automática ~06/09). Pool: **7 contas**.
+Tarefa Windows `FACTO-seed-juris-01h` ok · **Ready** · próxima **20/08/2026 01:00**. Última: **19/08/2026 01:00** — lotes **149–185** ok; **186** começou e parou no 429. `LastTaskResult` negativo = reindex interrompido (`^C`); o seed gravou `proximoLote` **186**.
+Estado: `proximoLote` **186** · `LOTE_MAX` **673**. Vencimento **2026-09-13** (pausa automática ~06/09). Pool: **7 contas**.
 
 **18/08 (noite):** pack imobiliário 149/157/165/173 e demais queries com lei/número ainda na fila 150+ foram enxugadas (lei/número zera a API). A partir de **201**: 27 lotes de lacuna (STF constitucional, TRF prev, TST, CARF, retomas 41/63/64/74/77/79) **antes** do volume 10 TJs.
 
