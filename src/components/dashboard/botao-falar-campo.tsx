@@ -15,6 +15,9 @@ type Props = {
 
 type Fase = "idle" | "gravando" | "enviando";
 
+/** Mínimo de bytes no blob antes de enviar (cabeçalho WebM/M4A vazio ≈ poucos bytes). */
+const MIN_BLOB_BYTES = 800;
+
 function mimeGravacao(): string {
   const tipos = [
     "audio/webm;codecs=opus",
@@ -60,16 +63,45 @@ function IconeParar({ className }: { className?: string }) {
   );
 }
 
+/** Garante que o último chunk do MediaRecorder entre antes de montar o Blob. */
+function blobAoParar(rec: MediaRecorder, mimeFallback: string): Promise<Blob> {
+  return new Promise((resolve) => {
+    const chunks: Blob[] = [];
+    const onData = (ev: BlobEvent) => {
+      if (ev.data?.size) chunks.push(ev.data);
+    };
+    rec.addEventListener("dataavailable", onData);
+    rec.addEventListener(
+      "stop",
+      () => {
+        rec.removeEventListener("dataavailable", onData);
+        const tipo = rec.mimeType || mimeFallback || "audio/webm";
+        window.setTimeout(() => {
+          resolve(new Blob(chunks, { type: tipo }));
+        }, 120);
+      },
+      { once: true }
+    );
+    try {
+      if (rec.state === "recording") rec.requestData();
+    } catch {
+      /* requestData nem sempre existe */
+    }
+    rec.stop();
+  });
+}
+
 export function BotaoFalarCampo({ onTranscrito, onErro, disabled, areaId }: Props) {
   const [fase, setFase] = useState<Fase>("idle");
   const [segundos, setSegundos] = useState(0);
   const [aviso, setAviso] = useState<string | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<number | null>(null);
   const limiteRef = useRef<number | null>(null);
   const segundosRef = useRef(0);
+  const mimeRef = useRef("");
+  const parandoRef = useRef(false);
 
   function limparStream() {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -90,7 +122,13 @@ export function BotaoFalarCampo({ onTranscrito, onErro, disabled, areaId }: Prop
   useEffect(() => {
     return () => {
       limparTimers();
-      recorderRef.current?.state === "recording" && recorderRef.current.stop();
+      if (recorderRef.current?.state === "recording") {
+        try {
+          recorderRef.current.stop();
+        } catch {
+          /* unmount */
+        }
+      }
       limparStream();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- só no unmount
@@ -102,6 +140,12 @@ export function BotaoFalarCampo({ onTranscrito, onErro, disabled, areaId }: Prop
   }
 
   async function enviarBlob(blob: Blob, mimeType: string) {
+    if (blob.size < MIN_BLOB_BYTES) {
+      emitirErro(
+        "O microfone não captou áudio (arquivo vazio). Confira o dispositivo de entrada nas configurações do Windows/navegador e tente de novo."
+      );
+      return;
+    }
     setFase("enviando");
     try {
       const base64 = await new Promise<string>((resolve, reject) => {
@@ -141,19 +185,52 @@ export function BotaoFalarCampo({ onTranscrito, onErro, disabled, areaId }: Prop
     }
   }
 
-  function pararGravacao() {
+  async function pararGravacao() {
+    if (parandoRef.current) return;
+    parandoRef.current = true;
     limparTimers();
     const rec = recorderRef.current;
-    if (rec && rec.state !== "inactive") {
-      rec.stop();
-    } else {
+    const duracao = segundosRef.current;
+    const mime = mimeRef.current;
+
+    if (!rec || rec.state === "inactive") {
       limparStream();
       setFase("idle");
+      parandoRef.current = false;
+      return;
+    }
+
+    setFase("enviando");
+    try {
+      const blob = await blobAoParar(rec, mime);
+      recorderRef.current = null;
+      limparStream();
+
+      if (duracao < DURACAO_MIN_AUDIO_SEGUNDOS) {
+        emitirErro(
+          `Fale pelo menos ${DURACAO_MIN_AUDIO_SEGUNDOS} segundos antes de parar.`
+        );
+        setFase("idle");
+        setSegundos(0);
+        segundosRef.current = 0;
+        return;
+      }
+
+      const tipo = blob.type || mime || "audio/webm";
+      await enviarBlob(blob, tipo);
+    } catch {
+      emitirErro("Não foi possível finalizar a gravação.");
+      setFase("idle");
+      setSegundos(0);
+      segundosRef.current = 0;
+    } finally {
+      parandoRef.current = false;
     }
   }
 
   async function iniciarGravacao() {
     setAviso(null);
+    parandoRef.current = false;
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
       emitirErro("Este navegador não permite microfone. Digite o relato.");
       return;
@@ -164,35 +241,21 @@ export function BotaoFalarCampo({ onTranscrito, onErro, disabled, areaId }: Prop
       return;
     }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+      });
       streamRef.current = stream;
-      chunksRef.current = [];
+      mimeRef.current = mime;
       const rec = new MediaRecorder(
         stream,
-        mime ? { mimeType: mime, audioBitsPerSecond: 32_000 } : { audioBitsPerSecond: 32_000 }
+        mime ? { mimeType: mime, audioBitsPerSecond: 64_000 } : undefined
       );
       recorderRef.current = rec;
-      rec.ondataavailable = (ev) => {
-        if (ev.data.size > 0) chunksRef.current.push(ev.data);
-      };
-      rec.onstop = () => {
-        const tipo = rec.mimeType || mime || "audio/webm";
-        const blob = new Blob(chunksRef.current, { type: tipo });
-        chunksRef.current = [];
-        recorderRef.current = null;
-        limparStream();
-        if (segundosRef.current < DURACAO_MIN_AUDIO_SEGUNDOS) {
-          setFase("idle");
-          setSegundos(0);
-          segundosRef.current = 0;
-          emitirErro(
-            `Fale pelo menos ${DURACAO_MIN_AUDIO_SEGUNDOS} segundos antes de parar.`
-          );
-          return;
-        }
-        void enviarBlob(blob, tipo);
-      };
-      rec.start(250);
+      /* Sem timeslice: um blob completo no stop — mais confiável no Edge/Chrome Windows. */
+      rec.start();
       setFase("gravando");
       setSegundos(0);
       segundosRef.current = 0;
@@ -201,7 +264,7 @@ export function BotaoFalarCampo({ onTranscrito, onErro, disabled, areaId }: Prop
         setSegundos((s) => s + 1);
       }, 1000);
       limiteRef.current = window.setTimeout(() => {
-        pararGravacao();
+        void pararGravacao();
       }, DURACAO_MAX_AUDIO_SEGUNDOS * 1000);
     } catch (erro) {
       limparStream();
@@ -223,7 +286,7 @@ export function BotaoFalarCampo({ onTranscrito, onErro, disabled, areaId }: Prop
         type="button"
         onClick={() => {
           if (fase === "gravando") {
-            pararGravacao();
+            void pararGravacao();
             return;
           }
           if (fase === "idle") void iniciarGravacao();

@@ -54,7 +54,10 @@ export async function POST(request: Request) {
     const bytes = Buffer.from(b64, "base64");
     if (bytes.length < 800) {
       return NextResponse.json(
-        { error: "A gravação ficou curta demais. Fale de novo." },
+        {
+          error:
+            "O áudio chegou vazio ao servidor. Confira o microfone padrão do sistema e tente de novo.",
+        },
         { status: 400 }
       );
     }

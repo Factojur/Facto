@@ -12,9 +12,68 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 2. **Constitucional** — testar peças reais (MS, RE, ADI/ADPF); anotar falhas de rito/endereçamento aqui.
 3. **Compra real MP** — webhook + e-mail + convite + cadastro + cancelamento CDC (único bloqueio comercial crítico).
 4. **Análise de autos** — PDF real no JEC em produção.
-5. **Deploy** — melhorias desta sessão (polo enxuto, Falar, CNJ/prazo/memória cliente) subindo em commit separado do seed.
+5. **Deploy** — ~~melhorias desta sessão~~ feito (`9daa804`).
 
-## Alerta — seed automático 01h (19/08 noite)
+## Fila por prioridade — concorrência MinutaIA (19/08)
+
+Ordem realista: receita e lastro primeiro; diferenciação visível em seguida; Obsidian/export só depois.
+
+### P0 — Bloqueio comercial e confiança (fazer antes de escalar marketing)
+
+| # | Item | Status | Por quê |
+|---|------|--------|---------|
+| 1 | **Compra real MP ponta a ponta** — webhook + e-mail + convite + cadastro + cancelamento CDC | Parcial | Único bloqueio comercial crítico |
+| 2 | **Confirmar na Vercel** `MERCADOPAGO_WEBHOOK_SECRET` e `CRON_SECRET` | Falta conferir vars | Segurança já no código |
+| 3 | **Seed / lastro** lotes **186–673** + lacunas **201–227** (STF, TRF prev, TST, CARF) | Em curso (01h) | “Buscar na base FACTO” fraco = peça fraca |
+| 4 | **Testes reais Constitucional + Previdenciário** após lastro | Pendente | Áreas abertas sem validação de usuário |
+| 5 | **LGPD — memória de cliente** | Pendente | Aviso na UI: localStorage só no navegador; termo antes de sync na nuvem (ver item P1-2) |
+
+### P1 — Diferenciação vs MinutaIA (impacto alto, escopo médio)
+
+| # | Item | Status | Benefício |
+|---|------|--------|-----------|
+| 1 | **Perfil FACTO na nuvem** — papel (advogado/escritório), tom, cláusulas padrão, 2–3 peças modelo → resumo de estilo no prompt | Pendente | Equivalente ao “particularidades do usuário” sem Obsidian |
+| 2 | **Memória de cliente na nuvem** (Supabase, opt-in) | Pendente | Mesmo cliente em outro PC; hoje só `localStorage` |
+| 3 | **Histórico de minutas na nuvem** — todas as áreas, não só JEC local | Parcial (JEC local ok) | Não perder trabalho ao trocar máquina |
+| 4 | **Réplica a partir da contestação anexada** — detectar argumentos do réu e pré-montar contra-argumentos | Pendente | Automatização forte; MinutaIA não faz bem |
+| 5 | **Checklist de protocolo por tribunal** (TJSP, TRT, etc.) pós-geração | Pendente | Reduz erro de protocolo |
+| 6 | **Alerta contradição fatos × pedidos** (valor, obrigação, parte) | Pendente | Conferência antes de gerar |
+| 7 | **Citação rastreável** — distinguir base FACTO vs anexo no auditor | Parcial (página no anexo ok) | Credibilidade forense |
+| 8 | **Prazo com feriados** (calendário BR por comarca/tribunal) | Pendente | Hoje só dias úteis seg–sex |
+| 9 | **Polo enxuto** — radios só em “Ambos os polos” + inferência | Feito (`9daa804`) | Dashboard mais limpa |
+
+### P2 — Automação e polish (depois do P1)
+
+| # | Item | Status |
+|---|------|--------|
+| 1 | **Consulta processual por CNJ** (MNI/Datajud quando disponível) — partes e andamentos | Pendente |
+| 2 | **Jurisprudência com ementa expandível** no preview | Pendente |
+| 3 | **Versão 2 da peça** — mesma espécie, fundamentação alternativa (2ª geração = cota) | Pendente |
+| 4 | **Modelo de honorários** sugerido por valor da causa e espécie | Pendente |
+| 5 | **Histórico estendido** — export DOCX já existe; melhorar UX de reabrir em todas áreas | Parcial |
+| 6 | **Validação OAB real por UF** | Mock até testes fecharem |
+| 7 | **Análise de autos PDF** — smoke em produção JEC | Pendente |
+
+### P3 — Longo prazo (só com MRR / demanda clara)
+
+| # | Item | Nota |
+|---|------|------|
+| 1 | **Export “vault FACTO”** — pasta Markdown compatível com Obsidian | Complemento ao perfil nuvem; usuário abre no Obsidian se quiser |
+| 2 | **Plugin Obsidian** ou integração bidirecional | Sem API Obsidian para contas automáticas |
+| 3 | **Extensão PJe / e-SAJ** | Custo de suporte alto |
+| 4 | **Segunda API juris** — TRE/TSE, TRF1/2/5/6, TNU | Depois do seed atual |
+| 5 | **Biblioteca de normas** (canal separado de juris) | Decisão 15/08: não misturar com peça |
+| 6 | **Recursos STJ/STF/ TST** — espécies superiores além do kit atual | Ver seção recursos superiores abaixo |
+| 7 | **Produto para juiz / MP / defensoria** | Fora do escopo FACTO (advogado e causa própria JEC) |
+
+### Feito nesta rodada (19/08 — noite, `9daa804`)
+
+- [x] Polo condicional + badge informativo
+- [x] Falar: ícone microfone, mín. 2 s, máx. 5 min
+- [x] CNJ no relato → Comarca
+- [x] Dica de prazo estimado (intimação + espécie)
+- [x] Memória de cliente **local** (localStorage)
+
 
 Tarefa Windows `FACTO-seed-juris-01h` ok · **Ready** · próxima **20/08/2026 01:00**. Última: **19/08/2026 01:00** — lotes **149–185** ok; **186** começou e parou no 429. `LastTaskResult` negativo = reindex interrompido (`^C`); o seed gravou `proximoLote` **186**.
 Estado: `proximoLote` **186** · `LOTE_MAX` **673**. Vencimento **2026-09-13** (pausa automática ~06/09). Pool: **7 contas**.
