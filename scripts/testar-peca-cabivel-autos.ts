@@ -3,7 +3,7 @@
  * Uso: npx tsx scripts/testar-peca-cabivel-autos.ts
  */
 
-import { ajustarEspecieCabivel, incidenteExecucaoJaAberto, pecaCabivelAposUltimoAto, rotulosEpigrafePeca, linhasEpigrafePeca, extrairMetadadosAutos, janelaRelatoParaTriagem, formatarEnderecoAdvogado, LIMITE_RELATO_TRIAGEM_CHARS } from "../src/lib/peca-cabivel-autos";
+import { ajustarEspecieCabivel, incidenteExecucaoJaAberto, pecaCabivelAposUltimoAto, rotulosEpigrafePeca, linhasEpigrafePeca, extrairMetadadosAutos, janelaRelatoParaTriagem, analisarJanelaRelato, formatarEnderecoAdvogado, LIMITE_RELATO_TRIAGEM_CHARS } from "../src/lib/peca-cabivel-autos";
 import { formatarEnderecamentoPadrao, rotuloAreaJudiciaria } from "../src/lib/endereco-comarca";
 import { inferirEspecieDaArea } from "../src/lib/peca-especie-area";
 import { formatarBlocoPartesJaQualificadas } from "../src/lib/partes-ja-qualificadas";
@@ -158,6 +158,11 @@ function main() {
     janela.length <= LIMITE_RELATO_TRIAGEM_CHARS + 200,
     "janela respeita o teto"
   );
+  const metaJanela = analisarJanelaRelato(
+    "A".repeat(LIMITE_RELATO_TRIAGEM_CHARS + 50_000) + " último ato"
+  );
+  assert(metaJanela.truncado, "metadados: PDF longo truncado");
+  assert(metaJanela.charsTotais > LIMITE_RELATO_TRIAGEM_CHARS, "metadados: chars totais");
 
   const { oks, falhas } = stats();
   console.log(`\n${oks} ok, ${falhas} falhas`);

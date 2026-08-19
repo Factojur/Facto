@@ -2,6 +2,8 @@
 
 Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou só parcialmente feitos.
 
+Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed/ops): [`MELHORIAS.md`](./MELHORIAS.md).
+
 **Juris / seed:** depois de cada lote ou dia de cota, atualizar a seção **Lacunas da base (áreas falhas)** abaixo — tribunal errado, 0 insert, ou API sem aquele tribunal. Não deixar falha só no chat.
 
 ## Retomar quando voltar (18/08 — noite)
@@ -10,7 +12,7 @@ Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou
 2. **Constitucional** — testar peças reais (MS, RE, ADI/ADPF); anotar falhas de rito/endereçamento aqui.
 3. **Compra real MP** — webhook + e-mail + convite + cadastro + cancelamento CDC (único bloqueio comercial crítico).
 4. **Análise de autos** — PDF real no JEC em produção.
-5. **Deploy** — reconvenção-as-checkbox e Falar ainda **locais** (não misturar com seed no mesmo commit).
+5. **Deploy** — conferir no localhost as melhorias desta sessão **antes** de subir. Não misturar seed no mesmo commit.
 
 ## Alerta — seed automático 01h (18/08 noite)
 

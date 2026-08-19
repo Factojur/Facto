@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { exigirAcessoAreaMinuta } from "@/lib/acesso-minuta-api";
 import { buscarConhecimentoRelacionado } from "@/lib/base-conhecimento";
 import { SUMULAS_ATIVAS_CURADAS } from "@/lib/sumulas";
 import {
@@ -62,14 +62,6 @@ function dedupe(brutos: Bruto[]): Bruto[] {
  * - 3–5 julgados do provedor secundário (TJSP se selecionado / base FACTO)
  */
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
-  }
-
   let body: {
     consulta?: string;
     uploads?: UploadIn[];
@@ -84,6 +76,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
   }
 
+  const gate = await exigirAcessoAreaMinuta(body.areaId);
+  if (!gate.ok) return gate.response;
+  const user = gate.user;
+
   const consulta = String(body.consulta ?? "").trim();
   if (consulta.length < 8) {
     return NextResponse.json(
@@ -92,7 +88,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const areaId = String(body.areaId ?? "").trim() || undefined;
+  const areaId = gate.areaId;
   const poloRaw = String(body.polo ?? "").trim().toLowerCase();
   const polo =
     poloRaw === "passivo" || poloRaw === "ativo"

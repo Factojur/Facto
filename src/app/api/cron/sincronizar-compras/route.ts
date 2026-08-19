@@ -13,14 +13,12 @@ export async function GET(request: Request) {
   const headerSecret = request.headers.get("x-cron-secret") ?? "";
   const bearer = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
 
-  if (secret && bearer !== secret && headerSecret !== secret) {
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    }
+  } else if (bearer !== secret && headerSecret !== secret) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-  }
-
-  if (!secret && process.env.NODE_ENV === "production") {
-    console.warn(
-      "[cron sincronizar-compras] CRON_SECRET não configurada na Vercel."
-    );
   }
 
   try {

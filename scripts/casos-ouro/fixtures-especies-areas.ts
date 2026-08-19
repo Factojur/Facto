@@ -319,4 +319,129 @@ São Paulo/SP, 16 de agosto de 2026.
 OAB/SP 404040
     `.trim(),
   },
+  {
+    id: "constitucional-re",
+    especie: "recurso-extraordinario",
+    tema: "Constitucional — recurso extraordinário (STF)",
+    secoesObrigatorias: [
+      "SUPREMO TRIBUNAL FEDERAL",
+      "DO CABIMENTO",
+      "DAS RAZÕES",
+      "DOS PEDIDOS",
+    ],
+    jurisComLastro: ["RE 8109991"],
+    jurisSemLastro: ["RE 8181811"],
+    contextoLastro: `
+CF art. 102, III. CPC art. 1.029.
+RE nº 8109991 — repercussão geral e prequestionamento.
+    `.trim(),
+    pecaIaBruta: `
+EXCELENTÍSSIMO(A) SENHOR(A) MINISTRO(A) PRESIDENTE DO COLENDO SUPREMO TRIBUNAL FEDERAL
+
+RECORRENTE FICTO interpõe
+
+RECURSO EXTRAORDINÁRIO
+
+em face de acórdão do Tribunal de Justiça do Estado de São Paulo.
+
+I - DO CABIMENTO
+Prequestionamento e repercussão geral da matéria constitucional.
+
+II - DAS RAZÕES
+Violação ao art. 5º da CF. Cita-se o RE nº 8109991 e o RE nº 8181811.
+
+III - DOS PEDIDOS
+a) Conhecimento e provimento do recurso extraordinário.
+
+Nestes termos,
+pede deferimento.
+
+Brasília/DF, 18 de agosto de 2026.
+OAB/SP 404040
+    `.trim(),
+  },
+  {
+    id: "constitucional-adi",
+    especie: "adi",
+    tema: "Constitucional — ADI (controle concentrado)",
+    secoesObrigatorias: [
+      "SUPREMO TRIBUNAL FEDERAL",
+      "INCONSTITUCIONALIDADE",
+      "DOS FATOS",
+      "DO DIREITO",
+      "DOS PEDIDOS",
+    ],
+    jurisComLastro: ["ADI 5109991"],
+    jurisSemLastro: ["ADI 5181811"],
+    contextoLastro: `
+CF art. 102, I, a. Lei 9.868/99.
+ADI nº 5109991 — inconstitucionalidade formal de lei estadual.
+    `.trim(),
+    pecaIaBruta: `
+EXCELENTÍSSIMO(A) SENHOR(A) MINISTRO(A) PRESIDENTE DO COLENDO SUPREMO TRIBUNAL FEDERAL
+
+REQUERENTE FICTO propõe
+
+AÇÃO DIRETA DE INCONSTITUCIONALIDADE
+
+em face da Lei estadual ficta nº 1/2024.
+
+I - DOS FATOS
+A norma impugnada foi publicada sem o processo legislativo constitucional.
+
+II - DO DIREITO
+CF art. 102, I, a, e Lei nº 9.868/99. Cita-se a ADI nº 5109991 e a ADI nº 5181811.
+
+III - DOS PEDIDOS
+a) Medida cautelar;
+b) Procedência para declarar a inconstitucionalidade.
+
+Nestes termos,
+pede deferimento.
+
+Brasília/DF, 18 de agosto de 2026.
+OAB/SP 404040
+    `.trim(),
+  },
+  {
+    id: "criminal-resposta-acusacao",
+    especie: "resposta-acusacao",
+    tema: "Penal — resposta à acusação (CPP 396/396-A, não contestação)",
+    secoesObrigatorias: [
+      "RESPOSTA À ACUSAÇÃO",
+      "DAS PRELIMINARES",
+      "DO MÉRITO",
+      "DOS PEDIDOS",
+    ],
+    jurisComLastro: ["HC 4003334"],
+    jurisSemLastro: ["HC 7777778"],
+    contextoLastro: `
+CPP arts. 396 e 396-A. CPP art. 386.
+HC nº 4003334 — rejeição da denúncia e ausência de justa causa.
+    `.trim(),
+    pecaIaBruta: `
+EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DE DIREITO DA __ VARA CRIMINAL DA COMARCA DE SÃO PAULO - SP
+
+ACUSADO FICTO oferece
+
+RESPOSTA À ACUSAÇÃO
+
+em face da denúncia do Ministério Público.
+
+I - DAS PRELIMINARES
+a) Da ausência de justa causa (art. 395, III, do CPP).
+
+II - DO MÉRITO — DOS FATOS E DO DIREITO
+A materialidade não se demonstra nos autos. Cita-se o HC nº 4003334 e o HC nº 7777778. Arts. 396 e 396-A do CPP.
+
+III - DOS PEDIDOS
+a) Absolvição sumária ou, subsidiariamente, dilação probatória.
+
+Nestes termos,
+pede deferimento.
+
+São Paulo/SP, 18 de agosto de 2026.
+OAB/SP 404040
+    `.trim(),
+  },
 ];

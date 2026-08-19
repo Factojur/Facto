@@ -7,6 +7,7 @@ type Props = {
   onTranscrito: (texto: string) => void;
   onErro?: (msg: string) => void;
   disabled?: boolean;
+  areaId?: string;
 };
 
 type Fase = "idle" | "gravando" | "enviando";
@@ -28,7 +29,7 @@ function formatarSegundos(s: number): string {
   return `${m}:${String(r).padStart(2, "0")}`;
 }
 
-export function BotaoFalarCampo({ onTranscrito, onErro, disabled }: Props) {
+export function BotaoFalarCampo({ onTranscrito, onErro, disabled, areaId }: Props) {
   const [fase, setFase] = useState<Fase>("idle");
   const [segundos, setSegundos] = useState(0);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -86,6 +87,7 @@ export function BotaoFalarCampo({ onTranscrito, onErro, disabled }: Props) {
         body: JSON.stringify({
           mimeType: mimeType.split(";")[0] || "audio/webm",
           base64,
+          areaId,
         }),
       });
       const data = (await res.json().catch(() => ({}))) as {

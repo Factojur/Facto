@@ -27,6 +27,17 @@ const DEFESA_SO_PASSIVO: Record<string, string> = {
   administrativo: "contestacao",
   tributario: "contestacao",
   trabalhista: "defesa",
+  jecr: "defesa-jecrim",
+  criminal: "resposta-acusacao",
+  previdenciario: "contestacao",
+  empresarial: "contestacao",
+  digital: "contestacao",
+  ambiental: "defesa-infracao",
+  "propriedade-intelectual": "contestacao",
+  internacional: "contestacao",
+  medico: "contestacao",
+  agrario: "contestacao",
+  eleitoral: "defesa",
 };
 
 const INICIAL_SO_ATIVO: Record<string, string> = {
@@ -39,6 +50,17 @@ const INICIAL_SO_ATIVO: Record<string, string> = {
   tributario: "peticao-inicial",
   trabalhista: "reclamacao",
   constitucional: "mandado-seguranca",
+  jecr: "queixa-crime",
+  criminal: "habeas-corpus",
+  previdenciario: "peticao-inicial",
+  empresarial: "peticao-inicial",
+  digital: "peticao-inicial",
+  ambiental: "acp-ambiental",
+  "propriedade-intelectual": "abstencao-marca",
+  internacional: "homologacao",
+  medico: "peticao-inicial",
+  agrario: "peticao-inicial",
+  eleitoral: "representacao",
 };
 
 function main() {
@@ -179,6 +201,27 @@ function main() {
   assert(
     especieCompativelComPolo("constitucional", "recurso-extraordinario", "passivo"),
     "Constitucional: RE cabe no polo passivo (réu/recorrido também recorre)"
+  );
+  assert(
+    inferirPoloPorEspecie("jecr", "defesa-jecrim") === "passivo",
+    "JECRIM: defesa no polo passivo"
+  );
+  assert(
+    inferirPoloPorEspecie("criminal", "resposta-acusacao") === "passivo",
+    "Penal: resposta à acusação no polo passivo"
+  );
+  assert(
+    inferirPoloPorEspecie("eleitoral", "defesa") === "passivo",
+    "Eleitoral: defesa no polo passivo"
+  );
+  assert(
+    inferirPoloPorEspecie("ambiental", "defesa-infracao") === "passivo",
+    "Ambiental: defesa de auto no polo passivo"
+  );
+  assert(
+    especieCompativelComPolo("eleitoral", "registro-candidatura", "ativo") &&
+      especieCompativelComPolo("eleitoral", "registro-candidatura", "passivo"),
+    "Eleitoral: registro/impugnação nos dois polos"
   );
 
   const { oks, falhas } = stats();

@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { transcreverAudioComGemini } from "@/lib/ia/transcrever-audio-gemini";
 import {
   LIMITE_AUDIO_TRANSCRICAO_BYTES,
   mimeAudioPermitido,
 } from "@/lib/transcrever-audio";
+import { exigirAcessoAreaMinuta } from "@/lib/acesso-minuta-api";
+import { dentroDoLimite } from "@/lib/rate-limit-memoria";
 
 export const maxDuration = 45;
+
+const TRANSCRICOES_POR_HORA = 8;
 
 /**
  * POST /api/transcrever-audio — voz → texto no campo.
@@ -14,18 +17,30 @@ export const maxDuration = 45;
  */
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
-
     const body = (await request.json().catch(() => null)) as {
       mimeType?: string;
       base64?: string;
+      areaId?: string;
     } | null;
+
+    const acesso = await exigirAcessoAreaMinuta(body?.areaId);
+    if (!acesso.ok) return acesso.response;
+
+    if (
+      !dentroDoLimite({
+        chave: `transcrever:${acesso.user.id}`,
+        max: TRANSCRICOES_POR_HORA,
+        janelaMs: 60 * 60 * 1000,
+      })
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Limite de transcrições nesta hora. Digite o relato ou tente mais tarde.",
+        },
+        { status: 429 }
+      );
+    }
 
     const mime = mimeAudioPermitido(String(body?.mimeType ?? ""));
     const b64 = String(body?.base64 ?? "").replace(/^data:[^;]+;base64,/, "");

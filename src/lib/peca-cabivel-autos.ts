@@ -62,6 +62,67 @@ export function janelaRelatoParaTriagem(
   return `${t.slice(0, cabeca)}\n\n${miolo}\n\n${t.slice(-caudaEfetiva)}`;
 }
 
+export type JanelaRelatoMeta = {
+  texto: string;
+  charsTotais: number;
+  charsEnviados: number;
+  truncado: boolean;
+  encontrouDecisoes: boolean;
+};
+
+export function analisarJanelaRelato(
+  texto: string,
+  max = LIMITE_RELATO_TRIAGEM_CHARS
+): JanelaRelatoMeta {
+  const t = texto.trim();
+  if (t.length <= max) {
+    return {
+      texto: t,
+      charsTotais: t.length,
+      charsEnviados: t.length,
+      truncado: false,
+      encontrouDecisoes: /\bDECIS[AÃ]O\b/i.test(t),
+    };
+  }
+  const janela = janelaRelatoParaTriagem(t, max);
+  return {
+    texto: janela,
+    charsTotais: t.length,
+    charsEnviados: janela.length,
+    truncado: true,
+    encontrouDecisoes: janela.includes("[...decisões do trecho intermediário...]"),
+  };
+}
+
+export function trechoLeituraRelato(texto: string, maxCabeca = 420): string {
+  const t = texto.replace(/\s+/g, " ").trim();
+  if (t.length <= maxCabeca + 220) return t;
+  return `${t.slice(0, maxCabeca)}\n…\n${t.slice(-200)}`;
+}
+
+export function resumoLeituraRelato(opcoes: {
+  truncado: boolean;
+  encontrouDecisoes: boolean;
+  fonte: "texto" | "ocr" | "texto_e_ocr" | "relato";
+}): string {
+  const partes: string[] = [];
+  if (opcoes.fonte === "ocr") {
+    partes.push("PDF escaneado: texto via OCR. Confira nomes e números.");
+  } else if (opcoes.fonte === "texto_e_ocr") {
+    partes.push("Li texto selecionável e OCR. Confira nomes e números.");
+  }
+  if (opcoes.truncado && opcoes.encontrouDecisoes) {
+    partes.push("Li capa + decisões + fim (PDF longo).");
+  } else if (opcoes.truncado) {
+    partes.push("Li capa e o fim dos autos (miolo omitido).");
+  } else if (opcoes.fonte === "texto") {
+    partes.push("Li o PDF inteiro.");
+  } else if (opcoes.fonte === "relato" && partes.length === 0) {
+    partes.push("Li o relato colado.");
+  }
+  return partes.join(" ");
+}
+
 function normalizarBlob(texto: string): string {
   return texto
     .normalize("NFD")

@@ -31,6 +31,17 @@ export const AREAS_COM_POLO_ADVOCACIA = [
   "administrativo",
   "tributario",
   "trabalhista",
+  "jecr",
+  "criminal",
+  "previdenciario",
+  "empresarial",
+  "digital",
+  "ambiental",
+  "propriedade-intelectual",
+  "internacional",
+  "medico",
+  "agrario",
+  "eleitoral",
 ] as const;
 
 export type AreaComPoloAdvocacia = (typeof AREAS_COM_POLO_ADVOCACIA)[number];
@@ -162,6 +173,114 @@ export const MATRIZ_POLO_POR_AREA: Record<AreaComPoloAdvocacia, MatrizPoloArea> 
         "agravo-peticao",
         "execucao-titulo",
       ]
+    ),
+    jecr: m(
+      ["queixa-crime"],
+      ["defesa-jecrim"],
+      [
+        "composicao-civil",
+        "transacao-penal",
+        "suspensao-condicional",
+        "alegacoes-finais",
+        "embargos-declaracao",
+        "recurso-inominado",
+      ]
+    ),
+    criminal: m(
+      ["habeas-corpus", "revisao-criminal"],
+      ["defesa-preliminar", "resposta-acusacao"],
+      [
+        "alegacoes-finais",
+        "apelacao",
+        "recurso-sentido-estrito",
+        "agravo-execucao",
+        "embargos-declaracao",
+      ]
+    ),
+    previdenciario: m(
+      ["peticao-inicial", "replica"],
+      ["contestacao"],
+      [
+        "embargos-declaracao",
+        "apelacao",
+        "agravo-instrumento",
+        "cumprimento-sentenca",
+      ]
+    ),
+    empresarial: m(
+      ["notificacao-extrajudicial", "peticao-inicial", "replica"],
+      ["contestacao"],
+      [
+        "embargos-declaracao",
+        "apelacao",
+        "agravo-instrumento",
+        "cumprimento-sentenca",
+      ]
+    ),
+    digital: m(
+      ["peticao-inicial", "replica"],
+      ["contestacao"],
+      [
+        "embargos-declaracao",
+        "apelacao",
+        "agravo-instrumento",
+        "cumprimento-sentenca",
+      ]
+    ),
+    ambiental: m(
+      ["acp-ambiental", "peticao-inicial", "replica"],
+      ["defesa-infracao", "contestacao"],
+      [
+        "embargos-declaracao",
+        "apelacao",
+        "agravo-instrumento",
+        "cumprimento-sentenca",
+      ]
+    ),
+    "propriedade-intelectual": m(
+      ["abstencao-marca", "peticao-inicial", "replica"],
+      ["contestacao"],
+      [
+        "embargos-declaracao",
+        "apelacao",
+        "agravo-instrumento",
+        "cumprimento-sentenca",
+      ]
+    ),
+    internacional: m(
+      ["homologacao", "peticao-inicial", "replica"],
+      ["contestacao"],
+      [
+        "embargos-declaracao",
+        "apelacao",
+        "agravo-instrumento",
+        "cumprimento-sentenca",
+      ]
+    ),
+    medico: m(
+      ["peticao-inicial", "replica"],
+      ["contestacao"],
+      [
+        "embargos-declaracao",
+        "apelacao",
+        "agravo-instrumento",
+        "cumprimento-sentenca",
+      ]
+    ),
+    agrario: m(
+      ["peticao-inicial", "replica"],
+      ["contestacao"],
+      [
+        "embargos-declaracao",
+        "apelacao",
+        "agravo-instrumento",
+        "cumprimento-sentenca",
+      ]
+    ),
+    eleitoral: m(
+      ["representacao", "aije"],
+      ["defesa"],
+      ["registro-candidatura", "recurso-eleitoral"]
     ),
   };
 

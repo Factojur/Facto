@@ -147,8 +147,8 @@ export const MODULO_JECR: AreaModuloConfig = {
   copyCabecalho:
     "Peças no Juizado Especial Criminal (Lei 9.099/95, arts. 60 a 92): queixa-crime, composição civil, transação penal, defesa e recurso inominado. Não use para o JEC cível nem para o rito penal comum (CPP). Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
   fundamentoQualificacao: "na Lei nº 9.099/95 (rito criminal)",
-  rotuloPoloAtivo: "querelante / acusado",
-  rotuloPoloPassivo: "querelado / Ministério Público",
+  rotuloPoloAtivo: "querelante",
+  rotuloPoloPassivo: "acusado / querelado",
   rotuloNav: "Gerar peça JECRIM",
 };
 
@@ -161,8 +161,8 @@ export const MODULO_CRIMINAL: AreaModuloConfig = {
   copyCabecalho:
     "Peças na Justiça Penal comum (CP e CPP): habeas corpus, resposta à acusação, alegações finais, apelação criminal. Não use JECRIM (9.099) nem contestação cível. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
   fundamentoQualificacao: "no Código Penal e no Código de Processo Penal",
-  rotuloPoloAtivo: "acusado / paciente",
-  rotuloPoloPassivo: "Ministério Público / autoridade coatora",
+  rotuloPoloAtivo: "paciente / impetrante",
+  rotuloPoloPassivo: "acusado",
   rotuloNav: "Gerar peça Penal",
 };
 

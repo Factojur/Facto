@@ -127,7 +127,9 @@ import { PacotesExtrasPainel } from "@/components/dashboard/pacotes-extras-paine
 import { EntradaCasoSection } from "@/components/dashboard/entrada-caso-section";
 import { BotaoFalarCampo } from "@/components/dashboard/botao-falar-campo";
 import { juntarTranscricao } from "@/lib/transcrever-audio";
-import type { PreenchimentoEntradaCaso } from "@/lib/entrada-caso-types";
+import type { ConferenciaEntrada, PreenchimentoEntradaCaso } from "@/lib/entrada-caso-types";
+import { montarConferenciaEntrada } from "@/lib/conferencia-entrada";
+import { paginaDoTrechoNoTexto, rotuloCitacaoAnexo } from "@/lib/pagina-anexo-pdf";
 import { detectarTesesCanonicas } from "@/lib/teses-canonicas";
 import { AJUSTES_POR_GERACAO } from "@/lib/ia/ajustar-trecho-peca";
 
@@ -322,6 +324,7 @@ function PecasResultado({
   onPecaAjustada,
   ajustesFeitos,
   auditorContexto,
+  jurisCaso,
 }: {
   resultado: GerarPecaJecOutput;
   escritorio?: EscritorioConfig;
@@ -346,19 +349,21 @@ function PecasResultado({
     comReconvencao: boolean;
     pedidosUsuario: string[];
   };
+  jurisCaso: JurisCasoSalvo[];
 }) {
   async function copiar(texto: string) {
     await navigator.clipboard.writeText(texto);
   }
 
   const [pedidoAjuste, setPedidoAjuste] = useState("");
+  const [trechoAjuste, setTrechoAjuste] = useState("");
   const [ajustando, setAjustando] = useState(false);
   const [erroAjuste, setErroAjuste] = useState<string | null>(null);
   const ajustesRestantes = Math.max(0, AJUSTES_POR_GERACAO - ajustesFeitos);
 
   async function handleAjustarTrecho() {
     if (pedidoAjuste.trim().length < 8) {
-      setErroAjuste("Descreva o ajuste (um trecho ou pedido).");
+      setErroAjuste("Descreva o pedido (mín. 8 caracteres).");
       return;
     }
     setAjustando(true);
@@ -370,6 +375,7 @@ function PecasResultado({
         body: JSON.stringify({
           peca: resultado.peca,
           pedido: pedidoAjuste.trim(),
+          trecho: trechoAjuste.trim() || undefined,
           contextoVerificacao: resultado.contextoVerificacao,
           ajustesJaFeitos: ajustesFeitos,
           auditor: auditorContexto,
@@ -395,6 +401,7 @@ function PecasResultado({
         equipeEtapas: data.equipeEtapas,
       });
       setPedidoAjuste("");
+      setTrechoAjuste("");
     } catch {
       setErroAjuste("Falha de rede ao ajustar.");
     } finally {
@@ -631,11 +638,41 @@ function PecasResultado({
                 Jurisprudência verificada na base
               </p>
               <ul className="mt-1 list-inside list-disc text-sm text-emerald-800">
-                {jurisVerificada.map((c) => (
-                  <li key={c.trecho} title="Consta na base FACTO ou no anexo do caso">
-                    {c.trecho}
-                  </li>
-                ))}
+                {jurisVerificada.map((c) => {
+                  const anexo = jurisCaso.find((j) =>
+                    j.texto
+                      .toLowerCase()
+                      .includes(c.trecho.toLowerCase().slice(0, 40))
+                  );
+                  const pagina = anexo
+                    ? paginaDoTrechoNoTexto(anexo.texto, c.trecho)
+                    : null;
+                  return (
+                    <li
+                      key={c.trecho}
+                      title={
+                        anexo
+                          ? rotuloCitacaoAnexo({
+                              titulo: anexo.titulo || "juris do caso",
+                              pagina,
+                            })
+                          : "Consta na base FACTO ou no anexo do caso"
+                      }
+                    >
+                      {c.trecho}
+                      {anexo ? (
+                        <span className="ml-1 text-xs text-slate-500">
+                          (
+                          {rotuloCitacaoAnexo({
+                            titulo: anexo.titulo || "juris do caso",
+                            pagina,
+                          })}
+                          )
+                        </span>
+                      ) : null}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}
@@ -709,16 +746,24 @@ function PecasResultado({
             {ajustesRestantes === 1 ? "" : "s"} nesta minuta)
           </p>
           <p className="mt-1 text-xs text-slate-500">
-            Um trecho ou pedido. Não muda endereçamento nem inventa julgado. Não
-            é chat — se precisar de outra peça, volte ao formulário e gere de
-            novo.
+            Cole o trecho da minuta e o pedido em linguagem de advogado. Não
+            muda endereçamento nem inventa julgado. Não é chat — se precisar de
+            outra peça, volte ao formulário e gere de novo.
           </p>
+          <textarea
+            rows={2}
+            value={trechoAjuste}
+            onChange={(e) => setTrechoAjuste(e.target.value)}
+            disabled={ajustesRestantes <= 0 || ajustando}
+            placeholder="Trecho da minuta (opcional). Ex.: o parágrafo sobre juros de mora…"
+            className="mt-2 w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-stone-500 disabled:opacity-50"
+          />
           <textarea
             rows={2}
             value={pedidoAjuste}
             onChange={(e) => setPedidoAjuste(e.target.value)}
             disabled={ajustesRestantes <= 0 || ajustando}
-            placeholder="Ex.: incluir pedido de tutela para o estorno; tirar o parágrafo sobre juros"
+            placeholder="Pedido. Ex.: incluir tutela para o estorno; tirar o parágrafo sobre juros"
             className="mt-2 w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-stone-500 disabled:opacity-50"
           />
           <button
@@ -809,7 +854,10 @@ export function JecForm({
   const [especieManual, setEspecieManual] = useState(false);
   const [fatos, setFatos] = useState("");
   const [avisoEntrada, setAvisoEntrada] = useState<string | null>(null);
+  const [conferenciaEntrada, setConferenciaEntrada] =
+    useState<ConferenciaEntrada | null>(null);
   const [tesesOff, setTesesOff] = useState<string[]>([]);
+  const [tesesIdsEntrada, setTesesIdsEntrada] = useState<string[]>([]);
   const [ajustesFeitos, setAjustesFeitos] = useState(0);
   const [tutelaUrgencia, setTutelaUrgencia] = useState(false);
   const [cumuloDanosMorais, setCumuloDanosMorais] = useState(false);
@@ -1001,9 +1049,10 @@ export function JecForm({
     () =>
       detectarTesesCanonicas(
         areaId,
-        [tipoAcaoTexto, fatos].filter(Boolean).join("\n")
+        [tipoAcaoTexto, fatos].filter(Boolean).join("\n"),
+        tesesIdsEntrada
       ).filter((t) => !tesesOff.includes(t.id)),
-    [areaId, tipoAcaoTexto, fatos, tesesOff]
+    [areaId, tipoAcaoTexto, fatos, tesesOff, tesesIdsEntrada]
   );
 
   useEffect(() => {
@@ -1062,6 +1111,7 @@ export function JecForm({
   function aplicarEntradaCaso(preenchimento: PreenchimentoEntradaCaso) {
     setAvisoEntrada(preenchimento.resumoConferencia);
     setTesesOff([]);
+    setTesesIdsEntrada(preenchimento.tesesIds ?? []);
     if (preenchimento.fatos) setFatos(preenchimento.fatos);
     if (preenchimento.tipoAcao) {
       setModoAcao("livre");
@@ -1187,7 +1237,9 @@ export function JecForm({
     setEspecieManual(ini.especieManual);
     setFatos(ini.fatos);
     setAvisoEntrada(null);
+    setConferenciaEntrada(null);
     setTesesOff([]);
+    setTesesIdsEntrada([]);
     setAjustesFeitos(0);
     setTutelaUrgencia(ini.tutelaUrgencia);
     setCumuloDanosMorais(ini.cumuloDanosMorais);
@@ -1685,16 +1737,45 @@ export function JecForm({
         <div className={guiaAtiva === "identificacao" ? "space-y-6" : "hidden"}>
         <EntradaCasoSection
           areaId={areaId}
-          onPreenchido={({ preenchimento }) => {
+          onPreenchido={({ preenchimento, teses }) => {
             aplicarEntradaCaso(preenchimento);
+            setConferenciaEntrada(
+              montarConferenciaEntrada(areaId, preenchimento, teses)
+            );
             setError(null);
           }}
           onErro={(msg) => setError(msg || null)}
+          onRelatoTranscrito={(texto) =>
+            setFatos((atual) => juntarTranscricao(atual, texto))
+          }
         />
-        {avisoEntrada ? (
+        {avisoEntrada || conferenciaEntrada ? (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
             <p className="font-medium">Revise as três abas — a peça ainda não foi gerada.</p>
-            <p className="mt-1">{avisoEntrada}</p>
+            {avisoEntrada ? <p className="mt-1">{avisoEntrada}</p> : null}
+            {conferenciaEntrada ? (
+              <>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {conferenciaEntrada.chips.map((c) => (
+                    <span
+                      key={c.chave}
+                      className={
+                        c.preenchido
+                          ? "rounded-full border border-stone-300 bg-white px-2.5 py-0.5 text-xs text-stone-800"
+                          : "rounded-full border border-dashed border-slate-400 bg-transparent px-2.5 py-0.5 text-xs text-slate-500"
+                      }
+                    >
+                      {c.rotulo}
+                    </span>
+                  ))}
+                </div>
+                {conferenciaEntrada.vazios.length > 0 ? (
+                  <p className="mt-2 text-xs text-slate-600">
+                    Em branco: {conferenciaEntrada.vazios.join(" · ")}
+                  </p>
+                ) : null}
+              </>
+            ) : null}
           </div>
         ) : null}
         <section
@@ -2138,6 +2219,7 @@ export function JecForm({
             <div className="mt-3 flex flex-wrap items-end gap-2">
               <BotaoFalarCampo
                 disabled={analisandoAssistente}
+                areaId={areaId}
                 onTranscrito={(texto) =>
                   setFatos((atual) => juntarTranscricao(atual, texto))
                 }
@@ -2165,6 +2247,10 @@ export function JecForm({
                 Salva neste navegador (sem anexos).
               </span>
             </div>
+            <p className="mt-2 text-xs text-slate-500">
+              Se já falou na Entrada, o texto já está aqui. Falar de novo anexa
+              mais (outra transcrição).
+            </p>
             {msgRascunho && (
               <p className="mt-2 text-sm text-stone-600">{msgRascunho}</p>
             )}
@@ -2665,6 +2751,7 @@ export function JecForm({
             escritorio={escritorio}
             onFechar={() => setResultado(null)}
             ajustesFeitos={ajustesFeitos}
+            jurisCaso={jurisCaso}
             auditorContexto={{
               areaId,
               especie: especiePeca,

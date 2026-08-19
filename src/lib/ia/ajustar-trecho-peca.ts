@@ -14,9 +14,11 @@ export const AJUSTES_POR_GERACAO = 2;
 export async function ajustarTrechoPeca(params: {
   peca: string;
   pedido: string;
+  trecho?: string;
 }): Promise<{ ok: true; peca: string } | { ok: false; erro: string }> {
   const peca = params.peca.trim();
   const pedido = params.pedido.trim();
+  const trecho = (params.trecho ?? "").trim();
   if (peca.length < 200) {
     return { ok: false, erro: "Não há minuta para ajustar." };
   }
@@ -32,11 +34,17 @@ export async function ajustarTrechoPeca(params: {
       "Você edita uma minuta forense já pronta.",
       "Devolva a peça COMPLETA (não um trecho).",
       "Altere SÓ o que o pedido pedir.",
+      "Se houver TRECHO_ALVO, concentre a alteração nesse trecho; o restante permanece.",
       "PROIBIDO: mudar endereçamento; inventar número de processo, REsp ou relator; apagar seções; resumir a peça; modo curto.",
       "Se o pedido pedir julgado novo, ignore e mantenha as citações que já existem.",
       "Sem markdown de cerca, sem comentário — só o texto da peça.",
     ].join(" "),
     userPrompt: [
+      trecho
+        ? ["<TRECHO_ALVO>", trecho.slice(0, 4000), "</TRECHO_ALVO>", ""].join(
+            "\n"
+          )
+        : "",
       "<PEDIDO_DE_AJUSTE>",
       pedido.slice(0, 2000),
       "</PEDIDO_DE_AJUSTE>",
@@ -44,7 +52,9 @@ export async function ajustarTrechoPeca(params: {
       "<PECA>",
       peca.slice(0, 60_000),
       "</PECA>",
-    ].join("\n"),
+    ]
+      .filter(Boolean)
+      .join("\n"),
     modelos: MODELOS_TRIAGEM,
     temperature: 0.2,
     maxOutputTokens: 8192,

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { analisarCaseComGemini } from "@/lib/ia/analisar-assistente-gemini";
-import { normalizarAreaIdMinuta } from "@/lib/minuta-modulo";
+import { exigirAcessoAreaMinuta } from "@/lib/acesso-minuta-api";
 
 export const maxDuration = 30;
 
@@ -10,22 +9,15 @@ export const maxDuration = 30;
  */
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
-
     const body = (await request.json().catch(() => null)) as {
       fatos?: string;
       areaId?: string;
     } | null;
 
+    const gate = await exigirAcessoAreaMinuta(body?.areaId);
+    if (!gate.ok) return gate.response;
+
     const fatos = String(body?.fatos ?? "").trim();
-    const areaId = normalizarAreaIdMinuta(body?.areaId);
     if (fatos.length < 40) {
       return NextResponse.json(
         {
@@ -37,7 +29,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const decisao = await analisarCaseComGemini({ fatos, areaId });
+    const decisao = await analisarCaseComGemini({ fatos, areaId: gate.areaId });
 
     return NextResponse.json({ decisao });
   } catch (erro) {

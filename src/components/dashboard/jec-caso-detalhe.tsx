@@ -17,6 +17,8 @@ import {
   obterCasoJec,
 } from "@/lib/jec-casos-storage";
 import { podePersistirCasosNaNuvem } from "@/lib/emails-persistencia-casos";
+import { PecaDocumentoView } from "@/components/dashboard/peca-documento";
+import { gerarDocumentoTimbrado } from "@/lib/formatacao-juridica";
 
 function mapCasoNuvem(row: Record<string, unknown>): CasoJec {
   return {
@@ -45,6 +47,7 @@ export function JecCasoDetalhe({
   const [nota, setNota] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(true);
+  const [pecaAbertaId, setPecaAbertaId] = useState<string | null>(null);
 
   async function recarregar() {
     setCarregando(true);
@@ -153,13 +156,13 @@ export function JecCasoDetalhe({
     }
   }
 
-  function hrefGerarPeca(): string | null {
-    const especie = faseMeta.especieSugerida;
-    if (!especie) return null;
+  function hrefGerarPeca(especie?: string | null): string | null {
+    const especieFinal = especie || faseMeta.especieSugerida;
+    if (!especieFinal) return null;
     const params = new URLSearchParams({
       caso: casoAtual.id,
       fase: casoAtual.faseAtual,
-      especie,
+      especie: especieFinal,
     });
     if (casoAtual.numeroProcesso) {
       params.set("processo", casoAtual.numeroProcesso);
@@ -325,7 +328,13 @@ export function JecCasoDetalhe({
                 </div>
                 {eventosFase.length > 0 && (
                   <ul className="mt-2 space-y-1.5">
-                    {eventosFase.map((ev) => (
+                    {eventosFase.map((ev) => {
+                      const pecaAberta =
+                        Boolean(ev.pecaTexto) && pecaAbertaId === ev.id;
+                      const hrefDeNovo = ev.especiePeca
+                        ? hrefGerarPeca(ev.especiePeca)
+                        : null;
+                      return (
                       <li
                         key={ev.id}
                         className="rounded-md bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600"
@@ -340,8 +349,45 @@ export function JecCasoDetalhe({
                             Peça: {ev.tituloPeca}
                           </span>
                         )}
+                        {ev.pecaTexto ? (
+                          <div className="mt-1.5 flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setPecaAbertaId(pecaAberta ? null : ev.id)
+                              }
+                              className="font-medium text-stone-700 underline-offset-2 hover:underline"
+                            >
+                              {pecaAberta ? "Fechar" : "Reabrir"}
+                            </button>
+                            {hrefDeNovo ? (
+                              <Link
+                                href={hrefDeNovo}
+                                className="font-medium text-stone-700 underline-offset-2 hover:underline"
+                              >
+                                Gerar de novo
+                              </Link>
+                            ) : null}
+                          </div>
+                        ) : null}
+                        {pecaAberta && ev.pecaTexto ? (
+                          <div className="mt-2">
+                            <PecaDocumentoView
+                              peca={ev.pecaTexto}
+                              pecaHtml={
+                                gerarDocumentoTimbrado(ev.pecaTexto).pecaHtml
+                              }
+                              onCopiarTexto={() =>
+                                void navigator.clipboard.writeText(
+                                  ev.pecaTexto ?? ""
+                                )
+                              }
+                            />
+                          </div>
+                        ) : null}
                       </li>
-                    ))}
+                      );
+                    })}
                   </ul>
                 )}
               </li>

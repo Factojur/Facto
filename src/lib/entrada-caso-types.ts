@@ -25,3 +25,28 @@ export type PreenchimentoEntradaCaso = {
   camposIncertos: string[];
   resumoConferencia: string;
 };
+
+export type FonteLeituraRelato = "texto" | "ocr" | "texto_e_ocr" | "relato";
+
+/** O que a entrada leu — não é a peça. */
+export type LeituraRelato = {
+  fonte: FonteLeituraRelato;
+  charsTotais: number;
+  charsEnviados: number;
+  truncado: boolean;
+  encontrouDecisoes: boolean;
+  resumo: string;
+  trecho: string;
+};
+
+export type ChipConferencia = {
+  chave: string;
+  rotulo: string;
+  preenchido: boolean;
+};
+
+export type ConferenciaEntrada = {
+  chips: ChipConferencia[];
+  vazios: string[];
+  resumo: string;
+};

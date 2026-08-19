@@ -53,11 +53,12 @@ type AdminClient = ReturnType<typeof createAdminClient>;
 
 /**
  * Confere o cabeçalho x-signature enviado pelo Mercado Pago.
- * Sem secret configurado, aceita (dev). Com secret: valida HMAC.
+ * Produção: sem secret = recusa. Com secret: valida HMAC.
  */
 function assinaturaValida(request: Request, dataId: string | null): boolean {
   const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET?.trim();
   if (!secret) {
+    if (process.env.NODE_ENV === "production") return false;
     console.warn(
       "[webhook mercadopago] MERCADOPAGO_WEBHOOK_SECRET não configurada; pulando validação de assinatura."
     );
@@ -674,6 +675,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, ping: true });
   }
 
+  const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET?.trim();
+  if (!secret && process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  }
+
   if (ehIdSimulacaoMp(idFinal)) {
     await admin.from("webhook_eventos_mp").insert({
       topico: topicoFinal,
@@ -689,6 +695,12 @@ export async function POST(request: Request) {
   }
 
   const assinaturaOk = assinaturaValida(request, idFinal);
+  if (!assinaturaOk) {
+    console.warn(
+      "[webhook mercadopago] assinatura HMAC inválida ou ausente — recusado."
+    );
+    return NextResponse.json({ error: "Assinatura inválida" }, { status: 401 });
+  }
 
   const { data: eventoLog } = await admin
     .from("webhook_eventos_mp")
@@ -704,20 +716,6 @@ export async function POST(request: Request) {
     })
     .select("id")
     .maybeSingle();
-
-  if (!assinaturaOk) {
-    console.warn(
-      "[webhook mercadopago] assinatura HMAC inválida ou ausente — processando mesmo assim. Confira MERCADOPAGO_WEBHOOK_SECRET."
-    );
-    if (eventoLog) {
-      await admin
-        .from("webhook_eventos_mp")
-        .update({
-          erro: "assinatura HMAC inválida/ausente (processado com aviso)",
-        })
-        .eq("id", eventoLog.id);
-    }
-  }
 
   try {
     if (idFinal && topicoFinal === "subscription_preapproval") {

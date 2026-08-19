@@ -8,6 +8,7 @@ import {
 } from "@/lib/extrair-texto-cliente";
 import {
   LIMITE_UPLOAD_ANALISE_BYTES,
+  type LeituraRelato,
   type PreenchimentoEntradaCaso,
 } from "@/lib/entrada-caso-types";
 import type { ResumoCota } from "@/lib/cota-pecas";
@@ -21,8 +22,11 @@ type Props = {
   onPreenchido: (p: {
     preenchimento: PreenchimentoEntradaCaso;
     teses: { id: string; rotulo: string; artigos: string }[];
+    leituraRelato?: LeituraRelato;
   }) => void;
   onErro: (msg: string) => void;
+  /** Mesma transcrição da Entrada, sem segunda chamada Gemini. */
+  onRelatoTranscrito?: (texto: string) => void;
 };
 
 async function arquivoParaBase64(file: File): Promise<ArquivoEnvio> {
@@ -39,11 +43,17 @@ async function arquivoParaBase64(file: File): Promise<ArquivoEnvio> {
   };
 }
 
-export function EntradaCasoSection({ areaId, onPreenchido, onErro }: Props) {
+export function EntradaCasoSection({
+  areaId,
+  onPreenchido,
+  onErro,
+  onRelatoTranscrito,
+}: Props) {
   const [relato, setRelato] = useState("");
   const [arquivos, setArquivos] = useState<File[]>([]);
   const [enviando, setEnviando] = useState(false);
   const [cota, setCota] = useState<ResumoCota | null>(null);
+  const [leitura, setLeitura] = useState<LeituraRelato | null>(null);
 
   useEffect(() => {
     void fetch("/api/cota")
@@ -110,14 +120,17 @@ export function EntradaCasoSection({ areaId, onPreenchido, onErro }: Props) {
         error?: string;
         preenchimento?: PreenchimentoEntradaCaso;
         teses?: { id: string; rotulo: string; artigos: string }[];
+        leituraRelato?: LeituraRelato;
       };
       if (!res.ok || !data.preenchimento) {
         onErro(data.error ?? `Falha ao preencher (HTTP ${res.status}).`);
         return;
       }
+      if (data.leituraRelato) setLeitura(data.leituraRelato);
       onPreenchido({
         preenchimento: data.preenchimento,
         teses: data.teses ?? [],
+        leituraRelato: data.leituraRelato,
       });
     } catch (erro) {
       onErro(
@@ -167,9 +180,11 @@ export function EntradaCasoSection({ areaId, onPreenchido, onErro }: Props) {
         </label>
         <BotaoFalarCampo
           disabled={enviando}
-          onTranscrito={(texto) =>
-            setRelato((atual) => juntarTranscricao(atual, texto))
-          }
+          areaId={areaId}
+          onTranscrito={(texto) => {
+            setRelato((atual) => juntarTranscricao(atual, texto));
+            onRelatoTranscrito?.(texto);
+          }}
         />
         <button
           type="button"
@@ -181,14 +196,27 @@ export function EntradaCasoSection({ areaId, onPreenchido, onErro }: Props) {
         </button>
       </div>
       <p className="mt-2 text-xs text-slate-500">
-        Falar só coloca o texto no campo — confira nomes e números. Preencher as
-        três abas continua no clique e usa 1 análise.
+        Falar coloca o texto aqui e na aba Fatos (uma transcrição). Confira nomes
+        e números. Preencher as três abas continua no clique e usa 1 análise.
       </p>
       {arquivos.length > 0 && (
         <p className="mt-2 text-xs text-slate-500">
           {arquivos.map((f) => f.name).join(" · ")}
         </p>
       )}
+      {leitura?.resumo ? (
+        <p className="mt-2 text-xs text-slate-600">{leitura.resumo}</p>
+      ) : null}
+      {leitura?.trecho ? (
+        <details className="mt-1">
+          <summary className="cursor-pointer text-xs text-slate-500">
+            Trecho lido
+          </summary>
+          <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-slate-500">
+            {leitura.trecho}
+          </p>
+        </details>
+      ) : null}
     </section>
   );
 }

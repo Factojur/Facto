@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { preencherEntradaCaso } from "@/lib/ia/preencher-entrada-caso";
 import { ocrComGemini } from "@/lib/ia/ocr-pdf-gemini";
 import { detectarTesesCanonicas } from "@/lib/teses-canonicas";
-import { normalizarAreaIdMinuta } from "@/lib/minuta-modulo";
+import { exigirAcessoAreaMinuta } from "@/lib/acesso-minuta-api";
 import {
   obterResumoCotaUsuario,
   registrarUmaAnalise,
@@ -12,7 +11,16 @@ import {
   extrairTextoDeArquivo,
   TIPOS_ARQUIVO_ACEITOS,
 } from "@/lib/base-conhecimento";
-import { LIMITE_UPLOAD_ANALISE_BYTES } from "@/lib/entrada-caso-types";
+import {
+  LIMITE_UPLOAD_ANALISE_BYTES,
+  type FonteLeituraRelato,
+  type LeituraRelato,
+} from "@/lib/entrada-caso-types";
+import {
+  analisarJanelaRelato,
+  resumoLeituraRelato,
+  trechoLeituraRelato,
+} from "@/lib/peca-cabivel-autos";
 
 export const maxDuration = 60;
 
@@ -28,27 +36,26 @@ type ArquivoIn = {
  */
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user?.email) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
-
     const body = (await request.json().catch(() => null)) as {
       relato?: string;
       areaId?: string;
       arquivos?: ArquivoIn[];
     } | null;
 
-    const areaId = normalizarAreaIdMinuta(body?.areaId);
+    const gate = await exigirAcessoAreaMinuta(body?.areaId);
+    if (!gate.ok) return gate.response;
+    const { user, areaId } = gate;
+    if (!user.email) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    }
     const partes: string[] = [];
     const relatoDigitado = String(body?.relato ?? "").trim();
     if (relatoDigitado) partes.push(relatoDigitado);
 
     const arquivos = Array.isArray(body?.arquivos) ? body.arquivos : [];
     let total = 0;
+    let usouOcr = false;
+    let usouTextoArquivo = false;
     for (const arq of arquivos.slice(0, 4)) {
       const nome = String(arq.nome ?? "documento").slice(0, 180);
       const mime = String(arq.mimeType ?? "application/pdf");
@@ -77,6 +84,9 @@ export async function POST(request: Request) {
           dataBase64: b64,
         });
         texto = ocr?.trim() ?? "";
+        if (texto.length >= 40) usouOcr = true;
+      } else {
+        usouTextoArquivo = true;
       }
       if (texto.length >= 40) {
         partes.push(`--- ${nome} ---\n${texto}`);
@@ -117,6 +127,28 @@ export async function POST(request: Request) {
     );
     preenchimento.tesesIds = teses.map((t) => t.id);
 
+    const janela = analisarJanelaRelato(relato);
+    const fonte: FonteLeituraRelato = usouOcr
+      ? usouTextoArquivo || Boolean(relatoDigitado)
+        ? "texto_e_ocr"
+        : "ocr"
+      : usouTextoArquivo || /--- .+\.(pdf|docx)/i.test(relatoDigitado)
+        ? "texto"
+        : "relato";
+    const leituraRelato: LeituraRelato = {
+      fonte,
+      charsTotais: janela.charsTotais,
+      charsEnviados: janela.charsEnviados,
+      truncado: janela.truncado,
+      encontrouDecisoes: janela.encontrouDecisoes,
+      resumo: resumoLeituraRelato({
+        truncado: janela.truncado,
+        encontrouDecisoes: janela.encontrouDecisoes,
+        fonte,
+      }),
+      trecho: trechoLeituraRelato(janela.texto),
+    };
+
     const registro = await registrarUmaAnalise({
       userId: user.id,
       email: user.email,
@@ -129,6 +161,7 @@ export async function POST(request: Request) {
         rotulo: t.rotulo,
         artigos: t.artigos,
       })),
+      leituraRelato,
       analisesNoCiclo: registro.ok ? registro.analises : registro.analises,
       avisoCota: registro.ok
         ? undefined

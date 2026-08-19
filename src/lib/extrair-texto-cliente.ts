@@ -30,7 +30,7 @@ async function textoDePdf(buffer: ArrayBuffer): Promise<string> {
     const linha = content.items
       .map((it) => ("str" in it ? String(it.str) : ""))
       .join(" ");
-    if (linha.trim()) partes.push(linha);
+    if (linha.trim()) partes.push(`--- página ${i} ---\n${linha}`);
   }
   return partes.join("\n\n").trim();
 }

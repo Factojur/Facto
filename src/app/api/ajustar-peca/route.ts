@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import {
   AJUSTES_POR_GERACAO,
   ajustarTrechoPeca,
@@ -8,6 +7,7 @@ import { gerarDocumentoTimbrado } from "@/lib/formatacao-juridica";
 import { anotarJurisprudenciasSemLastro, verificarCitacoes } from "@/lib/ia/verificacao-citacoes";
 import { anexarAuditoria } from "@/lib/ia/auditor-peca";
 import { normalizarPecaGerada } from "@/lib/ia/normalizar-peca-gerada";
+import { exigirAcessoAreaMinuta } from "@/lib/acesso-minuta-api";
 
 export const maxDuration = 45;
 
@@ -17,17 +17,10 @@ export const maxDuration = 45;
  */
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
-
     const body = (await request.json().catch(() => null)) as {
       peca?: string;
       pedido?: string;
+      trecho?: string;
       contextoVerificacao?: string;
       ajustesJaFeitos?: number;
       auditor?: {
@@ -44,6 +37,9 @@ export async function POST(request: Request) {
       };
     } | null;
 
+    const gate = await exigirAcessoAreaMinuta(body?.auditor?.areaId ?? "jec");
+    if (!gate.ok) return gate.response;
+
     const feitos = Math.max(0, Number(body?.ajustesJaFeitos) || 0);
     if (feitos >= AJUSTES_POR_GERACAO) {
       return NextResponse.json(
@@ -58,6 +54,7 @@ export async function POST(request: Request) {
     const resultado = await ajustarTrechoPeca({
       peca: String(body?.peca ?? ""),
       pedido: String(body?.pedido ?? ""),
+      trecho: String(body?.trecho ?? ""),
     });
     if (!resultado.ok) {
       return NextResponse.json({ error: resultado.erro }, { status: 400 });
