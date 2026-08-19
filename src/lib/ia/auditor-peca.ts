@@ -483,6 +483,14 @@ export function anexarAuditoria<
   },
 >(saida: T, params: Omit<AuditorPecaParams, "peca" | "citacoes" | "marcadoresNaoEncontrado">): T & {
   auditoria: ResultadoAuditorPeca;
+  equipeEtapas: {
+    id: string;
+    skin: string;
+    titulo: string;
+    status: "ok" | "parcial" | "pulado" | "erro";
+    detalhe?: string;
+    modelo?: string;
+  }[];
 } {
   const auditoria = auditarPecaGerada({
     ...params,

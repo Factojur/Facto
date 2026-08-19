@@ -104,6 +104,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: tribunaisNorm.erro }, { status: 400 });
   }
   const tribunais = tribunaisNorm.ids;
+  const somenteBase = Boolean(body.somenteBase);
 
   const uploadsBrutos: Bruto[] = [];
   for (const u of body.uploads ?? []) {
