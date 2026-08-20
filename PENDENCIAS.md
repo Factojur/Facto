@@ -32,7 +32,7 @@ Ordem realista: receita e lastro primeiro; diferenciação visível em seguida; 
 
 | # | Item | Status | Benefício |
 |---|------|--------|-----------|
-| 1 | **Perfil FACTO na nuvem** — papel (advogado/escritório), tom, cláusulas padrão, 2–3 peças modelo → resumo de estilo no prompt | Pendente | Equivalente ao “particularidades do usuário” sem Obsidian |
+| 1 | **Perfil FACTO na nuvem** — tom + 2–3 peças modelo → resumo de estilo no prompt | Parcial (MVP em Perfil) | Interpreta estilo, não cola texto |
 | 2 | **Memória de cliente na nuvem** (Supabase, opt-in) | Pendente | Mesmo cliente em outro PC; hoje só `localStorage` |
 | 3 | **Histórico de minutas na nuvem** — todas as áreas, não só JEC local | Parcial (JEC local ok) | Não perder trabalho ao trocar máquina |
 | 4 | **Réplica a partir da contestação anexada** — detectar argumentos do réu e pré-montar contra-argumentos | Pendente | Automatização forte; MinutaIA não faz bem |
@@ -401,7 +401,15 @@ Posicionamento: **JEC = leigo/sem OAB**; motor de caixa = **Completo + Pro** (ad
 - Flash + base curada; **além do lote 56**, depois **outros TJs** no mesmo parâmetro (API/seed, não scrape cego).
 - Análise de autos: Gemini Flash pago + cotas.
 
-### Jurisprudências.ai (estratégia PLANO X)
+### Jurisprudências.ai (estratégia — 19/08, fechada)
+
+1. **Seed (01h):** assinatura Jurisprudências.ai alimenta `base_conhecimento` via scripts — **não** busca ao vivo no app do advogado.
+2. **Runtime do usuário:** só **acervo FACTO** + anexos do caso (upload → fila de verificação se não existir na base).
+3. **Sem cota de “consulta externa”** no produto — cotas restantes são peças/análises do plano.
+4. **Futuro:** API B2B do acervo curado (ativo próprio), não proxy ao vivo.
+5. Migration perfil estilo: `supabase/migration-perfil-estilo.sql`.
+
+### Jurisprudências.ai (estratégia PLANO X — histórico)
 
 1. **Fase seed:** assinar / usar cota para inflar `base_conhecimento` (lotes 5–56+ e TJs da API).  
 2. **Depois:** cancelar plano cheio; **7 backups** só fallback.  

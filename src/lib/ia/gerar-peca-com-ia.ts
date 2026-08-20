@@ -456,6 +456,7 @@ export async function gerarPecaComIA(params: {
   poloAdvocacia?: PoloAdvocacia | null;
   atuarLeigo?: boolean;
   tesesIds?: string[];
+  estiloEscritorio?: string | null;
 }): Promise<ResultadoPecaIA> {
   if (!geminiConfigurado()) {
     return {
@@ -701,7 +702,8 @@ export async function gerarPecaComIA(params: {
       especieFinal,
       areaId,
       opcoesPolo,
-      blocoVinculos
+      blocoVinculos,
+      params.estiloEscritorio
     ),
     userPrompt: montarUserPromptRedacao({
       tipoAcao: analiseEstrategica.nomeAcao || params.tipoAcao,

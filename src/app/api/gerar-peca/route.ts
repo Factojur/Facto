@@ -397,14 +397,20 @@ async function postGerarPeca(request: Request) {
     uf?: string | null;
     cep?: string | null;
   } = {};
+  let estiloEscritorio: string | null = null;
   try {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("tipo_usuario, endereco, numero, complemento, bairro, cidade, uf, cep")
+      .select(
+        "tipo_usuario, endereco, numero, complemento, bairro, cidade, uf, cep, estilo_resumo, estilo_opt_in"
+      )
       .eq("id", user.id)
       .maybeSingle();
     if (profile?.tipo_usuario) tipoUsuario = profile.tipo_usuario;
     if (profile) perfilEndereco = profile;
+    if (profile?.estilo_opt_in && profile.estilo_resumo?.trim()) {
+      estiloEscritorio = profile.estilo_resumo.trim();
+    }
   } catch {
     /* metadata */
   }
@@ -679,6 +685,7 @@ async function postGerarPeca(request: Request) {
     tesesIds: Array.isArray(body.tesesIds)
       ? body.tesesIds.map((id) => String(id)).filter(Boolean)
       : undefined,
+    estiloEscritorio,
     instrucoes: {
       enderecamento,
       valorCausa: montarSecaoValorCausa(valorCausaResumo).join("\n"),

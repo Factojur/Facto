@@ -12,6 +12,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { AssinaturaPainel } from "@/components/dashboard/assinatura-painel";
 import { EscritorioConfigPanel } from "@/components/dashboard/escritorio-config";
+import { EstiloEscritorioPanel } from "@/components/dashboard/estilo-escritorio-panel";
 import {
   carregarEscritorioConfig,
 } from "@/lib/escritorio-storage";
@@ -483,6 +484,8 @@ export function PerfilForm({ perfilInicial }: { perfilInicial: PerfilUsuario }) 
         value={escritorio}
         onChange={setEscritorio}
       />
+
+      <EstiloEscritorioPanel />
 
       <AssinaturaPainel />
     </div>

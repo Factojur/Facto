@@ -282,8 +282,8 @@ export function JurisCasoSection({
       </h2>
       <p className="mb-4 text-sm text-slate-500">
         Cole ou anexe acórdãos e súmulas deste caso. Entram na fundamentação
-        desta peça (citação) e seguem para conferência do FACTO — não gastam
-        cota de busca externa.
+        desta peça (citação) e seguem para conferência do FACTO se ainda não
+        estiverem no acervo.
       </p>
 
       <label className="flex items-start gap-2 text-sm text-slate-700">

@@ -142,6 +142,21 @@ export function montarSystemPromptAnaliseEstrategica(
  * ETAPA 2 — Agente Redator Sênior.
  * Redige a peça completa a partir de estrategiaJuridica.
  */
+export function blocoEstiloEscritorio(resumo: string | null | undefined): string {
+  const t = String(resumo ?? "").trim();
+  if (!t) return "";
+  return [
+    "================================================================================",
+    "ESTILO DO ESCRITÓRIO (PREFERÊNCIAS DE REDAÇÃO)",
+    "================================================================================",
+    "Ajuste tom, extensão de frases, vocativo e forma dos pedidos conforme abaixo.",
+    "NÃO copie fatos, nomes ou trechos das amostras — só o estilo.",
+    "O esqueleto forense, rito e endereçamento continuam obrigatórios.",
+    "",
+    t,
+  ].join("\n");
+}
+
 export function montarSystemPromptRedacaoTier1(
   contextoBase: string,
   leiMunicipal?: BlocoLeiMunicipal | null,
@@ -152,7 +167,8 @@ export function montarSystemPromptRedacaoTier1(
     polo?: PoloAdvocacia | null;
     atuarLeigo?: boolean;
   },
-  vinculosPeca?: string | null
+  vinculosPeca?: string | null,
+  estiloEscritorio?: string | null
 ): string {
   const especie = inferirEspecieDaArea(areaId, "", "", especiePeca);
   const meta = metaEspecieDaArea(areaId, especie);
@@ -295,6 +311,7 @@ export function montarSystemPromptRedacaoTier1(
     "   NÃO escreva a linha isolada \"Advogado\" entre o nome e a OAB.",
     "   Se a parte for leiga (sem OAB), use o nome da parte e omita a linha OAB.",
     "",
+    blocoEstiloEscritorio(estiloEscritorio),
     blocoPolo ?? "",
     blocoBaseMunicipalEJuris(contextoBase, leiMunicipal, jurisDoCaso),
   ]

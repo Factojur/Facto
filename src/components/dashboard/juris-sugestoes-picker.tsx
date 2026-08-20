@@ -14,11 +14,8 @@ import {
 import type { JurisCasoSalvo } from "@/components/dashboard/juris-caso-form";
 
 type Props = {
-  /** Texto para buscar (fatos + tipo de ação). */
   consulta: string;
-  /** Uploads já no formulário — entram como opções pré-marcáveis (sem gastar cota). */
   uploads: JurisCasoSalvo[];
-  /** UF do foro (ex.: SP) para pré-marcar o TJ local. */
   ufForo?: string | null;
   areaId?: string;
   polo?: "ativo" | "passivo" | null;
@@ -30,12 +27,8 @@ const POR_PAGINA = 6;
 
 function rotuloOrigem(origem: string): string {
   switch (origem) {
-    case "jurisprudencias_ai":
-      return "Julgado (busca externa)";
-    case "tribunal_scraper":
-      return "TJSP";
     case "base_conhecimento":
-      return "Base FACTO";
+      return "Acervo FACTO";
     case "upload_usuario":
       return "Seu anexo";
     case "sumula":
@@ -70,13 +63,6 @@ export function JurisSugestoesPicker({
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
-  const [provedorExterno, setProvedorExterno] = useState(false);
-  const [cota, setCota] = useState<{
-    usadas: number;
-    limite: number;
-    restantes: number;
-    ilimitado?: boolean;
-  } | null>(null);
   const [candidatos, setCandidatos] = useState<JurisCandidato[]>([]);
   const [totais, setTotais] = useState<{
     julgados: number;
@@ -85,30 +71,6 @@ export function JurisSugestoesPicker({
   } | null>(null);
   const [selecionados, setSelecionados] = useState<Record<string, boolean>>({});
   const [pagina, setPagina] = useState(0);
-
-  useEffect(() => {
-    let cancelado = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/juris/cota");
-        if (!res.ok) return;
-        const data = await res.json();
-        if (cancelado || !data.ativo) return;
-        setCota({
-          usadas: data.usadas,
-          limite: data.limite,
-          restantes: data.restantes,
-          ilimitado: Boolean(data.ilimitado),
-        });
-        setProvedorExterno(true);
-      } catch {
-        /* silencioso */
-      }
-    })();
-    return () => {
-      cancelado = true;
-    };
-  }, []);
 
   const totalPaginas = Math.max(1, Math.ceil(candidatos.length / POR_PAGINA));
   const paginaAtual = Math.min(pagina, totalPaginas - 1);
@@ -130,7 +92,7 @@ export function JurisSugestoesPicker({
     });
   }
 
-  async function abrirEBuscar(somenteBase = false) {
+  async function abrirEBuscar() {
     if (tribunaisSel.length < 1) {
       setErro("Selecione ao menos um tribunal.");
       return;
@@ -146,7 +108,7 @@ export function JurisSugestoesPicker({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           consulta,
-          somenteBase,
+          somenteBase: true,
           tribunais: tribunaisSel,
           areaId,
           polo,
@@ -171,8 +133,6 @@ export function JurisSugestoesPicker({
       setCandidatos(lista);
       setTotais(data.totais ?? null);
       setAviso(data.aviso ?? null);
-      setProvedorExterno(Boolean(data.provedorExternoAtivo));
-      if (data.cota) setCota(data.cota);
       const init: Record<string, boolean> = {};
       for (const c of lista) {
         init[c.id] = c.origem === "upload_usuario";
@@ -202,31 +162,6 @@ export function JurisSugestoesPicker({
     setSalvando(true);
     setErro(null);
     try {
-      const paraFila = escolhidos.filter(
-        (c) =>
-          c.origem === "jurisprudencias_ai" || c.origem === "tribunal_scraper"
-      );
-      if (paraFila.length) {
-        await fetch("/api/juris/salvar-base", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            precedentes: paraFila.map((c) => ({
-              titulo: c.titulo,
-              ementa: c.ementa,
-              tribunal: c.tribunal,
-              data: c.data,
-              url: c.url,
-              numeroProcesso: c.numeroProcesso,
-              relator: c.relator,
-              origem: c.origem,
-              tipo: c.tipo,
-            })),
-          }),
-        });
-      }
-
-      // Uploads já estão em jurisCaso — só aplica sugestões novas
       const novos = escolhidos.filter((c) => c.origem !== "upload_usuario");
       const salvos: JurisCasoSalvo[] = novos.map((c) => {
         const ementaComLink = c.url
@@ -303,40 +238,17 @@ export function JurisSugestoesPicker({
       <div className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-white p-3">
         <button
           type="button"
-          onClick={() => void abrirEBuscar(true)}
+          onClick={() => void abrirEBuscar()}
           disabled={consulta.trim().length < 8 || tribunaisSel.length < 1}
           className="rounded-lg bg-stone-800 px-4 py-2.5 text-sm font-medium text-amber-50 hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Buscar no acervo FACTO
         </button>
-        <p className="text-xs font-medium text-emerald-800">
-          Não consome consulta externa — só o acervo curado do FACTO
-        </p>
         <p className="text-xs leading-relaxed text-slate-500">
-          Casos semelhantes aos fatos, favoráveis ao seu polo. Se o julgado não
-          estiver no acervo, anexe a ementa abaixo ou use a busca nos tribunais.
+          Julgados curados e verificados — sem consulta ao vivo nos tribunais.
+          Casos semelhantes aos fatos, favoráveis ao seu polo. Se faltar lastro,
+          anexe a ementa abaixo; entra na fila de verificação do FACTO.
         </p>
-
-        {provedorExterno ? (
-          <>
-            <button
-              type="button"
-              onClick={() => void abrirEBuscar(false)}
-              disabled={consulta.trim().length < 8 || tribunaisSel.length < 1}
-              className="rounded-lg border border-stone-600 bg-white px-4 py-2.5 text-sm font-medium text-stone-800 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Buscar nos tribunais (consulta externa)
-            </button>
-            <p className="text-xs leading-relaxed text-slate-500">
-              Pesquisa em tempo real nos tribunais marcados.
-              {cota?.ilimitado
-                ? " Consulta externa ilimitada neste perfil."
-                : cota
-                  ? ` Consultas externas no mês: ${cota.usadas}/${cota.limite}.`
-                  : " Consome consulta externa do plano."}
-            </p>
-          </>
-        ) : null}
       </div>
 
       {aberto && (
@@ -348,26 +260,14 @@ export function JurisSugestoesPicker({
             className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-white shadow-xl"
           >
             <div className="shrink-0 border-b border-slate-100 p-5 pb-4">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <h3
-                  id="juris-sugestoes-titulo"
-                  className="text-lg font-semibold text-slate-800"
-                >
-                  Escolha jurisprudência / súmula
-                </h3>
-                {cota?.ilimitado ? (
-                  <span className="text-xs text-slate-500">
-                    Consultas externas ilimitadas neste perfil
-                  </span>
-                ) : cota && provedorExterno ? (
-                  <span className="text-xs tabular-nums text-slate-500">
-                    Consultas externas: {cota.usadas}/{cota.limite}
-                  </span>
-                ) : null}
-              </div>
+              <h3
+                id="juris-sugestoes-titulo"
+                className="text-lg font-semibold text-slate-800"
+              >
+                Escolha jurisprudência / súmula
+              </h3>
               <p className="mt-1 text-sm text-slate-500">
                 Resultados do acervo FACTO. Marque o que entra nesta minuta.
-                Anexe ementa se o julgado ainda não estiver no acervo.
               </p>
               {totais && !carregando ? (
                 <p className="mt-2 text-xs text-slate-600">
@@ -461,8 +361,8 @@ export function JurisSugestoesPicker({
 
               {!carregando && !erro && candidatos.length === 0 && (
                 <p className="text-sm text-slate-600">
-                  Nenhuma sugestão encontrada. Anexe um julgado ou refine os
-                  fatos / tipo da ação.
+                  Nenhuma sugestão no acervo para este caso. Anexe a ementa do
+                  julgado — o FACTO confere antes de indexar.
                 </p>
               )}
             </div>
