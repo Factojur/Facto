@@ -42,6 +42,7 @@ import {
   areaUsaPoloAdvocacia,
   agruparEspeciesPorPolo,
   inferirPoloPorEspecie,
+  inferirPoloDoRelato,
   ladoPoloDaEspecie,
   normalizarPoloAdvocacia,
   rotuloPoloAdvocacia,
@@ -634,8 +635,8 @@ function PecasResultado({
             <p className="mt-3 text-sm text-amber-800">
               A IA sinalizou {resultado.marcadoresNaoEncontrado}{" "}
               {resultado.marcadoresNaoEncontrado === 1 ? "trecho" : "trechos"}{" "}
-              sem fundamentação específica na base ([NÃO ENCONTRADO NA BASE]).
-              Considere cadastrar súmula/julgado correspondente.
+              sem lastro no acervo FACTO (sem citação verificada).
+              Confira ou substitua antes de protocolar.
             </p>
           )}
 
@@ -858,6 +859,7 @@ export function JecForm({
     () => idsPeticaoInicialDaArea(areaId)[0] ?? "peticao-inicial"
   );
   const [poloAdvocacia, setPoloAdvocacia] = useState<PoloAdvocacia>("ativo");
+  const [poloConfirmado, setPoloConfirmado] = useState(false);
   const [especieManual, setEspecieManual] = useState(false);
   const [fatos, setFatos] = useState("");
   const [avisoEntrada, setAvisoEntrada] = useState<string | null>(null);
@@ -1057,10 +1059,24 @@ export function JecForm({
     partesJaQualificadas: jaQualificadas,
   });
 
-  const podeGerar = podeGerarPeca(checklistItens) && !bloqueadoTetoLeigo;
+  const checklistComPolo =
+    poloExigeEscolha && comPoloAdvocacia
+      ? [
+          ...checklistItens,
+          {
+            id: "polo",
+            label: "Polo da advocacia (ativo ou passivo)",
+            ok: poloConfirmado,
+            bloqueante: true,
+          },
+        ]
+      : checklistItens;
+
+  const podeGerar =
+    podeGerarPeca(checklistComPolo) && !bloqueadoTetoLeigo;
 
   const itemOk = (id: string) =>
-    Boolean(checklistItens.find((i) => i.id === id)?.ok);
+    Boolean(checklistComPolo.find((i) => i.id === id)?.ok);
   const guiaIdentificacaoOk =
     itemOk("tipo") && itemOk("autor") && itemOk("reus") && itemOk("comarca");
   const guiaFatosOk = itemOk("fatos");
@@ -1147,7 +1163,12 @@ export function JecForm({
     if (pub.comReconvencao) setComReconvencao(true);
     if (areaUsaPoloAdvocacia(areaId)) {
       const inferido = inferirPoloPorEspecie(areaId, pub.especie);
-      if (inferido) setPoloAdvocacia(inferido);
+      if (inferido) {
+        setPoloAdvocacia(inferido);
+        setPoloConfirmado(true);
+      } else {
+        setPoloConfirmado(false);
+      }
     }
   }
 
@@ -1183,6 +1204,23 @@ export function JecForm({
     if (preenchimento.especiePeca) {
       aplicarEspecieInferida(preenchimento.especiePeca);
       setEspecieManual(true);
+      if (
+        ladoPoloDaEspecie(areaId, preenchimento.especiePeca) === "ambos"
+      ) {
+        const inferidoPolo = inferirPoloDoRelato(
+          [
+            preenchimento.fatos,
+            preenchimento.tipoAcao,
+            preenchimento.resumoConferencia,
+          ]
+            .filter(Boolean)
+            .join("\n")
+        );
+        if (inferidoPolo) {
+          setPoloAdvocacia(inferidoPolo);
+          setPoloConfirmado(true);
+        }
+      }
     }
     if (preenchimento.autoresNomes.length) {
       setAutores(autoresAPartirDosNomes(preenchimento.autoresNomes.join("; ")));
@@ -1266,7 +1304,7 @@ export function JecForm({
         aplicarDecisaoAssistente(local);
         setError(
           data.error
-            ? `${data.error} Usamos a análise local de respaldo.`
+            ? `${data.error} Sugestão alternativa aplicada — revise o tipo indicado.`
             : null
         );
         return;
@@ -1277,7 +1315,7 @@ export function JecForm({
         const local = analisarCaseAssistente({ fatos, areaId });
       aplicarDecisaoAssistente(local);
       setError(
-        "Não foi possível falar com a IA agora. Aplicamos a análise local — revise o tipo sugerido."
+        "Não foi possível consultar o Assistente agora. Há uma sugestão alternativa — revise o tipo indicado."
       );
     } finally {
       setAnalisandoAssistente(false);
@@ -1297,6 +1335,7 @@ export function JecForm({
     setTipoAcaoTexto(ini.tipoAcaoTexto);
     setEspeciePeca(ini.especiePeca);
     setPoloAdvocacia(ini.poloAdvocacia);
+    setPoloConfirmado(false);
     setEspecieManual(ini.especieManual);
     setFatos(ini.fatos);
     setAvisoEntrada(null);
@@ -1352,6 +1391,7 @@ export function JecForm({
     setComReconvencao(Boolean(p.comReconvencao) || pub.comReconvencao);
     if (!inferirPoloPorEspecie(areaId, pub.especie)) {
       setPoloAdvocacia(normalizarPoloAdvocacia(p.poloAdvocacia));
+      setPoloConfirmado(true);
     }
     setEspecieManual(Boolean(p.especiePeca));
     setTutelaUrgencia(Boolean(p.tutelaUrgencia));
@@ -1445,7 +1485,7 @@ export function JecForm({
       );
       setRascunhoAtivoId(salvo.id);
       setRascunhos(listarRascunhosJec());
-      setMsgRascunho("Salvo neste navegador.");
+      setMsgRascunho("Salvo neste dispositivo.");
       if (comPoloAdvocacia) {
         salvarPerfilCliente({
           autores,
@@ -1455,7 +1495,7 @@ export function JecForm({
       }
     } catch {
       setMsgRascunho(
-        "Não foi possível salvar (armazenamento do navegador cheio ou bloqueado)."
+        "Não foi possível salvar (memória do dispositivo cheia ou bloqueada)."
       );
     }
   }
@@ -1486,6 +1526,13 @@ export function JecForm({
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!podeGerar) return;
+
+    if (poloExigeEscolha && !poloConfirmado) {
+      setError(
+        "Confirme o polo (ativo ou passivo) antes de gerar — esta peça cabe nos dois lados."
+      );
+      return;
+    }
 
     if (
       areaId === "jec" &&
@@ -1572,7 +1619,10 @@ export function JecForm({
     const payload = {
       tipoAcao,
       especiePeca,
-      poloAdvocacia: comPoloAdvocacia ? poloAdvocacia : undefined,
+      poloAdvocacia:
+        comPoloAdvocacia && (!poloExigeEscolha || poloConfirmado)
+          ? poloAdvocacia
+          : undefined,
       atuarLeigo: leigo,
       areaId,
       tutelaUrgencia,
@@ -1903,8 +1953,11 @@ export function JecForm({
                       <input
                         type="radio"
                         name="poloAdvocacia"
-                        checked={poloAdvocacia === polo}
-                        onChange={() => setPoloAdvocacia(polo)}
+                        checked={poloConfirmado && poloAdvocacia === polo}
+                        onChange={() => {
+                          setPoloAdvocacia(polo);
+                          setPoloConfirmado(true);
+                        }}
                         className="h-4 w-4 border-slate-300 text-stone-700 focus:ring-stone-500"
                       />
                       <span className="font-medium text-slate-800">
@@ -1934,7 +1987,12 @@ export function JecForm({
                   setEspeciePeca(proxima);
                   setEspecieManual(true);
                   const inferido = inferirPoloPorEspecie(areaId, proxima);
-                  if (inferido) setPoloAdvocacia(inferido);
+                  if (inferido) {
+                    setPoloAdvocacia(inferido);
+                    setPoloConfirmado(true);
+                  } else {
+                    setPoloConfirmado(false);
+                  }
                   if (pecaUsaPartesJaQualificadas(proxima, idsInicial)) {
                     setTipoAcaoTexto(
                       tituloPecaDaArea(
@@ -2092,9 +2150,7 @@ export function JecForm({
                   <p className="text-xs leading-relaxed text-stone-600">
                     <span className="font-semibold text-stone-800">
                       Assistente Facto
-                      {decisaoSugerida?.fonte === "gemini"
-                        ? " (IA)"
-                        : " (análise local)"}
+                      {decisaoSugerida?.fonte === "gemini" ? " (IA)" : ""}
                       :{" "}
                     </span>
                     {justificativaAssistente}
@@ -2215,7 +2271,7 @@ export function JecForm({
             <p className="text-xs text-emerald-950">
               Já temos qualificação salva de{" "}
               <span className="font-semibold">{perfilMemoriaCliente.rotulo}</span>{" "}
-              neste navegador.
+              neste dispositivo.
             </p>
             <button
               type="button"
@@ -2274,7 +2330,7 @@ export function JecForm({
             {tesesAtivas.length > 0 && (
               <div className="mt-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Teses do código (conferir)
+                  Teses sugeridas (conferir)
                 </p>
                 <p className="mt-1 text-xs text-slate-500">
                   A redação usa estes artigos. Clique para tirar o que não
@@ -2327,7 +2383,7 @@ export function JecForm({
                 Salvar até aqui
               </button>
               <span className="text-xs text-slate-500">
-                Salva neste navegador (sem anexos).
+                Salva neste dispositivo (sem anexos).
               </span>
             </div>
             <p className="mt-2 text-xs text-slate-500">
@@ -2697,7 +2753,7 @@ export function JecForm({
               Checklist antes de gerar
             </p>
             <ul className="mt-2 space-y-1.5">
-              {checklistItens.map((item) => (
+              {checklistComPolo.map((item) => (
                 <li
                   key={item.id}
                   className={`flex items-center gap-2 text-sm ${

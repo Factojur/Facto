@@ -50,11 +50,11 @@ export function JecCasosLista({ emailUsuario }: { emailUsuario: string }) {
         }
         setAvisoNuvem(
           data.error ||
-            "Nuvem indisponível — usando armazenamento local neste navegador."
+            "Nuvem indisponível — usando armazenamento local neste dispositivo."
         );
       } catch {
         setAvisoNuvem(
-          "Nuvem indisponível — usando armazenamento local neste navegador."
+          "Nuvem indisponível — usando armazenamento local neste dispositivo."
         );
       }
     }
@@ -158,7 +158,7 @@ export function JecCasosLista({ emailUsuario }: { emailUsuario: string }) {
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-950">
           <strong className="font-semibold">Privacidade:</strong> o FACTO não
           guarda na nuvem os dados das partes nem a peça gerada. Os casos desta
-          tela ficam só neste navegador.{" "}
+          tela ficam só neste dispositivo.{" "}
           <strong className="font-semibold">
             Baixe e salve PDF/Word (ou copie para sua pasta/Drive)
           </strong>{" "}

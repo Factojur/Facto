@@ -10,6 +10,7 @@ import {
   especieCompativelComPolo,
   filtrarEspeciesPorPolo,
   inferirPoloPorEspecie,
+  ladoPoloDaEspecie,
   normalizarEspeciePoloArea,
   type PoloAdvocacia,
 } from "@/lib/polo-especies-por-area";
@@ -120,4 +121,50 @@ export function blocoPromptPoloAdvocacia(opcoes: {
   }
 
   return linhas.join("\n");
+}
+
+/** Indica se o polo ativo/passivo foi informado quando a espécie exige escolha. */
+export function mensagemPoloObrigatorioGeracao(
+  areaId: string,
+  especie: string,
+  polo: PoloAdvocacia | null | undefined
+): string | null {
+  if (!areaUsaPoloAdvocacia(areaId)) return null;
+  if (ladoPoloDaEspecie(areaId, especie) !== "ambos") return null;
+  if (polo === "ativo" || polo === "passivo") return null;
+  return "Esta peça cabe nos dois polos — confirme se você representa o polo ativo ou passivo antes de gerar.";
+}
+
+/** Resolve polo para geração: inferido pela espécie ou explícito quando ambíguo. */
+export function resolverPoloGeracao(
+  areaId: string,
+  especie: string,
+  polo: PoloAdvocacia | null | undefined
+): PoloAdvocacia | null {
+  if (!areaUsaPoloAdvocacia(areaId)) {
+    return polo === "ativo" || polo === "passivo" ? polo : null;
+  }
+  const inferido = inferirPoloPorEspecie(areaId, especie);
+  if (inferido) return inferido;
+  return polo === "ativo" || polo === "passivo" ? polo : null;
+}
+
+/** Sugere polo a partir do relato (Entrada do caso) — só quando ambíguo. */
+export function inferirPoloDoRelato(texto: string): PoloAdvocacia | null {
+  const t = texto.toLowerCase();
+  if (
+    /\b(sou o r[eé]u|represento o r[eé]u|polo passivo|intimad[oa] para contestar|contestação|contestacao|contrarraz|embargos de devedor|executad[oa]|acusad[oa])\b/i.test(
+      t
+    )
+  ) {
+    return "passivo";
+  }
+  if (
+    /\b(sou o autor|represento o autor|polo ativo|autor da a[cç][aã]o|reclamante|impetrante|querelante|vitima|v[ií]tima)\b/i.test(
+      t
+    )
+  ) {
+    return "ativo";
+  }
+  return null;
 }

@@ -254,7 +254,7 @@ export function JurisSugestoesPicker({
         <p className="mb-2 text-xs font-medium text-slate-700">
           Tribunais da busca
           <span className="ml-1 font-normal text-slate-500">
-            (mín. 1 · máx. {MAX_TRIBUNAIS_POR_BUSCA} · filtra a base FACTO)
+            (escolha de 1 a {MAX_TRIBUNAIS_POR_BUSCA} · filtra o acervo FACTO)
           </span>
         </p>
         <div className="flex flex-wrap gap-2">
@@ -300,23 +300,43 @@ export function JurisSugestoesPicker({
         )}
       </div>
 
-      <div className="flex flex-col rounded-lg border border-stone-200 bg-white p-3">
+      <div className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-white p-3">
         <button
           type="button"
           onClick={() => void abrirEBuscar(true)}
           disabled={consulta.trim().length < 8 || tribunaisSel.length < 1}
           className="rounded-lg bg-stone-800 px-4 py-2.5 text-sm font-medium text-amber-50 hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Buscar na base FACTO
+          Buscar no acervo FACTO
         </button>
-        <p className="mt-2 text-xs font-medium text-emerald-800">
-          Sem cota de tribunal — só a base curada
+        <p className="text-xs font-medium text-emerald-800">
+          Não consome consulta externa — só o acervo curado do FACTO
         </p>
-        <p className="mt-1 text-xs leading-relaxed text-slate-500">
-          Busca casos semelhantes aos fatos, com decisão favorável ao polo
-          desta peça. Filtra pelos tribunais marcados. Julgado que não estiver
-          na base: anexe a ementa abaixo.
+        <p className="text-xs leading-relaxed text-slate-500">
+          Casos semelhantes aos fatos, favoráveis ao seu polo. Se o julgado não
+          estiver no acervo, anexe a ementa abaixo ou use a busca nos tribunais.
         </p>
+
+        {provedorExterno ? (
+          <>
+            <button
+              type="button"
+              onClick={() => void abrirEBuscar(false)}
+              disabled={consulta.trim().length < 8 || tribunaisSel.length < 1}
+              className="rounded-lg border border-stone-600 bg-white px-4 py-2.5 text-sm font-medium text-stone-800 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Buscar nos tribunais (consulta externa)
+            </button>
+            <p className="text-xs leading-relaxed text-slate-500">
+              Pesquisa em tempo real nos tribunais marcados.
+              {cota?.ilimitado
+                ? " Consulta externa ilimitada neste perfil."
+                : cota
+                  ? ` Consultas externas no mês: ${cota.usadas}/${cota.limite}.`
+                  : " Consome consulta externa do plano."}
+            </p>
+          </>
+        ) : null}
       </div>
 
       {aberto && (
@@ -337,17 +357,17 @@ export function JurisSugestoesPicker({
                 </h3>
                 {cota?.ilimitado ? (
                   <span className="text-xs text-slate-500">
-                    Cota ilimitada neste perfil
+                    Consultas externas ilimitadas neste perfil
                   </span>
                 ) : cota && provedorExterno ? (
                   <span className="text-xs tabular-nums text-slate-500">
-                    Cota de tribunais: {cota.usadas}/{cota.limite}
+                    Consultas externas: {cota.usadas}/{cota.limite}
                   </span>
                 ) : null}
               </div>
               <p className="mt-1 text-sm text-slate-500">
-                Resultados da base FACTO. Marque as que entram nesta minuta.
-                Anexe ementa se o julgado ainda não estiver na base.
+                Resultados do acervo FACTO. Marque o que entra nesta minuta.
+                Anexe ementa se o julgado ainda não estiver no acervo.
               </p>
               {totais && !carregando ? (
                 <p className="mt-2 text-xs text-slate-600">

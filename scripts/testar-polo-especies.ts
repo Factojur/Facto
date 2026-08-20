@@ -8,8 +8,11 @@ import {
   agruparEspeciesPorPolo,
   especieCompativelComPolo,
   filtrarEspeciesPorPolo,
+  inferirPoloDoRelato,
   inferirPoloPorEspecie,
   ladoPoloDaEspecie,
+  mensagemPoloObrigatorioGeracao,
+  resolverPoloGeracao,
 } from "../src/lib/polo-advocacia";
 import { listaEspeciesDaArea } from "../src/lib/peca-especie-area";
 import { createSuite } from "./casos-ouro/suite";
@@ -222,6 +225,31 @@ function main() {
     especieCompativelComPolo("eleitoral", "registro-candidatura", "ativo") &&
       especieCompativelComPolo("eleitoral", "registro-candidatura", "passivo"),
     "Eleitoral: registro/impugnação nos dois polos"
+  );
+
+  assert(
+    mensagemPoloObrigatorioGeracao("jec", "recurso-inominado", undefined) != null,
+    "JEC recurso sem polo → bloqueio"
+  );
+  assert(
+    mensagemPoloObrigatorioGeracao("jec", "recurso-inominado", "passivo") == null,
+    "JEC recurso com polo passivo → ok"
+  );
+  assert(
+    mensagemPoloObrigatorioGeracao("jec", "peticao-inicial", undefined) == null,
+    "JEC inicial sem polo explícito → inferido, sem bloqueio"
+  );
+  assert(
+    resolverPoloGeracao("jec", "contestacao", undefined) === "passivo",
+    "resolverPoloGeracao infere contestação"
+  );
+  assert(
+    inferirPoloDoRelato("Sou o réu, intimado para contestar") === "passivo",
+    "inferirPoloDoRelato passivo"
+  );
+  assert(
+    inferirPoloDoRelato("Represento o autor da ação") === "ativo",
+    "inferirPoloDoRelato ativo"
   );
 
   const { oks, falhas } = stats();

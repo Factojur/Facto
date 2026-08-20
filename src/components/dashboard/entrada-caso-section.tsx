@@ -73,7 +73,7 @@ export function EntradaCasoSection({
     }
     if (cota?.trackingAtivo && cota.esgotadaAnalises) {
       onErro(
-        "Limite mensal de análises atingido. A entrada única usa 1 análise, não a cota de peça."
+        "Limite mensal de consultas atingido. A entrada do caso consome 1 consulta do plano (diferente de gerar a minuta)."
       );
       return;
     }
@@ -100,7 +100,7 @@ export function EntradaCasoSection({
         }
         if (file.size > LIMITE_UPLOAD_ANALISE_BYTES) {
           onErro(
-            `“${file.name}” parece escaneado e é grande demais para OCR aqui. Cole o texto ou envie um PDF mais leve.`
+            `“${file.name}” parece escaneado e é grande demais para leitura automática aqui. Cole o texto ou envie um PDF mais leve.`
           );
           return;
         }
@@ -153,10 +153,12 @@ export function EntradaCasoSection({
       </p>
       {cota?.trackingAtivo && cota.usoLabelAnalises ? (
         <p className="mt-2 text-xs font-medium text-slate-600">
-          {cota.usoLabelAnalises} · esta entrada usa 1 análise
+          {cota.usoLabelAnalises} · esta entrada usa 1 consulta do plano
         </p>
       ) : (
-        <p className="mt-2 text-xs text-slate-500">Usa 1 análise do plano, não a cota de peça.</p>
+        <p className="mt-2 text-xs text-slate-500">
+          Esta entrada usa 1 consulta do plano (não consome minuta).
+        </p>
       )}
       <textarea
         rows={6}

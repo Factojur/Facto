@@ -242,7 +242,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     id: "eleitoral",
     title: "Direito Eleitoral",
     description:
-      "Representação, AIJE, registro de candidatura e defesa. A base FACTO não indexa TRE/TSE.",
+      "Representação, AIJE, registro de candidatura e defesa. Acervo FACTO em formação para esta área.",
     law: "Código Eleitoral",
     href: "/dashboard/eleitoral",
     available: true,

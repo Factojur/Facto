@@ -84,7 +84,7 @@ export function montarConferenciaEntrada(
   } else {
     chips.push({
       chave: "teses",
-      rotulo: "Nenhuma tese do código bateu",
+      rotulo: "Nenhum fundamento automático identificado",
       preenchido: false,
     });
   }

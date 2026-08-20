@@ -524,7 +524,7 @@ export function ReusSection({
       <p className="mb-4 text-sm text-slate-500">
         {jaQualificado
           ? "Basta o nome ou a razão social. CNPJ e endereço são opcionais nesta peça."
-          : `Preencha e salve cada ${rotuloPolo} na checklist. CNPJ busca razão social (BrasilAPI); CEP completa o endereço (ViaCEP).`}
+          : `Preencha e salve cada ${rotuloPolo} na checklist. CNPJ preenche razão social; CEP completa o endereço.`}
       </p>
 
       {value.length > 0 ? (

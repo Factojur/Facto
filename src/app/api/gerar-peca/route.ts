@@ -18,7 +18,10 @@ import { enfileirarUploadsJurisDoCaso } from "@/lib/juris-provedores/salvar-na-b
 import { areaAbertaParaCliente } from "@/lib/acesso-areas";
 import { resolverAcessoConta } from "@/lib/emails-acesso-livre";
 import { moduloDaArea, normalizarAreaIdMinuta } from "@/lib/minuta-modulo";
-import { areaUsaPoloAdvocacia } from "@/lib/polo-especies-por-area";
+import {
+  mensagemPoloObrigatorioGeracao,
+  resolverPoloGeracao,
+} from "@/lib/polo-advocacia";
 import {
   buscarConhecimentoRelacionado,
   extrairTextoDeArquivo,
@@ -355,6 +358,34 @@ async function postGerarPeca(request: Request) {
   }
 
   const areaId = normalizarAreaIdMinuta(body.areaId);
+
+  const especieValidacao = aplicarFlagReconvencao(
+    areaId,
+    inferirEspecieDaArea(
+      areaId,
+      body.tipoAcao,
+      body.fatos,
+      body.especiePeca
+    ),
+    body.comReconvencao
+  );
+  const msgPolo = mensagemPoloObrigatorioGeracao(
+    areaId,
+    especieValidacao,
+    body.poloAdvocacia
+  );
+  if (msgPolo) {
+    return NextResponse.json(
+      { error: msgPolo, codigo: "POLO_OBRIGATORIO" },
+      { status: 400 }
+    );
+  }
+  const poloGeracao = resolverPoloGeracao(
+    areaId,
+    especieValidacao,
+    body.poloAdvocacia
+  );
+
   let tipoUsuario =
     (user.user_metadata?.tipo_usuario as string | undefined) ?? "advogado";
   let perfilEndereco: {
@@ -476,11 +507,9 @@ async function postGerarPeca(request: Request) {
     ),
     body.comReconvencao
   );
-  const poloRag = resolverPoloClienteQualificacao(
-    areaId,
-    especieRag,
-    body.poloAdvocacia
-  );
+  const poloRag =
+    resolverPoloGeracao(areaId, especieRag, body.poloAdvocacia) ??
+    resolverPoloClienteQualificacao(areaId, especieRag, body.poloAdvocacia);
 
   // RAG: fatos do caso + julgados favoráveis ao polo da peça.
   const baseConhecimento = await buscarConhecimentoRelacionado(
@@ -645,9 +674,7 @@ async function postGerarPeca(request: Request) {
     leiMunicipal,
     jurisDoCaso,
     casoReal: true,
-    poloAdvocacia: areaUsaPoloAdvocacia(areaId)
-      ? body.poloAdvocacia ?? "ativo"
-      : body.poloAdvocacia,
+    poloAdvocacia: poloGeracao ?? body.poloAdvocacia,
     atuarLeigo: Boolean(body.atuarLeigo),
     tesesIds: Array.isArray(body.tesesIds)
       ? body.tesesIds.map((id) => String(id)).filter(Boolean)

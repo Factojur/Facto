@@ -41,6 +41,7 @@ Ordem realista: receita e lastro primeiro; diferenciação visível em seguida; 
 | 7 | **Citação rastreável** — distinguir base FACTO vs anexo no auditor | Parcial (página no anexo ok) | Credibilidade forense |
 | 8 | **Prazo com feriados** (calendário BR por comarca/tribunal) | Pendente | Hoje só dias úteis seg–sex |
 | 9 | **Polo enxuto** — radios só em “Ambos os polos” + inferência | Feito (`9daa804`) | Dashboard mais limpa |
+| 10 | **Polo obrigatório** antes de Gerar quando espécie é ambígua | Feito (esta sessão) | Evita recurso do réu sair como autor |
 
 ### P2 — Automação e polish (depois do P1)
 

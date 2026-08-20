@@ -93,7 +93,7 @@ export function JecCasoDetalhe({
   if (!caso) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-12 text-center">
-        <p className="text-slate-600">Caso não encontrado neste navegador.</p>
+        <p className="text-slate-600">Caso não encontrado neste dispositivo.</p>
         <Link
           href="/dashboard/jec/casos"
           className="mt-4 inline-block text-sm font-medium text-stone-700 underline"
