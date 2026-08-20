@@ -43,7 +43,9 @@ export async function validarConvite(
         p === "anual" ||
         p === "pro_anual" ||
         p === "escritorio_s" ||
-        p === "escritorio_m"
+        p === "escritorio_m" ||
+        p === "escritorio_s_anual" ||
+        p === "escritorio_m_anual"
       ) {
         plano = p;
       }

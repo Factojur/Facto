@@ -11,6 +11,10 @@ import {
 } from "@/lib/mercadopago/client";
 import {
   PRECO_CHEQUE_ANUAL,
+  PRECO_CHEQUE_ESCRITORIO_M,
+  PRECO_CHEQUE_ESCRITORIO_M_ANUAL,
+  PRECO_CHEQUE_ESCRITORIO_S,
+  PRECO_CHEQUE_ESCRITORIO_S_ANUAL,
   PRECO_CHEQUE_JEC,
   PRECO_CHEQUE_MENSAL,
   PRECO_CHEQUE_PRO,
@@ -32,6 +36,8 @@ const DURACAO_CICLO_DIAS: Record<PlanoId, number> = {
   trial: 7,
   escritorio_s: 30,
   escritorio_m: 30,
+  escritorio_s_anual: 365,
+  escritorio_m_anual: 365,
 };
 
 export type PreapprovalMp = {
@@ -77,8 +83,19 @@ function inferirPlano(
 
   if (frequencyType === "months" && frequency === 12) {
     const porValor = planoPorValor(valor);
-    if (porValor === "pro_anual" || porValor === "anual") return porValor;
+    if (
+      porValor === "pro_anual" ||
+      porValor === "anual" ||
+      porValor === "escritorio_s_anual" ||
+      porValor === "escritorio_m_anual"
+    ) {
+      return porValor;
+    }
     if (typeof valor === "number") {
+      if (Math.abs(valor - PRECO_CHEQUE_ESCRITORIO_M_ANUAL) < 2)
+        return "escritorio_m_anual";
+      if (Math.abs(valor - PRECO_CHEQUE_ESCRITORIO_S_ANUAL) < 2)
+        return "escritorio_s_anual";
       if (Math.abs(valor - PRECO_CHEQUE_PRO_ANUAL) < 2) return "pro_anual";
       if (Math.abs(valor - PRECO_CHEQUE_ANUAL) < 2) return "anual";
     }
@@ -89,11 +106,15 @@ function inferirPlano(
     if (
       porValor === "jec" ||
       porValor === "mensal" ||
-      porValor === "pro"
+      porValor === "pro" ||
+      porValor === "escritorio_s" ||
+      porValor === "escritorio_m"
     ) {
       return porValor;
     }
     if (typeof valor === "number") {
+      if (Math.abs(valor - PRECO_CHEQUE_ESCRITORIO_M) < 1) return "escritorio_m";
+      if (Math.abs(valor - PRECO_CHEQUE_ESCRITORIO_S) < 1) return "escritorio_s";
       if (Math.abs(valor - PRECO_CHEQUE_JEC) < 1) return "jec";
       if (Math.abs(valor - PRECO_CHEQUE_PRO) < 1) return "pro";
       if (Math.abs(valor - PRECO_CHEQUE_MENSAL) < 1) return "mensal";
@@ -101,6 +122,10 @@ function inferirPlano(
     return "mensal";
   }
   if (typeof valor === "number") {
+    if (Math.abs(valor - PRECO_CHEQUE_ESCRITORIO_M_ANUAL) < 2)
+      return "escritorio_m_anual";
+    if (Math.abs(valor - PRECO_CHEQUE_ESCRITORIO_S_ANUAL) < 2)
+      return "escritorio_s_anual";
     if (Math.abs(valor - PRECO_CHEQUE_PRO_ANUAL) < 2) return "pro_anual";
     if (Math.abs(valor - PRECO_CHEQUE_ANUAL) < 2) return "anual";
   }

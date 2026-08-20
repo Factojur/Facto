@@ -6,7 +6,9 @@ import { MetodosPagamento } from "@/components/landing/metodos-pagamento";
 import {
   PLANO_ANUAL,
   PLANO_ESCRITORIO_M,
+  PLANO_ESCRITORIO_M_ANUAL,
   PLANO_ESCRITORIO_S,
+  PLANO_ESCRITORIO_S_ANUAL,
   PLANO_JEC,
   PLANO_MENSAL,
   PLANO_PRO,
@@ -353,60 +355,123 @@ export function LandingPrecos() {
         )}
 
         {aba === "escritorio" && (
-          <div className="mt-10 grid gap-6 md:grid-cols-2">
-            {(
-              [
-                {
-                  plano: PLANO_ESCRITORIO_S,
-                  mailto:
-                    "mailto:factoassessoria.jur@gmail.com?subject=Escrit%C3%B3rio%20S%20FACTO",
-                  cta: "Pedir Escritório S",
-                },
-                {
-                  plano: PLANO_ESCRITORIO_M,
-                  mailto:
-                    "mailto:factoassessoria.jur@gmail.com?subject=Escrit%C3%B3rio%20M%20FACTO",
-                  cta: "Pedir Escritório M",
-                },
-              ] as const
-            ).map(({ plano, mailto, cta }) => (
-              <CardShell key={plano.id}>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-facto-gold/80">
-                  Equipe · {plano.seats} assentos
-                </p>
-                <h3 className="mt-2 text-lg font-semibold text-white">
-                  {plano.rotulo}
-                </h3>
-                <p className="mt-1 text-sm text-stone-500">
-                  Cota em pool · OAB do administrador · estagiários sem OAB.
-                </p>
-                <div className="mt-6 flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-white">
-                    {plano.rotuloPreco}
+          <div className="mt-10">
+            <div className="mb-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+              <p className="text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
+                Cobrança
+              </p>
+              <div
+                className="inline-flex rounded-full border border-white/10 bg-white/[0.04] p-1"
+                role="group"
+                aria-label="Mensal ou anual escritório"
+              >
+                <button
+                  type="button"
+                  onClick={() => setCiclo("mensal")}
+                  className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${
+                    ciclo === "mensal"
+                      ? "bg-white text-facto-dark"
+                      : "text-stone-400 hover:text-white"
+                  }`}
+                >
+                  Mensal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCiclo("anual")}
+                  className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${
+                    ciclo === "anual"
+                      ? "bg-facto-gold text-facto-dark"
+                      : "text-stone-400 hover:text-white"
+                  }`}
+                >
+                  Anual
+                  <span className="ml-1.5 text-[10px] font-bold opacity-80">
+                    2 meses off
                   </span>
-                  <span className="text-stone-500">{plano.rotuloPeriodo}</span>
-                </div>
-                <p className="mt-1 text-xs text-stone-500">
-                  ≈ {plano.custoPorPecaAprox} por peça na cota
-                </p>
-                <ul className="mt-6 flex-1 space-y-3 text-sm text-stone-400">
-                  {plano.beneficios.map((b) => (
-                    <li key={b} className="flex items-start gap-2">
-                      <span className="mt-0.5 shrink-0 text-facto-gold">✓</span>
-                      <span>{b}</span>
-                    </li>
-                  ))}
-                </ul>
-                <div className="mt-8">
-                  <a
-                    href={mailto}
-                    className="block w-full rounded-lg border border-white/15 px-6 py-3.5 text-center font-semibold text-white transition hover:border-facto-gold/50 hover:bg-white/5"
-                  >
-                    {cta}
-                  </a>
-                </div>
-              </CardShell>
-            ))}
+                </button>
+              </div>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              {(ciclo === "mensal"
+                ? [
+                    {
+                      plano: PLANO_ESCRITORIO_S,
+                      mailto:
+                        "mailto:factoassessoria.jur@gmail.com?subject=Escrit%C3%B3rio%20S%20FACTO",
+                      cta: "Pedir Escritório S",
+                    },
+                    {
+                      plano: PLANO_ESCRITORIO_M,
+                      mailto:
+                        "mailto:factoassessoria.jur@gmail.com?subject=Escrit%C3%B3rio%20M%20FACTO",
+                      cta: "Pedir Escritório M",
+                    },
+                  ]
+                : [
+                    {
+                      plano: PLANO_ESCRITORIO_S_ANUAL,
+                      mailto:
+                        "mailto:factoassessoria.jur@gmail.com?subject=Escrit%C3%B3rio%20S%20Anual%20FACTO",
+                      cta: "Pedir Escritório S anual",
+                    },
+                    {
+                      plano: PLANO_ESCRITORIO_M_ANUAL,
+                      mailto:
+                        "mailto:factoassessoria.jur@gmail.com?subject=Escrit%C3%B3rio%20M%20Anual%20FACTO",
+                      cta: "Pedir Escritório M anual",
+                    },
+                  ]
+              ).map(({ plano, mailto, cta }) => (
+                <CardShell key={plano.id} destaque={ciclo === "anual"}>
+                  {ciclo === "anual" && "rotuloEconomia" in plano && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-facto-gold/90 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-facto-dark">
+                      Economize {plano.rotuloEconomia}/ano
+                    </span>
+                  )}
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-facto-gold/80">
+                    Equipe · {plano.seats} assentos
+                  </p>
+                  <h3 className="mt-2 text-lg font-semibold text-white">
+                    {plano.rotulo}
+                  </h3>
+                  <p className="mt-1 text-sm text-stone-500">
+                    Cota em pool · OAB do administrador · estagiários sem OAB.
+                  </p>
+                  <div className="mt-6 flex items-baseline gap-1">
+                    <span className="text-4xl font-bold text-white">
+                      {plano.rotuloPreco}
+                    </span>
+                    <span className="text-stone-500">{plano.rotuloPeriodo}</span>
+                  </div>
+                  {"rotuloEquivalenteMensal" in plano && (
+                    <p className="mt-1 text-sm font-medium text-facto-gold">
+                      Equivale a {plano.rotuloEquivalenteMensal}/mês
+                    </p>
+                  )}
+                  <p className="mt-1 text-xs text-stone-500">
+                    ≈ {plano.custoPorPecaAprox} por peça na cota
+                  </p>
+                  <ul className="mt-6 flex-1 space-y-3 text-sm text-stone-400">
+                    {plano.beneficios.map((b) => (
+                      <li key={b} className="flex items-start gap-2">
+                        <span className="mt-0.5 shrink-0 text-facto-gold">✓</span>
+                        <span>{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-8">
+                    <a
+                      href={mailto}
+                      className="block w-full rounded-lg border border-white/15 px-6 py-3.5 text-center font-semibold text-white transition hover:border-facto-gold/50 hover:bg-white/5"
+                    >
+                      {cta}
+                    </a>
+                  </div>
+                </CardShell>
+              ))}
+            </div>
           </div>
         )}
 

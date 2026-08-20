@@ -93,7 +93,9 @@ async function planoDoEmail(admin: Admin, email: string): Promise<PlanoCota> {
         data.plano === "pro" ||
         data.plano === "jec" ||
         data.plano === "escritorio_s" ||
-        data.plano === "escritorio_m")
+        data.plano === "escritorio_m" ||
+        data.plano === "escritorio_s_anual" ||
+        data.plano === "escritorio_m_anual")
     ) {
       return data.plano;
     }

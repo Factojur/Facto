@@ -13,6 +13,8 @@ const PLANOS_VALIDOS = new Set<PlanoId>([
   "trial",
   "escritorio_s",
   "escritorio_m",
+  "escritorio_s_anual",
+  "escritorio_m_anual",
 ]);
 
 function planoDeAssinaturas(

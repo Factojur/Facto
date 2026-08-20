@@ -20,6 +20,10 @@ import {
 import { dentroPrazoArrependimentoCdc } from "@/lib/assinatura-format";
 import {
   PRECO_CHEQUE_ANUAL,
+  PRECO_CHEQUE_ESCRITORIO_M,
+  PRECO_CHEQUE_ESCRITORIO_M_ANUAL,
+  PRECO_CHEQUE_ESCRITORIO_S,
+  PRECO_CHEQUE_ESCRITORIO_S_ANUAL,
   PRECO_CHEQUE_JEC,
   PRECO_CHEQUE_MENSAL,
   PRECO_CHEQUE_PRO,
@@ -37,6 +41,10 @@ const VALOR_ANUAL = PRECO_CHEQUE_ANUAL;
 const VALOR_JEC = PRECO_CHEQUE_JEC;
 const VALOR_PRO = PRECO_CHEQUE_PRO;
 const VALOR_PRO_ANUAL = PRECO_CHEQUE_PRO_ANUAL;
+const VALOR_ESC_S = PRECO_CHEQUE_ESCRITORIO_S;
+const VALOR_ESC_M = PRECO_CHEQUE_ESCRITORIO_M;
+const VALOR_ESC_S_ANUAL = PRECO_CHEQUE_ESCRITORIO_S_ANUAL;
+const VALOR_ESC_M_ANUAL = PRECO_CHEQUE_ESCRITORIO_M_ANUAL;
 const DIA_EM_MS = 24 * 60 * 60 * 1000;
 const DURACAO_CICLO_DIAS: Record<PlanoId, number> = {
   jec: 30,
@@ -47,6 +55,8 @@ const DURACAO_CICLO_DIAS: Record<PlanoId, number> = {
   trial: 7,
   escritorio_s: 30,
   escritorio_m: 30,
+  escritorio_s_anual: 365,
+  escritorio_m_anual: 365,
 };
 
 type AdminClient = ReturnType<typeof createAdminClient>;
@@ -98,8 +108,17 @@ function inferirPlano(
 
   if (frequencyType === "months" && frequency === 12) {
     const porValor = planoPorValor(valor);
-    if (porValor === "pro_anual" || porValor === "anual") return porValor;
+    if (
+      porValor === "pro_anual" ||
+      porValor === "anual" ||
+      porValor === "escritorio_s_anual" ||
+      porValor === "escritorio_m_anual"
+    ) {
+      return porValor;
+    }
     if (typeof valor === "number") {
+      if (Math.abs(valor - VALOR_ESC_M_ANUAL) < 2) return "escritorio_m_anual";
+      if (Math.abs(valor - VALOR_ESC_S_ANUAL) < 2) return "escritorio_s_anual";
       if (Math.abs(valor - VALOR_PRO_ANUAL) < 2) return "pro_anual";
       if (Math.abs(valor - VALOR_ANUAL) < 2) return "anual";
     }
@@ -110,11 +129,15 @@ function inferirPlano(
     if (
       porValor === "jec" ||
       porValor === "mensal" ||
-      porValor === "pro"
+      porValor === "pro" ||
+      porValor === "escritorio_s" ||
+      porValor === "escritorio_m"
     ) {
       return porValor;
     }
     if (typeof valor === "number") {
+      if (Math.abs(valor - VALOR_ESC_M) < 1) return "escritorio_m";
+      if (Math.abs(valor - VALOR_ESC_S) < 1) return "escritorio_s";
       if (Math.abs(valor - VALOR_JEC) < 1) return "jec";
       if (Math.abs(valor - VALOR_PRO) < 1) return "pro";
       if (Math.abs(valor - VALOR_MENSAL) < 1) return "mensal";

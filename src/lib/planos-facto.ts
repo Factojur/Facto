@@ -1,7 +1,8 @@
 /**
  * Preços, cotas e benefícios comerciais FACTO (landing + área logada + webhook).
  * JEC 79,90/40 · Completo 189,90/100 · Pro 289,90/180 ·
- * Completo Anual 1.890/100 · Pro Anual 2.990/180.
+ * Completo Anual 1.890/100 · Pro Anual 2.990/180 ·
+ * Escritório S 749,90 / M 1.299,90 · anuais S 7.499 / M 12.999 (10× mensal).
  * Valores legados continuam reconhecidos em planoPorValor (assinantes antigos).
  *
  * custoPorPecaAprox = preço do ciclo ÷ peças do ciclo (anuais: preço/ano ÷ 12×cota).
@@ -191,7 +192,9 @@ export type PlanoId =
   | "pro_anual"
   | "trial"
   | "escritorio_s"
-  | "escritorio_m";
+  | "escritorio_m"
+  | "escritorio_s_anual"
+  | "escritorio_m_anual";
 
 /** Teste grátis: 1 área · 2 peças · 7 dias · watermark. */
 export const PLANO_TRIAL = {
@@ -249,6 +252,62 @@ export const PLANO_ESCRITORIO_M = {
     "OAB do administrador · membros/estagiários sem OAB",
     "Estilo por assento + prioridade na fila",
     "Todas as áreas liberadas ao responsável OAB",
+  ],
+};
+
+/**
+ * Escritório S Anual — equivalente a 10× mensal (2 meses off).
+ * 12 × 749,90 = 8.998,80 → 7.499,00.
+ */
+export const PLANO_ESCRITORIO_S_ANUAL = {
+  id: "escritorio_s_anual" as const,
+  preco: 7499,
+  pecasPorMes: 450,
+  analisesPorMes: 80,
+  seats: 5,
+  rotuloPreco: "R$ 7.499,00",
+  rotuloPeriodo: "/ano",
+  rotulo: "Escritório S Anual",
+  equivalenteMensal: 624.9166666666666,
+  rotuloEquivalenteMensal: "R$ 624,92",
+  economiaAno: 1499.8,
+  rotuloEconomia: "R$ 1.499,80",
+  descontoPercentual: 17,
+  custoPorPecaAprox: "R$ 1,39",
+  beneficios: [
+    "Tudo do Escritório S, no anual",
+    "5 assentos · 450 minutas/mês em pool",
+    "Equivalente a R$ 624,92/mês — economia de R$ 1.499,80/ano",
+    "OAB do administrador · membros sem OAB",
+    "Checkout sob demanda (assentos + vínculo)",
+  ],
+};
+
+/**
+ * Escritório M Anual — 10× mensal (2 meses off).
+ * 12 × 1.299,90 = 15.598,80 → 12.999,00.
+ */
+export const PLANO_ESCRITORIO_M_ANUAL = {
+  id: "escritorio_m_anual" as const,
+  preco: 12999,
+  pecasPorMes: 900,
+  analisesPorMes: 150,
+  seats: 10,
+  rotuloPreco: "R$ 12.999,00",
+  rotuloPeriodo: "/ano",
+  rotulo: "Escritório M Anual",
+  equivalenteMensal: 1083.25,
+  rotuloEquivalenteMensal: "R$ 1.083,25",
+  economiaAno: 2599.8,
+  rotuloEconomia: "R$ 2.599,80",
+  descontoPercentual: 17,
+  custoPorPecaAprox: "R$ 1,20",
+  beneficios: [
+    "Tudo do Escritório M, no anual",
+    "10 assentos · 900 minutas/mês em pool",
+    "Equivalente a R$ 1.083,25/mês — economia de R$ 2.599,80/ano",
+    "Prioridade na fila o ano todo",
+    "Checkout sob demanda (assentos + vínculo)",
   ],
 };
 
@@ -324,6 +383,8 @@ export function parseExternalReferenceExtra(
 /** Inferência por valor (webhook / links MP) — inclui preços legados. */
 export function planoPorValor(valor: number | null | undefined): PlanoId | null {
   if (typeof valor !== "number" || Number.isNaN(valor)) return null;
+  if (Math.abs(valor - PLANO_ESCRITORIO_M_ANUAL.preco) < 1) return "escritorio_m_anual";
+  if (Math.abs(valor - PLANO_ESCRITORIO_S_ANUAL.preco) < 1) return "escritorio_s_anual";
   if (Math.abs(valor - PLANO_ESCRITORIO_M.preco) < 1) return "escritorio_m";
   if (Math.abs(valor - PLANO_ESCRITORIO_S.preco) < 1) return "escritorio_s";
   if (Math.abs(valor - PLANO_PRO_ANUAL.preco) < 1) return "pro_anual";
@@ -351,6 +412,8 @@ export function rotuloPlano(id: PlanoId | null | undefined): string {
   if (id === "trial") return PLANO_TRIAL.rotulo;
   if (id === "escritorio_s") return PLANO_ESCRITORIO_S.rotulo;
   if (id === "escritorio_m") return PLANO_ESCRITORIO_M.rotulo;
+  if (id === "escritorio_s_anual") return PLANO_ESCRITORIO_S_ANUAL.rotulo;
+  if (id === "escritorio_m_anual") return PLANO_ESCRITORIO_M_ANUAL.rotulo;
   return "—";
 }
 
@@ -364,10 +427,12 @@ export function inferirPlanoPorTexto(
   if (!texto?.trim()) return null;
   const t = texto.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
 
+  if (/\bescritorio\s*m\b/.test(t) && /anual/.test(t)) return "escritorio_m_anual";
+  if (/\bescritorio\s*s\b/.test(t) && /anual/.test(t)) return "escritorio_s_anual";
   if (/\bescritorio\s*m\b|escritorio m\b|10 assentos/.test(t)) return "escritorio_m";
   if (/\bescritorio\s*s\b|escritorio s\b|5 assentos/.test(t)) return "escritorio_s";
   if (/\bpro\b/.test(t) && /anual/.test(t)) return "pro_anual";
-  if (/anual/.test(t) && !/\bpro\b/.test(t)) return "anual";
+  if (/anual/.test(t) && !/\bpro\b/.test(t) && !/escritorio/.test(t)) return "anual";
   if (/\bpro\b/.test(t)) return "pro";
   if (/\bjec\b|juizado/.test(t)) return "jec";
   if (/completo|mensal/.test(t)) return "mensal";
@@ -380,3 +445,7 @@ export const PRECO_CHEQUE_MENSAL = PLANO_MENSAL.preco;
 export const PRECO_CHEQUE_PRO = PLANO_PRO.preco;
 export const PRECO_CHEQUE_ANUAL = PLANO_ANUAL.preco;
 export const PRECO_CHEQUE_PRO_ANUAL = PLANO_PRO_ANUAL.preco;
+export const PRECO_CHEQUE_ESCRITORIO_S = PLANO_ESCRITORIO_S.preco;
+export const PRECO_CHEQUE_ESCRITORIO_M = PLANO_ESCRITORIO_M.preco;
+export const PRECO_CHEQUE_ESCRITORIO_S_ANUAL = PLANO_ESCRITORIO_S_ANUAL.preco;
+export const PRECO_CHEQUE_ESCRITORIO_M_ANUAL = PLANO_ESCRITORIO_M_ANUAL.preco;
