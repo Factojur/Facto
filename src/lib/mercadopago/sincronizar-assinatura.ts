@@ -23,6 +23,11 @@ import {
   planoPorValor,
   type PlanoId,
 } from "@/lib/planos-facto";
+import {
+  encerrarTrialDoPerfil,
+  planoEfetivoAssinatura,
+  resolverVinculoAssinatura,
+} from "@/lib/mercadopago/vinculo-assinatura";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
@@ -46,6 +51,8 @@ export type PreapprovalMp = {
   payer_email?: string | null;
   reason?: string | null;
   date_created?: string | null;
+  external_reference?: string | null;
+  metadata?: Record<string, unknown> | null;
   auto_recurring?: {
     transaction_amount?: number | string | null;
     frequency?: number;
@@ -173,11 +180,11 @@ export async function upsertAssinaturaDePreapproval(
   const id = String(preapproval.id);
   const statusRaw = (preapproval.status ?? "").toLowerCase();
   let status = statusRaw === "cancelled" ? "canceled" : statusRaw;
-  let email = preapproval.payer_email?.trim().toLowerCase() || null;
-  if (email && !email.includes("@")) email = null;
-  if (!email) {
+  let payerEmail = preapproval.payer_email?.trim().toLowerCase() || null;
+  if (payerEmail && !payerEmail.includes("@")) payerEmail = null;
+  if (!payerEmail) {
     try {
-      email = await buscarEmailPagadorPreapproval(
+      payerEmail = await buscarEmailPagadorPreapproval(
         id,
         preapproval.payer_email
       );
@@ -185,16 +192,25 @@ export async function upsertAssinaturaDePreapproval(
       /* ignore */
     }
   }
+
+  const vinculo = await resolverVinculoAssinatura(admin, {
+    externalReference: preapproval.external_reference,
+    metadata: preapproval.metadata,
+    payerEmail,
+  });
+
+  let email = vinculo.accountEmail ?? payerEmail;
   const valor = parseValor(preapproval.auto_recurring?.transaction_amount);
-  const plano = inferirPlano(
+  const planoInferido = inferirPlano(
     valor,
     preapproval.auto_recurring?.frequency_type,
     preapproval.auto_recurring?.frequency,
     preapproval.reason
   );
+  const plano = planoEfetivoAssinatura(planoInferido, vinculo.planoFromToken);
 
-  let profileId: string | null = null;
-  if (email) {
+  let profileId = vinculo.profileId;
+  if (!profileId && email) {
     const { data: perfil } = await admin
       .from("profiles")
       .select("id")
@@ -206,7 +222,7 @@ export async function upsertAssinaturaDePreapproval(
   const { data: existente } = await admin
     .from("assinaturas")
     .select(
-      "id, status, acesso_valido_ate, data_inicio, motivo_encerramento, email"
+      "id, status, acesso_valido_ate, data_inicio, motivo_encerramento, email, profile_id"
     )
     .eq("mp_preapproval_id", id)
     .maybeSingle();
@@ -221,6 +237,9 @@ export async function upsertAssinaturaDePreapproval(
 
   if (!email && typeof existente?.email === "string" && existente.email.trim()) {
     email = existente.email.trim().toLowerCase();
+  }
+  if (!profileId && existente?.profile_id) {
+    profileId = existente.profile_id as string;
   }
 
   const dataInicio =
@@ -273,6 +292,10 @@ export async function upsertAssinaturaDePreapproval(
   await admin.from("assinaturas").upsert(dados, {
     onConflict: "mp_preapproval_id",
   });
+
+  if (status === "authorized" && profileId) {
+    await encerrarTrialDoPerfil(admin, profileId);
+  }
 
   let mpPaymentId: string | null = null;
   try {

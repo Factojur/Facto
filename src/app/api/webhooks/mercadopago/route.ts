@@ -19,6 +19,11 @@ import {
 } from "@/lib/mercadopago/pos-compra";
 import { dentroPrazoArrependimentoCdc } from "@/lib/assinatura-format";
 import {
+  encerrarTrialDoPerfil,
+  planoEfetivoAssinatura,
+  resolverVinculoAssinatura,
+} from "@/lib/mercadopago/vinculo-assinatura";
+import {
   PRECO_CHEQUE_ANUAL,
   PRECO_CHEQUE_ESCRITORIO_M,
   PRECO_CHEQUE_ESCRITORIO_M_ANUAL,
@@ -173,9 +178,26 @@ async function processarPreapproval(admin: AdminClient, id: string) {
     typeof preapproval.payer_email === "string"
       ? preapproval.payer_email.trim()
       : "";
-  let email =
+  const payerEmail =
     emailHint && emailHint.includes("@") ? emailHint.toLowerCase() : null;
-  if (!email) {
+
+  const metadata =
+    preapproval.metadata && typeof preapproval.metadata === "object"
+      ? (preapproval.metadata as Record<string, unknown>)
+      : null;
+  const externalReference =
+    typeof preapproval.external_reference === "string"
+      ? preapproval.external_reference
+      : null;
+
+  const vinculo = await resolverVinculoAssinatura(admin, {
+    externalReference,
+    metadata,
+    payerEmail,
+  });
+
+  let email = vinculo.accountEmail;
+  if (!email && payerEmail) {
     try {
       email = await buscarEmailPagadorPreapproval(id, emailHint);
     } catch (erro) {
@@ -194,15 +216,16 @@ async function processarPreapproval(admin: AdminClient, id: string) {
       : typeof valorRaw === "string"
         ? parseFloat(valorRaw)
         : null;
-  const plano = inferirPlano(
+  const planoInferido = inferirPlano(
     valor,
     preapproval.auto_recurring?.frequency_type,
     preapproval.auto_recurring?.frequency,
     typeof preapproval.reason === "string" ? preapproval.reason : null
   );
+  const plano = planoEfetivoAssinatura(planoInferido, vinculo.planoFromToken);
 
-  let profileId: string | null = null;
-  if (email) {
+  let profileId = vinculo.profileId;
+  if (!profileId && email) {
     const { data: perfil } = await admin
       .from("profiles")
       .select("id")
@@ -214,7 +237,7 @@ async function processarPreapproval(admin: AdminClient, id: string) {
   const { data: existente } = await admin
     .from("assinaturas")
     .select(
-      "id, status, motivo_encerramento, data_inicio, acesso_valido_ate, email"
+      "id, status, motivo_encerramento, data_inicio, acesso_valido_ate, email, profile_id"
     )
     .eq("mp_preapproval_id", id)
     .maybeSingle();
@@ -222,6 +245,9 @@ async function processarPreapproval(admin: AdminClient, id: string) {
   // Nunca apagar e-mail já gravado com null/vazio do MP.
   if (!email && typeof existente?.email === "string" && existente.email.trim()) {
     email = existente.email.trim().toLowerCase();
+  }
+  if (!profileId && existente?.profile_id) {
+    profileId = existente.profile_id as string;
   }
 
   const dataInicio = preapproval.date_created ?? existente?.data_inicio ?? null;
@@ -307,6 +333,10 @@ async function processarPreapproval(admin: AdminClient, id: string) {
 
   await admin.from("assinaturas").upsert(dados, { onConflict: "mp_preapproval_id" });
 
+  if (status === "authorized" && profileId) {
+    await encerrarTrialDoPerfil(admin, profileId);
+  }
+
   // Caminho complementar: se o tópico authorized_payment não chegar (ou
   // chegar com tópico alias), ainda assim disparamos pós-compra quando a
   // assinatura autoriza e já existe cobrança aprovada (ou usamos chave
@@ -336,6 +366,8 @@ async function processarPreapproval(admin: AdminClient, id: string) {
       email,
       mpPaymentId,
       plano,
+      profileId,
+      token: Boolean(vinculo.planoFromToken),
     });
     await garantirConviteEEmailsPosCompra(admin, {
       email,

@@ -61,8 +61,12 @@ export function AssinaturaPainel() {
     void carregar();
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
-      if (params.get("extra") === "ok") {
-        // Pós-checkout do pacote extra: atualiza cota após alguns segundos
+      if (params.get("extra") === "ok" || params.get("upgrade") === "ok") {
+        if (params.get("upgrade") === "ok") {
+          setMensagemOk(
+            "Pagamento recebido pelo Mercado Pago. Em instantes sua assinatura e cota são atualizadas — atualize a página se ainda aparecer o teste."
+          );
+        }
         const t = window.setTimeout(() => void carregar(), 2500);
         return () => window.clearTimeout(t);
       }

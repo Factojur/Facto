@@ -449,3 +449,84 @@ export const PRECO_CHEQUE_ESCRITORIO_S = PLANO_ESCRITORIO_S.preco;
 export const PRECO_CHEQUE_ESCRITORIO_M = PLANO_ESCRITORIO_M.preco;
 export const PRECO_CHEQUE_ESCRITORIO_S_ANUAL = PLANO_ESCRITORIO_S_ANUAL.preco;
 export const PRECO_CHEQUE_ESCRITORIO_M_ANUAL = PLANO_ESCRITORIO_M_ANUAL.preco;
+
+/** Planos assináveis via checkout API (token userId). */
+export const PLANOS_CHECKOUT = [
+  "jec",
+  "mensal",
+  "pro",
+  "anual",
+  "pro_anual",
+  "escritorio_s",
+  "escritorio_m",
+  "escritorio_s_anual",
+  "escritorio_m_anual",
+] as const;
+
+export type PlanoCheckoutId = (typeof PLANOS_CHECKOUT)[number];
+
+export function ehPlanoCheckout(id: string): id is PlanoCheckoutId {
+  return (PLANOS_CHECKOUT as readonly string[]).includes(id);
+}
+
+/**
+ * external_reference: facto_upgrade_<planoId>_<userId>
+ * Ex.: facto_upgrade_mensal_<uuid> | facto_upgrade_escritorio_s_anual_<uuid>
+ */
+export function montarExternalReferenceUpgrade(
+  planoId: PlanoCheckoutId,
+  userId: string
+): string {
+  return `facto_upgrade_${planoId}_${userId}`;
+}
+
+export function parseExternalReferenceUpgrade(
+  ref: string | null | undefined
+): { plano: PlanoCheckoutId; userId: string } | null {
+  if (!ref?.trim()) return null;
+  const m = ref
+    .trim()
+    .match(/^facto_upgrade_([a-z0-9_]+)_([0-9a-f-]{36})$/i);
+  if (!m) return null;
+  const plano = m[1].toLowerCase();
+  if (!ehPlanoCheckout(plano)) return null;
+  return { plano, userId: m[2] };
+}
+
+export function catalogoPlanoCheckout(id: PlanoCheckoutId) {
+  switch (id) {
+    case "jec":
+      return PLANO_JEC;
+    case "mensal":
+      return PLANO_MENSAL;
+    case "pro":
+      return PLANO_PRO;
+    case "anual":
+      return PLANO_ANUAL;
+    case "pro_anual":
+      return PLANO_PRO_ANUAL;
+    case "escritorio_s":
+      return PLANO_ESCRITORIO_S;
+    case "escritorio_m":
+      return PLANO_ESCRITORIO_M;
+    case "escritorio_s_anual":
+      return PLANO_ESCRITORIO_S_ANUAL;
+    case "escritorio_m_anual":
+      return PLANO_ESCRITORIO_M_ANUAL;
+  }
+}
+
+export function frequenciaCheckout(id: PlanoCheckoutId): {
+  frequency: number;
+  frequency_type: "months";
+} {
+  if (
+    id === "anual" ||
+    id === "pro_anual" ||
+    id === "escritorio_s_anual" ||
+    id === "escritorio_m_anual"
+  ) {
+    return { frequency: 12, frequency_type: "months" };
+  }
+  return { frequency: 1, frequency_type: "months" };
+}

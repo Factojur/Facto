@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { BotaoAssinarPlano } from "@/components/landing/botao-assinar-plano";
 import { MetodosPagamento } from "@/components/landing/metodos-pagamento";
 import {
   PLANO_ANUAL,
@@ -40,31 +41,6 @@ const ABAS: { id: Aba; rotulo: string; dica: string }[] = [
   { id: "advogado", rotulo: "Advogado", dica: "OAB · todas as áreas" },
   { id: "escritorio", rotulo: "Escritório", dica: "Assentos em equipe" },
 ];
-
-function BotaoAssinar({
-  href,
-  children,
-  variante = "secundario",
-}: {
-  href: string;
-  children: React.ReactNode;
-  variante?: "primario" | "secundario";
-}) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`block w-full rounded-lg px-6 py-3.5 text-center font-semibold transition ${
-        variante === "primario"
-          ? "bg-facto-gold text-facto-dark shadow-lg shadow-facto-gold/20 hover:bg-[#a39a78]"
-          : "border border-white/15 text-white hover:border-facto-gold/50 hover:bg-white/5"
-      }`}
-    >
-      {children}
-    </a>
-  );
-}
 
 function CardShell({
   children,
@@ -256,7 +232,9 @@ export function LandingPrecos() {
                 ))}
               </ul>
               <div className="mt-8">
-                <BotaoAssinar href={LINK_JEC}>Começar no JEC</BotaoAssinar>
+                <BotaoAssinarPlano planoId="jec" hrefFallback={LINK_JEC}>
+                  Começar no JEC
+                </BotaoAssinarPlano>
               </div>
             </CardShell>
           </div>
@@ -341,12 +319,13 @@ export function LandingPrecos() {
                     ))}
                   </ul>
                   <div className="mt-8">
-                    <BotaoAssinar
-                      href={item.link}
+                    <BotaoAssinarPlano
+                      planoId={item.plano.id}
+                      hrefFallback={item.link}
                       variante={item.destaque ? "primario" : "secundario"}
                     >
                       {item.cta}
-                    </BotaoAssinar>
+                    </BotaoAssinarPlano>
                   </div>
                 </CardShell>
               ))}
@@ -398,32 +377,32 @@ export function LandingPrecos() {
                 ? [
                     {
                       plano: PLANO_ESCRITORIO_S,
-                      mailto:
+                      fallback:
                         "mailto:factoassessoria.jur@gmail.com?subject=Escrit%C3%B3rio%20S%20FACTO",
-                      cta: "Pedir Escritório S",
+                      cta: "Assinar Escritório S",
                     },
                     {
                       plano: PLANO_ESCRITORIO_M,
-                      mailto:
+                      fallback:
                         "mailto:factoassessoria.jur@gmail.com?subject=Escrit%C3%B3rio%20M%20FACTO",
-                      cta: "Pedir Escritório M",
+                      cta: "Assinar Escritório M",
                     },
                   ]
                 : [
                     {
                       plano: PLANO_ESCRITORIO_S_ANUAL,
-                      mailto:
+                      fallback:
                         "mailto:factoassessoria.jur@gmail.com?subject=Escrit%C3%B3rio%20S%20Anual%20FACTO",
-                      cta: "Pedir Escritório S anual",
+                      cta: "Assinar Escritório S anual",
                     },
                     {
                       plano: PLANO_ESCRITORIO_M_ANUAL,
-                      mailto:
+                      fallback:
                         "mailto:factoassessoria.jur@gmail.com?subject=Escrit%C3%B3rio%20M%20Anual%20FACTO",
-                      cta: "Pedir Escritório M anual",
+                      cta: "Assinar Escritório M anual",
                     },
                   ]
-              ).map(({ plano, mailto, cta }) => (
+              ).map(({ plano, fallback, cta }) => (
                 <CardShell key={plano.id} destaque={ciclo === "anual"}>
                   {ciclo === "anual" && "rotuloEconomia" in plano && (
                     <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-facto-gold/90 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-facto-dark">
@@ -462,12 +441,13 @@ export function LandingPrecos() {
                     ))}
                   </ul>
                   <div className="mt-8">
-                    <a
-                      href={mailto}
-                      className="block w-full rounded-lg border border-white/15 px-6 py-3.5 text-center font-semibold text-white transition hover:border-facto-gold/50 hover:bg-white/5"
+                    <BotaoAssinarPlano
+                      planoId={plano.id}
+                      hrefFallback={fallback}
+                      variante={ciclo === "anual" ? "primario" : "secundario"}
                     >
                       {cta}
-                    </a>
+                    </BotaoAssinarPlano>
                   </div>
                 </CardShell>
               ))}
@@ -476,9 +456,10 @@ export function LandingPrecos() {
         )}
 
         <p className="mt-8 text-center text-xs leading-relaxed text-stone-600">
-          Cotas renovam a cada ciclo. Pacotes extras (+50 / +100 peças ou +10
-          análises) ficam na conta após o login — sem trocar de plano. Pagamento
-          seguro via Mercado Pago. Escritório: checkout sob demanda.
+          Cotas renovam a cada ciclo. Conta logada: checkout com vínculo
+          automático à sua conta (mesmo pagando com outro e-mail no Mercado
+          Pago). Visitante: use o e-mail da conta FACTO no pagamento. Pacotes
+          extras ficam após o login. Pagamento seguro via Mercado Pago.
         </p>
 
         <MetodosPagamento />

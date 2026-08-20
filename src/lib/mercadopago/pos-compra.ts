@@ -99,6 +99,23 @@ export async function garantirConviteEEmailsPosCompra(
     };
   }
 
+  // Assinatura já vinculada a um profile_id (checkout com token).
+  const { data: assComPerfil } = await admin
+    .from("assinaturas")
+    .select("id, profile_id")
+    .ilike("email", email)
+    .not("profile_id", "is", null)
+    .order("atualizado_em", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (assComPerfil?.profile_id) {
+    return {
+      financeiroOk,
+      conviteOk: false,
+      motivoConvite: "ja_tem_perfil",
+    };
+  }
+
   const conviteJaEnviado =
     !opcoes.forcarEmails &&
     (await emailJaEnviadoParaPagamento("convite", opcoes.mpPaymentId));
