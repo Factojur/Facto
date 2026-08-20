@@ -332,13 +332,19 @@ const ESQUELETOS: Record<EspeciePecaJec, SecaoEsqueletoJec[]> = {
 };
 
 export function metaEspecie(id: EspeciePecaJec): MetaEspecieJec {
-  const canon =
-    id === "recurso"
-      ? "recurso-inominado"
-      : id === "pedido-contraposto"
-        ? "pedido-contraposto"
-        : id;
-  if (canon === "pedido-contraposto") {
+  if (id === "recurso") {
+    return {
+      id: "recurso",
+      rotulo: "Recurso / apelação",
+      descricao:
+        "Scaffold de recurso cível genérico (apelação, RO etc.) — fora do Juizado.",
+      nomePecaHint: "Apelação / Recurso…",
+      exigeProcesso: true,
+      conectivoPartes:
+        "interpondo o presente recurso, pelos fundamentos a seguir.",
+    };
+  }
+  if (id === "pedido-contraposto") {
     return {
       id: "pedido-contraposto",
       rotulo: "Contestação com pedido contraposto",
@@ -351,16 +357,12 @@ export function metaEspecie(id: EspeciePecaJec): MetaEspecieJec {
     };
   }
   return (
-    ESPECIES_PECA_JEC.find((e) => e.id === canon) ?? ESPECIES_PECA_JEC[0]!
+    ESPECIES_PECA_JEC.find((e) => e.id === id) ?? ESPECIES_PECA_JEC[0]!
   );
 }
 
 export function esqueletoPorEspecie(id: EspeciePecaJec): SecaoEsqueletoJec[] {
-  const canon =
-    id === "recurso"
-      ? "recurso-inominado"
-      : id;
-  return ESQUELETOS[canon] ?? ESQUELETOS["peticao-inicial"];
+  return ESQUELETOS[id] ?? ESQUELETOS["peticao-inicial"];
 }
 
 /** Seções numeradas (pula provas opcionais do sistema — injetadas depois). */
@@ -392,6 +394,7 @@ export function normalizarEspeciePeca(
     id === "contestacao" ||
     id === "pedido-contraposto" ||
     id === "embargos" ||
+    id === "recurso" ||
     id === "recurso-inominado" ||
     id === "agravo-instrumento" ||
     id === "contrarrazoes-inominado" ||
@@ -414,7 +417,7 @@ export function normalizarEspeciePeca(
   }
   if (id === "réplica" || id === "replica") return "replica";
   if (id === "execução" || id === "cumprimento") return "execucao";
-  if (id === "recurso" || id.includes("inominado") && !id.includes("contra")) {
+  if (id.includes("inominado") && !id.includes("contra")) {
     return "recurso-inominado";
   }
   if (id.includes("agravo") && id.includes("instrumento")) {
@@ -452,7 +455,9 @@ export function tituloPecaCabivel(
     case "defesa-preliminar":
       return "Defesa Preliminar";
     case "recurso":
-      return "Recurso Inominado";
+      if (/apela/.test(blob)) return "Apelação";
+      if (/ordin[aá]rio/.test(blob)) return "Recurso Ordinário";
+      return String(tipoSugerido ?? "").trim() || "Apelação";
     case "contestacao":
       return "Contestação";
     case "pedido-contraposto":
@@ -551,13 +556,21 @@ export function blocoEstruturaPrompt(especie: EspeciePecaJec): string {
       "   Tempestividade/cabimento: arts. aplicáveis (Lei 9.099/95 e/ou CPC conforme a espécie de embargos).",
       "   Não invente número de processo nem datas de intimação — use só o que estiver nos fatos/formulário."
     );
-  } else if (especie === "recurso-inominado" || especie === "recurso") {
+  } else if (especie === "recurso-inominado") {
     extras.push(
       "   Abertura: partes já qualificadas nos autos (só nomes); não invente CPF/CNPJ/endereço.",
       "   O recorrente é a parte que você representa (autor ou réu) — respeite o polo processual informado no formulário.",
       "   Histórico: sentença recorrida em síntese objetiva.",
       "   Razões: erros de fato/direito com subsunção; pedidos = reforma/anulação + efeito.",
       "   Lei 9.099/95, art. 41 — Turma Recursal. NÃO use apelação do CPC."
+    );
+  } else if (especie === "recurso") {
+    extras.push(
+      "   Abertura: partes já qualificadas nos autos (só nomes); não invente CPF/CNPJ/endereço.",
+      "   O recorrente é a parte que você representa — respeite o polo processual informado no formulário.",
+      "   Histórico: sentença/decisão recorrida em síntese objetiva.",
+      "   Razões: erros de fato/direito com subsunção; pedidos = reforma/anulação + efeito.",
+      "   Rito: apelação / recurso cível do CPC (ou RO trabalhista/federal conforme a área). NÃO diga Turma Recursal nem Lei 9.099/95."
     );
   } else if (especie === "agravo-instrumento") {
     extras.push(

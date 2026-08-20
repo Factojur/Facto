@@ -483,6 +483,17 @@ export function foroLegadoDaArea(
       return n
         ? `${n}ª Vara do JEF de ${local}`
         : `Juizado Especial Federal de ${local}`;
+    case "tributario":
+    case "administrativo":
+      return n
+        ? `${n}ª Vara da Fazenda Pública de ${local}`
+        : `Vara da Fazenda Pública de ${local}`;
+    case "constitucional":
+      return n
+        ? `${n}ª Vara / juízo constitucional de ${local}`
+        : `Juízo constitucional competente em ${local}`;
+    case "internacional":
+      return "Superior Tribunal de Justiça — homologação / cooperação jurídica";
     case "eleitoral":
       return n ? `${n}ª Zona Eleitoral de ${local}` : `Zona Eleitoral de ${local}`;
     case "jec":

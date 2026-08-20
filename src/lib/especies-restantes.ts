@@ -362,10 +362,22 @@ export const KIT_CRIMINAL = kit(
 );
 
 export const KIT_PREVIDENCIARIO = kit(
-  metaCpc(
-    "Concessão, restabelecimento ou revisão de benefício (Lei 8.213/91). Polo: segurado × INSS. JEF ou Vara Federal.",
-    "Ação previdenciária"
-  ),
+  [
+    {
+      id: "peticao-inicial",
+      rotulo: "Petição inicial previdenciária",
+      descricao:
+        "Concessão, restabelecimento ou revisão de benefício (Lei 8.213/91). Polo: segurado × INSS.",
+      nomePecaHint: "Ação previdenciária",
+      exigeProcesso: false,
+      conectivoPartes: "pelos fatos e fundamentos jurídicos a seguir expostos.",
+      prazoAviso: "Prescrição/decadência previdenciária conforme o benefício dos FATOS.",
+    },
+    ...metaCpc(
+      "Demanda previdenciária ordinária (Lei 8.213/91). Polo: segurado × INSS. JEF ou Vara Federal.",
+      "Ação previdenciária"
+    ).filter((e) => e.id !== "peticao-inicial"),
+  ],
   [
     "   Rito: PREVIDENCIÁRIO (Lei 8.213/91). Polo: segurado/autor × INSS. JEF ou Vara Federal.",
     "   Não invente NB, DIP, RMI, tempo de contribuição, carência nem laudo médico.",
@@ -380,7 +392,9 @@ export const KIT_PREVIDENCIARIO = kit(
     if (/cumprimento/.test(t)) return "cumprimento-sentenca";
     return null;
   },
-  {}
+  { "peticao-inicial": "Ação Previdenciária" },
+  { "peticao-inicial": INICIAL },
+  "peticao-inicial"
 );
 
 export const KIT_TRIBUTARIO = kit(
@@ -501,6 +515,16 @@ export const KIT_ADMINISTRATIVO = kit(
       conectivoPartes: "impetrando o presente mandado de segurança, pelos fundamentos a seguir.",
       prazoAviso: "120 dias (art. 23 da Lei 12.016/09).",
     },
+    {
+      id: "informacoes-ms",
+      rotulo: "Informações em mandado de segurança",
+      descricao:
+        "Resposta da autoridade / ente (art. 7º, I, da Lei 12.016/09). Peça do polo passivo.",
+      nomePecaHint: "Informações em mandado de segurança",
+      exigeProcesso: true,
+      conectivoPartes: "prestando as presentes informações, pelos fundamentos a seguir.",
+      prazoAviso: "Prazo do art. 7º da Lei 12.016/09 (em regra 10 dias).",
+    },
     ...metaCpc(
       "Ação contra a Fazenda (anulação de ato, licitação, servidor). Não use para MS (há espécie própria).",
       "Ação contra a Fazenda"
@@ -517,18 +541,24 @@ export const KIT_ADMINISTRATIVO = kit(
   ],
   [
     "   Rito: ADMINISTRATIVO / FAZENDA. MS: Lei 12.016/09 (120 dias, prova pré-constituída). Não invente o ato coator.",
-    "   Endereçamento: Vara da Fazenda Pública ou Justiça Federal, conforme o ente dos FATOS.",
+    "   Informações em MS: polo passivo (autoridade/ente). Endereçamento: Vara da Fazenda ou Justiça Federal.",
     "   NÃO aplique Lei 9.099, CLT nem CDC. Agravo federal: TRF. Julgado contrário: não cite como lastro favorável.",
   ],
   (t) => {
+    if (/informa[cç].*manda(do)? de seguran|informa[cç][oõ]es em ms/.test(t)) {
+      return "informacoes-ms";
+    }
     if (/manda(do)? de seguran/.test(t)) return "mandado-seguranca";
     if (/apela/.test(t)) return "apelacao";
     if (/contesta/.test(t)) return "contestacao";
     if (/agravo/.test(t)) return "agravo-instrumento";
     return null;
   },
-  { "mandado-seguranca": "Mandado de Segurança" },
-  { "mandado-seguranca": INICIAL },
+  {
+    "mandado-seguranca": "Mandado de Segurança",
+    "informacoes-ms": "Informações em Mandado de Segurança",
+  },
+  { "mandado-seguranca": INICIAL, "informacoes-ms": DEFESA },
   "mandado-seguranca"
 );
 
@@ -600,6 +630,16 @@ export const KIT_AMBIENTAL = kit(
       prazoAviso: "Imprescritibilidade do dano ambiental permanente, conforme a tese aplicável.",
     },
     {
+      id: "mandado-seguranca",
+      rotulo: "Mandado de segurança ambiental",
+      descricao:
+        "Lei 12.016/09 contra ato de autoridade ambiental (licença, embargo, multa). Prova pré-constituída.",
+      nomePecaHint: "Mandado de segurança ambiental",
+      exigeProcesso: false,
+      conectivoPartes: "impetrando o presente mandado de segurança, pelos fundamentos a seguir.",
+      prazoAviso: "120 dias (art. 23 da Lei 12.016/09).",
+    },
+    {
       id: "defesa-infracao",
       rotulo: "Defesa de auto de infração ambiental",
       descricao: "Impugnação administrativa ou judicial do auto. Não invente o auto.",
@@ -612,19 +652,26 @@ export const KIT_AMBIENTAL = kit(
   ],
   [
     "   Rito: AMBIENTAL. Não invente auto de infração, TAC, licença nem área degradada.",
-    "   NÃO use Lei 9.099 nem CLT. Julgado contrário: não cite como lastro favorável.",
+    "   MS ambiental: Lei 12.016/09 (120 dias, prova pré-constituída). NÃO use Lei 9.099 nem CLT.",
+    "   Julgado contrário: não cite como lastro favorável.",
   ],
   (t) => {
     if (/a[cç][aã]o civil p[uú]blica|\bacp\b/.test(t)) return "acp-ambiental";
+    if (/manda(do)? de seguran/.test(t)) return "mandado-seguranca";
     if (/auto de infra[cç]|multa ambiental/.test(t)) return "defesa-infracao";
     if (/apela/.test(t)) return "apelacao";
     return null;
   },
   {
     "acp-ambiental": "Ação Civil Pública Ambiental",
+    "mandado-seguranca": "Mandado de Segurança Ambiental",
     "defesa-infracao": "Defesa de Auto de Infração Ambiental",
   },
-  { "acp-ambiental": INICIAL, "defesa-infracao": DEFESA },
+  {
+    "acp-ambiental": INICIAL,
+    "mandado-seguranca": INICIAL,
+    "defesa-infracao": DEFESA,
+  },
   "acp-ambiental"
 );
 

@@ -208,6 +208,8 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     href: "/dashboard/ambiental",
     available: true,
     icon: "🌿",
+    dicaEscolha:
+      "ACP / auto de infração ambiental. MS contra ato administrativo puro: Administrativo.",
   },
   {
     id: "propriedade-intelectual",
@@ -218,6 +220,8 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     href: "/dashboard/propriedade-intelectual",
     available: true,
     icon: "©️",
+    dicaEscolha:
+      "Marca, autoral e contrafação. Contrato comercial sem PI: Empresarial ou Civil.",
   },
   {
     id: "agrario",
@@ -228,15 +232,20 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     href: "/dashboard/agrario",
     available: true,
     icon: "🌾",
+    dicaEscolha:
+      "Contrato agrário / crédito rural. Imóvel urbano: Imobiliário. CLT rural: Trabalhista.",
   },
   {
     id: "internacional",
     title: "Direito Internacional",
     description:
       "Homologação de sentença estrangeira no STJ e contencioso contratual internacional.",
+    law: "CPC · tratados",
     href: "/dashboard/internacional",
     available: true,
     icon: "🌍",
+    dicaEscolha:
+      "Homologação no STJ. Contrato interno sem elemento estrangeiro: Civil ou Empresarial.",
   },
   {
     id: "eleitoral",
@@ -247,6 +256,8 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     href: "/dashboard/eleitoral",
     available: true,
     icon: "🗳️",
+    dicaEscolha:
+      "Só Justiça Eleitoral. Crime comum: Penal. Lastro TRE/TSE ainda em formação.",
   },
 ];
 

@@ -82,7 +82,8 @@ export function ehJusticaComumCpc(areaId: string): boolean {
     areaId === "ambiental" ||
     areaId === "propriedade-intelectual" ||
     areaId === "internacional" ||
-    areaId === "administrativo"
+    areaId === "administrativo" ||
+    areaId === "previdenciario"
   );
 }
 

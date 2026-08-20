@@ -1032,7 +1032,12 @@ export function JecForm({
     ultrapassaTetoJec(resumoValores.totalCentavos, false);
   const idsInicial = idsPeticaoInicialDaArea(areaId);
   const especiesTodas = useMemo(
-    () => listaEspeciesDaArea(areaId) ?? ESPECIES_PECA_JEC,
+    () => {
+      const lista = listaEspeciesDaArea(areaId);
+      if (lista?.length) return lista;
+      if (areaId === "jec") return ESPECIES_PECA_JEC;
+      return [];
+    },
     [areaId]
   );
   const especiesOpcoes = especiesTodas;

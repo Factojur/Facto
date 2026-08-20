@@ -6,27 +6,22 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 
 **Juris / seed:** depois de cada lote ou dia de cota, atualizar a seção **Lacunas da base (áreas falhas)** abaixo — tribunal errado, 0 insert, ou API sem aquele tribunal. Não deixar falha só no chat.
 
-## Retomar quando voltar (20/08 — manhã)
+## Retomar quando voltar (20/08 — tarde)
 
-1. **Supabase — rodar migrations novas** (obrigatório antes do trial/mapa):
-   - `supabase/migration-base-tribunal-area.sql` (`tribunal`, `area_tags`)
-   - `supabase/migration-trial.sql` (`trial_ate`, `trial_area_id`, `trial_pecas_usadas`)
-   - `supabase/migration-escritorio-seats.sql` (`escritorios`, `escritorio_membros`)
-   - Depois: `npm run backfill:juris-metadados`
-2. **Seed** — próximo lote **222** (cota API na madrugada 20/08). PC ligado na tomada. Pool 7.
-3. **Compra real MP** — webhook + e-mail + convite + cadastro + cancelamento CDC.
-4. **Escritório** — checkout MP + convite de assentos (catálogo/landing + schema seats prontos).
-5. **Dual-track seed “últimos 30 dias”** — adiado (~30–35k / antes de 06/09).
+1. **Supabase — migrations** trial / tribunal / escritório (se ainda não rodou).
+2. **Seed** — lote **222+**.
+3. **Compra real MP** ponta a ponta.
+4. **Escritório** — checkout MP + convites de assentos.
 
-### Feito nesta rodada (20/08 — ordem atualizada, sem #6)
+### Feito nesta rodada (20/08 — QA venda)
 
-- [x] Mapa base: `tribunal` + `area_tags` (migration + seed insert + backfill script)
-- [x] Lacunas vitrine no seed (JEC/digital/médico/JECR/amb/trab/fam/prev)
-- [x] Scorecard Minuta→FACTO: prompts (sem inventar qualificação; sem colar artigo íntegro) + painel “Contexto da peça”
-- [x] Trial MVP: `/trial`, `/api/trial/cadastro`, 1 área · 2 peças · 7 dias · watermark · rate-limit
-- [x] Escritório S/M no catálogo + schema seats
-- [x] Pós-peça: versões leves na sessão (até 5)
-- [ ] Dual-track seed 30 dias — **adiado de propósito**
+- [x] Previdenciário no mapa CPC de scaffold (`ehJusticaComumCpc`)
+- [x] `"recurso"` scaffold genérico ≠ `"recurso-inominado"` (normalizador + meta + pedidos)
+- [x] Pedidos/competência/fundamentos do scaffold por `areaId` (sem 9.099 fora do JEC)
+- [x] `foroLegado` Fazenda / constitucional / STJ
+- [x] `dicaEscolha` nas 5 áreas que faltavam
+- [x] MS no kit ambiental + informações-MS no administrativo
+- [x] Fallback de espécies: não derruba área para lista JEC
 
 ## Fila por prioridade — concorrência MinutaIA (19/08)
 

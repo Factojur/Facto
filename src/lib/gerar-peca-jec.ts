@@ -10,6 +10,9 @@ import {
   rotuloAreaJudiciaria,
   type ComarcaInfo,
 } from "@/lib/endereco-comarca";
+import { ritoDaArea } from "@/lib/area-rito";
+import { getAreaById } from "@/lib/areas-atuacao";
+import { areaMostraMle } from "@/lib/minuta-modulo";
 import {
   calcularResumoValorCausa,
   formatarCentavos,
@@ -202,28 +205,85 @@ function subtotalDaCategoria(
   return resumo?.categorias.find((c) => c.id === id)?.subtotalCentavos ?? 0;
 }
 
+function areaEhJecLike(areaId: string): boolean {
+  return areaId === "jec" || areaId === "jecr";
+}
+
+function textoSucumbencia(areaId: string): string {
+  if (areaEhJecLike(areaId)) {
+    return "na forma da Lei nº 9.099/95, se cabível";
+  }
+  if (areaId === "trabalhista") {
+    return "na forma da CLT e legislação trabalhista pertinente, se cabível";
+  }
+  return "na forma do art. 85 do CPC e legislação processual pertinente, se cabível";
+}
+
+function textoJusticaGratuita(areaId: string): string {
+  if (areaEhJecLike(areaId)) {
+    return "na forma da Lei nº 9.099/95 e da legislação processual pertinente";
+  }
+  return "na forma da Constituição Federal e da legislação processual pertinente";
+}
+
+function competenciaSugerida(areaId: string): string {
+  const rito = ritoDaArea(areaId);
+  return `${rotuloAreaJudiciaria(areaId)} — ${rito.especialidade}`;
+}
+
+function fundamentosLegaisBase(areaId: string, tutelaUrgencia: boolean): string[] {
+  if (areaId === "jec") {
+    const base = [
+      "Lei nº 9.099/95 (Lei dos Juizados Especiais Cíveis e Criminais)",
+      "Art. 3º — competência dos Juizados Especiais Cíveis",
+      "Art. 18 — regra do juízo incompetente por complexidade da causa",
+      "Art. 38 — dispensa de preparo em determinadas hipóteses",
+      "Art. 54 e 55 — recursos: embargos de declaração e recurso inominado",
+    ];
+    if (tutelaUrgencia) {
+      base.push("Art. 300 do Código de Processo Civil — tutela de urgência");
+    }
+    return base;
+  }
+  const area = getAreaById(areaId);
+  const rito = ritoDaArea(areaId);
+  const base = [
+    area?.law
+      ? `${area.title} — ${area.law}`
+      : `${rito.especialidade}`,
+    rito.ritoCurto,
+  ];
+  if (tutelaUrgencia) {
+    base.push("Art. 300 do Código de Processo Civil — tutela de urgência");
+  }
+  return base;
+}
+
 function extrairPedidos(
   tipoAcao: string,
   tutelaUrgencia: boolean,
   resumo: ResumoValorCausa | undefined,
   especie: EspeciePecaJec,
-  opcoes?: { pedirJusticaGratuita?: boolean; temMle?: boolean }
+  opcoes?: {
+    pedirJusticaGratuita?: boolean;
+    temMle?: boolean;
+    areaId?: string;
+  }
 ): string {
   const pedirJG = Boolean(opcoes?.pedirJusticaGratuita);
-  const temMle = Boolean(opcoes?.temMle);
+  const temMle = Boolean(opcoes?.temMle) && areaMostraMle(opcoes?.areaId ?? "jec");
+  const areaId = opcoes?.areaId ?? "jec";
+  const suc = textoSucumbencia(areaId);
+  const jg = textoJusticaGratuita(areaId);
 
   if (especie === "contestacao") {
     const itens = [
       "O acolhimento das preliminares eventualmente arguidas, com a extinção do processo sem resolução do mérito, se for o caso;",
       "No mérito, a total improcedência dos pedidos formulados na inicial;",
-      "A condenação da parte autora ao pagamento das custas e honorários, na forma da Lei nº 9.099/95, se cabível.",
+      `A condenação da parte autora ao pagamento das custas e honorários, ${suc}.`,
     ];
     if (pedirJG) {
-      itens.splice(
-        2,
-        0,
-        "A concessão dos benefícios da justiça gratuita, na forma da Lei nº 9.099/95 e da legislação processual pertinente;"
-      );
+      itens.splice(2, 0, `A concessão dos benefícios da justiça gratuita, ${jg};`);
     }
     return itens
       .map((texto, i) => `${String.fromCharCode(97 + i)}) ${texto}`)
@@ -235,14 +295,10 @@ function extrairPedidos(
       "O acolhimento das preliminares eventualmente arguidas, com a extinção do processo sem resolução do mérito, se for o caso;",
       "No mérito, a total improcedência dos pedidos formulados na inicial;",
       "A procedência do pedido contraposto formulado pelo(a) réu(ré), na forma do art. 31 da Lei nº 9.099/95;",
-      "A condenação da parte autora ao pagamento das custas e honorários, na forma da Lei nº 9.099/95, se cabível.",
+      `A condenação da parte autora ao pagamento das custas e honorários, ${suc}.`,
     ];
     if (pedirJG) {
-      itens.splice(
-        3,
-        0,
-        "A concessão dos benefícios da justiça gratuita, na forma da Lei nº 9.099/95 e da legislação processual pertinente;"
-      );
+      itens.splice(3, 0, `A concessão dos benefícios da justiça gratuita, ${jg};`);
     }
     return itens
       .map((texto, i) => `${String.fromCharCode(97 + i)}) ${texto}`)
@@ -253,13 +309,27 @@ function extrairPedidos(
     const itens = [
       "O conhecimento e o acolhimento dos presentes embargos;",
       "A declaração de inexigibilidade / a limitação / a extinção da cobrança ou do ato embargado, conforme os fundamentos;",
-      "A condenação da parte adversa nas verbas de sucumbência, na forma da Lei nº 9.099/95, se cabível.",
+      `A condenação da parte adversa nas verbas de sucumbência, ${suc}.`,
+    ];
+    if (pedirJG) {
+      itens.splice(2, 0, `A concessão dos benefícios da justiça gratuita, ${jg};`);
+    }
+    return itens
+      .map((texto, i) => `${String.fromCharCode(97 + i)}) ${texto}`)
+      .join("\n");
+  }
+
+  if (especie === "recurso-inominado") {
+    const itens = [
+      "O conhecimento do recurso inominado, por tempestivo e cabível;",
+      "No mérito, a reforma / anulação da sentença recorrida, com o provimento integral dos pedidos recursais;",
+      `A condenação da parte adversa nas verbas de sucumbência, ${suc}.`,
     ];
     if (pedirJG) {
       itens.splice(
         2,
         0,
-        "A concessão dos benefícios da justiça gratuita, na forma da Lei nº 9.099/95 e da legislação processual pertinente;"
+        "A concessão / manutenção dos benefícios da justiça gratuita no âmbito recursal, se cabível;"
       );
     }
     return itens
@@ -267,11 +337,11 @@ function extrairPedidos(
       .join("\n");
   }
 
-  if (especie === "recurso" || especie === "recurso-inominado") {
+  if (especie === "recurso") {
     const itens = [
-      "O conhecimento do recurso inominado, por tempestivo e cabível;",
-      "No mérito, a reforma / anulação da sentença recorrida, com o provimento integral dos pedidos recursais;",
-      "A condenação da parte adversa nas verbas de sucumbência, na forma da Lei nº 9.099/95, se cabível.",
+      "O conhecimento do recurso, por tempestivo e cabível;",
+      "No mérito, a reforma / anulação da sentença ou decisão recorrida, com o provimento integral dos pedidos recursais;",
+      `A condenação da parte adversa nas verbas de sucumbência, ${suc}.`,
     ];
     if (pedirJG) {
       itens.splice(
@@ -289,7 +359,7 @@ function extrairPedidos(
     const itens = [
       "O conhecimento e o provimento do presente agravo de instrumento;",
       "A reforma da decisão interlocutória agravada, nos termos dos fundamentos;",
-      "A condenação da parte adversa nas verbas de sucumbência, na forma da Lei nº 9.099/95, se cabível.",
+      `A condenação da parte adversa nas verbas de sucumbência, ${suc}.`,
     ];
     if (pedirJG) {
       itens.splice(
@@ -307,7 +377,7 @@ function extrairPedidos(
     const itens = [
       "O conhecimento das presentes contrarrazões;",
       "No mérito, o desprovimento do recurso inominado interposto pela parte adversa, com a manutenção da sentença;",
-      "A condenação do recorrente nas verbas de sucumbência, na forma da Lei nº 9.099/95, se cabível.",
+      `A condenação do recorrente nas verbas de sucumbência, ${suc}.`,
     ];
     if (pedirJG) {
       itens.splice(
@@ -336,14 +406,10 @@ function extrairPedidos(
     const itens = [
       "O acolhimento da presente réplica, com a rejeição das preliminares e teses defensivas improcedentes;",
       "A procedência total dos pedidos formulados na inicial;",
-      "A condenação do(a) requerido(a) ao pagamento das custas e honorários, na forma da Lei nº 9.099/95.",
+      `A condenação do(a) requerido(a) ao pagamento das custas e honorários, ${suc}.`,
     ];
     if (pedirJG) {
-      itens.splice(
-        2,
-        0,
-        "A concessão dos benefícios da justiça gratuita, na forma da Lei nº 9.099/95 e da legislação processual pertinente;"
-      );
+      itens.splice(2, 0, `A concessão dos benefícios da justiça gratuita, ${jg};`);
     }
     return itens
       .map((texto, i) => `${String.fromCharCode(97 + i)}) ${texto}`)
@@ -354,7 +420,7 @@ function extrairPedidos(
     const itens = [
       "A intimação do(a) executado(a) para pagamento do débito no prazo legal;",
       "Não havendo pagamento espontâneo, a penhora / bloqueio e demais medidas executivas cabíveis;",
-      "A condenação do(a) executado(a) nas verbas de sucumbência, na forma da Lei nº 9.099/95, se cabível.",
+      `A condenação do(a) executado(a) nas verbas de sucumbência, ${suc}.`,
     ];
     if (temMle) {
       itens.splice(
@@ -367,7 +433,7 @@ function extrairPedidos(
       itens.splice(
         itens.length - 1,
         0,
-        "A concessão dos benefícios da justiça gratuita, na forma da Lei nº 9.099/95 e da legislação processual pertinente;"
+        `A concessão dos benefícios da justiça gratuita, ${jg};`
       );
     }
     return itens
@@ -385,7 +451,7 @@ function extrairPedidos(
 
   if (pedirJG) {
     itens.push(
-      "A concessão dos benefícios da justiça gratuita, com a dispensa do pagamento de custas, taxas e despesas processuais, na forma da Lei nº 9.099/95 e da legislação processual pertinente;"
+      `A concessão dos benefícios da justiça gratuita, com a dispensa do pagamento de custas, taxas e despesas processuais, ${jg};`
     );
   }
 
@@ -460,7 +526,7 @@ function extrairPedidos(
   }
 
   itens.push(
-    "A condenação do(a) requerido(a) ao pagamento das custas processuais e honorários advocatícios, na forma da Lei nº 9.099/95 e legislação processual pertinente."
+    `A condenação do(a) requerido(a) ao pagamento das custas processuais e honorários advocatícios, ${suc}.`
   );
 
   return itens
@@ -506,19 +572,8 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     tutelaUrgencia = decisaoAssistente.tutelaUrgencia;
   }
 
-  const fundamentoLegal = [
-    "Lei nº 9.099/95 (Lei dos Juizados Especiais Cíveis e Criminais)",
-    "Art. 3º — competência dos Juizados Especiais Cíveis",
-    "Art. 18 — regra do juízo incompetente por complexidade da causa",
-    "Art. 38 — dispensa de preparo em determinadas hipóteses",
-    "Art. 54 e 55 — recursos: embargos de declaração e recurso inominado",
-  ];
-
-  if (tutelaUrgencia) {
-    fundamentoLegal.push(
-      "Art. 300 do Código de Processo Civil — tutela de urgência"
-    );
-  }
+  const areaIdPeca = input.areaId ?? "jec";
+  const fundamentoLegal = fundamentosLegaisBase(areaIdPeca, tutelaUrgencia);
 
   const itensConhecimento = input.baseConhecimento ?? [];
   itensConhecimento.forEach((item) => {
@@ -535,7 +590,6 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     analisePartes.push(decisaoAssistente.justificativa, "", "---", "");
   }
 
-  const areaIdPeca = input.areaId ?? "jec";
   const especie = aplicarFlagReconvencao(
     areaIdPeca,
     inferirEspeciePeca(tipoAcao, input.fatos, input.especiePeca),
@@ -548,19 +602,20 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     Boolean(input.pedirJusticaGratuita) ||
     (input.documentos.declaracaoHipossuficiencia?.length ?? 0) > 0;
   const temMle =
-    Boolean(input.temMle) ||
-    (input.documentos.mandadoLevantamentoEletronico?.length ?? 0) > 0;
+    (Boolean(input.temMle) ||
+      (input.documentos.mandadoLevantamentoEletronico?.length ?? 0) > 0) &&
+    areaMostraMle(areaIdPeca);
 
   if (pedirJusticaGratuita) {
     fundamentoLegal.push(
-      "Justiça gratuita — Lei nº 9.099/95 e legislação processual pertinente"
+      `Justiça gratuita — ${textoJusticaGratuita(areaIdPeca)}`
     );
   }
 
   analisePartes.push(
     `Espécie da peça: ${metaEsp.rotulo}`,
     `Tipo de ação ${decisaoAssistente ? "definido pelo Assistente" : "selecionado"}: ${tipoAcao}`,
-    `Competência sugerida: Juizado Especial Cível (Lei 9.099/95)`,
+    `Competência sugerida: ${competenciaSugerida(areaIdPeca)}`,
     `Tutela de urgência: ${tutelaUrgencia ? "Sim" : "Não"}`,
     `Justiça gratuita / hipossuficiência: ${pedirJusticaGratuita ? "Sim" : "Não"}`,
     `MLE (levantamento eletrônico): ${temMle ? "Sim" : "Não"}`,
@@ -697,6 +752,7 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
         extrairPedidos(tipoAcao, tutelaUrgencia, valorCausaResumo, especie, {
           pedirJusticaGratuita,
           temMle,
+          areaId: areaIdPeca,
         })
       );
     } else {

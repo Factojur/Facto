@@ -145,7 +145,7 @@ export const MATRIZ_POLO_POR_AREA: Record<AreaComPoloAdvocacia, MatrizPoloArea> 
     ),
     administrativo: m(
       ["mandado-seguranca", "peticao-inicial", "replica"],
-      ["contestacao"],
+      ["contestacao", "informacoes-ms"],
       [
         "apelacao",
         "agravo-instrumento",
@@ -228,7 +228,7 @@ export const MATRIZ_POLO_POR_AREA: Record<AreaComPoloAdvocacia, MatrizPoloArea> 
       ]
     ),
     ambiental: m(
-      ["acp-ambiental", "peticao-inicial", "replica"],
+      ["acp-ambiental", "mandado-seguranca", "peticao-inicial", "replica"],
       ["defesa-infracao", "contestacao"],
       [
         "embargos-declaracao",
