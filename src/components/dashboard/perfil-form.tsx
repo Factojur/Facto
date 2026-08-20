@@ -260,7 +260,14 @@ export function PerfilForm({ perfilInicial }: { perfilInicial: PerfilUsuario }) 
           </Link>
           <h1 className="mt-2 text-2xl font-bold text-slate-900">Meu perfil</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Foto, dados pessoais e endereço vinculados à sua conta.
+            Foto, dados pessoais, endereço e{" "}
+            <a
+              href="#estilo-redacao"
+              className="font-medium text-stone-700 underline hover:text-facto-gold"
+            >
+              estilo de redação
+            </a>
+            .
           </p>
         </div>
         <button
@@ -422,6 +429,8 @@ export function PerfilForm({ perfilInicial }: { perfilInicial: PerfilUsuario }) 
       </button>
     </form>
 
+      <EstiloEscritorioPanel />
+
       <form
         id="alterar-senha"
         onSubmit={handleAlterarSenha}
@@ -484,8 +493,6 @@ export function PerfilForm({ perfilInicial }: { perfilInicial: PerfilUsuario }) 
         value={escritorio}
         onChange={setEscritorio}
       />
-
-      <EstiloEscritorioPanel />
 
       <AssinaturaPainel />
     </div>

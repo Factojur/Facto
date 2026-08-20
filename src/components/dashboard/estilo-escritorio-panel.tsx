@@ -112,7 +112,10 @@ export function EstiloEscritorioPanel() {
   }
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section
+      id="estilo-redacao"
+      className="scroll-mt-24 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+    >
       <h2 className="text-lg font-semibold text-slate-800">
         Meu estilo de redação (opcional)
       </h2>
