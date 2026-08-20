@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import { FactoLogo } from "@/components/brand/facto-logo";
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { createClient } from "@/lib/supabase/client";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { PLANO_TRIAL } from "@/lib/planos-facto";
@@ -34,6 +35,7 @@ function LoginForm() {
   const trialOk = searchParams.get("trial") === "ok";
   const sessaoEncerrada = searchParams.get("sessao") === "encerrada";
   const acessoExpirado = searchParams.get("acesso") === "expirado";
+  const oauthErro = searchParams.get("oauth");
 
   useEffect(() => {
     async function preparar() {
@@ -161,11 +163,25 @@ function LoginForm() {
             </div>
           )}
 
+          {oauthErro && (
+            <div className="mb-4 rounded-lg border border-red-800 bg-red-950/50 px-4 py-3 text-sm text-red-300">
+              {oauthErro}
+            </div>
+          )}
+
           {error && (
             <div className="mb-4 rounded-lg border border-red-800 bg-red-950/50 px-4 py-3 text-sm text-red-300">
               {error}
             </div>
           )}
+
+          <GoogleSignInButton intent="login" className="mb-4" />
+
+          <div className="mb-4 flex items-center gap-3 text-xs text-stone-500">
+            <span className="h-px flex-1 bg-stone-700" />
+            ou com e-mail
+            <span className="h-px flex-1 bg-stone-700" />
+          </div>
 
           <div className="space-y-4">
             <div>

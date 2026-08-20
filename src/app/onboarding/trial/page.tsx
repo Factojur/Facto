@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FactoLogo } from "@/components/brand/facto-logo";
-import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
+import { createClient } from "@/lib/supabase/client";
 import { AREAS_ATUACAO } from "@/lib/areas-atuacao";
 import { PLANO_TRIAL } from "@/lib/planos-facto";
 
@@ -13,28 +12,45 @@ const AREAS_TRIAL = AREAS_ATUACAO.filter((a) => a.available && a.href).slice(
   12
 );
 
-export default function TrialPage() {
-  const router = useRouter();
+export default function OnboardingTrialPage() {
+  const supabase = createClient();
   const [nomeCompleto, setNomeCompleto] = useState("");
-  const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
   const [areaId, setAreaId] = useState("jec");
   const [termoAceito, setTermoAceito] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        window.location.assign("/trial");
+        return;
+      }
+      setEmail(user.email ?? null);
+      const meta = user.user_metadata as Record<string, unknown>;
+      const nome =
+        (typeof meta.full_name === "string" && meta.full_name) ||
+        (typeof meta.name === "string" && meta.name) ||
+        (typeof meta.nome_completo === "string" && meta.nome_completo) ||
+        "";
+      if (nome) setNomeCompleto(nome);
+    })();
+  }, [supabase.auth]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErro(null);
     setLoading(true);
     try {
-      const res = await fetch("/api/trial/cadastro", {
+      const res = await fetch("/api/trial/ativar-google", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nomeCompleto,
-          email,
-          senha,
           areaId,
           termoAceito,
         }),
@@ -47,7 +63,7 @@ export default function TrialPage() {
         setErro(data.error ?? "Não foi possível iniciar o teste.");
         return;
       }
-      router.push(data.redirect ?? "/login?trial=ok");
+      window.location.assign(data.redirect ?? "/dashboard");
     } catch {
       setErro("Falha de rede. Tente de novo.");
     } finally {
@@ -62,64 +78,29 @@ export default function TrialPage() {
           <Link href="/">
             <FactoLogo variant="horizontal" size="sm" />
           </Link>
-          <Link href="/login" className="text-sm text-stone-400 hover:text-white">
-            Já tenho conta
-          </Link>
         </div>
       </header>
 
       <main className="mx-auto max-w-lg px-6 py-12 md:px-10">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-facto-gold">
-          {PLANO_TRIAL.rotulo}
+          {PLANO_TRIAL.rotulo} · Google
         </p>
         <h1 className="mt-2 text-3xl font-bold text-white">
-          Teste o FACTO em 7 dias
+          Quase lá — escolha a área
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-stone-400">
-          Uma área · {PLANO_TRIAL.pecasPorMes} minutas · export com marca d’água
-          de teste. Sem OAB no início — informe só ao assinar.
+          Conta Google conectada
+          {email ? ` (${email})` : ""}. Selecione a área do teste e aceite os
+          termos para liberar {PLANO_TRIAL.pecasPorMes} minutas por 7 dias.
         </p>
 
-        <GoogleSignInButton
-          intent="trial"
-          className="mt-8"
-          label="Continuar com Google"
-        />
-
-        <div className="my-6 flex items-center gap-3 text-xs text-stone-500">
-          <span className="h-px flex-1 bg-stone-700" />
-          ou com e-mail e senha
-          <span className="h-px flex-1 bg-stone-700" />
-        </div>
-
-        <form onSubmit={onSubmit} className="space-y-5">
+        <form onSubmit={onSubmit} className="mt-8 space-y-5">
           <label className="block text-sm">
             <span className="text-stone-400">Nome completo</span>
             <input
               required
               value={nomeCompleto}
               onChange={(e) => setNomeCompleto(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-white"
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="text-stone-400">E-mail</span>
-            <input
-              required
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-white"
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="text-stone-400">Senha (mín. 6)</span>
-            <input
-              required
-              type="password"
-              minLength={6}
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
               className="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-white"
             />
           </label>
@@ -168,15 +149,9 @@ export default function TrialPage() {
             disabled={loading}
             className="w-full rounded-lg bg-facto-gold px-4 py-3 text-sm font-semibold text-facto-dark hover:bg-amber-300 disabled:opacity-60"
           >
-            {loading ? "Criando…" : "Começar teste grátis"}
+            {loading ? "Ativando…" : "Começar teste grátis"}
           </button>
         </form>
-
-        <ul className="mt-8 space-y-2 text-xs text-stone-500">
-          {PLANO_TRIAL.beneficios.map((b) => (
-            <li key={b}>· {b}</li>
-          ))}
-        </ul>
       </main>
     </div>
   );

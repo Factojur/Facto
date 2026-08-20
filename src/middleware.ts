@@ -53,10 +53,19 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
+  const isAuthBridge =
+    pathname.startsWith("/auth/") || pathname.startsWith("/onboarding/");
+
   if (!user && pathname.startsWith("/dashboard")) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     return NextResponse.redirect(loginUrl);
+  }
+
+  if (!user && pathname.startsWith("/onboarding/")) {
+    const trialUrl = request.nextUrl.clone();
+    trialUrl.pathname = "/trial";
+    return NextResponse.redirect(trialUrl);
   }
 
   if (user && pathname.startsWith("/dashboard")) {
@@ -144,7 +153,12 @@ export async function middleware(request: NextRequest) {
   // única deste dispositivo estiver ok. Caso contrário deixa a página
   // limpar o auth residual (evita loop com ?sessao=encerrada).
   // /redefinir-senha e /esqueci-senha ficam acessíveis com ou sem sessão.
-  if (user && (pathname === "/login" || pathname === "/cadastro" || pathname === "/trial")) {
+  // /auth e /onboarding: ponte OAuth / completar trial — não redirecionar.
+  if (
+    user &&
+    !isAuthBridge &&
+    (pathname === "/login" || pathname === "/cadastro" || pathname === "/trial")
+  ) {
     const veioDeConflito =
       request.nextUrl.searchParams.get("sessao") === "encerrada";
     if (!veioDeConflito) {
