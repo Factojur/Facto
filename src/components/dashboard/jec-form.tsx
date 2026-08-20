@@ -132,6 +132,7 @@ import {
 import type { JurisCasoPayload } from "@/lib/juris-caso-types";
 import type { ResumoCota } from "@/lib/cota-pecas";
 import { PacotesExtrasPainel } from "@/components/dashboard/pacotes-extras-painel";
+import { TrialEsgotadoBanner } from "@/components/dashboard/trial-esgotado-banner";
 import { EntradaCasoSection } from "@/components/dashboard/entrada-caso-section";
 import { BotaoFalarCampo } from "@/components/dashboard/botao-falar-campo";
 import { juntarTranscricao } from "@/lib/transcrever-audio";
@@ -1776,9 +1777,13 @@ export function JecForm({
       if (!response.ok) {
         if (data.codigo === "COTA_ESGOTADA" && data.cota) {
           setCota(data.cota);
+          const alvo =
+            data.cota.plano === "trial"
+              ? "trial-esgotado-jec"
+              : "pacotes-extras-jec";
           window.setTimeout(() => {
             document
-              .getElementById("pacotes-extras-jec")
+              .getElementById(alvo)
               ?.scrollIntoView({ behavior: "smooth", block: "start" });
           }, 50);
         }
@@ -1869,14 +1874,21 @@ export function JecForm({
           )}
         </header>
 
-        {(cota?.esgotada ||
-          (cota?.percentualUsado ?? 0) >= 85 ||
-          cota?.esgotadaAnalises) && (
-          <PacotesExtrasPainel
-            id="pacotes-extras-jec"
-            variante="banner"
-            cota={cota}
+        {cota?.plano === "trial" && cota.esgotada ? (
+          <TrialEsgotadoBanner
+            id="trial-esgotado-jec"
+            usoLabel={cota.usoLabel}
           />
+        ) : (
+          (cota?.esgotada ||
+            (cota?.percentualUsado ?? 0) >= 85 ||
+            cota?.esgotadaAnalises) && (
+            <PacotesExtrasPainel
+              id="pacotes-extras-jec"
+              variante="banner"
+              cota={cota}
+            />
+          )
         )}
 
         {casoVinculoId && moduloUi.hrefCasos ? (
@@ -2822,14 +2834,29 @@ export function JecForm({
             )}
             {cota?.esgotada && (
               <p className="text-sm text-amber-800">
-                Cota esgotada —{" "}
-                <a
-                  href="#pacotes-extras-jec"
-                  className="font-semibold underline"
-                >
-                  contrate um pacote extra
-                </a>{" "}
-                para continuar.
+                {cota.plano === "trial" ? (
+                  <>
+                    Teste sem minutas —{" "}
+                    <a
+                      href="#trial-esgotado-jec"
+                      className="font-semibold underline"
+                    >
+                      escolha um plano
+                    </a>{" "}
+                    para continuar.
+                  </>
+                ) : (
+                  <>
+                    Cota esgotada —{" "}
+                    <a
+                      href="#pacotes-extras-jec"
+                      className="font-semibold underline"
+                    >
+                      contrate um pacote extra
+                    </a>{" "}
+                    para continuar.
+                  </>
+                )}
               </p>
             )}
             <button
@@ -2845,7 +2872,9 @@ export function JecForm({
               {loading
                 ? LOADING_STAGES[loadingStage]
                 : cota?.esgotada
-                  ? "Cota esgotada"
+                  ? cota.plano === "trial"
+                    ? "Teste esgotado"
+                    : "Cota esgotada"
                   : bloqueadoTetoLeigo
                     ? "Valor acima do teto (20 SM)"
                     : "Gerar peça"}

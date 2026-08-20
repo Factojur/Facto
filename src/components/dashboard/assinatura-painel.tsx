@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { AssinaturaResumoUI } from "@/lib/assinatura-format";
 import type { ResumoCota } from "@/lib/cota-pecas";
 import { PacotesExtrasPainel } from "@/components/dashboard/pacotes-extras-painel";
+import { TrialEsgotadoBanner } from "@/components/dashboard/trial-esgotado-banner";
 
 function badgeClasses(status: AssinaturaResumoUI["status"]): string {
   switch (status) {
@@ -262,7 +263,11 @@ export function AssinaturaPainel() {
               </button>
             </div>
 
-            <PacotesExtrasPainel cota={cota} />
+            {cota?.plano === "trial" && cota.esgotada ? (
+              <TrialEsgotadoBanner usoLabel={cota.usoLabel} />
+            ) : cota?.plano !== "trial" ? (
+              <PacotesExtrasPainel cota={cota} />
+            ) : null}
           </>
         )}
 

@@ -334,10 +334,12 @@ async function postGerarPeca(request: Request) {
     email,
   });
   if (!saldo.ok) {
+    const trialEsgotado = saldo.cota.plano === "trial";
     return NextResponse.json(
       {
-        error:
-          "Cota mensal de peças esgotada. Contrate um pacote extra em Perfil → Assinatura ou no banner desta página.",
+        error: trialEsgotado
+          ? "Suas minutas de teste acabaram. Escolha um plano (JEC ou Completo) para continuar gerando."
+          : "Cota mensal de peças esgotada. Contrate um pacote extra em Perfil → Assinatura ou no banner desta página.",
         cota: saldo.cota,
         codigo: "COTA_ESGOTADA",
       },
