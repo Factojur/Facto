@@ -59,7 +59,7 @@ export function TrialEsgotadoBanner({
           Teste concluído
         </p>
         <h3 className="mt-1 text-lg font-bold text-slate-900 sm:text-xl">
-          Suas {PLANO_TRIAL.pecasPorMes} minutas de teste acabaram
+          Suas {PLANO_TRIAL.pecasPorMes} peças de teste acabaram
         </h3>
         <p className="mt-1.5 max-w-2xl text-sm text-slate-600">
           {usoLabel ? `${usoLabel}. ` : ""}

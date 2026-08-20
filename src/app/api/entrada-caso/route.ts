@@ -4,10 +4,6 @@ import { ocrComGemini } from "@/lib/ia/ocr-pdf-gemini";
 import { detectarTesesCanonicas } from "@/lib/teses-canonicas";
 import { exigirAcessoAreaMinuta } from "@/lib/acesso-minuta-api";
 import {
-  obterResumoCotaUsuario,
-  registrarUmaAnalise,
-} from "@/lib/cota-pecas-server";
-import {
   extrairTextoDeArquivo,
   TIPOS_ARQUIVO_ACEITOS,
 } from "@/lib/base-conhecimento";
@@ -32,7 +28,7 @@ type ArquivoIn = {
 
 /**
  * POST /api/entrada-caso — preenche as 3 abas. Não gera peça.
- * Consome 1 análise (não cota de peça).
+ * Não consome cota de peça nem de análise (Entrada livre).
  */
 export async function POST(request: Request) {
   try {
@@ -105,20 +101,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const cotaAntes = await obterResumoCotaUsuario({
-      userId: user.id,
-      email: user.email,
-    });
-    if (cotaAntes.trackingAtivo && cotaAntes.esgotadaAnalises) {
-      return NextResponse.json(
-        {
-          error: `Limite mensal de análises atingido (${cotaAntes.limiteAnalisesTotal}/mês). A entrada única usa 1 análise, não a cota de peça.`,
-          codigo: "LIMITE_ANALISES",
-        },
-        { status: 429 }
-      );
-    }
-
     const preenchimento = await preencherEntradaCaso({ relato, areaId });
     const teses = detectarTesesCanonicas(
       areaId,
@@ -149,11 +131,6 @@ export async function POST(request: Request) {
       trecho: trechoLeituraRelato(janela.texto),
     };
 
-    const registro = await registrarUmaAnalise({
-      userId: user.id,
-      email: user.email,
-    });
-
     return NextResponse.json({
       preenchimento,
       teses: teses.map((t) => ({
@@ -162,10 +139,6 @@ export async function POST(request: Request) {
         artigos: t.artigos,
       })),
       leituraRelato,
-      analisesNoCiclo: registro.ok ? registro.analises : registro.analises,
-      avisoCota: registro.ok
-        ? undefined
-        : "Limite de análises atingido após esta solicitação.",
     });
   } catch (erro) {
     console.error("[entrada-caso]", erro);

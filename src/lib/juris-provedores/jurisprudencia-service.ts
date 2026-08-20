@@ -2,14 +2,12 @@
  * JurisprudenciaService — busca controlada no Jurisprudências.ai
  * + formatação no padrão interno FACTO.
  *
- * Política de custo (produto):
- * - 1 chamada HTTP bem-sucedida por busca do usuário → 1 precedente
- * - Pool de tokens (várias contas): se uma esgota (429), troca para a próxima
- * - Cota mensal por usuário FACTO (15/mês) é aplicada na rota, não aqui
- * - Lookup por número (`/decisions/lookup`) consome a cota de consultas (10 mil),
- *   não a de buscas (500). Só ementa — nunca inteiro teor/voto.
+ * Política de produto (cliente):
+ * - Runtime do app: só base curada FACTO (`provedorExternoAtivo: false` em sugerir).
+ * - Esta lib permanece para seed / scripts admin — não é caminho do usuário.
+ * - Cota externa no produto = 0 (desligada).
  *
- * Env:
+ * Env (seed):
  * - JURISPRUDENCIAS_AI_API_KEY — token principal
  * - JURISPRUDENCIAS_AI_API_KEYS — pool (vírgula/espaço/ponto-e-vírgula)
  */
@@ -18,8 +16,11 @@ import type { JurisCandidato } from "@/lib/juris-provedores/types";
 
 const BASE = "https://jurisprudencias.ai/api/v1";
 
-/** Limite mensal de buscas externas por usuário FACTO. */
-export const JURIS_BUSCAS_POR_USUARIO_MES = 15;
+/**
+ * Limite mensal de buscas externas por usuário no produto.
+ * 0 = desligado no app (cliente só usa base curada).
+ */
+export const JURIS_BUSCAS_POR_USUARIO_MES = 0;
 
 /** @deprecated Use JURIS_BUSCAS_POR_USUARIO_MES */
 export const JURIS_BUSCAS_POR_USUARIO_DIA = JURIS_BUSCAS_POR_USUARIO_MES;

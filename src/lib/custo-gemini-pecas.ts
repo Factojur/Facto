@@ -16,6 +16,12 @@ export const CUSTO_GEMINI_USD_POR_1M = {
   flashOutput: 2.5,
 } as const;
 
+/** Claude Sonnet (redator) — ordem de grandeza API Anthropic 2026. */
+export const CUSTO_SONNET_USD_POR_1M = {
+  input: 3,
+  output: 15,
+} as const;
+
 /** Tokens médios assumidos por peça (triagem + redação). */
 export const TOKENS_MEDIOS_POR_PECA = {
   triagemIn: 3_000,
@@ -41,6 +47,19 @@ export function custoEstimadoUsdPorPeca(): number {
     (t.triagemOut / 1_000_000) * p.flashLiteOutput +
     (t.redacaoIn / 1_000_000) * p.flashInput +
     (t.redacaoOut / 1_000_000) * p.flashOutput;
+  return Math.round(usd * 10_000) / 10_000;
+}
+
+/** Triagem Flash-Lite + redação Sonnet (sem buffer operacional). */
+export function custoEstimadoUsdPorPecaSonnet(): number {
+  const t = TOKENS_MEDIOS_POR_PECA;
+  const g = CUSTO_GEMINI_USD_POR_1M;
+  const s = CUSTO_SONNET_USD_POR_1M;
+  const usd =
+    (t.triagemIn / 1_000_000) * g.flashLiteInput +
+    (t.triagemOut / 1_000_000) * g.flashLiteOutput +
+    (t.redacaoIn / 1_000_000) * s.input +
+    (t.redacaoOut / 1_000_000) * s.output;
   return Math.round(usd * 10_000) / 10_000;
 }
 

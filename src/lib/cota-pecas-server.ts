@@ -20,6 +20,7 @@ type LinhaCota = {
   extras: number;
   analises: number;
   extrasAnalises: number;
+  sonnetRedacoes: number;
 };
 
 async function lerLinhaCota(
@@ -27,6 +28,32 @@ async function lerLinhaCota(
   userId: string,
   ciclo: string
 ): Promise<{ ok: true } & LinhaCota | { ok: false; erro: string }> {
+  const comSonnet = await admin
+    .from("cota_pecas_ciclo")
+    .select("usadas, extras, analises, extras_analises, sonnet_redacoes")
+    .eq("user_id", userId)
+    .eq("ciclo", ciclo)
+    .maybeSingle();
+
+  if (!comSonnet.error) {
+    const row = comSonnet.data as {
+      usadas?: number;
+      extras?: number;
+      analises?: number;
+      extras_analises?: number;
+      sonnet_redacoes?: number;
+    } | null;
+    return {
+      ok: true,
+      encontrada: Boolean(comSonnet.data),
+      usadas: Number(row?.usadas ?? 0),
+      extras: Number(row?.extras ?? 0),
+      analises: Number(row?.analises ?? 0),
+      extrasAnalises: Number(row?.extras_analises ?? 0),
+      sonnetRedacoes: Number(row?.sonnet_redacoes ?? 0),
+    };
+  }
+
   const comExtras = await admin
     .from("cota_pecas_ciclo")
     .select("usadas, extras, analises, extras_analises")
@@ -44,6 +71,7 @@ async function lerLinhaCota(
       extrasAnalises: Number(
         (comExtras.data as { extras_analises?: number } | null)?.extras_analises ?? 0
       ),
+      sonnetRedacoes: 0,
     };
   }
 
@@ -65,6 +93,7 @@ async function lerLinhaCota(
     extras: Number(semExtras.data?.extras ?? 0),
     analises: Number(semExtras.data?.analises ?? 0),
     extrasAnalises: 0,
+    sonnetRedacoes: 0,
   };
 }
 
@@ -366,8 +395,8 @@ export async function creditarExtrasAnalises(opcoes: {
 }
 
 /**
- * Consome 1 análise de processo no ciclo (cota do plano + extras).
- * Não consome cota de peça. Fail-open se a coluna ainda não existir.
+ * Legado: antes debitava 1 análise. Entrada não consome mais cota —
+ * mantido como no-op seguro para callers antigos / admin.
  */
 export async function registrarUmaAnalise(opcoes: {
   userId: string;
@@ -377,84 +406,67 @@ export async function registrarUmaAnalise(opcoes: {
   | { ok: false; motivo: "limite"; analises: number; cota: ResumoCota }
 > {
   const cota = await obterResumoCotaUsuario(opcoes);
-  if (isEmailAcessoLivre(opcoes.email) || !cota.trackingAtivo) {
-    return { ok: true, analises: cota.analisesUsadas, cota };
-  }
+  return { ok: true, analises: cota.analisesUsadas, cota };
+}
 
-  if (cota.esgotadaAnalises) {
-    return {
-      ok: false,
-      motivo: "limite",
-      analises: cota.analisesUsadas,
-      cota,
-    };
-  }
-
-  const ciclo = cota.ciclo;
-
+/** Contagem de redações Sonnet no ciclo (fail-open → 0). */
+export async function obterContagemSonnet(opcoes: {
+  userId: string;
+}): Promise<number> {
+  const ciclo = cicloAtualSaoPaulo();
   try {
     const admin = createAdminClient();
     const linha = await lerLinhaCota(admin, opcoes.userId, ciclo);
-    if (!linha.ok) {
-      console.warn("[analises] leitura falhou (fail-open):", linha.erro);
-      return { ok: true, analises: 0, cota };
-    }
+    if (!linha.ok) return 0;
+    return linha.sonnetRedacoes;
+  } catch {
+    return 0;
+  }
+}
 
-    const usadasAnalises = linha.analises;
-    const limite = cota.limiteAnalisesTotal ?? usadasAnalises;
-    if (usadasAnalises >= limite) {
-      return {
-        ok: false,
-        motivo: "limite",
-        analises: usadasAnalises,
-        cota,
-      };
-    }
+/** Incrementa contador Sonnet após redação bem-sucedida (fail-open). */
+export async function registrarUmaRedacaoSonnet(opcoes: {
+  userId: string;
+}): Promise<number> {
+  const ciclo = cicloAtualSaoPaulo();
+  try {
+    const admin = createAdminClient();
+    const linha = await lerLinhaCota(admin, opcoes.userId, ciclo);
+    if (!linha.ok) return 0;
 
     if (!linha.encontrada) {
-      const { error: insErr } = await admin.from("cota_pecas_ciclo").insert({
+      const { error } = await admin.from("cota_pecas_ciclo").insert({
         user_id: opcoes.userId,
         ciclo,
         usadas: 0,
         extras: 0,
-        analises: 1,
-        extras_analises: 0,
+        analises: 0,
+        sonnet_redacoes: 1,
       });
-      if (insErr) {
-        const retry = await admin.from("cota_pecas_ciclo").insert({
-          user_id: opcoes.userId,
-          ciclo,
-          usadas: 0,
-          extras: 0,
-          analises: 1,
-        });
-        if (retry.error) {
-          console.warn("[analises] insert falhou (fail-open):", retry.error.message);
-          return { ok: true, analises: 0, cota };
-        }
+      if (error) {
+        console.warn("[sonnet] insert falhou (fail-open):", error.message);
+        return 0;
       }
-      const depois = await obterResumoCotaUsuario(opcoes);
-      return { ok: true, analises: 1, cota: depois };
+      return 1;
     }
 
-    const { error: updErr } = await admin
+    const proximo = linha.sonnetRedacoes + 1;
+    const { error } = await admin
       .from("cota_pecas_ciclo")
       .update({
-        analises: usadasAnalises + 1,
+        sonnet_redacoes: proximo,
         atualizado_em: new Date().toISOString(),
       })
       .eq("user_id", opcoes.userId)
       .eq("ciclo", ciclo);
 
-    if (updErr) {
-      console.warn("[analises] update falhou (fail-open):", updErr.message);
-      return { ok: true, analises: usadasAnalises, cota };
+    if (error) {
+      console.warn("[sonnet] update falhou (fail-open):", error.message);
+      return linha.sonnetRedacoes;
     }
-
-    const depois = await obterResumoCotaUsuario(opcoes);
-    return { ok: true, analises: usadasAnalises + 1, cota: depois };
+    return proximo;
   } catch (erro) {
-    console.warn("[analises] exceção (fail-open):", erro);
-    return { ok: true, analises: 0, cota };
+    console.warn("[sonnet] exceção (fail-open):", erro);
+    return 0;
   }
 }

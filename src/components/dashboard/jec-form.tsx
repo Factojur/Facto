@@ -1867,11 +1867,6 @@ export function JecForm({
               {cota.usoLabel}
             </p>
           )}
-          {cota?.trackingAtivo && cota.usoLabelAnalises && !cota.esgotadaAnalises && (
-            <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
-              {cota.usoLabelAnalises}
-            </p>
-          )}
         </header>
 
         {cota?.plano === "trial" && cota.esgotada ? (
@@ -1880,9 +1875,7 @@ export function JecForm({
             usoLabel={cota.usoLabel}
           />
         ) : (
-          (cota?.esgotada ||
-            (cota?.percentualUsado ?? 0) >= 85 ||
-            cota?.esgotadaAnalises) && (
+          (cota?.esgotada || (cota?.percentualUsado ?? 0) >= 85) && (
             <PacotesExtrasPainel
               id="pacotes-extras-jec"
               variante="banner"

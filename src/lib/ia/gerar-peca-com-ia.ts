@@ -26,6 +26,13 @@ import {
   modelosRedacao,
   MODELOS_TRIAGEM,
 } from "@/lib/ia/gemini-client";
+import { gerarTextoComAnthropic } from "@/lib/ia/anthropic-client";
+import { decidirRedatorSonnet } from "@/lib/ia/roteador-redator";
+import {
+  obterContagemSonnet,
+  registrarUmaRedacaoSonnet,
+} from "@/lib/cota-pecas-server";
+import type { PlanoCota } from "@/lib/cota-pecas";
 import { normalizarPecaGerada } from "@/lib/ia/normalizar-peca-gerada";
 import {
   anotarJurisprudenciasSemLastro,
@@ -500,6 +507,11 @@ export async function gerarPecaComIA(params: {
   atuarLeigo?: boolean;
   tesesIds?: string[];
   estiloEscritorio?: string | null;
+  /** Roteamento Flash/Sonnet (Completo 12% · Pro 22%). */
+  roteamento?: {
+    userId: string;
+    plano: PlanoCota;
+  };
 }): Promise<ResultadoPecaIA> {
   if (!geminiConfigurado()) {
     return {
@@ -739,40 +751,78 @@ export async function gerarPecaComIA(params: {
     tutelaUrgencia: params.instrucoes?.tutelaUrgencia,
   });
 
-  // —— Redator forense ——
-  const redacaoRes = await gerarTextoComGemini({
-    systemPrompt: montarSystemPromptRedacaoTier1(
-      contextoRedacao,
-      leiMunicipal,
-      jurisDoCaso,
-      especieFinal,
-      areaId,
-      opcoesPolo,
-      blocoVinculos,
-      params.estiloEscritorio,
-      provasDoCaso
-    ),
-    userPrompt: montarUserPromptRedacao({
-      tipoAcao: analiseEstrategica.nomeAcao || params.tipoAcao,
-      fatos: params.fatos,
-      instrucoes: params.instrucoes,
-      casoReal,
-      estrategiaJuridica: estrategiaParaRedator,
-      especiePeca: especieFinal,
-      poloAdvocacia: polo,
-      areaId,
-      vinculosPeca: blocoVinculos,
-    }),
-    modelos: modelosRedacao(),
-    temperature: 0.35,
-    maxOutputTokens: 8192,
+  // —— Redator forense (Flash padrão; Sonnet se roteador autorizar) ——
+  const systemRedacao = montarSystemPromptRedacaoTier1(
+    contextoRedacao,
+    leiMunicipal,
+    jurisDoCaso,
+    especieFinal,
+    areaId,
+    opcoesPolo,
+    blocoVinculos,
+    params.estiloEscritorio,
+    provasDoCaso
+  );
+  const userRedacao = montarUserPromptRedacao({
+    tipoAcao: analiseEstrategica.nomeAcao || params.tipoAcao,
+    fatos: params.fatos,
+    instrucoes: params.instrucoes,
+    casoReal,
+    estrategiaJuridica: estrategiaParaRedator,
+    especiePeca: especieFinal,
+    poloAdvocacia: polo,
+    areaId,
+    vinculosPeca: blocoVinculos,
   });
 
-  if (!redacaoRes.ok) {
-    return { ok: false, erro: `Falha na redação: ${redacaoRes.erro}` };
+  let redacaoModelo = "";
+  let textoBrutoRedacao = "";
+  let usouSonnet = false;
+
+  const sonnetUsadas = params.roteamento?.userId
+    ? await obterContagemSonnet({ userId: params.roteamento.userId })
+    : 0;
+  const decisao = decidirRedatorSonnet({
+    plano: params.roteamento?.plano ?? null,
+    especie: especieFinal,
+    charsRelato: params.fatos.length,
+    tutelaUrgencia: Boolean(params.instrucoes?.tutelaUrgencia),
+    sonnetUsadas,
+  });
+
+  if (decisao.usarSonnet) {
+    const sonnetRes = await gerarTextoComAnthropic({
+      systemPrompt: systemRedacao,
+      userPrompt: userRedacao,
+      temperature: 0.35,
+      maxOutputTokens: 8192,
+    });
+    if (sonnetRes.ok) {
+      textoBrutoRedacao = sonnetRes.texto;
+      redacaoModelo = sonnetRes.modelo;
+      usouSonnet = true;
+      if (params.roteamento?.userId) {
+        await registrarUmaRedacaoSonnet({ userId: params.roteamento.userId });
+      }
+    }
   }
 
-  let textoGerado = removerVazamentoDeAnalise(redacaoRes.texto);
+  if (!textoBrutoRedacao) {
+    const redacaoRes = await gerarTextoComGemini({
+      systemPrompt: systemRedacao,
+      userPrompt: userRedacao,
+      modelos: modelosRedacao(),
+      temperature: 0.35,
+      maxOutputTokens: 8192,
+    });
+    if (!redacaoRes.ok) {
+      return { ok: false, erro: `Falha na redação: ${redacaoRes.erro}` };
+    }
+    textoBrutoRedacao = redacaoRes.texto;
+    redacaoModelo = redacaoRes.modelo;
+  }
+
+  let textoGerado = removerVazamentoDeAnalise(textoBrutoRedacao);
   if (params.instrucoes?.enderecamento?.trim()) {
     textoGerado = substituirEnderecamentoDeterministico(
       textoGerado,
@@ -791,11 +841,16 @@ export async function gerarPecaComIA(params: {
     skin: "Redator forense",
     titulo: "Redação da peça",
     status: "ok",
-    detalhe: detalheRedator({
-      caracteres: textoGerado.length,
-      tituloPeca: vinculos.tituloPeca,
-    }),
-    modelo: redacaoRes.modelo,
+    detalhe: usouSonnet
+      ? `${detalheRedator({
+          caracteres: textoGerado.length,
+          tituloPeca: vinculos.tituloPeca,
+        })} · ${decisao.detalhe}`
+      : detalheRedator({
+          caracteres: textoGerado.length,
+          tituloPeca: vinculos.tituloPeca,
+        }),
+    modelo: redacaoModelo,
   });
 
   const contextoParaVerificacao = [
@@ -832,7 +887,7 @@ export async function gerarPecaComIA(params: {
   return {
     ok: true,
     textoGerado: textoComLastro,
-    modelo: `${triagemRes.modelo} → ${redacaoRes.modelo}`,
+    modelo: `${triagemRes.modelo} → ${redacaoModelo}`,
     contextoUtilizado: itensFinais.map((item) => ({
       titulo: item.titulo,
       categoria: item.categoria,

@@ -1,10 +1,12 @@
 /**
  * Preços, cotas e benefícios comerciais FACTO (landing + área logada + webhook).
- * JEC 79,90/40 · Completo 189,90/100 · Pro 289,90/180 ·
- * Completo Anual 1.890/100 · Pro Anual 2.990/180 ·
+ * JEC 79,90/40 · Completo 139,90/100 · Pro 279,90/200 ·
+ * Completo Anual 1.399/100 · Pro Anual 2.799/200 ·
  * Escritório S 749,90 / M 1.299,90 · anuais S 7.499 / M 12.999 (10× mensal).
  * Valores legados continuam reconhecidos em planoPorValor (assinantes antigos).
  *
+ * Unidade comercial: peças (não créditos / minutas).
+ * Entrada do caso não consome cota — só “Gerar peça” = 1 peça.
  * custoPorPecaAprox = preço do ciclo ÷ peças do ciclo (anuais: preço/ano ÷ 12×cota).
  */
 
@@ -12,7 +14,8 @@ export const PLANO_JEC = {
   id: "jec" as const,
   preco: 79.9,
   pecasPorMes: 40,
-  analisesPorMes: 10,
+  /** @deprecated Entrada não consome análise; mantido 0 para compat. */
+  analisesPorMes: 0,
   rotuloPreco: "R$ 79,90",
   rotuloPeriodo: "/mês",
   rotulo: "Plano JEC",
@@ -20,8 +23,8 @@ export const PLANO_JEC = {
   custoPorPecaAprox: "R$ 2,00",
   beneficios: [
     "Para a própria parte no Juizado — sem OAB",
-    "40 minutas/mês — ≈ R$ 2,00 por peça na cota",
-    "10 análises de processo/mês",
+    "40 peças/mês — ≈ R$ 2,00 por peça na cota",
+    "Entrada do caso ilimitada (não consome peça)",
     "Equipe FACTO: análise, súmulas da base curada e redação",
     "Timbre e dados do seu perfil na peça",
     "Pacotes extras se a cota do mês acabar",
@@ -31,18 +34,18 @@ export const PLANO_JEC = {
 
 export const PLANO_MENSAL = {
   id: "mensal" as const,
-  preco: 189.9,
+  preco: 139.9,
   pecasPorMes: 100,
-  analisesPorMes: 30,
-  rotuloPreco: "R$ 189,90",
+  analisesPorMes: 0,
+  rotuloPreco: "R$ 139,90",
   rotuloPeriodo: "/mês",
   rotulo: "Plano Completo",
-  /** 189,90 ÷ 100 */
-  custoPorPecaAprox: "R$ 1,90",
+  /** 139,90 ÷ 100 */
+  custoPorPecaAprox: "R$ 1,40",
   beneficios: [
     "Para advogados (OAB) · todas as áreas no FACTO",
-    "100 minutas/mês — ≈ R$ 1,90 por peça na cota",
-    "30 análises de processo/mês",
+    "100 peças/mês — ≈ R$ 1,40 por peça na cota",
+    "Entrada do caso ilimitada (não consome peça)",
     "Equipe completa: Analista, Pesquisa & súmulas, Redator e Auditor",
     "Base curada de leis e súmulas + fundamentos do seu caso",
     "Formatação forense (PDF/Word); revise antes de protocolar",
@@ -53,18 +56,18 @@ export const PLANO_MENSAL = {
 
 export const PLANO_PRO = {
   id: "pro" as const,
-  preco: 289.9,
-  pecasPorMes: 180,
-  analisesPorMes: 50,
-  rotuloPreco: "R$ 289,90",
+  preco: 279.9,
+  pecasPorMes: 200,
+  analisesPorMes: 0,
+  rotuloPreco: "R$ 279,90",
   rotuloPeriodo: "/mês",
   rotulo: "Plano Completo Pro",
-  /** 289,90 ÷ 180 */
-  custoPorPecaAprox: "R$ 1,61",
+  /** 279,90 ÷ 200 */
+  custoPorPecaAprox: "R$ 1,40",
   beneficios: [
     "Para advogados (OAB) · tudo do Plano Completo",
-    "180 minutas/mês — ≈ R$ 1,61 por peça na cota",
-    "50 análises de processo/mês",
+    "200 peças/mês — ≈ R$ 1,40 por peça na cota",
+    "Entrada do caso ilimitada (não consome peça)",
     "Prioridade na fila de geração e pesquisa reforçada",
     "Mesma base curada e equipe FACTO, com mais capacidade",
     "Pacotes extras se ainda precisar de mais peças",
@@ -74,27 +77,26 @@ export const PLANO_PRO = {
 
 export const PLANO_ANUAL = {
   id: "anual" as const,
-  /** Preço redondo comercial (vs 12 × 189,90 = 2.278,80). */
-  preco: 1890,
+  /** 10× mensal (2 meses off): 10 × 139,90. */
+  preco: 1399,
   pecasPorMes: 100,
-  analisesPorMes: 30,
-  rotuloPreco: "R$ 1.890,00",
+  analisesPorMes: 0,
+  rotuloPreco: "R$ 1.399,00",
   rotuloPeriodo: "/ano",
   rotulo: "Plano Completo Anual",
-  equivalenteMensal: 157.5,
-  rotuloEquivalenteMensal: "R$ 157,50",
-  /** Economia vs 12× mensal: 2.278,80 − 1.890,00 */
-  economiaAno: 388.8,
-  rotuloEconomia: "R$ 388,80",
-  /** ~17% vs 12× mensal — preferir comunicar a economia em R$. */
+  equivalenteMensal: 116.58333333333333,
+  rotuloEquivalenteMensal: "R$ 116,58",
+  /** Economia vs 12× mensal: 1.678,80 − 1.399,00 */
+  economiaAno: 279.8,
+  rotuloEconomia: "R$ 279,80",
   descontoPercentual: 17,
-  /** 1.890 ÷ (100 × 12) */
-  custoPorPecaAprox: "R$ 1,58",
+  /** 1.399 ÷ (100 × 12) */
+  custoPorPecaAprox: "R$ 1,17",
   beneficios: [
     "Para advogados (OAB) · tudo do Completo mensal, no anual",
-    "100 minutas/mês — mesma cota do mensal · ≈ R$ 1,58 por peça",
-    "30 análises de processo/mês",
-    "Equivalente a R$ 157,50/mês — economia de R$ 388,80/ano",
+    "100 peças/mês — mesma cota do mensal · ≈ R$ 1,17 por peça",
+    "Entrada do caso ilimitada (não consome peça)",
+    "Equivalente a R$ 116,58/mês — economia de R$ 279,80/ano",
     "Equipe FACTO + base curada de leis e súmulas",
     "Pacotes extras quando a cota mensal acabar",
   ],
@@ -102,27 +104,26 @@ export const PLANO_ANUAL = {
 
 export const PLANO_PRO_ANUAL = {
   id: "pro_anual" as const,
-  /** Preço redondo comercial (vs 12 × 289,90 = 3.478,80). */
-  preco: 2990,
-  pecasPorMes: 180,
-  analisesPorMes: 50,
-  rotuloPreco: "R$ 2.990,00",
+  /** 10× Pro mensal (2 meses off): 10 × 279,90. */
+  preco: 2799,
+  pecasPorMes: 200,
+  analisesPorMes: 0,
+  rotuloPreco: "R$ 2.799,00",
   rotuloPeriodo: "/ano",
   rotulo: "Plano Completo Pro Anual",
-  equivalenteMensal: 249.16666666666666,
-  rotuloEquivalenteMensal: "R$ 249,17",
-  /** Economia vs 12× Pro mensal: 3.478,80 − 2.990,00 */
-  economiaAno: 488.8,
-  rotuloEconomia: "R$ 488,80",
-  /** ~14% vs 12× Pro mensal — preferir comunicar a economia em R$. */
-  descontoPercentual: 14,
-  /** 2.990 ÷ (180 × 12) */
-  custoPorPecaAprox: "R$ 1,38",
+  equivalenteMensal: 233.25,
+  rotuloEquivalenteMensal: "R$ 233,25",
+  /** Economia vs 12× Pro mensal: 3.358,80 − 2.799,00 */
+  economiaAno: 559.8,
+  rotuloEconomia: "R$ 559,80",
+  descontoPercentual: 17,
+  /** 2.799 ÷ (200 × 12) */
+  custoPorPecaAprox: "R$ 1,17",
   beneficios: [
     "Para advogados (OAB) · tudo do Pro mensal, no anual",
-    "180 minutas/mês — mesma cota do mensal · ≈ R$ 1,38 por peça",
-    "50 análises de processo/mês",
-    "Equivalente a R$ 249,17/mês — economia de R$ 488,80/ano",
+    "200 peças/mês — mesma cota do mensal · ≈ R$ 1,17 por peça",
+    "Entrada do caso ilimitada (não consome peça)",
+    "Equivalente a R$ 233,25/mês — economia de R$ 559,80/ano",
     "Prioridade na fila e pesquisa reforçada o ano todo",
     "Pacotes extras se ainda precisar de mais peças",
   ],
@@ -132,8 +133,12 @@ export const PLANO_PRO_ANUAL = {
 export const PRECOS_LEADOS = {
   jec: 67.9,
   mensal: 147.9,
+  /** Completo mensal antes do alinhamento a R$ 139,90. */
+  mensal_18990: 189.9,
+  /** Pro mensal antes do alinhamento a R$ 279,90 / 200 peças. */
+  pro_28990: 289.9,
   anual: 1419.84,
-  /** Alias do Completo Anual vigente (1.890) — webhook por valor. */
+  /** Alias do Completo Anual vigente anterior (1.890). */
   anual_1890: 1890,
   /** Completo Anual com 20% exato (antes do arredondamento para 1.890). */
   anual_pacote_a: 1819.04,
@@ -141,6 +146,8 @@ export const PRECOS_LEADOS = {
   pro_anual: 2783.04,
   /** Pro Anual com 15% exato (antes do arredondamento para 2.990). */
   pro_anual_pacote_a: 2956.98,
+  /** Pro Anual redondo anterior (2.990). */
+  pro_anual_2990: 2990,
 } as const;
 
 /** Pacotes avulsos (área logada) — compra eventual, não assinatura. */
@@ -169,21 +176,30 @@ export const PACOTES_EXTRA = [
     descricao: "Melhor custo por peça entre os pacotes extras.",
     linkMp: (process.env.NEXT_PUBLIC_MP_LINK_EXTRA_100 ?? "").trim(),
   },
-  {
-    id: "extra-analises-10" as const,
-    pecas: 0,
-    analises: 10,
-    preco: 29.9,
-    rotuloPreco: "R$ 29,90",
-    rotulo: "+10 análises",
-    custoPorPecaAprox: "R$ 2,99",
-    descricao: "Mais análises de processo neste mês, sem mudar de plano.",
-    linkMp: (process.env.NEXT_PUBLIC_MP_LINK_EXTRA_ANALISES_10 ?? "").trim(),
-  },
 ] as const;
 
-export type PacoteExtraId = (typeof PACOTES_EXTRA)[number]["id"];
-export type PacoteExtra = (typeof PACOTES_EXTRA)[number];
+/**
+ * Pacote de análises descontinuado — só para webhook/legado de compras em voo.
+ * Não aparece na UI nem em novos checkouts.
+ */
+export const PACOTE_EXTRA_ANALISES_LEGADO = {
+  id: "extra-analises-10" as const,
+  pecas: 0,
+  analises: 10,
+  preco: 29.9,
+  rotuloPreco: "R$ 29,90",
+  rotulo: "+10 análises",
+  custoPorPecaAprox: "R$ 2,99",
+  descricao: "Descontinuado — análises não consomem cota.",
+  linkMp: (process.env.NEXT_PUBLIC_MP_LINK_EXTRA_ANALISES_10 ?? "").trim(),
+} as const;
+
+export type PacoteExtraId =
+  | (typeof PACOTES_EXTRA)[number]["id"]
+  | typeof PACOTE_EXTRA_ANALISES_LEGADO.id;
+export type PacoteExtra =
+  | (typeof PACOTES_EXTRA)[number]
+  | typeof PACOTE_EXTRA_ANALISES_LEGADO;
 export type PlanoId =
   | "jec"
   | "mensal"
@@ -201,14 +217,14 @@ export const PLANO_TRIAL = {
   id: "trial" as const,
   preco: 0,
   pecasPorMes: 2,
-  analisesPorMes: 1,
+  analisesPorMes: 0,
   diasValidade: 7,
   rotuloPreco: "Grátis",
   rotuloPeriodo: "/7 dias",
   rotulo: "Teste grátis",
   custoPorPecaAprox: "—",
   beneficios: [
-    "1 área à sua escolha · 2 minutas · 7 dias",
+    "1 área à sua escolha · 2 peças · 7 dias",
     "Sem OAB no início — informe só ao assinar",
     "Preview completo; export com marca d’água de teste",
     "Sem compromisso — cancele não renovando",
@@ -220,7 +236,7 @@ export const PLANO_ESCRITORIO_S = {
   id: "escritorio_s" as const,
   preco: 749.9,
   pecasPorMes: 450,
-  analisesPorMes: 80,
+  analisesPorMes: 0,
   seats: 5,
   rotuloPreco: "R$ 749,90",
   rotuloPeriodo: "/mês",
@@ -228,7 +244,8 @@ export const PLANO_ESCRITORIO_S = {
   custoPorPecaAprox: "R$ 1,67",
   beneficios: [
     "5 assentos simultâneos (sócios, estagiários, equipe)",
-    "450 minutas/mês em pool do escritório",
+    "450 peças/mês em pool do escritório",
+    "Entrada do caso ilimitada (não consome peça)",
     "OAB do administrador ampara a conta; membros sem OAB",
     "Estilo de redação por assento",
     "Todas as áreas (responsável com OAB)",
@@ -240,7 +257,7 @@ export const PLANO_ESCRITORIO_M = {
   id: "escritorio_m" as const,
   preco: 1299.9,
   pecasPorMes: 900,
-  analisesPorMes: 150,
+  analisesPorMes: 0,
   seats: 10,
   rotuloPreco: "R$ 1.299,90",
   rotuloPeriodo: "/mês",
@@ -248,7 +265,8 @@ export const PLANO_ESCRITORIO_M = {
   custoPorPecaAprox: "R$ 1,44",
   beneficios: [
     "10 assentos simultâneos",
-    "900 minutas/mês em pool do escritório",
+    "900 peças/mês em pool do escritório",
+    "Entrada do caso ilimitada (não consome peça)",
     "OAB do administrador · membros/estagiários sem OAB",
     "Estilo por assento + prioridade na fila",
     "Todas as áreas liberadas ao responsável OAB",
@@ -263,7 +281,7 @@ export const PLANO_ESCRITORIO_S_ANUAL = {
   id: "escritorio_s_anual" as const,
   preco: 7499,
   pecasPorMes: 450,
-  analisesPorMes: 80,
+  analisesPorMes: 0,
   seats: 5,
   rotuloPreco: "R$ 7.499,00",
   rotuloPeriodo: "/ano",
@@ -276,7 +294,7 @@ export const PLANO_ESCRITORIO_S_ANUAL = {
   custoPorPecaAprox: "R$ 1,39",
   beneficios: [
     "Tudo do Escritório S, no anual",
-    "5 assentos · 450 minutas/mês em pool",
+    "5 assentos · 450 peças/mês em pool",
     "Equivalente a R$ 624,92/mês — economia de R$ 1.499,80/ano",
     "OAB do administrador · membros sem OAB",
     "Checkout sob demanda (assentos + vínculo)",
@@ -291,7 +309,7 @@ export const PLANO_ESCRITORIO_M_ANUAL = {
   id: "escritorio_m_anual" as const,
   preco: 12999,
   pecasPorMes: 900,
-  analisesPorMes: 150,
+  analisesPorMes: 0,
   seats: 10,
   rotuloPreco: "R$ 12.999,00",
   rotuloPeriodo: "/ano",
@@ -304,7 +322,7 @@ export const PLANO_ESCRITORIO_M_ANUAL = {
   custoPorPecaAprox: "R$ 1,20",
   beneficios: [
     "Tudo do Escritório M, no anual",
-    "10 assentos · 900 minutas/mês em pool",
+    "10 assentos · 900 peças/mês em pool",
     "Equivalente a R$ 1.083,25/mês — economia de R$ 2.599,80/ano",
     "Prioridade na fila o ano todo",
     "Checkout sob demanda (assentos + vínculo)",
@@ -312,7 +330,10 @@ export const PLANO_ESCRITORIO_M_ANUAL = {
 };
 
 export function pacoteExtraPorId(id: string): PacoteExtra | null {
-  return PACOTES_EXTRA.find((p) => p.id === id) ?? null;
+  const ativo = PACOTES_EXTRA.find((p) => p.id === id);
+  if (ativo) return ativo;
+  if (id === PACOTE_EXTRA_ANALISES_LEGADO.id) return PACOTE_EXTRA_ANALISES_LEGADO;
+  return null;
 }
 
 /** Identifica pacote pelo valor da cobrança (links estáticos / fallback). */
@@ -322,6 +343,9 @@ export function pacoteExtraPorValor(
   if (typeof valor !== "number" || Number.isNaN(valor)) return null;
   for (const p of PACOTES_EXTRA) {
     if (Math.abs(valor - p.preco) < 0.05) return p;
+  }
+  if (Math.abs(valor - PACOTE_EXTRA_ANALISES_LEGADO.preco) < 0.05) {
+    return PACOTE_EXTRA_ANALISES_LEGADO;
   }
   // Legado
   if (Math.abs(valor - 39.9) < 0.05) return pacoteExtraPorId("extra-50");
@@ -392,11 +416,14 @@ export function planoPorValor(valor: number | null | undefined): PlanoId | null 
   if (Math.abs(valor - PLANO_PRO.preco) < 1) return "pro";
   if (Math.abs(valor - PLANO_MENSAL.preco) < 1) return "mensal";
   if (Math.abs(valor - PLANO_JEC.preco) < 1) return "jec";
+  if (Math.abs(valor - PRECOS_LEADOS.pro_anual_2990) < 1) return "pro_anual";
   if (Math.abs(valor - PRECOS_LEADOS.pro_anual_pacote_a) < 1) return "pro_anual";
   if (Math.abs(valor - PRECOS_LEADOS.pro_anual) < 1) return "pro_anual";
   if (Math.abs(valor - PRECOS_LEADOS.anual_1890) < 1) return "anual";
   if (Math.abs(valor - PRECOS_LEADOS.anual_pacote_a) < 1) return "anual";
   if (Math.abs(valor - PRECOS_LEADOS.anual) < 1) return "anual";
+  if (Math.abs(valor - PRECOS_LEADOS.pro_28990) < 1) return "pro";
+  if (Math.abs(valor - PRECOS_LEADOS.mensal_18990) < 1) return "mensal";
   if (Math.abs(valor - PRECOS_LEADOS.mensal) < 1) return "mensal";
   if (Math.abs(valor - PRECOS_LEADOS.jec) < 1) return "jec";
   return null;

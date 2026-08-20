@@ -1,5 +1,7 @@
 /**
- * Cota mensal de peças e análises FACTO (plano + extras do ciclo).
+ * Cota mensal de peças FACTO (plano + extras do ciclo).
+ * Análises / Entrada do caso não consomem cota — campos de análise ficam
+ * zerados por compatibilidade de API.
  */
 
 import {
@@ -73,17 +75,8 @@ export function limiteDoPlano(plano: PlanoCota): number | null {
   return null;
 }
 
-export function limiteAnalisesDoPlano(plano: PlanoCota): number | null {
-  if (plano === "pro_anual") return PLANO_PRO_ANUAL.analisesPorMes;
-  if (plano === "anual") return PLANO_ANUAL.analisesPorMes;
-  if (plano === "pro") return PLANO_PRO.analisesPorMes;
-  if (plano === "mensal") return PLANO_MENSAL.analisesPorMes;
-  if (plano === "jec") return PLANO_JEC.analisesPorMes;
-  if (plano === "trial") return PLANO_TRIAL.analisesPorMes;
-  if (plano === "escritorio_s" || plano === "escritorio_s_anual")
-    return PLANO_ESCRITORIO_S.analisesPorMes;
-  if (plano === "escritorio_m" || plano === "escritorio_m_anual")
-    return PLANO_ESCRITORIO_M.analisesPorMes;
+/** Descontinuado: Entrada não debita. Sempre null (sem tracking de análises). */
+export function limiteAnalisesDoPlano(_plano: PlanoCota): number | null {
   return null;
 }
 
@@ -98,7 +91,6 @@ export function montarResumoCota(opcoes: {
 }): ResumoCota {
   const ciclo = opcoes.ciclo ?? cicloAtualSaoPaulo();
   const limitePlano = limiteDoPlano(opcoes.plano);
-  const limiteAnalisesPlano = limiteAnalisesDoPlano(opcoes.plano);
   const trackingAtivo = opcoes.trackingAtivo ?? limitePlano != null;
   const usadas = Math.max(0, opcoes.usadas);
   const extras = Math.max(0, opcoes.extras);
@@ -125,7 +117,7 @@ export function montarResumoCota(opcoes: {
       restanteAnalises: null,
       esgotadaAnalises: false,
       percentualAnalisesUsado: null,
-      usoLabelAnalises: "Análises ilimitadas neste perfil",
+      usoLabelAnalises: "",
     };
   }
 
@@ -133,16 +125,6 @@ export function montarResumoCota(opcoes: {
   const restante = Math.max(0, limiteTotal - usadas);
   const percentualUsado =
     limiteTotal > 0 ? Math.min(100, Math.round((usadas / limiteTotal) * 100)) : 0;
-
-  const limiteAnalisesTotal = (limiteAnalisesPlano ?? 0) + extrasAnalises;
-  const restanteAnalises = Math.max(0, limiteAnalisesTotal - analisesUsadas);
-  const percentualAnalisesUsado =
-    limiteAnalisesTotal > 0
-      ? Math.min(
-          100,
-          Math.round((analisesUsadas / limiteAnalisesTotal) * 100)
-        )
-      : 0;
 
   return {
     ciclo,
@@ -158,15 +140,13 @@ export function montarResumoCota(opcoes: {
     usoLabel: `${usadas} de ${limiteTotal} peças neste mês${
       extras > 0 ? ` (inclui +${extras} extras)` : ""
     }`,
-    limiteAnalisesPlano,
+    limiteAnalisesPlano: null,
     analisesUsadas,
     extrasAnalises,
-    limiteAnalisesTotal,
-    restanteAnalises,
-    esgotadaAnalises: restanteAnalises <= 0,
-    percentualAnalisesUsado,
-    usoLabelAnalises: `${analisesUsadas} de ${limiteAnalisesTotal} análises neste mês${
-      extrasAnalises > 0 ? ` (inclui +${extrasAnalises} extras)` : ""
-    }`,
+    limiteAnalisesTotal: null,
+    restanteAnalises: null,
+    esgotadaAnalises: false,
+    percentualAnalisesUsado: null,
+    usoLabelAnalises: "",
   };
 }

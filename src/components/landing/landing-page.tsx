@@ -166,7 +166,7 @@ export function LandingPage() {
                 </a>
               </div>
               <p className="max-w-md text-center text-xs leading-relaxed text-stone-500">
-                Teste: 1 área e {PLANO_TRIAL.pecasPorMes} minutas com marca
+                Teste: 1 área e {PLANO_TRIAL.pecasPorMes} peças com marca
                 d’água. Planos pagos liberam a conta pelo e-mail após o
                 pagamento.
               </p>

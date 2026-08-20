@@ -86,7 +86,7 @@ export function LandingPrecos() {
           link: LINK_MENSAL,
           cta: "Assinar Completo",
           eyebrow: "Mais escolhido",
-          sub: "Para advogados (OAB) · todas as áreas · 100 minutas/mês.",
+          sub: "Para advogados (OAB) · todas as áreas · 100 peças/mês.",
           destaque: false as boolean,
         }
       : {
@@ -94,7 +94,7 @@ export function LandingPrecos() {
           link: LINK_ANUAL,
           cta: "Garantir desconto anual",
           eyebrow: "Economia anual",
-          sub: `Completo o ano todo · ${PLANO_ANUAL.pecasPorMes} minutas/mês · ${PLANO_ANUAL.rotuloEquivalenteMensal}/mês.`,
+          sub: `Completo o ano todo · ${PLANO_ANUAL.pecasPorMes} peças/mês · ${PLANO_ANUAL.rotuloEquivalenteMensal}/mês.`,
           destaque: true,
         };
 
@@ -105,7 +105,7 @@ export function LandingPrecos() {
           link: LINK_PRO,
           cta: "Assinar Pro",
           eyebrow: "Alto volume",
-          sub: "Para advogados (OAB) · 180 minutas/mês com prioridade na fila.",
+          sub: "Para advogados (OAB) · 200 peças/mês com prioridade na fila.",
           destaque: false as boolean,
         }
       : {
@@ -113,7 +113,7 @@ export function LandingPrecos() {
           link: LINK_PRO_ANUAL,
           cta: "Assinar Pro anual",
           eyebrow: "Máximo volume · economia",
-          sub: `${PLANO_PRO_ANUAL.pecasPorMes} minutas/mês o ano todo · ${PLANO_PRO_ANUAL.rotuloEquivalenteMensal}/mês.`,
+          sub: `${PLANO_PRO_ANUAL.pecasPorMes} peças/mês o ano todo · ${PLANO_PRO_ANUAL.rotuloEquivalenteMensal}/mês.`,
           destaque: true,
         };
 
@@ -128,8 +128,9 @@ export function LandingPrecos() {
             Escolha o ritmo da sua bancada
           </h2>
           <p className="mt-4 text-stone-400">
-            Cotas claras de minutas e análises. Equipe FACTO e base curada em
-            todos os planos. Cancele quando quiser — sem fidelidade.
+            Cotas claras de peças. Equipe FACTO e base curada em todos os planos.
+            Entrada do caso não consome cota. Cancele quando quiser — sem
+            fidelidade.
           </p>
         </div>
 
@@ -176,7 +177,7 @@ export function LandingPrecos() {
                 {PLANO_TRIAL.rotulo}
               </h3>
               <p className="mt-1 text-sm text-stone-500">
-                1 área · {PLANO_TRIAL.pecasPorMes} minutas · 7 dias · marca
+                1 área · {PLANO_TRIAL.pecasPorMes} peças · 7 dias · marca
                 d’água no export.
               </p>
               <div className="mt-6 flex items-baseline gap-1">
@@ -211,7 +212,7 @@ export function LandingPrecos() {
                 {PLANO_JEC.rotulo}
               </h3>
               <p className="mt-1 text-sm text-stone-500">
-                Para a própria parte no Juizado — sem OAB: 40 minutas/mês com
+                Para a própria parte no Juizado — sem OAB: 40 peças/mês com
                 lastro e padrão forense.
               </p>
               <div className="mt-6 flex items-baseline gap-1">

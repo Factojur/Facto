@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ehPacoteAnalises, PACOTES_EXTRA, type PacoteExtraId } from "@/lib/planos-facto";
+import { PACOTES_EXTRA, type PacoteExtraId } from "@/lib/planos-facto";
 import type { ResumoCota } from "@/lib/cota-pecas";
 
 type Props = {
@@ -106,8 +106,7 @@ function CardPacote({
         </span>
       </div>
       <p className="mt-0.5 text-xs text-slate-500">
-        ≈ {pacote.custoPorPecaAprox} por{" "}
-        {ehPacoteAnalises(pacote) ? "análise" : "peça"}
+        ≈ {pacote.custoPorPecaAprox} por peça · válidas só neste mês
       </p>
       <button
         type="button"
@@ -172,8 +171,8 @@ export function PacotesExtrasPainel({
             </h3>
             <p className="mt-1.5 max-w-2xl text-sm text-slate-600">
               {esgotada
-                ? "Sua cota do ciclo acabou. Escolha +50 ou +100 peças — o crédito entra após a confirmação do pagamento, sem mudar de plano."
-                : "Contrate um pacote sem alterar sua assinatura. Ideal para picos de demanda no escritório. Também há +10 análises por R$ 29,90."}
+                ? "Sua cota do ciclo acabou. Escolha +50 ou +100 peças — o crédito entra após a confirmação do pagamento, sem mudar de plano. Não acumulam para o próximo mês."
+                : "Contrate um pacote sem alterar sua assinatura. Ideal para picos de demanda. Extras valem só no ciclo atual."}
             </p>
             {cota && <BarraUso cota={cota} />}
           </div>
@@ -213,9 +212,8 @@ export function PacotesExtrasPainel({
                 : "Pacotes de peças extras"}
             </h3>
             <p className="mt-1 text-sm text-slate-600">
-              +50 peças por R$ 49,90, +100 por R$ 89,90 ou +10 análises por R$
-              29,90. Créditos válidos no ciclo atual (compra avulsa, sem
-              renovação).
+              +50 peças por R$ 49,90 ou +100 por R$ 89,90. Créditos válidos só no
+              ciclo atual (não acumulam para o próximo mês).
             </p>
           </div>
           {esgotada && (

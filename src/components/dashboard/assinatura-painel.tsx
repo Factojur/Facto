@@ -186,38 +186,6 @@ export function AssinaturaPainel() {
                 <p className="mt-1 text-base font-semibold text-slate-900">
                   {cota.usoLabel}
                 </p>
-                {cota.usoLabelAnalises && (
-                  <p className="mt-1 text-sm font-medium text-slate-700">
-                    {cota.usoLabelAnalises}
-                  </p>
-                )}
-                {cota.percentualAnalisesUsado != null && (
-                  <div className="mt-3">
-                    <div className="mb-1 flex justify-between text-xs text-slate-500">
-                      <span>
-                        {cota.restanteAnalises ?? 0} análises restantes
-                        {cota.extrasAnalises > 0
-                          ? ` · +${cota.extrasAnalises} extras`
-                          : ""}
-                      </span>
-                      <span className="tabular-nums">
-                        {cota.percentualAnalisesUsado}%
-                      </span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-slate-200/90">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          cota.percentualAnalisesUsado >= 100
-                            ? "bg-red-500"
-                            : cota.percentualAnalisesUsado >= 85
-                              ? "bg-amber-500"
-                              : "bg-emerald-500"
-                        }`}
-                        style={{ width: `${cota.percentualAnalisesUsado}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
                 {cota.percentualUsado != null && (
                   <div className="mt-3">
                     <div className="mb-1 flex justify-between text-xs text-slate-500">

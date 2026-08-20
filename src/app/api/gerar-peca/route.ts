@@ -338,7 +338,7 @@ async function postGerarPeca(request: Request) {
     return NextResponse.json(
       {
         error: trialEsgotado
-          ? "Suas minutas de teste acabaram. Escolha um plano (JEC ou Completo) para continuar gerando."
+          ? "Suas peças de teste acabaram. Escolha um plano (JEC ou Completo) para continuar gerando."
           : "Cota mensal de peças esgotada. Contrate um pacote extra em Perfil → Assinatura ou no banner desta página.",
         cota: saldo.cota,
         codigo: "COTA_ESGOTADA",
@@ -726,6 +726,10 @@ async function postGerarPeca(request: Request) {
       ? body.tesesIds.map((id) => String(id)).filter(Boolean)
       : undefined,
     estiloEscritorio,
+    roteamento: {
+      userId: user.id,
+      plano: saldo.cota.plano,
+    },
     instrucoes: {
       enderecamento,
       valorCausa: montarSecaoValorCausa(valorCausaResumo).join("\n"),

@@ -6,6 +6,22 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 
 **Juris / seed:** depois de cada lote ou dia de cota, atualizar a seção **Lacunas da base (áreas falhas)** abaixo — tribunal errado, 0 insert, ou API sem aquele tribunal. Não deixar falha só no chat.
 
+## Retomar quando voltar (20/08 — noite)
+
+1. **Supabase** — rodar `migration-sonnet-redacoes.sql` + Google OAuth (`migration-google-oauth-profile.sql` se pendente).
+2. **Vercel** — configurar `ANTHROPIC_API_KEY` (e opcional `ANTHROPIC_MODELO_REDACAO=claude-sonnet-4-5`). Sem a chave, Redator fica 100% Flash.
+3. **Links MP estáticos** — atualizar Completo/Pro/anuais para R$ 139,90 / 279,90 / 1.399 / 2.799 (checkout API já usa catálogo).
+4. **Seed** — lote **222+**.
+5. **Compra real MP** ponta a ponta.
+
+### Feito nesta rodada (20/08 — cotas + multi-IA)
+
+- [x] Entrada do caso **sem cota**; só Gerar = 1 peça; pack +10 análises fora do produto
+- [x] Preços: Completo **139,90/100** · Pro **279,90/200** · anuais **10×** · extras +50/+100 mantidos
+- [x] Juris externa no app = **0** (só base curada)
+- [x] Roteador Redator: Flash padrão; Sonnet Completo **12%** / Pro **22%** / JEC **0%** (gatilhos + teto)
+- [x] Botão Google na paleta FACTO
+
 ## Retomar quando voltar (20/08 — tarde)
 
 1. **Supabase — migrations** trial / tribunal / escritório (se ainda não rodou).
@@ -384,7 +400,43 @@ Ordem de grandeza (com embedding): ~2–5 mil ementas → dezenas–centenas de 
 
 - [ ] Definir política dos **7 dias de arrependimento** vs uso de cota (A/B/C).
 
-## PLANO X — pacote comercial + unit economics (fechado 14/08)
+## PLANO X — pacote comercial + unit economics (atualizado 20/08)
+
+Nome interno do pacote alinhado em 12/08. **Revisão comercial 20/08** (código no repo):
+
+| Plano | Preço | Peças/mês | ≈/peça | Análises | Sonnet Redator |
+|-------|-------|-----------|--------|----------|----------------|
+| JEC | R$ 79,90 | 40 | R$ 2,00 | **0** (Entrada livre) | **0%** |
+| Completo | **R$ 139,90** | **100** | **R$ 1,40** | 0 | **até 12%** |
+| Completo Anual | **R$ 1.399** (10×) | 100 | ≈ R$ 1,17 | 0 | 12% |
+| Pro | **R$ 279,90** | **200** | **R$ 1,40** | 0 | **até 22%** |
+| Pro Anual | **R$ 2.799** (10×) | 200 | ≈ R$ 1,17 | 0 | 22% |
+| Extra +50 / +100 | R$ 49,90 / 89,90 | — | R$ 1,00 / 0,90 | — | Flash (mesmos gatilhos se plano elegível) |
+
+- Unidade comercial: **peças** (não créditos / minutas).
+- Entrada do caso **não consome cota**; só **Gerar peça**.
+- Juris externa no produto: **desligada** (seed Jurisprudências.ai continua).
+- Multi-IA: Analista Flash-Lite · Redator Flash padrão · Sonnet se gatilho + teto · sem GPT nesta leva.
+- Extras **não acumulam** para o próximo mês (`ciclo` YYYY-MM).
+- Migration: `supabase/migration-sonnet-redacoes.sql`.
+- Ops: `ANTHROPIC_API_KEY` na Vercel (você cria a conta Anthropic Console e cola a chave — o agente não cria conta por você).
+
+### Stress 30 clientes · cota cheia · mix 10/10/10 (20/08)
+
+Premissas: peça Flash **R$ 0,27** · peça c/ Sonnet redator **R$ 0,90** (triagem Flash + Sonnet + buffer) · MP **5%** · fixo Faixa A **R$ 800** · Entrada livre no produto (custo Gemini da Entrada **não** incluso nesta tabela — se cada peça tiver 1 Entrada PDF ~R$ 0,40, some ~R$ 1.360).
+
+| | Peças/mês | Sonnet máx. | Receita | Custo IA peças | MP 5% | Fixo | **Custo total** | **Lucro** | **Margem** |
+|---|-----------|-------------|---------|----------------|-------|------|-----------------|-----------|------------|
+| 10× JEC | 400 | 0 | 799,00 | 108,00 | | | | | |
+| 10× Completo | 1.000 | 120 (12%) | 1.399,00 | 345,60 | | | | | |
+| 10× Pro | 2.000 | 440 (22%) | 2.799,00 | 817,20 | | | | | |
+| **Total** | **3.400** | **560** | **R$ 4.997,00** | **R$ 1.270,80** | **R$ 249,85** | **R$ 800** | **R$ 2.320,65** | **R$ 2.676,35** | **~53,6%** |
+
+Contribuição média (sem fixo): receita − IA − MP ≈ **R$ 3.476** (~70%). Meta ≥40% líquido **ok** neste cenário de cota cheia.
+
+---
+
+## PLANO X — pacote comercial + unit economics (histórico 14/08)
 
 Nome interno do pacote alinhado em 12/08. **Código da leva B/E/G/H/I/J/N no repo (14/08).** A só quando avisar “vou começar a vender”.  
 Rodar no SQL Editor: `supabase/migration-extras-analises.sql`. Completo Anual **permanece R$ 1.890** (link MP já está nesse valor).  

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   LIMITE_ARQUIVO_LOCAL_BYTES,
   MIN_CHARS_TEXTO_UTIL,
@@ -11,7 +11,6 @@ import {
   type LeituraRelato,
   type PreenchimentoEntradaCaso,
 } from "@/lib/entrada-caso-types";
-import type { ResumoCota } from "@/lib/cota-pecas";
 import { juntarTranscricao } from "@/lib/transcrever-audio";
 import { BotaoFalarCampo } from "@/components/dashboard/botao-falar-campo";
 
@@ -52,29 +51,11 @@ export function EntradaCasoSection({
   const [relato, setRelato] = useState("");
   const [arquivos, setArquivos] = useState<File[]>([]);
   const [enviando, setEnviando] = useState(false);
-  const [cota, setCota] = useState<ResumoCota | null>(null);
   const [leitura, setLeitura] = useState<LeituraRelato | null>(null);
-
-  useEffect(() => {
-    void fetch("/api/cota")
-      .then((r) => r.json())
-      .then((d: { cota?: ResumoCota }) => {
-        if (d.cota) setCota(d.cota);
-      })
-      .catch(() => {
-        /* saldo opcional */
-      });
-  }, []);
 
   async function handlePreencher() {
     if (relato.trim().length < 40 && arquivos.length === 0) {
       onErro("Cole o caso ou anexe um PDF/DOCX.");
-      return;
-    }
-    if (cota?.trackingAtivo && cota.esgotadaAnalises) {
-      onErro(
-        "Limite mensal de consultas atingido. A entrada do caso consome 1 consulta do plano (diferente de gerar a minuta)."
-      );
       return;
     }
     setEnviando(true);
@@ -151,15 +132,9 @@ export function EntradaCasoSection({
         FACTO preenche as três abas para você conferir. A peça só nasce no
         botão Gerar, em Pedidos — nada é protocolado daqui.
       </p>
-      {cota?.trackingAtivo && cota.usoLabelAnalises ? (
-        <p className="mt-2 text-xs font-medium text-slate-600">
-          {cota.usoLabelAnalises} · esta entrada usa 1 consulta do plano
-        </p>
-      ) : (
-        <p className="mt-2 text-xs text-slate-500">
-          Esta entrada usa 1 consulta do plano (não consome minuta).
-        </p>
-      )}
+      <p className="mt-2 text-xs text-slate-500">
+        Não consome peça — só o botão Gerar, em Pedidos, debita a cota.
+      </p>
       <textarea
         rows={6}
         value={relato}
@@ -199,7 +174,7 @@ export function EntradaCasoSection({
       </div>
       <p className="mt-2 text-xs text-slate-500">
         Falar coloca o texto aqui e na aba Fatos (uma transcrição). Confira nomes
-        e números. Preencher as três abas continua no clique e usa 1 análise.
+        e números. Preencher as três abas não consome peça.
       </p>
       {arquivos.length > 0 && (
         <p className="mt-2 text-xs text-slate-500">
