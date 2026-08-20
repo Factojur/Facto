@@ -357,3 +357,44 @@ export function inferirResumoValorCausaDosFatos(
     totalPorExtenso: valorPorExtenso(total),
   };
 }
+
+/** Converte centavos para campo R$ do formulário. */
+export function centavosParaCampoValor(centavos: number): string {
+  if (centavos <= 0) return "";
+  return (centavos / 100).toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+/** Aplica resumo inferido aos itens editáveis do formulário. */
+export function resumoInferidoParaFormulario(
+  resumo: ResumoValorCausa
+): Record<CategoriaValorId, ItemValor[]> {
+  const out: Record<CategoriaValorId, ItemValor[]> = {
+    danosMateriais: [],
+    danosMorais: [],
+  };
+  for (const cat of resumo.categorias) {
+    out[cat.id] = cat.itens
+      .filter((i) => i.centavos > 0)
+      .map((i) => ({
+        id:
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `item-${Math.random().toString(36).slice(2)}`,
+        descricao: i.descricao,
+        valor: centavosParaCampoValor(i.centavos),
+      }));
+  }
+  return out;
+}
+
+export function formularioValoresEstaVazio(
+  itens: Record<CategoriaValorId, ItemValor[]>
+): boolean {
+  return CATEGORIAS_VALOR.every(({ id }) => {
+    const lista = itens[id] ?? [];
+    return lista.every((i) => !i.descricao.trim() && !i.valor.trim());
+  });
+}

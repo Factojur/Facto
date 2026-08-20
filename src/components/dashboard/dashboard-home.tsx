@@ -18,6 +18,7 @@ import { AreaPortalCard } from "@/components/dashboard/area-portal-card";
 import { AssistenteEscolhaArea } from "@/components/dashboard/assistente-escolha-area";
 import { GruposAreasSection } from "@/components/dashboard/grupos-areas-section";
 import { AssistenteFactoDestaque } from "@/components/dashboard/assistente-facto-destaque";
+import { EstiloRedacaoDestaque } from "@/components/dashboard/estilo-redacao-destaque";
 import { FluxoFactoSection } from "@/components/dashboard/fluxo-facto-section";
 import { AreasGradeHibrida } from "@/components/dashboard/areas-rede-visual";
 import { areaEstaLiberada } from "@/lib/acesso-areas";
@@ -220,6 +221,8 @@ export function DashboardHome({
       </section>
 
       <AssistenteFactoDestaque leigo={leigo} />
+
+      {!leigo && <EstiloRedacaoDestaque />}
 
       {!leigo && (
         <div className="mx-auto max-w-7xl px-6 pt-6 md:px-10">

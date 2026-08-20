@@ -27,6 +27,10 @@ import {
   type PoloAdvocacia,
 } from "@/lib/polo-advocacia";
 import { moduloDaArea } from "@/lib/minuta-modulo";
+import {
+  montarBlocoPromptProvasCaso,
+  type ProvaTextoCaso,
+} from "@/lib/provas-caso-texto";
 
 export type BlocoLeiMunicipal = {
   nome: string;
@@ -77,7 +81,8 @@ export function montarSystemPromptAnaliseEstrategica(
     polo?: PoloAdvocacia | null;
     atuarLeigo?: boolean;
   },
-  vinculosPeca?: string | null
+  vinculosPeca?: string | null,
+  provasDoCaso?: ProvaTextoCaso[] | null
 ): string {
   const especie = especiePeca
     ? inferirEspecieDaArea(areaId, "", "", especiePeca)
@@ -117,6 +122,10 @@ export function montarSystemPromptAnaliseEstrategica(
     "9. Valores mencionados no relato (materiais, morais, valor da causa) quando houver;",
     "10. Riscos ou lacunas (prova faltando, prazo, incompetência, teto do juizado) — lista curta;",
     "11. Se o relato for autos em curso: qual o ÚLTIMO ATO e se a peça a protocolar reabre incidente já instaurado (a resposta correta é NÃO reabrir).",
+    provasDoCaso?.length
+      ? "12. Se houver <PROVAS_DO_CASO> ou <MATRIZ_PROBATORIA>, extraia elementos probatórios (cláusulas, datas, valores, condutas, protocolos) e indique como cada documento sustenta a tese."
+      : null,
+    "13. Se cabível inversão do ônus da prova (CDC, CLT, ambiental), mencione na estratégia como subtópico de DO DIREITO — nunca em DAS PROVAS.",
     "",
     "REGRAS:",
     "- NÃO redija a petição nesta etapa.",
@@ -132,6 +141,7 @@ export function montarSystemPromptAnaliseEstrategica(
     "Formato livre em texto claro (pode usar numeração). Sem saudações.",
     "",
     blocoBaseMunicipalEJuris(contextoBase, leiMunicipal, jurisDoCaso),
+    montarBlocoPromptProvasCaso(provasDoCaso ?? []),
     blocoPolo,
   ]
     .filter((l): l is string => l != null)
@@ -168,7 +178,8 @@ export function montarSystemPromptRedacaoTier1(
     atuarLeigo?: boolean;
   },
   vinculosPeca?: string | null,
-  estiloEscritorio?: string | null
+  estiloEscritorio?: string | null,
+  provasDoCaso?: ProvaTextoCaso[] | null
 ): string {
   const especie = inferirEspecieDaArea(areaId, "", "", especiePeca);
   const meta = metaEspecieDaArea(areaId, especie);
@@ -220,6 +231,8 @@ export function montarSystemPromptRedacaoTier1(
     "     linguagem formal/juridiques, clareza do que ocorreu, sem inventar fatos, datas ou valores.",
     "   - Pode aprimorar estilo, coesão e persuasão; manter todos os elementos relevantes do caso",
     "     (datas, protocolos, valores, condutas, documentos referidos).",
+    "   - Se houver <PROVAS_DO_CASO>, subsume cláusulas e dados dos documentos nos fatos;",
+    "     não invente conteúdo além do que consta nas provas ou no relato.",
     "   - Divida em parágrafos curtos (máximo 3 a 4 linhas) para facilitar a leitura.",
     "",
     "2) DIREITO / MÉRITO / RAZÕES (conforme a espécie):",
@@ -314,6 +327,7 @@ export function montarSystemPromptRedacaoTier1(
     blocoEstiloEscritorio(estiloEscritorio),
     blocoPolo ?? "",
     blocoBaseMunicipalEJuris(contextoBase, leiMunicipal, jurisDoCaso),
+    montarBlocoPromptProvasCaso(provasDoCaso ?? []),
   ]
     .filter((linha) => linha !== "")
     .join("\n");

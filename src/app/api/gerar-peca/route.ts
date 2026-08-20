@@ -51,6 +51,11 @@ import {
 } from "@/lib/jec-teto";
 import { injetarProvasELinkNuvem } from "@/lib/provas-anexos";
 import {
+  avaliarInversaoOnusProva,
+  injetarInversaoOnusProva,
+} from "@/lib/inversao-onus-prova";
+import { montarRelatorioProvasLocal } from "@/lib/provas-analise-local";
+import {
   formatarQualificacaoReus,
   injetarQualificacaoReus,
 } from "@/lib/reu-types";
@@ -95,6 +100,7 @@ type GerarPecaBody = GerarPecaJecInput & {
   pedidosUsuario?: string[];
   areaId?: string;
   tesesIds?: string[];
+  provasTexto?: { nome: string; texto: string; tipo?: string }[];
 };
 
 const LIMITE_TEXTO_LEI_MUNICIPAL = 40_000;
@@ -229,13 +235,15 @@ function finalizarTextoPeca(
     oabQualificacao?: string;
     enderecoAdvogado?: string | null;
   },
-  areaId: string = "jec"
+  areaId: string = "jec",
+  inversaoOnus?: ReturnType<typeof avaliarInversaoOnusProva>
 ): string {
   const comProvas = injetarProvasELinkNuvem(normalizarPecaGerada(texto), {
     linkNuvem: body.linkNuvem,
     provas: [...(body.provas ?? []), ...(body.fotos ?? [])],
     midias: body.midias ?? [],
   });
+  const comInversao = injetarInversaoOnusProva(comProvas, inversaoOnus ?? null);
   const autores =
     body.autores ?? (body.autor ? [body.autor] : []);
   const especie = aplicarFlagReconvencao(
@@ -277,9 +285,9 @@ function finalizarTextoPeca(
         fundamentoLei: modulo.fundamentoQualificacao,
       });
   const comReus = pecaUsaPartesJaQualificadas(especie, idsInicial)
-    ? comProvas
+    ? comInversao
     : injetarQualificacaoReus(
-        comProvas,
+        comInversao,
         formatarQualificacaoReus(body.reus ?? [])
       );
   return injetarQualificacaoAutor(comReus, blocoAutor);
@@ -605,12 +613,31 @@ async function postGerarPeca(request: Request) {
   const tutelaResolvida =
     scaffold.decisaoAssistente?.tutelaUrgencia ?? body.tutelaUrgencia;
 
+  const especieParaInversao = aplicarFlagReconvencao(
+    areaId,
+    inferirEspecieDaArea(
+      areaId,
+      tipoResolvido,
+      body.fatos,
+      body.especiePeca
+    ),
+    body.comReconvencao
+  );
+  const inversaoOnus = avaliarInversaoOnusProva({
+    areaId,
+    fatos: body.fatos,
+    tipoAcao: tipoResolvido,
+    especiePeca: especieParaInversao,
+    poloAdvocacia: poloGeracao ?? body.poloAdvocacia,
+  });
+
   if (!geminiConfigurado()) {
     const peca = finalizarTextoPeca(
       scaffold.peca,
       body,
       opcoesAdvogadoQualificacao,
-      areaId
+      areaId,
+      inversaoOnus
     );
     const { pecaHtml } = gerarDocumentoTimbrado(
       peca,
@@ -704,6 +731,23 @@ async function postGerarPeca(request: Request) {
       linkNuvem: body.linkNuvem,
       provasArquivos: [...(body.provas ?? []), ...(body.fotos ?? [])],
       midiasArquivos: body.midias ?? [],
+      provasTexto: Array.isArray(body.provasTexto)
+        ? body.provasTexto
+            .map((p) => ({
+              nome: String(p?.nome ?? "").trim(),
+              texto: String(p?.texto ?? "").slice(0, 12_000),
+              tipo: p?.tipo ? String(p.tipo) : undefined,
+              sintese: p?.sintese ? String(p.sintese).slice(0, 800) : undefined,
+            }))
+            .filter((p) => p.nome.length > 0)
+        : undefined,
+      inversaoOnusProva: inversaoOnus?.cabivel
+        ? {
+            subtitulo: inversaoOnus.subtitulo,
+            paragrafo: inversaoOnus.paragrafo,
+            confianca: inversaoOnus.confianca,
+          }
+        : null,
       qualificacaoReus: pecaUsaPartesJaQualificadas(
         especieResolvida,
         idsInicial
@@ -736,7 +780,8 @@ async function postGerarPeca(request: Request) {
       scaffold.peca,
       body,
       opcoesAdvogadoQualificacao,
-      areaId
+      areaId,
+      inversaoOnus
     );
     const { pecaHtml } = gerarDocumentoTimbrado(
       fallbackNorm,
@@ -781,7 +826,8 @@ async function postGerarPeca(request: Request) {
       hibrida,
       body,
       opcoesAdvogadoQualificacao,
-      areaId
+      areaId,
+      inversaoOnus
     );
     const citacoesHibrida = ia.contextoVerificacao
       ? verificarCitacoes(peca, ia.contextoVerificacao)
@@ -825,7 +871,8 @@ async function postGerarPeca(request: Request) {
     pecaComValor,
     body,
     opcoesAdvogadoQualificacao,
-    areaId
+    areaId,
+    inversaoOnus
   );
   const { pecaHtml } = gerarDocumentoTimbrado(
     peca,
@@ -834,6 +881,9 @@ async function postGerarPeca(request: Request) {
 
   const resultado: GerarPecaJecOutput = {
     ...scaffold,
+    analise: inversaoOnus?.cabivel
+      ? `${scaffold.analise}\n\nInversão do ônus da prova (${inversaoOnus.confianca}): ${inversaoOnus.motivo}\nBases: ${inversaoOnus.basesLegais.join("; ")}`
+      : scaffold.analise,
     peca,
     pecaHtml,
     timbrado: Boolean(body.escritorio?.usarTimbre),

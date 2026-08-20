@@ -16,6 +16,11 @@ import {
   type BlocoLeiMunicipal,
 } from "@/lib/ia/assistente-facto-prompt";
 import {
+  provaVazia,
+  type ProvaTextoCaso,
+} from "@/lib/provas-caso-texto";
+import { blocoInstrucaoInversaoOnus } from "@/lib/inversao-onus-prova";
+import {
   gerarTextoComGemini,
   geminiConfigurado,
   modelosRedacao,
@@ -112,6 +117,14 @@ export type InstrucoesDeterministicas = {
   partesJaQualificadas?: boolean;
   nomePeca?: string | null;
   epigrafe?: string[] | null;
+  /** Texto extraído de provas (PDF/DOCX) no cliente. */
+  provasTexto?: { nome: string; texto: string; tipo?: string; sintese?: string }[];
+  /** Subtópico determinístico de inversão do ônus da prova. */
+  inversaoOnusProva?: {
+    subtitulo: string;
+    paragrafo: string;
+    confianca: string;
+  } | null;
 };
 
 export type AnaliseEstrategica = {
@@ -206,6 +219,24 @@ function linhaPoloUsuario(
     modulo.rotuloPoloPassivo
   );
   return `Polo processual (formulário): ${polo} (${lado}) — fundamentar em favor deste polo.`;
+}
+
+function provasDoInstrucoes(
+  instrucoes?: InstrucoesDeterministicas
+): ProvaTextoCaso[] {
+  const lista = instrucoes?.provasTexto ?? [];
+  return lista.map((p) =>
+    provaVazia({
+      nome: p.nome,
+      texto: p.texto ?? "",
+      sintese: p.sintese,
+      tipo:
+        p.tipo === "imagem" || p.tipo === "midia" || p.tipo === "documento"
+          ? p.tipo
+          : "documento",
+      origemTexto: (p.texto ?? "").trim().length >= 40 ? "nativo" : "nenhum",
+    })
+  );
 }
 
 function montarUserPromptTriagem(params: {
@@ -398,6 +429,18 @@ function montarUserPromptRedacao(params: {
     );
   }
 
+  if (params.instrucoes?.inversaoOnusProva) {
+    const bloco = blocoInstrucaoInversaoOnus({
+      cabivel: true,
+      confianca: (params.instrucoes.inversaoOnusProva.confianca as "alta" | "media" | "baixa") || "media",
+      subtitulo: params.instrucoes.inversaoOnusProva.subtitulo,
+      paragrafo: params.instrucoes.inversaoOnusProva.paragrafo,
+      basesLegais: [],
+      motivo: "Determinístico do FACTO",
+    });
+    if (bloco) partes.push(bloco);
+  }
+
   const dataExtenso = new Date().toLocaleDateString("pt-BR", {
     day: "numeric",
     month: "long",
@@ -553,6 +596,8 @@ export async function gerarPecaComIA(params: {
     i.categoria.toLowerCase().includes("lei")
   ).length;
 
+  const provasDoCaso = provasDoInstrucoes(params.instrucoes);
+
   // —— Analista Facto + Estrategista (uma chamada LLM barata/triagem) ——
   const triagemRes = await gerarTextoComGemini({
     systemPrompt: montarSystemPromptAnaliseEstrategica(
@@ -562,7 +607,8 @@ export async function gerarPecaComIA(params: {
       especieFinal,
       areaId,
       opcoesPolo,
-      blocoVinculos
+      blocoVinculos,
+      provasDoCaso
     ),
     userPrompt: montarUserPromptTriagem({
       tipoAcao: params.tipoAcao,
@@ -703,7 +749,8 @@ export async function gerarPecaComIA(params: {
       areaId,
       opcoesPolo,
       blocoVinculos,
-      params.estiloEscritorio
+      params.estiloEscritorio,
+      provasDoCaso
     ),
     userPrompt: montarUserPromptRedacao({
       tipoAcao: analiseEstrategica.nomeAcao || params.tipoAcao,

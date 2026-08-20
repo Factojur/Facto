@@ -7,6 +7,7 @@ import {
   itemValorVazio,
   type CategoriaValorId,
   type ItemValor,
+  type ResumoValorCausa,
 } from "@/lib/valores-causa";
 import {
   mensagemAlertaTetoJec,
@@ -23,13 +24,23 @@ export function ValoresCausaSection({
   value,
   onChange,
   comAdvogado = true,
+  expandidoManual = false,
+  onExpandidoManualChange,
+  valorInferido = null,
+  onAplicarValorInferido,
 }: {
   value: ValoresPorCategoria;
   onChange: (v: ValoresPorCategoria) => void;
   /** false = leigo (teto 20 SM, aviso bloqueante); true = OAB (teto 40 SM, aviso). */
   comAdvogado?: boolean;
+  expandidoManual?: boolean;
+  onExpandidoManualChange?: (v: boolean) => void;
+  valorInferido?: ResumoValorCausa | null;
+  onAplicarValorInferido?: () => void;
 }) {
   const resumo = calcularResumoValorCausa(value);
+  const temItensManuais = resumo.totalCentavos > 0;
+  const mostrarFormulario = expandidoManual || temItensManuais;
 
   function adicionarItem(categoria: CategoriaValorId) {
     onChange({ ...value, [categoria]: [...value[categoria], itemValorVazio()] });
@@ -62,12 +73,57 @@ export function ValoresCausaSection({
         Valores da Causa (opcional)
       </h2>
       <p className="mb-4 text-sm text-slate-500">
-        Descrição e valor de cada item. Se preencher, a soma entra na peça sem
-        alteração. Se deixar em branco, o sistema calcula a partir dos valores
-        citados nos fatos.
+        Opcional. Se preencher manualmente, a soma entra na peça sem alteração.
+        Se deixar em branco, o sistema usa os valores citados nos fatos.
       </p>
 
-      <div className="space-y-5">
+      {valorInferido && !temItensManuais && (
+        <div
+          className="mb-4 flex flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+          role="status"
+        >
+          <div>
+            <p className="text-sm font-medium text-amber-950">
+              Valor inferido dos fatos — confira
+            </p>
+            <p className="mt-0.5 text-sm text-amber-900">
+              {valorInferido.totalFormatado}
+              {valorInferido.categorias.some((c) => c.itens.length > 0) && (
+                <span className="text-amber-800/80">
+                  {" "}
+                  (
+                  {valorInferido.categorias
+                    .flatMap((c) => c.itens.map((i) => i.descricao))
+                    .slice(0, 3)
+                    .join("; ")}
+                  )
+                </span>
+              )}
+            </p>
+          </div>
+          {onAplicarValorInferido && (
+            <button
+              type="button"
+              onClick={onAplicarValorInferido}
+              className="shrink-0 rounded-lg bg-stone-800 px-3 py-1.5 text-sm font-medium text-amber-50 hover:bg-stone-700"
+            >
+              Aplicar e editar
+            </button>
+          )}
+        </div>
+      )}
+
+      {!mostrarFormulario && onExpandidoManualChange && (
+        <button
+          type="button"
+          onClick={() => onExpandidoManualChange(true)}
+          className="mb-4 text-sm font-medium text-stone-700 hover:text-stone-900"
+        >
+          Preencher valores manualmente
+        </button>
+      )}
+
+      <div className={mostrarFormulario ? "space-y-5" : "hidden"}>
         {CATEGORIAS_VALOR.map(({ id, label }) => {
           const itens = value[id];
           const subtotal =
@@ -130,28 +186,34 @@ export function ValoresCausaSection({
         })}
       </div>
 
-      <div className="mt-5 flex items-center justify-between rounded-lg bg-stone-800 px-4 py-3">
-        <span className="text-sm font-medium text-amber-50">Total da Causa</span>
-        <span className="text-lg font-bold text-amber-50">
-          {resumo.totalFormatado}
-        </span>
-      </div>
-      {resumo.totalCentavos > 0 && (
-        <p className="mt-1.5 text-xs text-slate-500">
-          Por extenso: {resumo.totalPorExtenso}.
-        </p>
-      )}
-      {ultrapassaTetoJec(resumo.totalCentavos, comAdvogado) && (
-        <p
-          className={`mt-2 rounded-lg border px-3 py-2 text-xs ${
-            comAdvogado
-              ? "border-amber-200 bg-amber-50 text-amber-900"
-              : "border-red-200 bg-red-50 text-red-900"
-          }`}
-          role="alert"
-        >
-          {mensagemAlertaTetoJec(resumo.totalCentavos, comAdvogado)}
-        </p>
+      {mostrarFormulario && (
+        <>
+          <div className="mt-5 flex items-center justify-between rounded-lg bg-stone-800 px-4 py-3">
+            <span className="text-sm font-medium text-amber-50">
+              Total da Causa
+            </span>
+            <span className="text-lg font-bold text-amber-50">
+              {resumo.totalFormatado}
+            </span>
+          </div>
+          {resumo.totalCentavos > 0 && (
+            <p className="mt-1.5 text-xs text-slate-500">
+              Por extenso: {resumo.totalPorExtenso}.
+            </p>
+          )}
+          {ultrapassaTetoJec(resumo.totalCentavos, comAdvogado) && (
+            <p
+              className={`mt-2 rounded-lg border px-3 py-2 text-xs ${
+                comAdvogado
+                  ? "border-amber-200 bg-amber-50 text-amber-900"
+                  : "border-red-200 bg-red-50 text-red-900"
+              }`}
+              role="alert"
+            >
+              {mensagemAlertaTetoJec(resumo.totalCentavos, comAdvogado)}
+            </p>
+          )}
+        </>
       )}
     </section>
   );

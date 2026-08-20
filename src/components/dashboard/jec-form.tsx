@@ -81,7 +81,13 @@ import {
   obterCasoJec,
   vincularPecaAoCaso,
 } from "@/lib/jec-casos-storage";
-import { calcularResumoValorCausa } from "@/lib/valores-causa";
+import {
+  calcularResumoValorCausa,
+  formularioValoresEstaVazio,
+  inferirResumoValorCausaDosFatos,
+  resumoInferidoParaFormulario,
+  type ResumoValorCausa,
+} from "@/lib/valores-causa";
 import {
   mensagemBloqueioTetoLeigo,
   ultrapassaTetoJec,
@@ -116,6 +122,8 @@ import {
   type JurisCasoSalvo,
 } from "@/components/dashboard/juris-caso-form";
 import { JurisSugestoesPicker } from "@/components/dashboard/juris-sugestoes-picker";
+import { ProvasDoFatoSection } from "@/components/dashboard/provas-do-fato-section";
+import type { ProvaTextoCaso } from "@/lib/provas-caso-texto";
 import type { ReuValue } from "@/lib/reu-types";
 import {
   normalizarAutores,
@@ -876,6 +884,12 @@ export function JecForm({
   const [comarca, setComarca] = useState<ComarcaValue>(comarcaVazia);
   const [valoresCausa, setValoresCausa] =
     useState<ValoresPorCategoria>(valoresCausaVazio);
+  const [valoresManualExpandido, setValoresManualExpandido] = useState(false);
+  const [valorInferido, setValorInferido] = useState<ResumoValorCausa | null>(
+    null
+  );
+  const [provasCaso, setProvasCaso] = useState<ProvaTextoCaso[]>([]);
+  const [midiasNomes, setMidiasNomes] = useState<string[]>([]);
   const [usaLeiMunicipal, setUsaLeiMunicipal] = useState(false);
   const [leiMunicipalTexto, setLeiMunicipalTexto] = useState("");
   const [leiMunicipalTitulo, setLeiMunicipalTitulo] = useState("");
@@ -955,6 +969,25 @@ export function JecForm({
     () => calcularResumoValorCausa(valoresCausa),
     [valoresCausa]
   );
+
+  useEffect(() => {
+    if (!formularioValoresEstaVazio(valoresCausa)) {
+      setValorInferido(null);
+      return;
+    }
+    const t = fatos.trim();
+    if (t.length < 40) {
+      setValorInferido(null);
+      return;
+    }
+    setValorInferido(inferirResumoValorCausaDosFatos(t));
+  }, [fatos, valoresCausa]);
+
+  function aplicarValorInferido() {
+    if (!valorInferido) return;
+    setValoresCausa(resumoInferidoParaFormulario(valorInferido));
+    setValoresManualExpandido(true);
+  }
 
   const comAdvogado = !leigo;
   const bloqueadoTetoLeigo =
@@ -1052,7 +1085,9 @@ export function JecForm({
     autorOk: autorOkParaChecklist(autores, jaQualificadas),
     reusOk: reuOkParaChecklist(reus, jaQualificadas),
     comarcaForo: comarca.foro ?? "",
-    temValor: resumoValores.totalCentavos > 0,
+    temValor:
+      resumoValores.totalCentavos > 0 ||
+      (valorInferido?.totalCentavos ?? 0) > 0,
     assistentePendente:
       assistentePendente ||
       (modoAcao === "livre" && tipoAcaoTexto.trim().length < 8),
@@ -1638,11 +1673,15 @@ export function JecForm({
         declaracaoHipossuficiencia: [],
         mandadoLevantamentoEletronico: [],
       },
-      provas: getFileNames(
-        form.querySelector<HTMLInputElement>("#provasEssenciais")
-      ),
+      provas: provasCaso.map((p) => p.nome),
+      provasTexto: provasCaso.map((p) => ({
+        nome: p.nome,
+        texto: p.texto,
+        tipo: p.tipo,
+        sintese: p.sintese,
+      })),
       fotos: [],
-      midias: getFileNames(form.querySelector<HTMLInputElement>("#midias")),
+      midias: midiasNomes,
       linkNuvem: linkNuvem.trim() || null,
       reus,
       autores,
@@ -2559,74 +2598,16 @@ export function JecForm({
           </div>
         </section>
 
-        <section
-          id="secao-provas"
-          className="scroll-mt-24 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
-        >
-          <h2 className="mb-1 text-lg font-semibold text-slate-800">
-            Provas do fato
-          </h2>
-          <p className="mb-4 text-sm text-slate-500">
-            Contratos, prints, notas e fotos que a IA usa para fundamentar a
-            minuta. Não substitui a juntada no protocolo: o FACTO não envia
-            arquivos ao juízo.
-          </p>
-
-          <div className="space-y-5">
-            <div>
-              <h3 className="mb-1 text-sm font-semibold text-slate-800">
-                Essenciais
-              </h3>
-              <FileField
-                id="provasEssenciais"
-                label="Documentos e imagens de prova"
-                accept="image/*,.pdf,.doc,.docx,.heic,.heif,.webp"
-                multiple
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="linkNuvem"
-                className="mb-1.5 block text-sm font-medium text-slate-700"
-              >
-                Link da nuvem (Drive / Dropbox / OneDrive)
-              </label>
-              <input
-                id="linkNuvem"
-                type="url"
-                value={linkNuvem}
-                onChange={(e) => setLinkNuvem(e.target.value)}
-                placeholder="https://drive.google.com/drive/folders/..."
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
-              />
-            </div>
-
-            <div className="border-t border-slate-100 pt-4">
-              <label className="flex items-start gap-2.5 text-sm text-slate-700">
-                <input
-                  type="checkbox"
-                  checked={mostrarMidiasOpcionais}
-                  onChange={(e) => setMostrarMidiasOpcionais(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-stone-700 focus:ring-stone-500"
-                />
-                <span>
-                  <span className="font-medium text-slate-800">
-                    Anexar áudios e vídeos
-                  </span>
-                </span>
-              </label>
-              <div className={mostrarMidiasOpcionais ? "mt-3" : "hidden"}>
-                <FileField
-                  id="midias"
-                  label="Áudios e vídeos"
-                  accept="audio/*,video/*,.mp3,.wav,.m4a,.ogg,.mp4,.mov,.avi,.mkv,.webm"
-                  multiple
-                />
-              </div>
-            </div>
-          </div>
-        </section>
+        <ProvasDoFatoSection
+          provas={provasCaso}
+          onProvasChange={setProvasCaso}
+          linkNuvem={linkNuvem}
+          onLinkNuvemChange={setLinkNuvem}
+          midiasNomes={midiasNomes}
+          onMidiasChange={setMidiasNomes}
+          mostrarMidiasOpcionais={mostrarMidiasOpcionais}
+          onMostrarMidiasChange={setMostrarMidiasOpcionais}
+        />
         <div className="flex justify-end">
           <button
             type="button"
@@ -2644,6 +2625,10 @@ export function JecForm({
             value={valoresCausa}
             onChange={setValoresCausa}
             comAdvogado={comAdvogado}
+            expandidoManual={valoresManualExpandido}
+            onExpandidoManualChange={setValoresManualExpandido}
+            valorInferido={valorInferido}
+            onAplicarValorInferido={aplicarValorInferido}
           />
         </div>
 

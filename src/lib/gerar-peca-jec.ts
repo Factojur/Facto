@@ -34,6 +34,7 @@ import {
   injetarProvasELinkNuvem,
   normalizarLinkNuvem,
 } from "@/lib/provas-anexos";
+import { montarRelatorioProvasLocal } from "@/lib/provas-analise-local";
 import {
   formatarQualificacaoReus,
   injetarQualificacaoReus,
@@ -95,6 +96,8 @@ export type GerarPecaJecInput = {
   midias: string[];
   /** Link manual de Drive/Dropbox/etc. colado pelo advogado. */
   linkNuvem?: string | null;
+  /** Texto extraído no cliente (PDF/DOCX/OCR) para a IA. */
+  provasTexto?: { nome: string; texto: string; tipo?: string; sintese?: string }[];
   /** Qualificação da(s) parte(s) passiva(s). */
   reus?: ReuValue[];
   /** Parte(s) autora(s) (PF) — distinta do advogado (autorNome/autorOab). */
@@ -570,6 +573,31 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     `Áudios e vídeos (${input.midias.length}): ${listarArquivos(input.midias)}`,
     `Link de nuvem: ${linkNuvem ?? "não informado"}`,
     "",
+  );
+
+  if (input.provasTexto?.length) {
+    analisePartes.push(
+      montarRelatorioProvasLocal(
+        input.provasTexto.map((p) => ({
+          id: p.nome,
+          nome: p.nome,
+          texto: p.texto,
+          tipo:
+            p.tipo === "imagem" || p.tipo === "midia" || p.tipo === "documento"
+              ? p.tipo
+              : "documento",
+          sintese: p.sintese,
+          origemTexto: p.texto.trim().length >= 40 ? "nativo" : "nenhum",
+        })),
+        input.fatos
+      ),
+      "",
+      "---",
+      ""
+    );
+  }
+
+  analisePartes.push(
     `Total de arquivos informados: ${totalProvas}`,
     "",
     "Observação: esta análise estrutural lista os insumos do formulário. A minuta abaixo deve ser revisada integralmente antes do protocolo."
