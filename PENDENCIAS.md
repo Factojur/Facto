@@ -6,13 +6,27 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 
 **Juris / seed:** depois de cada lote ou dia de cota, atualizar a seção **Lacunas da base (áreas falhas)** abaixo — tribunal errado, 0 insert, ou API sem aquele tribunal. Não deixar falha só no chat.
 
-## Retomar quando voltar (19/08 — noite)
+## Retomar quando voltar (20/08 — manhã)
 
-1. **Seed** — próximo lote **186** (**20/08 01h**). Última madrugada: **185** ok; **186** parou no 429. PC ligado, na tomada, sem dormir. Pool **7** contas ok.
-2. **Constitucional** — testar peças reais (MS, RE, ADI/ADPF); anotar falhas de rito/endereçamento aqui.
-3. **Compra real MP** — webhook + e-mail + convite + cadastro + cancelamento CDC (único bloqueio comercial crítico).
-4. **Análise de autos** — PDF real no JEC em produção.
-5. **Deploy** — ~~melhorias desta sessão~~ feito (`9daa804`).
+1. **Supabase — rodar migrations novas** (obrigatório antes do trial/mapa):
+   - `supabase/migration-base-tribunal-area.sql` (`tribunal`, `area_tags`)
+   - `supabase/migration-trial.sql` (`trial_ate`, `trial_area_id`, `trial_pecas_usadas`)
+   - `supabase/migration-escritorio-seats.sql` (`escritorios`, `escritorio_membros`)
+   - Depois: `npm run backfill:juris-metadados`
+2. **Seed** — próximo lote **222** (cota API na madrugada 20/08). PC ligado na tomada. Pool 7.
+3. **Compra real MP** — webhook + e-mail + convite + cadastro + cancelamento CDC.
+4. **Escritório** — checkout MP + convite de assentos (catálogo/landing + schema seats prontos).
+5. **Dual-track seed “últimos 30 dias”** — adiado (~30–35k / antes de 06/09).
+
+### Feito nesta rodada (20/08 — ordem atualizada, sem #6)
+
+- [x] Mapa base: `tribunal` + `area_tags` (migration + seed insert + backfill script)
+- [x] Lacunas vitrine no seed (JEC/digital/médico/JECR/amb/trab/fam/prev)
+- [x] Scorecard Minuta→FACTO: prompts (sem inventar qualificação; sem colar artigo íntegro) + painel “Contexto da peça”
+- [x] Trial MVP: `/trial`, `/api/trial/cadastro`, 1 área · 2 peças · 7 dias · watermark · rate-limit
+- [x] Escritório S/M no catálogo + schema seats
+- [x] Pós-peça: versões leves na sessão (até 5)
+- [ ] Dual-track seed 30 dias — **adiado de propósito**
 
 ## Fila por prioridade — concorrência MinutaIA (19/08)
 
@@ -24,9 +38,10 @@ Ordem realista: receita e lastro primeiro; diferenciação visível em seguida; 
 |---|------|--------|---------|
 | 1 | **Compra real MP ponta a ponta** — webhook + e-mail + convite + cadastro + cancelamento CDC | Parcial | Único bloqueio comercial crítico |
 | 2 | **Confirmar na Vercel** `MERCADOPAGO_WEBHOOK_SECRET` e `CRON_SECRET` | Falta conferir vars | Segurança já no código |
-| 3 | **Seed / lastro** lotes **186–673** + lacunas **201–227** (STF, TRF prev, TST, CARF) | Em curso (01h) | “Buscar na base FACTO” fraco = peça fraca |
+| 3 | **Seed / lastro** lotes **222–673** + lacunas vitrine (após ~227) + mapa `tribunal`/`area_tags` | Em curso (01h) | “Buscar na base FACTO” fraco = peça fraca |
 | 4 | **Testes reais Constitucional + Previdenciário** após lastro | Pendente | Áreas abertas sem validação de usuário |
 | 5 | **LGPD — memória de cliente** | Pendente | Aviso na UI: localStorage só no navegador; termo antes de sync na nuvem (ver item P1-2) |
+| 6 | **Rodar migrations trial / tribunal / escritório no Supabase** | Pendente (ops) | Código já no repo |
 
 ### P1 — Diferenciação vs MinutaIA (impacto alto, escopo médio)
 
@@ -34,14 +49,16 @@ Ordem realista: receita e lastro primeiro; diferenciação visível em seguida; 
 |---|------|--------|-----------|
 | 1 | **Perfil FACTO na nuvem** — tom + 2–3 peças modelo → resumo de estilo no prompt | Parcial (MVP em Perfil) | Interpreta estilo, não cola texto |
 | 2 | **Memória de cliente na nuvem** (Supabase, opt-in) | Pendente | Mesmo cliente em outro PC; hoje só `localStorage` |
-| 3 | **Histórico de minutas na nuvem** — todas as áreas, não só JEC local | Parcial (JEC local ok) | Não perder trabalho ao trocar máquina |
+| 3 | **Histórico de minutas na nuvem** — todas as áreas, não só JEC local | Parcial (JEC local + versões sessão) | Não perder trabalho ao trocar máquina |
 | 4 | **Réplica a partir da contestação anexada** — detectar argumentos do réu e pré-montar contra-argumentos | Pendente | Automatização forte; MinutaIA não faz bem |
 | 5 | **Checklist de protocolo por tribunal** (TJSP, TRT, etc.) pós-geração | Pendente | Reduz erro de protocolo |
 | 6 | **Alerta contradição fatos × pedidos** (valor, obrigação, parte) | Pendente | Conferência antes de gerar |
 | 7 | **Citação rastreável** — distinguir base FACTO vs anexo no auditor | Parcial (página no anexo ok) | Credibilidade forense |
 | 8 | **Prazo com feriados** (calendário BR por comarca/tribunal) | Pendente | Hoje só dias úteis seg–sex |
 | 9 | **Polo enxuto** — radios só em “Ambos os polos” + inferência | Feito (`9daa804`) | Dashboard mais limpa |
-| 10 | **Polo obrigatório** antes de Gerar quando espécie é ambígua | Feito (esta sessão) | Evita recurso do réu sair como autor |
+| 10 | **Polo obrigatório** antes de Gerar quando espécie é ambígua | Feito | Evita recurso do réu sair como autor |
+| 11 | **Trial grátis** — 1 área · 2 peças · 7 dias · watermark | Feito (MVP 20/08) | Conversão sem cartão |
+| 12 | **Escritório S/M** — seats + pool + OAB admin | Parcial (catálogo + schema; checkout MP depois) | Multi-assento |
 
 ### P2 — Automação e polish (depois do P1)
 
@@ -49,11 +66,12 @@ Ordem realista: receita e lastro primeiro; diferenciação visível em seguida; 
 |---|------|--------|
 | 1 | **Consulta processual por CNJ** (MNI/Datajud quando disponível) — partes e andamentos | Pendente |
 | 2 | **Jurisprudência com ementa expandível** no preview | Pendente |
-| 3 | **Versão 2 da peça** — mesma espécie, fundamentação alternativa (2ª geração = cota) | Pendente |
+| 3 | **Versão 2 da peça** — mesma espécie, fundamentação alternativa (2ª geração = cota) | Parcial (versões sessão leves; alternativa de tese ainda não) |
 | 4 | **Modelo de honorários** sugerido por valor da causa e espécie | Pendente |
 | 5 | **Histórico estendido** — export DOCX já existe; melhorar UX de reabrir em todas áreas | Parcial |
 | 6 | **Validação OAB real por UF** | Mock até testes fecharem |
 | 7 | **Análise de autos PDF** — smoke em produção JEC | Pendente |
+| 8 | **Dual-track seed** histórico + rolling 30 dias | Adiado (~30–35k / pré-06/09) |
 
 ### P3 — Longo prazo (só com MRR / demanda clara)
 
@@ -76,14 +94,14 @@ Ordem realista: receita e lastro primeiro; diferenciação visível em seguida; 
 - [x] Memória de cliente **local** (localStorage)
 
 
-Tarefa Windows `FACTO-seed-juris-01h` ok · **Ready** · próxima **20/08/2026 01:00**. Última: **19/08/2026 01:00** — lotes **149–185** ok; **186** começou e parou no 429. `LastTaskResult` negativo = reindex interrompido (`^C`); o seed gravou `proximoLote` **186**.
-Estado: `proximoLote` **186** · `LOTE_MAX` **673**. Vencimento **2026-09-13** (pausa automática ~06/09). Pool: **7 contas**.
+Tarefa Windows `FACTO-seed-juris-01h` ok · **Ready** · próxima **21/08/2026 01:00**. Última: **20/08/2026 01:00** — lotes **186–221** ok; **222** parou no 429 (~2.214 inserts). Base ~**12.221** itens (10.785 juris + 1.436 súmulas).
+Estado: `proximoLote` **222** · `LOTE_MAX` **673**. Vencimento **2026-09-13** (pausa automática ~06/09). Pool: **7 contas**.
 
-**18/08 (noite):** pack imobiliário 149/157/165/173 e demais queries com lei/número ainda na fila 150+ foram enxugadas (lei/número zera a API). A partir de **201**: 27 lotes de lacuna (STF constitucional, TRF prev, TST, CARF, retomas 41/63/64/74/77/79) **antes** do volume 10 TJs.
+**18/08 (noite):** pack imobiliário 149/157/165/173 e demais queries com lei/número ainda na fila 150+ foram enxugadas (lei/número zera a API). A partir de **201**: lacunas (STF constitucional, TRF prev, TST, CARF, retomas) **antes** do volume 10 TJs; **+10 packs vitrine** (JEC/digital/médico/JECR/amb/trab/fam/prev) após ~227.
 
 **Vencimento Jurisprudências.ai: 13/09/2026.** Pausa automática a partir de **06/09** (última semana para pontos fracos). Inflação: madrugadas **19/08–05/09**.
 
-Fila: lotes **149–673**. Cada madrugada usa as **7 contas** até 429 e reindexa.
+Fila: lotes **222–673**. Cada madrugada usa as **7 contas** até 429 e reindexa.
 
 PC ligado, sem dormir. Notebook: o instalador da tarefa **permite** rodar na bateria; ainda assim prefira **na tomada** na madrugada.
 

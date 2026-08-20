@@ -32,7 +32,7 @@ export type PackTribunal = {
   termos: TermoSeed[];
 };
 
-/** 27 lotes a partir de 201. */
+/** 37 lotes a partir de 201 (+10 vitrine JEC/digital/médico/JECR/amb/trab/fam/prev). */
 export const LACUNAS_PRIORIDADE: PackTribunal[] = [
   {
     rotulo: "STF · remédios constitucionais",
@@ -356,6 +356,127 @@ export const LACUNAS_PRIORIDADE: PackTribunal[] = [
       ["reajuste de plano de saúde idoso", "reajuste faixa etária"],
       ["erro médico nexo causal", "erro médico evolução natural"],
       ["urgência emergência carência", "carência contratual"]
+    ),
+  },
+  // —— Vitrine / lacunas (após lote ~227 no diário) ——
+  {
+    rotulo: "TJSP · JEC reforço vitrine",
+    tribunal: "tjsp",
+    termos: pack(
+      ["juizado especial cível superendividamento", "superendividamento mínimo existencial"],
+      ["juizado especial cível compra online atraso", "atraso entrega caso fortuito"],
+      ["juizado especial cível telefonia cobrança indevida", "telefonia serviço prestado"],
+      ["juizado especial cível inversão ônus prova", "inversão ônus prova indeferida"],
+      ["juizado especial cível honorários sucumbência", "honorários juizado sucumbência recíproca"],
+      ["juizado especial cível tutela de urgência", "tutela antecipada juizado indeferida"]
+    ),
+  },
+  {
+    rotulo: "TJMG · JEC reforço",
+    tribunal: "tjmg",
+    termos: pack(
+      ["juizado especial cível golpe pix", "golpe pix culpa exclusiva vítima"],
+      ["juizado especial cível negativação indevida", "negativação débito exigível"],
+      ["juizado especial cível vício produto CDC", "vício produto mau uso"],
+      ["juizado especial cível atraso voo", "atraso voo fortuito externo"],
+      ["juizado especial cível corte energia", "corte energia inadimplência"],
+      ["recurso inominado juizado", "recurso inominado deserção"]
+    ),
+  },
+  {
+    rotulo: "STJ · digital LGPD vitrine",
+    tribunal: "stj",
+    termos: pack(
+      ["LGPD vazamento dados indenização", "vazamento dados ausência dano moral"],
+      ["LGPD direito ao esquecimento", "direito ao esquecimento liberdade informação"],
+      ["tratamento de dados sem consentimento", "base legal legítimo interesse"],
+      ["responsabilidade controlador operador LGPD", "operador mera execução"],
+      ["phishing banco responsabilidade", "phishing culpa exclusiva consumidor"],
+      ["exclusão conteúdo internet", "conteúdo internet liberdade expressão"]
+    ),
+  },
+  {
+    rotulo: "TJSP · digital / golpes",
+    tribunal: "tjsp",
+    termos: pack(
+      ["golpe whatsapp transferência", "golpe whatsapp culpa da vítima"],
+      ["clonagem chip telefonia", "clonagem chip fortuito externo"],
+      ["marketplace marketplace responsabilidade", "marketplace intermediação"],
+      ["criptomoeda exchange falha", "exchange caso fortuito"],
+      ["deepfake dano moral", "imagem uso indevido"],
+      ["LGPD vazamento cadastro", "vazamento dados sem dano"]
+    ),
+  },
+  {
+    rotulo: "TJSP · erro médico",
+    tribunal: "tjsp",
+    termos: pack(
+      ["erro médico nexo causal indenização", "erro médico complicação inerente"],
+      ["responsabilidade hospital equipe", "hospital ato exclusivo médico particular"],
+      ["prontuário médico sigilo prova", "prontuário recusa injustificada"],
+      ["cirurgia bariátrica cobertura", "cirurgia bariátrica requisitos ANS"],
+      ["infecção hospitalar nexo", "infecção hospitalar fato de terceiro"],
+      ["obrigação de resultado cirurgia plástica", "cirurgia plástica obrigação de meio"]
+    ),
+  },
+  {
+    rotulo: "TJSP · JECRIM",
+    tribunal: "tjsp",
+    termos: pack(
+      ["juizado especial criminal vias de fato", "vias de fato lesão corporal"],
+      ["transação penal Juizado Criminal", "transação penal descumprimento"],
+      ["lesão corporal leve JECRIM", "lesão corporal leve composição"],
+      ["ameaça Juizado Criminal", "ameaça ausência prova"],
+      ["injúria real JECRIM", "injúria composição civil"],
+      ["recurso JECRIM tempestividade", "recurso JECRIM deserção"]
+    ),
+  },
+  {
+    rotulo: "TRF4 · ambiental",
+    tribunal: "trf4",
+    termos: pack(
+      ["dano ambiental responsabilidade objetiva", "dano ambiental nexo causal"],
+      ["licença ambiental anulação", "licença ambiental discricionariedade"],
+      ["APP preservação permanente", "APP área consolidada"],
+      ["auto de infração IBAMA", "auto IBAMA contraditório"],
+      ["inversão ônus prova ambiental", "ônus prova ambiental não invertido"],
+      ["ação civil pública ambiental", "ACP ambiental ilegitimidade"]
+    ),
+  },
+  {
+    rotulo: "TST · trabalhista reforço",
+    tribunal: "tst",
+    termos: pack(
+      ["horas extras intervalo", "horas extras acordo coletivo"],
+      ["assédio moral trabalhista", "assédio moral não configurado"],
+      ["verbas rescisórias atraso", "verbas rescisórias quitação"],
+      ["FGTS diferença depósito", "FGTS prescrição"],
+      ["justa causa desídia", "justa causa não comprovada"],
+      ["danos morais trabalhista", "danos morais mero aborrecimento"]
+    ),
+  },
+  {
+    rotulo: "TJSP · família reforço",
+    tribunal: "tjsp",
+    termos: pack(
+      ["alimentos menor capacidade econômica", "alimentos exoneração"],
+      ["guarda compartilhada interesse da criança", "guarda unilateral"],
+      ["divórcio partilha de bens", "partilha bem particular"],
+      ["união estável reconhecimento", "união estável não comprovada"],
+      ["regulamentação de visitas", "visitas descumprimento"],
+      ["pensão alimentícia execução", "alimentos prisão civil"]
+    ),
+  },
+  {
+    rotulo: "TRF3 · previdenciário reforço",
+    tribunal: "trf3",
+    termos: pack(
+      ["aposentadoria por tempo de contribuição", "tempo especial não comprovado"],
+      ["auxílio-doença incapacidade", "incapacidade não demonstrada"],
+      ["BPC LOAS requisitos", "BPC renda per capita"],
+      ["aposentadoria rural segurado especial", "rural ausência prova material"],
+      ["revisão da vida toda", "revisão benefício decadência"],
+      ["salário-maternidade", "salário-maternidade qualidade de segurada"]
     ),
   },
 ];

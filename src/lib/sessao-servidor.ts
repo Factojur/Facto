@@ -10,6 +10,9 @@ const PLANOS_VALIDOS = new Set<PlanoId>([
   "pro",
   "anual",
   "pro_anual",
+  "trial",
+  "escritorio_s",
+  "escritorio_m",
 ]);
 
 function planoDeAssinaturas(
@@ -53,7 +56,7 @@ export const getPerfilServidor = cache(async (userId: string) => {
   return profile;
 });
 
-/** Plano ativo do e-mail — deduplicado por request. */
+/** Plano ativo do e-mail — deduplicado por request. Inclui trial se sem assinatura. */
 export const getPlanoAtivoServidor = cache(
   async (email: string | null | undefined): Promise<PlanoId | null> => {
     const emailNorm = email?.trim().toLowerCase();
@@ -66,7 +69,21 @@ export const getPlanoAtivoServidor = cache(
         .ilike("email", emailNorm)
         .order("criado_em", { ascending: false })
         .limit(5);
-      return planoDeAssinaturas(ass ?? []);
+      const pago = planoDeAssinaturas(ass ?? []);
+      if (pago) return pago;
+
+      const { data: perfil } = await admin
+        .from("profiles")
+        .select("trial_ate")
+        .ilike("email", emailNorm)
+        .maybeSingle();
+      if (
+        perfil?.trial_ate &&
+        new Date(perfil.trial_ate).getTime() > Date.now()
+      ) {
+        return "trial";
+      }
+      return null;
     } catch {
       return null;
     }

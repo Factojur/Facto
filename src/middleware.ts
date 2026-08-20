@@ -144,7 +144,7 @@ export async function middleware(request: NextRequest) {
   // única deste dispositivo estiver ok. Caso contrário deixa a página
   // limpar o auth residual (evita loop com ?sessao=encerrada).
   // /redefinir-senha e /esqueci-senha ficam acessíveis com ou sem sessão.
-  if (user && (pathname === "/login" || pathname === "/cadastro")) {
+  if (user && (pathname === "/login" || pathname === "/cadastro" || pathname === "/trial")) {
     const veioDeConflito =
       request.nextUrl.searchParams.get("sessao") === "encerrada";
     if (!veioDeConflito) {

@@ -183,7 +183,74 @@ export const PACOTES_EXTRA = [
 
 export type PacoteExtraId = (typeof PACOTES_EXTRA)[number]["id"];
 export type PacoteExtra = (typeof PACOTES_EXTRA)[number];
-export type PlanoId = "jec" | "mensal" | "pro" | "anual" | "pro_anual";
+export type PlanoId =
+  | "jec"
+  | "mensal"
+  | "pro"
+  | "anual"
+  | "pro_anual"
+  | "trial"
+  | "escritorio_s"
+  | "escritorio_m";
+
+/** Teste grátis: 1 área · 2 peças · 7 dias · watermark. */
+export const PLANO_TRIAL = {
+  id: "trial" as const,
+  preco: 0,
+  pecasPorMes: 2,
+  analisesPorMes: 1,
+  diasValidade: 7,
+  rotuloPreco: "Grátis",
+  rotuloPeriodo: "/7 dias",
+  rotulo: "Teste grátis",
+  custoPorPecaAprox: "—",
+  beneficios: [
+    "1 área à sua escolha · 2 minutas · 7 dias",
+    "Sem OAB no início — informe só ao assinar",
+    "Preview completo; export com marca d’água de teste",
+    "Sem compromisso — cancele não renovando",
+  ],
+};
+
+/** Escritório S — 5 assentos, cota em pool, OAB do admin. */
+export const PLANO_ESCRITORIO_S = {
+  id: "escritorio_s" as const,
+  preco: 749.9,
+  pecasPorMes: 450,
+  analisesPorMes: 80,
+  seats: 5,
+  rotuloPreco: "R$ 749,90",
+  rotuloPeriodo: "/mês",
+  rotulo: "Escritório S",
+  custoPorPecaAprox: "R$ 1,67",
+  beneficios: [
+    "5 assentos simultâneos (sócios, estagiários, equipe)",
+    "450 minutas/mês em pool do escritório",
+    "OAB do administrador ampara a conta; membros sem OAB",
+    "Estilo de redação por assento",
+    "Todas as áreas (responsável com OAB)",
+  ],
+};
+
+/** Escritório M — 10 assentos. */
+export const PLANO_ESCRITORIO_M = {
+  id: "escritorio_m" as const,
+  preco: 1299.9,
+  pecasPorMes: 900,
+  analisesPorMes: 150,
+  seats: 10,
+  rotuloPreco: "R$ 1.299,90",
+  rotuloPeriodo: "/mês",
+  rotulo: "Escritório M",
+  custoPorPecaAprox: "R$ 1,44",
+  beneficios: [
+    "10 assentos simultâneos",
+    "900 minutas/mês em pool do escritório",
+    "OAB do administrador · membros/estagiários sem OAB",
+    "Estilo por assento + prioridade na fila",
+    "Todas as áreas liberadas ao responsável OAB",
+  ],
+};
 
 export function pacoteExtraPorId(id: string): PacoteExtra | null {
   return PACOTES_EXTRA.find((p) => p.id === id) ?? null;
@@ -257,6 +324,8 @@ export function parseExternalReferenceExtra(
 /** Inferência por valor (webhook / links MP) — inclui preços legados. */
 export function planoPorValor(valor: number | null | undefined): PlanoId | null {
   if (typeof valor !== "number" || Number.isNaN(valor)) return null;
+  if (Math.abs(valor - PLANO_ESCRITORIO_M.preco) < 1) return "escritorio_m";
+  if (Math.abs(valor - PLANO_ESCRITORIO_S.preco) < 1) return "escritorio_s";
   if (Math.abs(valor - PLANO_PRO_ANUAL.preco) < 1) return "pro_anual";
   if (Math.abs(valor - PLANO_ANUAL.preco) < 1) return "anual";
   if (Math.abs(valor - PLANO_PRO.preco) < 1) return "pro";
@@ -279,6 +348,9 @@ export function rotuloPlano(id: PlanoId | null | undefined): string {
   if (id === "pro") return PLANO_PRO.rotulo;
   if (id === "anual") return PLANO_ANUAL.rotulo;
   if (id === "pro_anual") return PLANO_PRO_ANUAL.rotulo;
+  if (id === "trial") return PLANO_TRIAL.rotulo;
+  if (id === "escritorio_s") return PLANO_ESCRITORIO_S.rotulo;
+  if (id === "escritorio_m") return PLANO_ESCRITORIO_M.rotulo;
   return "—";
 }
 
@@ -292,11 +364,14 @@ export function inferirPlanoPorTexto(
   if (!texto?.trim()) return null;
   const t = texto.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
 
+  if (/\bescritorio\s*m\b|escritorio m\b|10 assentos/.test(t)) return "escritorio_m";
+  if (/\bescritorio\s*s\b|escritorio s\b|5 assentos/.test(t)) return "escritorio_s";
   if (/\bpro\b/.test(t) && /anual/.test(t)) return "pro_anual";
   if (/anual/.test(t) && !/\bpro\b/.test(t)) return "anual";
   if (/\bpro\b/.test(t)) return "pro";
   if (/\bjec\b|juizado/.test(t)) return "jec";
   if (/completo|mensal/.test(t)) return "mensal";
+  if (/teste gratis|trial/.test(t)) return "trial";
   return null;
 }
 

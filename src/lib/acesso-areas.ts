@@ -21,6 +21,7 @@ export type TipoUsuario = "advogado" | "leigo" | string | null | undefined;
 export function areasPermitidas(opcoes: {
   plano: PlanoId | null;
   tipoUsuario?: TipoUsuario;
+  trialAreaId?: string | null;
 }): Set<string> | "todas" | "nenhuma" {
   if (!opcoes.plano) return "nenhuma";
 
@@ -29,7 +30,12 @@ export function areasPermitidas(opcoes: {
     return new Set(["jec"]);
   }
 
-  // mensal / pro / anual / pro_anual — demais áreas exigem OAB
+  if (opcoes.plano === "trial") {
+    const area = opcoes.trialAreaId?.trim();
+    return area ? new Set([area]) : new Set(["jec"]);
+  }
+
+  // mensal / pro / anual / escritório — demais áreas exigem OAB
   if (opcoes.tipoUsuario === "leigo") {
     return new Set(["jec"]);
   }
@@ -42,6 +48,7 @@ export function areaEstaLiberada(
   opcoes: {
     plano: PlanoId | null;
     tipoUsuario?: TipoUsuario;
+    trialAreaId?: string | null;
   }
 ): boolean {
   const liberadas = areasPermitidas(opcoes);
@@ -56,10 +63,12 @@ export function areaAbertaParaCliente(
   opcoes: {
     plano: PlanoId | null;
     tipoUsuario?: TipoUsuario;
+    trialAreaId?: string | null;
   }
 ): boolean {
   if (!areaEstaLiberada(areaId, opcoes)) return false;
   if (areaId === "jec") return true;
+  if (opcoes.plano === "trial" && opcoes.trialAreaId === areaId) return true;
   const area = getAreaById(areaId);
   return Boolean(area?.available && area.href);
 }

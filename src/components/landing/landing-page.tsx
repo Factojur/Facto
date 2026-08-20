@@ -5,10 +5,13 @@ import { LandingHeroWatermark } from "@/components/landing/landing-hero-watermar
 import { MetodosPagamento } from "@/components/landing/metodos-pagamento";
 import {
   PLANO_ANUAL,
+  PLANO_ESCRITORIO_M,
+  PLANO_ESCRITORIO_S,
   PLANO_JEC,
   PLANO_MENSAL,
   PLANO_PRO,
   PLANO_PRO_ANUAL,
+  PLANO_TRIAL,
 } from "@/lib/planos-facto";
 
 /** Links de assinatura Mercado Pago (preapproval). */
@@ -156,12 +159,20 @@ export function LandingPage() {
               Preços
             </a>
           </nav>
-          <Link
-            href="/login"
-            className="rounded-lg border border-facto-gold/40 px-5 py-2 text-sm font-semibold text-facto-gold transition hover:bg-facto-gold hover:text-facto-dark"
-          >
-            Entrar
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/trial"
+              className="hidden rounded-lg bg-facto-gold px-4 py-2 text-sm font-semibold text-facto-dark transition hover:bg-amber-300 sm:inline-flex"
+            >
+              Teste grátis
+            </Link>
+            <Link
+              href="/login"
+              className="rounded-lg border border-facto-gold/40 px-5 py-2 text-sm font-semibold text-facto-gold transition hover:bg-facto-gold hover:text-facto-dark"
+            >
+              Entrar
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -192,22 +203,23 @@ export function LandingPage() {
 
             <div className="mt-10 flex flex-col items-center gap-3">
               <div className="flex w-full flex-col gap-4 sm:w-auto sm:flex-row sm:justify-center">
+                <Link
+                  href="/trial"
+                  className="rounded-lg bg-facto-gold px-8 py-3.5 font-semibold text-facto-dark shadow-lg shadow-facto-gold/20 transition hover:bg-[#a39a78]"
+                >
+                  Teste grátis · 7 dias
+                </Link>
                 <a
                   href="#precos"
-                  className="rounded-lg bg-facto-gold px-8 py-3.5 font-semibold text-facto-dark shadow-lg shadow-facto-gold/20 transition hover:bg-[#a39a78]"
+                  className="rounded-lg border border-white/15 px-8 py-3.5 font-semibold text-white transition hover:border-facto-gold/50 hover:bg-white/5"
                 >
                   Ver planos
                 </a>
-                <Link
-                  href="/login"
-                  className="rounded-lg border border-white/15 px-8 py-3.5 font-semibold text-white transition hover:border-facto-gold/50 hover:bg-white/5"
-                >
-                  Já tenho conta
-                </Link>
               </div>
               <p className="max-w-md text-center text-xs leading-relaxed text-stone-500">
-                A conta é liberada depois do pagamento: você recebe um e-mail
-                com o link de cadastro.
+                Teste: 1 área e {PLANO_TRIAL.pecasPorMes} minutas com marca
+                d’água. Planos pagos liberam a conta pelo e-mail após o
+                pagamento.
               </p>
             </div>
           </div>
@@ -294,6 +306,42 @@ export function LandingPage() {
             </div>
 
             <div className="mt-14 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {/* Trial */}
+              <div className="flex flex-col rounded-2xl border border-facto-gold/30 bg-facto-gold/[0.06] p-8">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-facto-gold/80">
+                  Comece sem cartão
+                </p>
+                <h3 className="mt-2 text-lg font-semibold text-white">
+                  {PLANO_TRIAL.rotulo}
+                </h3>
+                <p className="mt-1 text-sm text-stone-500">
+                  1 área · {PLANO_TRIAL.pecasPorMes} minutas · 7 dias · marca
+                  d’água no export.
+                </p>
+                <div className="mt-6 flex items-baseline gap-1">
+                  <span className="text-4xl font-bold text-white">
+                    {PLANO_TRIAL.rotuloPreco}
+                  </span>
+                  <span className="text-stone-500">{PLANO_TRIAL.rotuloPeriodo}</span>
+                </div>
+                <ul className="mt-6 flex-1 space-y-3 text-sm text-stone-400">
+                  {PLANO_TRIAL.beneficios.map((b) => (
+                    <li key={b} className="flex items-start gap-2">
+                      <span className="mt-0.5 shrink-0 text-facto-gold">✓</span>
+                      <span>{b}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-8">
+                  <Link
+                    href="/trial"
+                    className="block w-full rounded-lg bg-facto-gold px-6 py-3.5 text-center font-semibold text-facto-dark transition hover:bg-[#a39a78]"
+                  >
+                    Iniciar teste
+                  </Link>
+                </div>
+              </div>
+
               {/* JEC */}
               <div className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-8">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-facto-gold/80">
@@ -482,12 +530,93 @@ export function LandingPage() {
                   </BotaoAssinar>
                 </div>
               </div>
+
+              {/* Escritório S */}
+              <div className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-8">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-facto-gold/80">
+                  Equipe · {PLANO_ESCRITORIO_S.seats} assentos
+                </p>
+                <h3 className="mt-2 text-lg font-semibold text-white">
+                  {PLANO_ESCRITORIO_S.rotulo}
+                </h3>
+                <p className="mt-1 text-sm text-stone-500">
+                  Cota em pool · OAB do administrador · estagiários sem OAB.
+                </p>
+                <div className="mt-6 flex items-baseline gap-1">
+                  <span className="text-4xl font-bold text-white">
+                    {PLANO_ESCRITORIO_S.rotuloPreco}
+                  </span>
+                  <span className="text-stone-500">
+                    {PLANO_ESCRITORIO_S.rotuloPeriodo}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-stone-500">
+                  ≈ {PLANO_ESCRITORIO_S.custoPorPecaAprox} por peça na cota
+                </p>
+                <ul className="mt-6 flex-1 space-y-3 text-sm text-stone-400">
+                  {PLANO_ESCRITORIO_S.beneficios.map((b) => (
+                    <li key={b} className="flex items-start gap-2">
+                      <span className="mt-0.5 shrink-0 text-facto-gold">✓</span>
+                      <span>{b}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-8">
+                  <a
+                    href="mailto:factoassessoria.jur@gmail.com?subject=Escrit%C3%B3rio%20S%20FACTO"
+                    className="block w-full rounded-lg border border-white/15 px-6 py-3.5 text-center font-semibold text-white transition hover:border-facto-gold/50 hover:bg-white/5"
+                  >
+                    Pedir Escritório S
+                  </a>
+                </div>
+              </div>
+
+              {/* Escritório M */}
+              <div className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-8">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-facto-gold/80">
+                  Equipe · {PLANO_ESCRITORIO_M.seats} assentos
+                </p>
+                <h3 className="mt-2 text-lg font-semibold text-white">
+                  {PLANO_ESCRITORIO_M.rotulo}
+                </h3>
+                <p className="mt-1 text-sm text-stone-500">
+                  10 assentos · 900 minutas/mês em pool do escritório.
+                </p>
+                <div className="mt-6 flex items-baseline gap-1">
+                  <span className="text-4xl font-bold text-white">
+                    {PLANO_ESCRITORIO_M.rotuloPreco}
+                  </span>
+                  <span className="text-stone-500">
+                    {PLANO_ESCRITORIO_M.rotuloPeriodo}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-stone-500">
+                  ≈ {PLANO_ESCRITORIO_M.custoPorPecaAprox} por peça na cota
+                </p>
+                <ul className="mt-6 flex-1 space-y-3 text-sm text-stone-400">
+                  {PLANO_ESCRITORIO_M.beneficios.map((b) => (
+                    <li key={b} className="flex items-start gap-2">
+                      <span className="mt-0.5 shrink-0 text-facto-gold">✓</span>
+                      <span>{b}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-8">
+                  <a
+                    href="mailto:factoassessoria.jur@gmail.com?subject=Escrit%C3%B3rio%20M%20FACTO"
+                    className="block w-full rounded-lg border border-white/15 px-6 py-3.5 text-center font-semibold text-white transition hover:border-facto-gold/50 hover:bg-white/5"
+                  >
+                    Pedir Escritório M
+                  </a>
+                </div>
+              </div>
             </div>
 
             <p className="mt-8 text-center text-xs leading-relaxed text-stone-600">
               Cotas renovam a cada ciclo. Precisou de mais? Pacotes extras de
               peças (+50 ou +100) e de análises (+10) ficam na conta após o
               login — sem trocar de plano. Pagamento seguro via Mercado Pago.
+              Escritório: checkout sob demanda (assentos + OAB do admin).
             </p>
 
             <MetodosPagamento />

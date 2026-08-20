@@ -4,10 +4,13 @@
 
 import {
   PLANO_ANUAL,
+  PLANO_ESCRITORIO_M,
+  PLANO_ESCRITORIO_S,
   PLANO_JEC,
   PLANO_MENSAL,
   PLANO_PRO,
   PLANO_PRO_ANUAL,
+  PLANO_TRIAL,
 } from "@/lib/planos-facto";
 
 export type PlanoCota =
@@ -16,6 +19,9 @@ export type PlanoCota =
   | "pro"
   | "anual"
   | "pro_anual"
+  | "trial"
+  | "escritorio_s"
+  | "escritorio_m"
   | null;
 
 export type ResumoCota = {
@@ -57,6 +63,9 @@ export function limiteDoPlano(plano: PlanoCota): number | null {
   if (plano === "pro") return PLANO_PRO.pecasPorMes;
   if (plano === "mensal") return PLANO_MENSAL.pecasPorMes;
   if (plano === "jec") return PLANO_JEC.pecasPorMes;
+  if (plano === "trial") return PLANO_TRIAL.pecasPorMes;
+  if (plano === "escritorio_s") return PLANO_ESCRITORIO_S.pecasPorMes;
+  if (plano === "escritorio_m") return PLANO_ESCRITORIO_M.pecasPorMes;
   return null;
 }
 
@@ -66,6 +75,9 @@ export function limiteAnalisesDoPlano(plano: PlanoCota): number | null {
   if (plano === "pro") return PLANO_PRO.analisesPorMes;
   if (plano === "mensal") return PLANO_MENSAL.analisesPorMes;
   if (plano === "jec") return PLANO_JEC.analisesPorMes;
+  if (plano === "trial") return PLANO_TRIAL.analisesPorMes;
+  if (plano === "escritorio_s") return PLANO_ESCRITORIO_S.analisesPorMes;
+  if (plano === "escritorio_m") return PLANO_ESCRITORIO_M.analisesPorMes;
   return null;
 }
 

@@ -2,6 +2,9 @@
  * Helpers de apresentação e regras de cancelamento de assinatura FACTO.
  */
 
+import type { PlanoId } from "@/lib/planos-facto";
+import { rotuloPlano as rotuloPlanoCatalogo } from "@/lib/planos-facto";
+
 export const PRAZO_ARREPENDIMENTO_CDC_DIAS = 7;
 const DIA_EM_MS = 24 * 60 * 60 * 1000;
 
@@ -9,7 +12,7 @@ export type AssinaturaDb = {
   id: string;
   mp_preapproval_id: string;
   email: string | null;
-  plano: "jec" | "mensal" | "pro" | "anual" | "pro_anual" | null;
+  plano: PlanoId | null;
   status: "pending" | "authorized" | "paused" | "canceled";
   data_inicio: string | null;
   acesso_valido_ate: string | null;
@@ -38,12 +41,8 @@ function formatarDataPt(iso: string | null | undefined): string {
 }
 
 export function rotuloPlano(plano: AssinaturaDb["plano"]): string {
-  if (plano === "pro_anual") return "Plano Completo Pro Anual";
-  if (plano === "anual") return "Plano Completo Anual";
-  if (plano === "pro") return "Plano Completo Pro";
-  if (plano === "mensal") return "Plano Completo";
-  if (plano === "jec") return "Plano JEC";
-  return "Plano FACTO";
+  const r = rotuloPlanoCatalogo(plano);
+  return r === "—" ? "Plano FACTO" : r;
 }
 
 export function mapearAssinaturaParaUI(row: AssinaturaDb): AssinaturaResumoUI {

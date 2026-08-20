@@ -23,15 +23,15 @@ import {
 type AdminClient = ReturnType<typeof createAdminClient>;
 
 const DIA_EM_MS = 24 * 60 * 60 * 1000;
-const DURACAO_CICLO_DIAS: Record<
-  "jec" | "mensal" | "pro" | "anual" | "pro_anual",
-  number
-> = {
+const DURACAO_CICLO_DIAS: Record<PlanoId, number> = {
   jec: 30,
   mensal: 30,
   pro: 30,
   anual: 365,
   pro_anual: 365,
+  trial: 7,
+  escritorio_s: 30,
+  escritorio_m: 30,
 };
 
 export type PreapprovalMp = {

@@ -406,11 +406,13 @@ async function postGerarPeca(request: Request) {
     cep?: string | null;
   } = {};
   let estiloEscritorio: string | null = null;
+  let trialAreaId: string | null = null;
+  let watermarkTrial = false;
   try {
     const { data: profile } = await supabase
       .from("profiles")
       .select(
-        "tipo_usuario, endereco, numero, complemento, bairro, cidade, uf, cep, estilo_resumo, estilo_opt_in"
+        "tipo_usuario, endereco, numero, complemento, bairro, cidade, uf, cep, estilo_resumo, estilo_opt_in, trial_ate, trial_area_id"
       )
       .eq("id", user.id)
       .maybeSingle();
@@ -418,6 +420,13 @@ async function postGerarPeca(request: Request) {
     if (profile) perfilEndereco = profile;
     if (profile?.estilo_opt_in && profile.estilo_resumo?.trim()) {
       estiloEscritorio = profile.estilo_resumo.trim();
+    }
+    if (
+      profile?.trial_ate &&
+      new Date(profile.trial_ate).getTime() > Date.now()
+    ) {
+      trialAreaId = profile.trial_area_id ?? null;
+      if (saldo.cota.plano === "trial") watermarkTrial = true;
     }
   } catch {
     /* metadata */
@@ -437,6 +446,7 @@ async function postGerarPeca(request: Request) {
     !areaAbertaParaCliente(areaId, {
       plano: acesso.plano,
       tipoUsuario: acesso.tipoUsuario,
+      trialAreaId,
     })
   ) {
     return NextResponse.json(
@@ -641,7 +651,8 @@ async function postGerarPeca(request: Request) {
     );
     const { pecaHtml } = gerarDocumentoTimbrado(
       peca,
-      body.escritorio?.usarTimbre ? body.escritorio : undefined
+      body.escritorio?.usarTimbre ? body.escritorio : undefined,
+      { watermarkTrial }
     );
     const semIa: GerarPecaJecOutput = {
       ...scaffold,
@@ -785,7 +796,8 @@ async function postGerarPeca(request: Request) {
     );
     const { pecaHtml } = gerarDocumentoTimbrado(
       fallbackNorm,
-      body.escritorio?.usarTimbre ? body.escritorio : undefined
+      body.escritorio?.usarTimbre ? body.escritorio : undefined,
+      { watermarkTrial }
     );
     const fallback: GerarPecaJecOutput = {
       ...scaffold,
@@ -837,7 +849,8 @@ async function postGerarPeca(request: Request) {
       : peca;
     const { pecaHtml } = gerarDocumentoTimbrado(
       pecaAnotada,
-      body.escritorio?.usarTimbre ? body.escritorio : undefined
+      body.escritorio?.usarTimbre ? body.escritorio : undefined,
+      { watermarkTrial }
     );
     return debitarEResponder(
       anexarAuditoria(
@@ -876,7 +889,8 @@ async function postGerarPeca(request: Request) {
   );
   const { pecaHtml } = gerarDocumentoTimbrado(
     peca,
-    body.escritorio?.usarTimbre ? body.escritorio : undefined
+    body.escritorio?.usarTimbre ? body.escritorio : undefined,
+    { watermarkTrial }
   );
 
   const resultado: GerarPecaJecOutput = {

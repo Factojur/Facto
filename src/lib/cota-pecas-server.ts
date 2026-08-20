@@ -77,23 +77,38 @@ async function planoDoEmail(admin: Admin, email: string): Promise<PlanoCota> {
     .limit(1)
     .maybeSingle();
 
-  if (!data) return null;
-  const agora = Date.now();
-  const ate = data.acesso_valido_ate
-    ? new Date(data.acesso_valido_ate).getTime()
-    : null;
-  const ativo =
-    (data.status === "authorized" && (ate === null || ate > agora)) ||
-    (data.status === "canceled" && ate !== null && ate > agora);
-  if (!ativo) return null;
+  if (data) {
+    const agora = Date.now();
+    const ate = data.acesso_valido_ate
+      ? new Date(data.acesso_valido_ate).getTime()
+      : null;
+    const ativo =
+      (data.status === "authorized" && (ate === null || ate > agora)) ||
+      (data.status === "canceled" && ate !== null && ate > agora);
+    if (
+      ativo &&
+      (data.plano === "pro_anual" ||
+        data.plano === "anual" ||
+        data.plano === "mensal" ||
+        data.plano === "pro" ||
+        data.plano === "jec" ||
+        data.plano === "escritorio_s" ||
+        data.plano === "escritorio_m")
+    ) {
+      return data.plano;
+    }
+  }
+
+  const { data: perfil } = await admin
+    .from("profiles")
+    .select("trial_ate")
+    .ilike("email", email)
+    .maybeSingle();
   if (
-    data.plano === "pro_anual" ||
-    data.plano === "anual" ||
-    data.plano === "mensal" ||
-    data.plano === "pro" ||
-    data.plano === "jec"
+    perfil?.trial_ate &&
+    new Date(perfil.trial_ate).getTime() > Date.now()
   ) {
-    return data.plano;
+    return "trial";
   }
   return null;
 }

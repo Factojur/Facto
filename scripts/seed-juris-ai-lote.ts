@@ -9,6 +9,7 @@
  */
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { metadadosJurisDoTexto } from "../src/lib/juris-metadados";
 import { config } from "dotenv";
 import { resolve } from "path";
 import {
@@ -189,6 +190,8 @@ async function upsertPrecedente(
   const texto = montarTexto(p);
   if (!ementaValida(texto)) return "skip";
 
+  const meta = metadadosJurisDoTexto(titulo, texto, p.tribunal);
+
   const { data: existente } = await supabase
     .from("base_conhecimento")
     .select("id, texto")
@@ -197,6 +200,15 @@ async function upsertPrecedente(
 
   if (existente?.id) {
     // Já cadastrado — não apaga nem sobrescreve conteúdo anterior.
+    // Backfill leve de metadados se a coluna estiver vazia.
+    await supabase
+      .from("base_conhecimento")
+      .update({
+        tribunal: meta.tribunal,
+        area_tags: meta.area_tags,
+      })
+      .eq("id", existente.id)
+      .is("tribunal", null);
     return "skip";
   }
 
@@ -206,6 +218,8 @@ async function upsertPrecedente(
     texto,
     fonte: "jurisprudencias.ai",
     status: "validado",
+    tribunal: meta.tribunal,
+    area_tags: meta.area_tags,
   });
   return error ? "erro" : "insert";
 }

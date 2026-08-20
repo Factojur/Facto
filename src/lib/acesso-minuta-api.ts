@@ -40,13 +40,20 @@ export async function exigirAcessoAreaMinuta(
   const areaId = normalizarAreaIdMinuta(areaIdRaw);
   let tipoUsuario =
     (user.user_metadata?.tipo_usuario as string | undefined) ?? "advogado";
+  let trialAreaId: string | null = null;
   try {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("tipo_usuario")
+      .select("tipo_usuario, trial_ate, trial_area_id")
       .eq("id", user.id)
       .maybeSingle();
     if (profile?.tipo_usuario) tipoUsuario = profile.tipo_usuario;
+    if (
+      profile?.trial_ate &&
+      new Date(profile.trial_ate).getTime() > Date.now()
+    ) {
+      trialAreaId = profile.trial_area_id ?? null;
+    }
   } catch {
     /* metadata */
   }
@@ -57,6 +64,7 @@ export async function exigirAcessoAreaMinuta(
     !areaAbertaParaCliente(areaId, {
       plano: acesso.plano,
       tipoUsuario: acesso.tipoUsuario,
+      trialAreaId,
     })
   ) {
     return {

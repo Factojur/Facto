@@ -341,6 +341,9 @@ function PecasResultado({
   ajustesFeitos,
   auditorContexto,
   jurisCaso,
+  versoes = [],
+  versaoAtivaId = null,
+  onSelecionarVersao,
 }: {
   resultado: GerarPecaJecOutput;
   escritorio?: EscritorioConfig;
@@ -366,6 +369,9 @@ function PecasResultado({
     pedidosUsuario: string[];
   };
   jurisCaso: JurisCasoSalvo[];
+  versoes?: { id: string; rotulo: string }[];
+  versaoAtivaId?: string | null;
+  onSelecionarVersao?: (id: string) => void;
 }) {
   async function copiar(texto: string) {
     await navigator.clipboard.writeText(texto);
@@ -459,6 +465,28 @@ function PecasResultado({
         </button>
       </div>
 
+      {versoes.length > 1 && onSelecionarVersao && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Versões desta sessão
+          </span>
+          {versoes.map((v) => (
+            <button
+              key={v.id}
+              type="button"
+              onClick={() => onSelecionarVersao(v.id)}
+              className={
+                v.id === versaoAtivaId
+                  ? "rounded-md bg-stone-800 px-2.5 py-1 text-xs font-medium text-amber-50"
+                  : "rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-100"
+              }
+            >
+              {v.rotulo}
+            </button>
+          ))}
+        </div>
+      )}
+
       {resultado.avisoIA && (
         <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900">
           <p className="font-semibold">Atenção — peça incompleta para protocolo</p>
@@ -546,7 +574,11 @@ function PecasResultado({
 
       {resultado.analiseEstrategica && (
         <section className="rounded-lg border border-stone-300 bg-stone-50 p-5 shadow-sm">
-          <h3 className="font-semibold text-stone-800">Análise estratégica</h3>
+          <h3 className="font-semibold text-stone-800">Contexto da peça</h3>
+          <p className="mt-1 text-xs text-stone-500">
+            Painel de contexto usado na geração (tese, natureza, direitos) —
+            conferência rápida antes do texto.
+          </p>
           {resultado.analiseEstrategica.nomeAcao && (
             <p className="mt-2 text-sm text-stone-700">
               <strong>Ação qualificada:</strong>{" "}
@@ -857,6 +889,10 @@ export function JecForm({
   const [loadingStage, setLoadingStage] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<GerarPecaJecOutput | null>(null);
+  const [versoesPeca, setVersoesPeca] = useState<
+    { id: string; rotulo: string; resultado: GerarPecaJecOutput }[]
+  >([]);
+  const [versaoAtivaId, setVersaoAtivaId] = useState<string | null>(null);
   const [casoVinculoId, setCasoVinculoId] = useState<string | null>(null);
   const [faseVinculo, setFaseVinculo] = useState<FaseCasoJec | null>(null);
   const [msgCaso, setMsgCaso] = useState<string | null>(null);
@@ -1747,7 +1783,14 @@ export function JecForm({
       }
 
       if (data.cota) setCota(data.cota);
-      setResultado(data as GerarPecaJecOutput);
+      const gerado = data as GerarPecaJecOutput;
+      const id = `v-${Date.now()}`;
+      setVersoesPeca((prev) => {
+        const rotulo = `V${prev.length + 1}`;
+        return [{ id, rotulo, resultado: gerado }, ...prev].slice(0, 5);
+      });
+      setVersaoAtivaId(id);
+      setResultado(gerado);
       setAjustesFeitos(0);
       setMsgCaso(null);
       if (comPoloAdvocacia) {
@@ -2874,6 +2917,15 @@ export function JecForm({
             resultado={resultado}
             escritorio={escritorio}
             onFechar={() => setResultado(null)}
+            versoes={versoesPeca.map((v) => ({ id: v.id, rotulo: v.rotulo }))}
+            versaoAtivaId={versaoAtivaId}
+            onSelecionarVersao={(id) => {
+              const hit = versoesPeca.find((v) => v.id === id);
+              if (!hit) return;
+              setVersaoAtivaId(id);
+              setResultado(hit.resultado);
+              setAjustesFeitos(0);
+            }}
             ajustesFeitos={ajustesFeitos}
             jurisCaso={jurisCaso}
             auditorContexto={{

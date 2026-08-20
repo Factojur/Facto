@@ -6,6 +6,7 @@ import { useEffect, useState, Suspense } from "react";
 import { FactoLogo } from "@/components/brand/facto-logo";
 import { createClient } from "@/lib/supabase/client";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
+import { PLANO_TRIAL } from "@/lib/planos-facto";
 
 async function registrarSessaoAtiva(): Promise<{ ok: boolean; erro?: string }> {
   try {
@@ -30,6 +31,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const trialOk = searchParams.get("trial") === "ok";
   const sessaoEncerrada = searchParams.get("sessao") === "encerrada";
   const acessoExpirado = searchParams.get("acesso") === "expirado";
 
@@ -139,6 +141,13 @@ function LoginForm() {
               Sua sessão foi encerrada porque esta conta foi acessada em outro
               dispositivo. Suas preferências e dados salvos no FACTO foram
               preservados.
+            </div>
+          )}
+
+          {trialOk && (
+            <div className="mb-4 rounded-lg border border-emerald-800/60 bg-emerald-950/40 px-4 py-3 text-sm text-emerald-200">
+              Conta de teste criada. Entre com o e-mail e a senha para usar suas{" "}
+              {PLANO_TRIAL.pecasPorMes} minutas na área escolhida.
             </div>
           )}
 
