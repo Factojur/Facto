@@ -64,7 +64,7 @@ function formatarData(data: string) {
 }
 
 /**
- * Extrai tribunal do título (ex.: "TJSP — 1000…", "STJ — Súmula 479").
+ * Extrai tribunal do título (ex.: "TJSP — 1000…", "Súmula 479 do STJ", "Súmula 1 do TST").
  */
 export function inferirTribunal(titulo: string): string {
   const t = titulo.trim().toUpperCase();
@@ -75,12 +75,17 @@ export function inferirTribunal(titulo: string): string {
       t.startsWith(`${trib} -`) ||
       t.startsWith(`${trib}–`) ||
       t.includes(` ${trib} —`) ||
-      t.includes(` ${trib} -`)
+      t.includes(` ${trib} -`) ||
+      t.endsWith(` DO ${trib}`) ||
+      t.includes(`/${trib} `) ||
+      t.includes(`/${trib}(`) ||
+      t.endsWith(`/${trib}`)
     ) {
       return trib;
     }
   }
-  const m = t.match(/\b(T[JR][A-Z]{1,3}|ST[FJM]|TRF\d|TSE|STM)\b/);
+  // Fallback: siglas no meio do título (TST antes de ST* curtos já cobertos acima).
+  const m = t.match(/\b(TST|TSE|STM|ST[FJ]|T[JR][A-Z]{1,3}|TRF\d)\b/);
   if (m?.[1]) return m[1];
   return "Outros";
 }

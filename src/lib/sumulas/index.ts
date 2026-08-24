@@ -317,6 +317,59 @@ export {
   SUMULAS_PENDENTES,
 };
 
+import { SUMULAS_TST_LOTE_01 } from "@/lib/sumulas/tst-lote-01";
+import { SUMULAS_TST_LOTE_02 } from "@/lib/sumulas/tst-lote-02";
+import { SUMULAS_TST_LOTE_03 } from "@/lib/sumulas/tst-lote-03";
+import { SUMULAS_TST_LOTE_04 } from "@/lib/sumulas/tst-lote-04";
+import { SUMULAS_TST_LOTE_05 } from "@/lib/sumulas/tst-lote-05";
+import { SUMULAS_TST_LOTE_06 } from "@/lib/sumulas/tst-lote-06";
+import { SUMULAS_TST_LOTE_07 } from "@/lib/sumulas/tst-lote-07";
+import { SUMULAS_TST_LOTE_08 } from "@/lib/sumulas/tst-lote-08";
+import { SUMULAS_TST_LOTE_09 } from "@/lib/sumulas/tst-lote-09";
+import { SUMULAS_TST_LOTE_10 } from "@/lib/sumulas/tst-lote-10";
+import { SUMULAS_TST_LOTE_11 } from "@/lib/sumulas/tst-lote-11";
+import { SUMULAS_TST_LOTE_12 } from "@/lib/sumulas/tst-lote-12";
+import { SUMULAS_TST_LOTE_13 } from "@/lib/sumulas/tst-lote-13";
+import { SUMULAS_TST_LOTE_14 } from "@/lib/sumulas/tst-lote-14";
+import { SUMULAS_TST_LOTE_15 } from "@/lib/sumulas/tst-lote-15";
+import { SUMULAS_TST_LOTE_16 } from "@/lib/sumulas/tst-lote-16";
+import { SUMULAS_TST_LOTE_17 } from "@/lib/sumulas/tst-lote-17";
+import { SUMULAS_TST_LOTE_18 } from "@/lib/sumulas/tst-lote-18";
+import { SUMULAS_TST_LOTE_19 } from "@/lib/sumulas/tst-lote-19";
+import { SUMULAS_TST_LOTE_20 } from "@/lib/sumulas/tst-lote-20";
+import { SUMULAS_TST_LOTE_21 } from "@/lib/sumulas/tst-lote-21";
+import { SUMULAS_TST_LOTE_22 } from "@/lib/sumulas/tst-lote-22";
+import { SUMULAS_TST_LOTE_23 } from "@/lib/sumulas/tst-lote-23";
+import { SUMULAS_TST_LOTE_24 } from "@/lib/sumulas/tst-lote-24";
+import { SUMULAS_TST_LOTE_25 } from "@/lib/sumulas/tst-lote-25";
+import { SUMULAS_TST_LOTE_26 } from "@/lib/sumulas/tst-lote-26";
+import { SUMULAS_TST_LOTE_27 } from "@/lib/sumulas/tst-lote-27";
+import { SUMULAS_TST_LOTE_28 } from "@/lib/sumulas/tst-lote-28";
+import { SUMULAS_TST_LOTE_29 } from "@/lib/sumulas/tst-lote-29";
+import { SUMULAS_TST_LOTE_30 } from "@/lib/sumulas/tst-lote-30";
+import { SUMULAS_TST_LOTE_31 } from "@/lib/sumulas/tst-lote-31";
+import { SUMULAS_TST_LOTE_32 } from "@/lib/sumulas/tst-lote-32";
+import { SUMULAS_TST_LOTE_33 } from "@/lib/sumulas/tst-lote-33";
+import { SUMULAS_TST_LOTE_34 } from "@/lib/sumulas/tst-lote-34";
+import { SUMULAS_TST_LOTE_35 } from "@/lib/sumulas/tst-lote-35";
+import { SUMULAS_TST_LOTE_36 } from "@/lib/sumulas/tst-lote-36";
+import { SUMULAS_TST_LOTE_37 } from "@/lib/sumulas/tst-lote-37";
+import { SUMULAS_TST_LOTE_38 } from "@/lib/sumulas/tst-lote-38";
+import { SUMULAS_TST_LOTE_39 } from "@/lib/sumulas/tst-lote-39";
+import { SUMULAS_TST_LOTE_40 } from "@/lib/sumulas/tst-lote-40";
+import { SUMULAS_TST_LOTE_41 } from "@/lib/sumulas/tst-lote-41";
+import { SUMULAS_TST_LOTE_42 } from "@/lib/sumulas/tst-lote-42";
+import { SUMULAS_TST_LOTE_43 } from "@/lib/sumulas/tst-lote-43";
+import { SUMULAS_TST_LOTE_44 } from "@/lib/sumulas/tst-lote-44";
+import { SUMULAS_TSE_LOTE_01 } from "@/lib/sumulas/tse-lote-01";
+import { SUMULAS_TSE_LOTE_02 } from "@/lib/sumulas/tse-lote-02";
+import { SUMULAS_TSE_LOTE_03 } from "@/lib/sumulas/tse-lote-03";
+import { SUMULAS_TSE_LOTE_04 } from "@/lib/sumulas/tse-lote-04";
+import { SUMULAS_TSE_LOTE_05 } from "@/lib/sumulas/tse-lote-05";
+import { SUMULAS_TSE_LOTE_06 } from "@/lib/sumulas/tse-lote-06";
+import { SUMULAS_TSE_LOTE_07 } from "@/lib/sumulas/tse-lote-07";
+import { SUMULAS_TSE_LOTE_08 } from "@/lib/sumulas/tse-lote-08";
+
 export const TODOS_LOTES_SUMULAS: SumulaLoteItem[][] = [
   SUMULAS_LOTE_01,
   SUMULAS_LOTE_02,
@@ -469,6 +522,58 @@ export const TODOS_LOTES_SUMULAS: SumulaLoteItem[][] = [
   SUMULAS_STF_NV_LOTE_72,
   SUMULAS_STF_NV_LOTE_73,
   SUMULAS_STF_NV_LOTE_74,
+  SUMULAS_TST_LOTE_01,
+  SUMULAS_TST_LOTE_02,
+  SUMULAS_TST_LOTE_03,
+  SUMULAS_TST_LOTE_04,
+  SUMULAS_TST_LOTE_05,
+  SUMULAS_TST_LOTE_06,
+  SUMULAS_TST_LOTE_07,
+  SUMULAS_TST_LOTE_08,
+  SUMULAS_TST_LOTE_09,
+  SUMULAS_TST_LOTE_10,
+  SUMULAS_TST_LOTE_11,
+  SUMULAS_TST_LOTE_12,
+  SUMULAS_TST_LOTE_13,
+  SUMULAS_TST_LOTE_14,
+  SUMULAS_TST_LOTE_15,
+  SUMULAS_TST_LOTE_16,
+  SUMULAS_TST_LOTE_17,
+  SUMULAS_TST_LOTE_18,
+  SUMULAS_TST_LOTE_19,
+  SUMULAS_TST_LOTE_20,
+  SUMULAS_TST_LOTE_21,
+  SUMULAS_TST_LOTE_22,
+  SUMULAS_TST_LOTE_23,
+  SUMULAS_TST_LOTE_24,
+  SUMULAS_TST_LOTE_25,
+  SUMULAS_TST_LOTE_26,
+  SUMULAS_TST_LOTE_27,
+  SUMULAS_TST_LOTE_28,
+  SUMULAS_TST_LOTE_29,
+  SUMULAS_TST_LOTE_30,
+  SUMULAS_TST_LOTE_31,
+  SUMULAS_TST_LOTE_32,
+  SUMULAS_TST_LOTE_33,
+  SUMULAS_TST_LOTE_34,
+  SUMULAS_TST_LOTE_35,
+  SUMULAS_TST_LOTE_36,
+  SUMULAS_TST_LOTE_37,
+  SUMULAS_TST_LOTE_38,
+  SUMULAS_TST_LOTE_39,
+  SUMULAS_TST_LOTE_40,
+  SUMULAS_TST_LOTE_41,
+  SUMULAS_TST_LOTE_42,
+  SUMULAS_TST_LOTE_43,
+  SUMULAS_TST_LOTE_44,
+  SUMULAS_TSE_LOTE_01,
+  SUMULAS_TSE_LOTE_02,
+  SUMULAS_TSE_LOTE_03,
+  SUMULAS_TSE_LOTE_04,
+  SUMULAS_TSE_LOTE_05,
+  SUMULAS_TSE_LOTE_06,
+  SUMULAS_TSE_LOTE_07,
+  SUMULAS_TSE_LOTE_08
 ];
 
 export const SUMULAS_ATIVAS_CURADAS = sumulasAtivasParaBase(TODOS_LOTES_SUMULAS);

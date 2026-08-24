@@ -8,11 +8,21 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 
 ## Retomar quando voltar (24/08)
 
-1. **Gateway** — Asaas recomendado p/ Escritório / valores altos; MP ok até o teto (~R$4k). Escritório **fora da venda** (`ESCRITORIO_VENDA_ATIVA = false`) até seats + gateway.
-2. **Gemini paygo** + **ANTHROPIC_API_KEY** na Vercel.
-3. **Compra real** ponta a ponta (JEC ou Completo).
-4. **Seed** diário (`npm run seed:juris-diario`) — estado em `scripts/seed-juris-estado.json`.
-5. Smoke live: `npm run test:smoke-areas-lastro` (lastro + scaffold; não consome peça).
+### Sequência agora (competir com MinutaIA sem dispersar)
+
+Ordem fechada 24/08: **receita + lastro + confiança na peça** antes de marketing pesado. Manus e Obsidian **adiados** (ver P3 / decisões abaixo).
+
+1. **Compra real MP** ponta a ponta (JEC ou Completo) — webhook + e-mail + convite só sem perfil + login upgrade.
+2. **Vercel** — `ANTHROPIC_API_KEY` + Gemini **paygo**; conferir `MERCADOPAGO_WEBHOOK_SECRET` e `CRON_SECRET`.
+3. **Seed** — `proximoLote` **329** / `ate` **683** (reconciliado 24/08; drift 366 sem evidência). `npm run seed:juris-diario` na próxima cota; **sem lotes novos** até 683; TRE/TSE = 2ª API depois.
+4. **Smoke live** — `npm run test:smoke-areas-lastro` + 1 peça real Constitucional e 1 Previdenciário com “Buscar na base FACTO”.
+5. **Diferenciação P1 (próximas features de código):** (a) histórico de minutas na nuvem (todas as áreas); (b) réplica a partir da contestação anexada; (c) alerta fatos × pedidos; (d) checklist de protocolo por tribunal.
+6. **LGPD** — aviso memória local; termo antes de sync nuvem (cliente / histórico).
+7. **Escritório / Asaas** — só depois de seats + gateway; até lá = fale conosco.
+
+**Adiado de propósito (não abrir agora):**
+- **Manus** — sem conta no produto; sem insert em juris. Se um dia usar: só ops (termos de lote / briefing 2ª API), nunca lastro nem peça. Playbook no repo só quando a fila de lacunas doer de verdade.
+- **Obsidian** — sem sync, sem export vault no app. Spec já em `docs/obsidian-sync-spec.md`. Entrar só quando curadoria manual doer (P3).
 
 ### Feito 24/08 — checkup + Escritório off
 
@@ -26,6 +36,48 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] Empresarial: espécies **recuperação judicial** + **falência** (Lei 11.101)
 - [x] Eleitoral permanece aberto; TRE/TSE via Datajud depois do lastro Juris.ai
 - [x] Script `test:smoke-areas-lastro`
+- [x] Decisão: **Manus + Obsidian adiados** (ops/curadoria depois; zero código agora)
+- [x] Seed: estado **329** reconciliado (366 era drift); PENDENCIAS seed atualizadas
+- [x] Testes peça: lote diário **04h** scaffold (0 tokens) — `FACTO-testes-pecas-04h` · 40/dia · `tmp/testes-pecas-scaffold/`
+
+## Testes de peça (scaffold 04h) — 24/08
+
+- **Estimativa IA real (paygo):** 1 peça/área ~**R$ 2** · todas ~183 espécies ~**R$ 20** Flash / ~**R$ 70** com ~15% Sonnet.
+- **Agora (sem paygo):** só **scaffold** determinístico — estrutura/rito/polo, **não** qualidade de fundamentação IA.
+- Estado: `scripts/testes-pecas-estado.json` · `modo: scaffold` · `porDia: 40` (~5 noites p/ 183) · saída **PDF** forense.
+- Tarefa: `FACTO-testes-pecas-04h` · log `scripts/testes-pecas-diario.log`.
+- Rodar agora: `npm run test:pecas-diario` · instalar: `powershell -ExecutionPolicy Bypass -File scripts\instalar-tarefa-testes-pecas.ps1`
+- Pasta: `tmp/testes-pecas-scaffold/<data>/` — abrir os `.pdf` (Times 12, margens do app).
+- Modo IA depois do Gemini paygo: `TESTES_PECAS_MODO=ia` (ainda não gera peça real no script — amostragem manual primeiro).
+
+## Marca INPI (FACTO / FACTOIA) — 24/08
+
+### Já feito
+| Marca | Processo | Protocolo | Classe | Status pePI (24/08) |
+|-------|----------|-----------|--------|---------------------|
+| **FACTO** | **944677347** | **850260390405** | 42 nominativa | **Consta** na base; ficha/RPI ainda sem detalhe público (pré-publicação). Base até 18/08 · RPI 2902 |
+| **FACTOIA** | *(nº no recibo — informar)* | **850260430578** | 42 nominativa | Protocolo **não** busca no pePI (só nº de processo). Marca exata 42 ainda **0** (normal se depositado hoje) |
+
+Titular: PF Jefferson · GRU 389 · especificação SaaS/TI. Comprovante FACTO: `…\PROJETO FACTO\INPI\29409172362117530.pdf`
+
+### Situação pePI (consulta 24/08 ~11:05)
+- **FACTO 944677347:** pedido **consta**; acompanhar RPI + Meus pedidos (logado).
+- **Protocolo 850260430578** (FACTOIA): pePI por “nº processo” → **nenhum resultado** (protocolo ≠ processo).
+- Busca exata **FACTOIA** / classe 42 → **0** (ainda não indexado).
+- Interpretação: ambos **depositados / em fila**; sem indeferimento visível.
+
+### Próximos registros — ordem
+1. Acompanhar **FACTO** + **FACTOIA** (RPI terças; Meus pedidos).
+2. Classe **9** — **adiada** (sem app).
+3. Logo mista — depois.
+4. Classe **45** — evitar (Fatho); se um dia, preferir FACTOIA.
+5. Cessão PF → PJ quando houver empresa.
+
+### Pendências marca
+- [ ] Anotar **nº do processo FACTOIA** do recibo e-Marcas (não só o protocolo)
+- [ ] Logado: Meus pedidos para **944677347** + processo FACTOIA
+- [ ] Conferir RPI nas terças até 1ª publicação
+- [x] FACTOIA 42 depositado (protocolo 850260430578) — 24/08
 
 ## Retomar quando voltar (20/08 — noite)
 
@@ -60,9 +112,11 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] MS no kit ambiental + informações-MS no administrativo
 - [x] Fallback de espécies: não derruba área para lista JEC
 
-## Fila por prioridade — concorrência MinutaIA (19/08)
+## Fila por prioridade — concorrência MinutaIA (19/08; ordem 24/08)
 
-Ordem realista: receita e lastro primeiro; diferenciação visível em seguida; Obsidian/export só depois.
+Ordem realista: **receita e lastro primeiro**; diferenciação visível em seguida; **Manus e Obsidian adiados** (não competem com MinutaIA agora).
+
+**Como ganhar do MinutaIA no nosso molde (não clonando chat/skills/web):** peça protocolável + lastro curado + polo/rito corretos + histórico que não some + réplica inteligente + conferência (fatos×pedidos / protocolo). Evitar: gerar por chat, modo curto, busca web na minuta, 2.000 skills.
 
 ### P0 — Bloqueio comercial e confiança (fazer antes de escalar marketing)
 
@@ -70,7 +124,7 @@ Ordem realista: receita e lastro primeiro; diferenciação visível em seguida; 
 |---|------|--------|---------|
 | 1 | **Compra real MP ponta a ponta** — webhook + e-mail + convite + cadastro + cancelamento CDC | Parcial | Único bloqueio comercial crítico |
 | 2 | **Confirmar na Vercel** `MERCADOPAGO_WEBHOOK_SECRET` e `CRON_SECRET` | Falta conferir vars | Segurança já no código |
-| 3 | **Seed / lastro** lotes **222–673** + lacunas vitrine (após ~227) + mapa `tribunal`/`area_tags` | Em curso (01h) | “Buscar na base FACTO” fraco = peça fraca |
+| 3 | **Seed / lastro** lotes **329–683** + lacunas vitrine + mapa `tribunal`/`area_tags` | Em curso (01h; retomar 329) | “Buscar na base FACTO” fraco = peça fraca |
 | 4 | **Testes reais Constitucional + Previdenciário** após lastro | Pendente | Áreas abertas sem validação de usuário |
 | 5 | **LGPD — memória de cliente** | Pendente | Aviso na UI: localStorage só no navegador; termo antes de sync na nuvem (ver item P1-2) |
 | 6 | **Rodar migrations trial / tribunal / escritório no Supabase** | Pendente (ops) | Código já no repo |
@@ -105,17 +159,18 @@ Ordem realista: receita e lastro primeiro; diferenciação visível em seguida; 
 | 7 | **Análise de autos PDF** — smoke em produção JEC | Pendente |
 | 8 | **Dual-track seed** histórico + rolling 30 dias | Adiado (~30–35k / pré-06/09) |
 
-### P3 — Longo prazo (só com MRR / demanda clara)
+### P3 — Longo prazo (só com MRR / demanda clara) — **Manus e Obsidian aqui**
 
 | # | Item | Nota |
 |---|------|------|
-| 1 | **Export “vault FACTO”** — pasta Markdown compatível com Obsidian | Complemento ao perfil nuvem; usuário abre no Obsidian se quiser |
-| 2 | **Plugin Obsidian** ou integração bidirecional | Sem API Obsidian para contas automáticas |
-| 3 | **Extensão PJe / e-SAJ** | Custo de suporte alto |
-| 4 | **Segunda API juris** — TRE/TSE, TRF1/2/5/6, TNU | Depois do seed atual |
-| 5 | **Biblioteca de normas** (canal separado de juris) | Decisão 15/08: não misturar com peça |
-| 6 | **Recursos STJ/STF/ TST** — espécies superiores além do kit atual | Ver seção recursos superiores abaixo |
-| 7 | **Produto para juiz / MP / defensoria** | Fora do escopo FACTO (advogado e causa própria JEC) |
+| 1 | **Export “vault FACTO”** — pasta Markdown compatível com Obsidian | **Adiado 24/08.** Só quando curadoria doer; spec em `docs/obsidian-sync-spec.md` |
+| 2 | **Plugin Obsidian** / sync `aprovado` → `base_conhecimento` | **Adiado 24/08.** Nunca misturar rascunho do vault com seed da API |
+| 3 | **Manus (ops)** — playbook: termos de lote / briefing 2ª API | **Adiado 24/08.** Fora do app; sem insert de juris; sem peça de cliente |
+| 4 | **Extensão PJe / e-SAJ** | Custo de suporte alto |
+| 5 | **Segunda API juris** — TRE/TSE, TRF1/2/5/6, TNU | Depois do seed atual (Datajud) |
+| 6 | **Biblioteca de normas** (canal separado de juris) | Decisão 15/08: não misturar com peça |
+| 7 | **Recursos STJ/STF/ TST** — espécies superiores além do kit atual | Ver seção recursos superiores abaixo |
+| 8 | **Produto para juiz / MP / defensoria** | Fora do escopo FACTO (advogado e causa própria JEC) |
 
 ### Feito nesta rodada (19/08 — noite, `9daa804`)
 
@@ -126,16 +181,20 @@ Ordem realista: receita e lastro primeiro; diferenciação visível em seguida; 
 - [x] Memória de cliente **local** (localStorage)
 
 
-Tarefa Windows `FACTO-seed-juris-01h` ok · **Ready** · próxima **21/08/2026 01:00**. Última: **20/08/2026 01:00** — lotes **186–221** ok; **222** parou no 429 (~2.214 inserts). Base ~**12.221** itens (10.785 juris + 1.436 súmulas).
-Estado: `proximoLote` **222** · `LOTE_MAX` **673**. Vencimento **2026-09-13** (pausa automática ~06/09). Pool: **7 contas**.
+Tarefa Windows `FACTO-seed-juris-01h` · **Ready** · próxima **25/08/2026 01:00**.  
+**24/08:** tarefa tentou ~05:51 e **falhou** (`0x800710E0` — sessão/elevação); log **não** atualizou.  
+**23/08:** diário avançou até cota no **329** (log: lotes ~294–328 ok; 329 interrompido).  
+**Estado reconciliado 24/08 manhã:** `proximoLote` **329** (havia drift local **366** sem headers 330–365 no log — **corrigido**; não pular). `ate` / `LOTE_MAX` **683**. Vencimento **2026-09-13** (pausa ~06/09). Pool: **7 contas**.
+
+Retomar: `npm run seed:juris-diario` (na próxima cota) ou `npx tsx scripts/seed-juris-ai-faixa.ts 329 683`. **Não criar lotes novos** até esgotar 683; lacunas TRE/TSE → 2ª API depois.
 
 **18/08 (noite):** pack imobiliário 149/157/165/173 e demais queries com lei/número ainda na fila 150+ foram enxugadas (lei/número zera a API). A partir de **201**: lacunas (STF constitucional, TRF prev, TST, CARF, retomas) **antes** do volume 10 TJs; **+10 packs vitrine** (JEC/digital/médico/JECR/amb/trab/fam/prev) após ~227.
 
-**Vencimento Jurisprudências.ai: 13/09/2026.** Pausa automática a partir de **06/09** (última semana para pontos fracos). Inflação: madrugadas **19/08–05/09**.
+**Vencimento Jurisprudências.ai: 13/09/2026.** Pausa automática a partir de **06/09** (última semana para pontos fracos). Inflação: madrugadas até **05/09**.
 
-Fila: lotes **222–673**. Cada madrugada usa as **7 contas** até 429 e reindexa.
+Fila: lotes **329–683**. Cada madrugada usa as **7 contas** até 429 e reindexa.
 
-PC ligado, sem dormir. Notebook: o instalador da tarefa **permite** rodar na bateria; ainda assim prefira **na tomada** na madrugada.
+PC ligado, sem dormir. Notebook: o instalador da tarefa **permite** rodar na bateria; ainda assim prefira **na tomada** na madrugada. Se a tarefa falhar de novo com `0x800710E0`, rodar manual o diário logado.
 
 Tribunais da API: `stf stj tst trf3 trf4 tjce tjgo tjma tjmg tjmt tjpr tjrj tjrs tjsc tjsp carf`. Sem TSE, TRE, TRF1/2/5/6, TNU.
 
@@ -358,10 +417,11 @@ Prazos: o FACTO **não conta prazo processual sozinho** hoje. Abrir área implic
 10. **[P1] Segundo tribunal (STJ) em produção** — _exige Pro + cache com TTL_ (API já busca STJ via seletor)  
 11. **[P2] Política CDC / cota-teste 7 dias**  
 12. **[P2] Expandir áreas** — _catálogo aberto 16/08_; **parada em Constitucional**. Próximo: lastro + testes reais + espécies opcionais (Constitucional) e lacunas da base.
-13. **[P2] Obsidian → `base_conhecimento` (sync)** — _especificado; não implementar ainda_
+13. **[P3] Obsidian → `base_conhecimento` (sync)** — _especificado; **adiado 24/08**_
     - Spec: `docs/obsidian-sync-spec.md` · template: `docs/obsidian-templates/exemplo-juris.md`
-    - Agora: alimentar base via admin/seeds; Obsidian só como notas pessoais se quiser
+    - Agora: alimentar base via admin/seeds; Obsidian só como notas pessoais se quiser (sem sync)
     - Depois (quando curadoria doer): script `sync:obsidian` (só `status: aprovado`) + reindex
+    - **Manus:** também adiado — ops (termos/lote) no máximo; nunca insert de juris nem peça
     - [ ] Implementar sync v1 (dry-run + `--write`)
     - [ ] (Opcional) export fila `juris_verificacao` → Markdown
 14. **[P3] Depois do núcleo da minuta** — _não neste deploy (16/08)_
@@ -632,10 +692,11 @@ Critério de “falha”: lote com **0** insert, ou &lt;10 insert em tema que de
 - [x] Lotes **81–83** (16/08) — **+139** insert (CARF 55, TJCE 32, TJGO 52). Cota 429 no **84**.
 - [x] Lotes **84–115** (17/08 madrugada) — seed diário 01h; cota 429 no **116**; `reindex` **+1607**.
 - [x] Lotes **116–148** (18/08 01h) — diário até o 149; cota 429 no meio do **149** (TJRS imobiliário). Retoma o **149**.
-- [ ] Lotes **149–673** — **19/08 01h** (automático) ou `npx tsx scripts/seed-juris-ai-faixa.ts 149 673`. 149–200: TJs restantes + TST/TRF/CARF/STJ/STF. **201–227**: lacunas. Depois: volume TJs + cortes por tribunal.
+- [x] Lotes **149–328** — avançados nas madrugadas 19–23/08 (ver log); **329** parou por cota **23/08**.
+- [ ] Lotes **329–683** — retomar diário / `npx tsx scripts/seed-juris-ai-faixa.ts 329 683`. **Estado 24/08:** `proximoLote` **329** (drift 366 sem evidência — corrigido). `LOTE_MAX` **683**.
 - [x] Após seed diário 17/08: `reindex:embeddings` (+1607).
-- [ ] Após seed 18/08: reindex da madrugada cortado (`^C`); 18/08 noite Gemini embedding 429. Completa no diário **19/08**.
-- [ ] Segunda API (pós-673 ou lacunas): priorizar **eleitoral (TRE/TSE)** e TRF1/2/5/6 / TNU.
+- [ ] Conferir reindex após cada madrugada (diário já chama no fim).
+- [ ] Segunda API (pós-683 ou lacunas): priorizar **eleitoral (TRE/TSE)** e TRF1/2/5/6 / TNU. **Não** criar lotes Juris.ai extras só por volume até esgotar 683.
 - [ ] Reaquecer cache TJSP (`npm run aquecer:cache-tjsp`) — 14/08 cache vazio; scrape 0/15 (captcha). Base_conhecimento intacta.
 - [ ] **7º token** Jurisprudências.ai — menos urgente com plano pago no `.env.local` (não precisa ir à Vercel se o plano for cancelado pós-seed).
 - [ ] Provedor secundário STJ estável em prod.
@@ -677,4 +738,4 @@ Critério de “falha”: lote com **0** insert, ou &lt;10 insert em tema que de
 - [x] Alerta compra ntfy (`NTFY_TOPIC`) + migration `alerta_sms_compra`; **push ok** no teste admin (12/08).
 - [x] Resend (12/08): domínio verificado; `resendId` no log; reenvio **forçar**; aviso interno de `noreply@`; labels interno/cliente no admin.
 - [ ] Webhook Resend (bounce/delivery) → atualizar `email_eventos` (opcional; hoje conferir no dashboard Resend).
-- [ ] Obsidian: implementar `sync:obsidian` só quando curadoria doer (ver item 13 e spec).
+- [ ] Obsidian / Manus: **adiados 24/08** — sync/export e playbook Manus só depois de receita + lastro; ver P3.

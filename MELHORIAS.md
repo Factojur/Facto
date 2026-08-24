@@ -49,6 +49,7 @@ Trava permanente: minuta para revisar e protocolar fora; rito/endereçamento/esp
 12. **Estilo do escritório** — só o que já cabe no molde (timbre, vocativo, fecho). Não aprender sentença do usuário a ponto de soltar o esqueleto.
 13. **Autos longos com qualidade** — janela 180 mil já existe; melhorar extração de “último ato” e número CNJ. Não prometer 6.000 páginas.
 14. **Extensão PJe / e-SAJ** — só quando o MRR pagar o custo e o suporte. Até lá, PDF colado na entrada única.
+15. **Manus + Obsidian** — **adiados (24/08)**. Não entram nesta fila de minuta. Manus só ops no futuro; Obsidian só export/sync quando curadoria doer (`PENDENCIAS` P3).
 
 ---
 

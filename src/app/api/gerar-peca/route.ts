@@ -782,6 +782,7 @@ async function postGerarPeca(request: Request) {
         reus: body.reus ?? [],
         fatos: body.fatos,
         pecaInaugural: idsInicial.includes(especieResolvida),
+        poloAdvocacia: body.poloAdvocacia,
       }),
       pedidosUsuario: body.pedidosUsuario
         ?.map((p) => String(p ?? "").trim())

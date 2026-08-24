@@ -58,13 +58,19 @@ function CardShell({
 }) {
   return (
     <div
-      className={`relative flex flex-col rounded-2xl border p-8 ${
+      className={`relative flex flex-col overflow-hidden rounded-2xl border p-8 ${
         destaque
-          ? "border-facto-gold/40 bg-gradient-to-br from-facto-gold/[0.1] via-white/[0.04] to-transparent"
+          ? "border-facto-gold/55 bg-gradient-to-br from-facto-gold/[0.22] via-[#2a261c]/90 to-[#16140f] shadow-[0_0_40px_-8px_rgba(196,191,154,0.55),0_0_80px_-20px_rgba(144,139,106,0.4)] ring-1 ring-facto-gold/35"
           : "border-white/10 bg-white/[0.03]"
       } ${className}`}
     >
-      {children}
+      {destaque && (
+        <span
+          className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-facto-gold/25 blur-3xl"
+          aria-hidden
+        />
+      )}
+      <div className="relative flex flex-1 flex-col">{children}</div>
     </div>
   );
 }
@@ -92,7 +98,7 @@ export function LandingPrecos() {
           cta: "Assinar Completo",
           eyebrow: "Mais escolhido",
           sub: "Para advogados (OAB) · todas as áreas · 100 peças/mês.",
-          destaque: false as boolean,
+          destaque: true,
         }
       : {
           plano: PLANO_ANUAL,

@@ -282,6 +282,87 @@ body {
   filter: drop-shadow(0 0 5px rgba(240, 235, 208, 1));
 }
 
+@keyframes grupo-area-sheen {
+  0%,
+  8% {
+    transform: translateX(-130%) skewX(-18deg);
+    opacity: 0;
+  }
+  14% {
+    opacity: 0.45;
+  }
+  22% {
+    transform: translateX(130%) skewX(-18deg);
+    opacity: 0;
+  }
+  23%,
+  100% {
+    transform: translateX(130%) skewX(-18deg);
+    opacity: 0;
+  }
+}
+
+/* Brilho ocioso: passa de um card ao próximo, ciclo longo, sem JS. */
+.grupo-area-card::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    105deg,
+    transparent 36%,
+    rgba(240, 235, 208, 0.14) 48%,
+    rgba(144, 139, 106, 0.22) 50%,
+    rgba(240, 235, 208, 0.12) 52%,
+    transparent 64%
+  );
+  transform: translateX(-130%) skewX(-18deg);
+  opacity: 0;
+}
+
+.grupos-areas-grid:not(.grupos-areas-grid--pausado) .grupo-area-card::after {
+  animation: grupo-area-sheen 10.4s ease-in-out infinite;
+}
+
+.grupos-areas-grid:not(.grupos-areas-grid--pausado)
+  .grupo-area-card:nth-child(1)::after {
+  animation-delay: 0s;
+}
+.grupos-areas-grid:not(.grupos-areas-grid--pausado)
+  .grupo-area-card:nth-child(2)::after {
+  animation-delay: 1.3s;
+}
+.grupos-areas-grid:not(.grupos-areas-grid--pausado)
+  .grupo-area-card:nth-child(3)::after {
+  animation-delay: 2.6s;
+}
+.grupos-areas-grid:not(.grupos-areas-grid--pausado)
+  .grupo-area-card:nth-child(4)::after {
+  animation-delay: 3.9s;
+}
+.grupos-areas-grid:not(.grupos-areas-grid--pausado)
+  .grupo-area-card:nth-child(5)::after {
+  animation-delay: 5.2s;
+}
+.grupos-areas-grid:not(.grupos-areas-grid--pausado)
+  .grupo-area-card:nth-child(6)::after {
+  animation-delay: 6.5s;
+}
+.grupos-areas-grid:not(.grupos-areas-grid--pausado)
+  .grupo-area-card:nth-child(7)::after {
+  animation-delay: 7.8s;
+}
+.grupos-areas-grid:not(.grupos-areas-grid--pausado)
+  .grupo-area-card:nth-child(8)::after {
+  animation-delay: 9.1s;
+}
+
+.grupo-area-card > * {
+  position: relative;
+  z-index: 2;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .facto-node-pulse {
     animation-duration: 6s;
@@ -298,7 +379,8 @@ body {
   .assistente-chip-halo,
   .assistente-chip-pin,
   .assistente-chip-trails,
-  .assistente-chip-nodes {
+  .assistente-chip-nodes,
+  .grupo-area-card::after {
     animation: none !important;
   }
   .assistente-ia-shimmer {

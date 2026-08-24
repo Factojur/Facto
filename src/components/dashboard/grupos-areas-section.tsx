@@ -30,7 +30,7 @@ function GrupoCard({
     <button
       type="button"
       onClick={onToggle}
-      className={`group relative flex w-full flex-col rounded-xl border px-4 py-4 text-left transition duration-300 md:px-5 md:py-5 ${
+      className={`grupo-area-card group relative flex w-full flex-col overflow-hidden rounded-xl border px-4 py-4 text-left transition duration-300 md:px-5 md:py-5 ${
         aberto
           ? "border-facto-gold bg-[#1c1c16]/95 shadow-[0_0_24px_rgba(144,139,106,0.25)]"
           : "border-facto-gold/35 bg-[#1c1c16]/75 hover:border-facto-gold hover:bg-[#1c1c16]/90"
@@ -64,7 +64,11 @@ export function GruposAreasSection({
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 sm:gap-4">
+      <div
+        className={`grupos-areas-grid grid gap-3 sm:grid-cols-2 xl:grid-cols-4 sm:gap-4 ${
+          grupoAberto ? "grupos-areas-grid--pausado" : ""
+        }`}
+      >
         {GRUPOS_AREAS_DASHBOARD.map((grupo) => (
           <GrupoCard
             key={grupo.id}

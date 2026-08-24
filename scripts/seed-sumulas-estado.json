@@ -1,0 +1,12 @@
+{
+  "faseIndice": 0,
+  "offset": 200,
+  "concluido": false,
+  "ultimaRodada": "2026-08-24",
+  "ultimoResultado": {
+    "fase": "upsert_codigo_tst_tse",
+    "ok": 200,
+    "falha": 0,
+    "avanco": 200
+  }
+}

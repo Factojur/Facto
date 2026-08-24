@@ -6,7 +6,12 @@
 import type { EscritorioConfig } from "@/lib/escritorio-types";
 import { extrairCidadeUfDoForo, ufValida } from "@/lib/endereco-comarca";
 import { moduloDaArea } from "@/lib/minuta-modulo";
-import { nomesAutoresCurto, nomesReusCurto } from "@/lib/partes-ja-qualificadas";
+import {
+  nomesAutoresCurto,
+  nomesReusCurto,
+  resolverPoloClienteQualificacao,
+} from "@/lib/partes-ja-qualificadas";
+import type { PoloAdvocacia } from "@/lib/polo-especies-por-area";
 import type { AutorValue } from "@/lib/autor-types";
 import type { ReuValue } from "@/lib/reu-types";
 
@@ -306,8 +311,17 @@ function capitalizarRotulo(rotulo: string): string {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
+/** Rótulos recursais da epígrafe (Apelante/Apelado…): o cliente fica na 1ª linha. */
+function rotuloEpigrafeERecursal(ativo: string): boolean {
+  return /^(Apelante|Recorrente|Agravante|Embargante|Impugnante)$/i.test(
+    ativo
+  );
+}
+
 /**
- * Rótulos da epígrafe (Autor/Réu, Exequente/Executado, Reclamante…).
+ * Rótulos da epígrafe (Autor/Réu, Apelante/Apelado, Exequente/Executado…).
+ * Fase de cumprimento (Exequente/Executado) prevalece sobre embargos no mesmo
+ * incidente; apelação/agravo/recurso usam o par recursal do CPC/rito.
  */
 export function rotulosEpigrafePeca(
   areaId: string,
@@ -327,6 +341,21 @@ export function rotulosEpigrafePeca(
   ) {
     return { ativo: "Exequente", passivo: "Executado" };
   }
+  if (e.includes("apelacao")) {
+    return { ativo: "Apelante", passivo: "Apelado" };
+  }
+  if (e.includes("agravo")) {
+    return { ativo: "Agravante", passivo: "Agravado" };
+  }
+  if (e.includes("embargos")) {
+    return { ativo: "Embargante", passivo: "Embargado" };
+  }
+  if (e.includes("recurso") || e.includes("contrarrazoes")) {
+    return { ativo: "Recorrente", passivo: "Recorrido" };
+  }
+  if (e.includes("impugn")) {
+    return { ativo: "Impugnante", passivo: "Impugnado" };
+  }
   if (areaId === "trabalhista") {
     return { ativo: "Reclamante", passivo: "Reclamado" };
   }
@@ -344,6 +373,7 @@ export function linhasEpigrafePeca(opcoes: {
   reus?: ReuValue[] | null;
   fatos?: string | null;
   pecaInaugural?: boolean;
+  poloAdvocacia?: PoloAdvocacia | null;
 }): string[] {
   if (opcoes.pecaInaugural) return [];
   const n = String(opcoes.numeroProcesso ?? "").trim();
@@ -352,14 +382,35 @@ export function linhasEpigrafePeca(opcoes: {
     opcoes.especie,
     opcoes.fatos
   );
-  const ativo = nomesAutoresCurto(opcoes.autores);
-  const passivo = nomesReusCurto(opcoes.reus);
+  const nomeAutores = nomesAutoresCurto(opcoes.autores);
+  const nomeReus = nomesReusCurto(opcoes.reus);
+  let nomeLinhaAtivo = nomeAutores;
+  let nomeLinhaPassivo = nomeReus;
+
+  // Apelante/Recorrente/… = quem protocola; se o polo for passivo, inverte nomes.
+  if (
+    rotuloEpigrafeERecursal(rotulos.ativo) &&
+    !String(opcoes.especie ?? "")
+      .toLowerCase()
+      .includes("contrarrazoes")
+  ) {
+    const polo = resolverPoloClienteQualificacao(
+      opcoes.areaId,
+      opcoes.especie,
+      opcoes.poloAdvocacia
+    );
+    if (polo === "passivo") {
+      nomeLinhaAtivo = nomeReus;
+      nomeLinhaPassivo = nomeAutores;
+    }
+  }
+
   const linhas: string[] = [];
   if (n) {
     linhas.push(/^processo/i.test(n) ? n : `Processo nº: ${n}`);
   }
-  if (ativo) linhas.push(`${rotulos.ativo}: ${ativo}`);
-  if (passivo) linhas.push(`${rotulos.passivo}: ${passivo}`);
+  if (nomeLinhaAtivo) linhas.push(`${rotulos.ativo}: ${nomeLinhaAtivo}`);
+  if (nomeLinhaPassivo) linhas.push(`${rotulos.passivo}: ${nomeLinhaPassivo}`);
   return linhas;
 }
 

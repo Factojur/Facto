@@ -55,6 +55,26 @@ const LINKS_DESENVOLVIMENTO = [
     href: "https://www.mercadopago.com.br/developers/panel",
     icon: "card" as const,
   },
+  {
+    label: "Asaas",
+    href: "https://www.asaas.com/",
+    icon: "card" as const,
+  },
+  {
+    label: "Claude",
+    href: "https://console.anthropic.com/",
+    icon: "flask" as const,
+  },
+  {
+    label: "Gemini",
+    href: "https://aistudio.google.com/",
+    icon: "spark" as const,
+  },
+  {
+    label: "Google Cloud",
+    href: "https://console.cloud.google.com/",
+    icon: "cloud" as const,
+  },
 ] as const;
 
 function iniciais(nome: string): string {

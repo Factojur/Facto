@@ -28,9 +28,17 @@ type JsPdfDoc = {
     opts?: { align?: string }
   ) => void;
   addPage: () => void;
-  output: (type: "blob") => Blob;
+  output: (type: "blob" | "arraybuffer") => Blob | ArrayBuffer;
   save: (filename: string) => void;
   internal: { pageSize: { getWidth: () => number; getHeight: () => number } };
+};
+
+type TokenPdf = {
+  text: string;
+  bold: boolean;
+  italic: boolean;
+  width: number;
+  espaco: boolean;
 };
 
 function estiloFonte(run: RunMarkdown): string {
@@ -40,9 +48,40 @@ function estiloFonte(run: RunMarkdown): string {
   return "normal";
 }
 
+function tokensDeRuns(
+  doc: JsPdfDoc,
+  texto: string,
+  forceBold?: boolean,
+  forceItalic?: boolean
+): TokenPdf[] {
+  const runs = parseMarkdownRuns(texto).map((r) => ({
+    ...r,
+    bold: Boolean(forceBold || r.bold),
+    italic: Boolean(forceItalic || r.italic),
+  }));
+  const tokens: TokenPdf[] = [];
+  for (const run of runs) {
+    doc.setFont("times", estiloFonte(run));
+    const partes = run.text.split(/(\s+)/);
+    for (const parte of partes) {
+      if (!parte) continue;
+      const espaco = /^\s+$/.test(parte);
+      tokens.push({
+        text: parte,
+        bold: run.bold,
+        italic: run.italic,
+        width: doc.getTextWidth(parte),
+        espaco,
+      });
+    }
+  }
+  return tokens;
+}
+
 /**
- * Desenha parágrafo com runs Markdown, com recuo só na 1ª linha.
- * Retorna o novo Y (abaixo da última linha).
+ * Desenha parágrafo com runs Markdown, recuo só na 1ª linha.
+ * Com `justify`, distribui espaço entre palavras nas linhas cheias
+ * (última linha fica à esquerda — padrão tipográfico).
  */
 function desenharParagrafoRuns(
   doc: JsPdfDoc,
@@ -56,41 +95,128 @@ function desenharParagrafoRuns(
     firstLineIndentMm: number;
     forceBold?: boolean;
     forceItalic?: boolean;
+    justify?: boolean;
   }
 ): number {
-  const runs = parseMarkdownRuns(texto).map((r) => ({
-    ...r,
-    bold: opts.forceBold || r.bold,
-    italic: opts.forceItalic || r.italic,
-  }));
+  doc.setFontSize(opts.fontSize);
+  const tokens = tokensDeRuns(doc, texto, opts.forceBold, opts.forceItalic);
+  if (tokens.length === 0) return opts.y + opts.lineH;
+
+  type Linha = { tokens: TokenPdf[]; indent: number };
+  const linhas: Linha[] = [];
+  let linhaAtual: TokenPdf[] = [];
+  let larguraAtual = 0;
+  let naPrimeira = true;
+  let indentAtual = opts.firstLineIndentMm;
+
+  const larguraUtil = () => opts.maxWidth - indentAtual;
+
+  const flush = () => {
+    while (linhaAtual.length > 0 && linhaAtual[0]!.espaco) {
+      linhaAtual.shift();
+    }
+    while (
+      linhaAtual.length > 0 &&
+      linhaAtual[linhaAtual.length - 1]!.espaco
+    ) {
+      linhaAtual.pop();
+    }
+    if (linhaAtual.length > 0) {
+      linhas.push({ tokens: linhaAtual, indent: indentAtual });
+    }
+    linhaAtual = [];
+    larguraAtual = 0;
+    naPrimeira = false;
+    indentAtual = 0;
+  };
+
+  for (const token of tokens) {
+    if (
+      !token.espaco &&
+      linhaAtual.length > 0 &&
+      larguraAtual + token.width > larguraUtil() + 0.01
+    ) {
+      flush();
+    }
+    if (token.espaco && linhaAtual.length === 0) continue;
+    linhaAtual.push(token);
+    larguraAtual += token.width;
+  }
+  flush();
 
   let y = opts.y;
-  let x = opts.x + opts.firstLineIndentMm;
-  let naPrimeiraLinha = true;
-  const limite = opts.x + opts.maxWidth;
+  for (let i = 0; i < linhas.length; i++) {
+    const linha = linhas[i]!;
+    const ultima = i === linhas.length - 1;
+    const xBase = opts.x + linha.indent;
+    const palavras = linha.tokens.filter((t) => !t.espaco);
+    const gaps = linha.tokens.filter((t) => t.espaco);
+    const larguraPalavras = palavras.reduce((s, t) => s + t.width, 0);
+    const util = opts.maxWidth - linha.indent;
+    const justificar =
+      Boolean(opts.justify) &&
+      !ultima &&
+      palavras.length > 1 &&
+      gaps.length > 0;
 
-  doc.setFontSize(opts.fontSize);
-
-  for (const run of runs) {
-    doc.setFont("times", estiloFonte(run));
-    const palavras = run.text.split(/(\s+)/);
-    for (const palavra of palavras) {
-      if (!palavra) continue;
-      const w = doc.getTextWidth(palavra);
-      if (x + w > limite + 0.01 && !/^\s+$/.test(palavra)) {
-        y += opts.lineH;
-        x = opts.x;
-        naPrimeiraLinha = false;
+    if (justificar) {
+      const sobra = Math.max(0, util - larguraPalavras);
+      const extraPorGap = sobra / gaps.length;
+      let x = xBase;
+      for (const token of linha.tokens) {
+        doc.setFont("times", estiloFonte(token));
+        if (token.espaco) {
+          x += token.width + extraPorGap;
+          continue;
+        }
+        doc.text(token.text, x, y);
+        x += token.width;
       }
-      if (/^\s+$/.test(palavra) && x === opts.x && !naPrimeiraLinha) {
-        continue; // não inicia linha com espaço
+    } else {
+      let x = xBase;
+      for (const token of linha.tokens) {
+        doc.setFont("times", estiloFonte(token));
+        doc.text(token.text, x, y);
+        x += token.width;
       }
-      doc.text(palavra, x, y);
-      x += w;
     }
+    y += opts.lineH;
   }
 
-  return y + opts.lineH;
+  return y;
+}
+
+/** Mesma lógica do DOCX: epígrafe começa na linha 2 (3+ itens) ou 4 (só processo). */
+function desenharBlocoEpigrafe6(
+  doc: JsPdfDoc,
+  opts: {
+    epigrafe?: string[];
+    processo?: string;
+    marginLeft: number;
+    y: number;
+    novaPaginaSePreciso: (h: number) => void;
+  }
+): number {
+  const hLinha = alturaLinhasMm(1);
+  const extra =
+    opts.epigrafe && opts.epigrafe.length > 0
+      ? opts.epigrafe
+      : opts.processo
+        ? [opts.processo]
+        : [];
+  const inicio = extra.length >= 3 ? 2 : 4;
+  let y = opts.y;
+  for (let i = 1; i <= 6; i++) {
+    opts.novaPaginaSePreciso(hLinha);
+    const idx = i - inicio;
+    if (idx >= 0 && idx < extra.length) {
+      doc.setFont("times", "normal");
+      doc.setFontSize(FORMATACAO_FORENSE.tamanhoPt);
+      doc.text(extra[idx]!, opts.marginLeft, y);
+    }
+    y += hLinha;
+  }
+  return y;
 }
 
 async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
@@ -132,17 +258,14 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
   for (const b of blocos) {
     if (b.tipo === "marcador" && b.marcador) {
       const m = b.marcador;
-      if (m.linhas === 6 && m.processo) {
-        const hLinha = alturaLinhasMm(1);
-        for (let i = 1; i <= 6; i++) {
-          novaPaginaSePreciso(hLinha);
-          if (i === 4) {
-            doc.setFont("times", "normal");
-            doc.setFontSize(FORMATACAO_FORENSE.tamanhoPt);
-            doc.text(m.processo, marginLeft, y);
-          }
-          y += hLinha;
-        }
+      if (m.linhas === 6) {
+        y = desenharBlocoEpigrafe6(doc, {
+          epigrafe: m.epigrafe,
+          processo: m.processo,
+          marginLeft,
+          y,
+          novaPaginaSePreciso,
+        });
       } else {
         const h = alturaLinhasMm(m.linhas);
         novaPaginaSePreciso(h);
@@ -188,6 +311,7 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
         fontSize: FORMATACAO_FORENSE.tamanhoPt,
         firstLineIndentMm: 0,
         forceBold: true,
+        justify: false,
       });
       continue;
     }
@@ -202,6 +326,7 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
         fontSize: FORMATACAO_FORENSE.tamanhoPt,
         firstLineIndentMm: indent,
         forceBold: true,
+        justify: false,
       });
       continue;
     }
@@ -216,6 +341,7 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
         fontSize: FORMATACAO_FORENSE.tamanhoPt,
         firstLineIndentMm: indent,
         forceBold: false,
+        justify: true,
       });
       continue;
     }
@@ -230,6 +356,7 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
         lineH: lineHCitacao,
         fontSize: FORMATACAO_FORENSE.tamanhoCitacaoPt,
         firstLineIndentMm: 0,
+        justify: true,
       });
       continue;
     }
@@ -243,11 +370,12 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
         lineH,
         fontSize: FORMATACAO_FORENSE.tamanhoPt,
         firstLineIndentMm: 0,
+        justify: true,
       });
       continue;
     }
 
-    // Corpo justificado (aprox. via wrap) + recuo 1ª linha 2 cm
+    // Corpo + abertura (já qualificado): justificado + recuo 1ª linha 2 cm
     novaPaginaSePreciso(lineH);
     y = desenharParagrafoRuns(doc, b.texto, {
       x: marginLeft,
@@ -256,6 +384,7 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
       lineH,
       fontSize: FORMATACAO_FORENSE.tamanhoPt,
       firstLineIndentMm: indent,
+      justify: true,
     });
   }
 
@@ -264,7 +393,14 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
 
 export async function gerarPecaPdfBlob(pecaTexto: string): Promise<Blob> {
   const doc = await criarDoc(pecaTexto);
-  return doc.output("blob");
+  return doc.output("blob") as Blob;
+}
+
+/** Buffer para scripts Node (testes diários / export em disco). */
+export async function gerarPecaPdfBuffer(pecaTexto: string): Promise<Buffer> {
+  const doc = await criarDoc(pecaTexto);
+  const ab = doc.output("arraybuffer") as ArrayBuffer;
+  return Buffer.from(ab);
 }
 
 export async function baixarPecaPdf(

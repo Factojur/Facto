@@ -45,3 +45,8 @@ scripts/_audit-*
 scripts/_limpar-*
 scripts/_w_*
 scripts/seed-juris-diario.log
+scripts/testes-pecas-diario.log
+
+# saídas locais de teste de peça (não commit)
+/tmp/
+

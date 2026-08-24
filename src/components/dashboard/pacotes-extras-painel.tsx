@@ -110,7 +110,7 @@ function CardPacote({
       className={`relative flex flex-col overflow-hidden rounded-2xl border p-5 transition ${
         escuro
           ? destaque
-            ? "border-facto-gold/55 bg-gradient-to-br from-facto-gold/[0.2] via-[#2a261c]/85 to-transparent shadow-[0_0_36px_-8px_rgba(196,191,154,0.5)] ring-1 ring-facto-gold/30"
+            ? "border-facto-gold/55 bg-gradient-to-br from-facto-gold/[0.22] via-[#2a261c]/90 to-[#16140f] shadow-[0_0_40px_-8px_rgba(196,191,154,0.55),0_0_80px_-20px_rgba(144,139,106,0.4)] ring-1 ring-facto-gold/35"
             : "border-white/10 bg-white/[0.03]"
           : destaque
             ? "border-amber-400/60 bg-gradient-to-br from-amber-50 via-white to-stone-50 shadow-lg shadow-amber-900/5 ring-1 ring-amber-300/40"
@@ -130,7 +130,7 @@ function CardPacote({
       )}
       {escuro && destaque && (
         <span
-          className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-facto-gold/20 blur-3xl"
+          className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-facto-gold/25 blur-3xl"
           aria-hidden
         />
       )}

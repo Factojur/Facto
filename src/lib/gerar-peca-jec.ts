@@ -789,6 +789,7 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     reus: input.reus ?? [],
     fatos: input.fatos,
     pecaInaugural: ehInicial,
+    poloAdvocacia: input.poloAdvocacia,
   });
 
   const pecaBruta = [

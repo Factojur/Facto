@@ -1,0 +1,29 @@
+/**
+ * TST — Lote 44: Súmulas 459 a 463.
+ * Fonte: Livro de Súmulas/OJs/PNs do TST (Res. 225/2025 — portal TST)
+ */
+
+import { sumulaTst, type SumulaLoteItem } from "@/lib/sumulas/types";
+
+export const SUMULAS_TST_LOTE_44: SumulaLoteItem[] = [
+  sumulaTst(
+    459,
+    "06.2017 – republicada - DEJT divulgado em 12, 13 e 14.07.2017 O conhecimento do recurso de revista, quanto à preliminar de nulida de, por negativa de prestação jurisdicional, supõe indicação de viola ção do art. 832 da CLT, do art. 489 do CPC de 2015 (art. 458 do CPC de 1973) ou do art. 93, IX, da CF/1988."
+  ),
+  sumulaTst(
+    460,
+    "06.2016 É do empregador o ônus de comprovar que o empregado não satisfaz os requisitos indispensáveis para a concessão do vale-transporte ou não pretenda fazer uso do benefício."
+  ),
+  sumulaTst(
+    461,
+    "06.2016 É do empregador o ônus da prova em relação à regularidade dos de pósitos do FGTS, pois o pagamento é fato extintivo do direito do au tor (art. 373, II, do CPC de 2015)."
+  ),
+  sumulaTst(
+    462,
+    "06.2016 - Repu blicada em razão de erro material, DEJT divulgado em 30.06.2016; entendimento reafirmado no IRR nº 168 (RR-134176.2023.5.12.0008, Tribunal Pleno, publicado em 03.07.2025, rel. Min. Aloysio Silva Corrêa da Veiga). A circunstância de a relação de emprego ter sido reconhecida apenas em juízo não tem o condão de afastar a incidência da multa prevista no art. 477, §8º, da CLT. A referida multa não será devida apenas quando, comprovadamente, o empregado der causa à mora no paga mento das verbas rescisórias."
+  ),
+  sumulaTst(
+    463,
+    "06.2017 – republicada - DEJT di vulgado em 12, 13 e 14.07.2017 I – A partir de 26.06.2017, para a concessão da assistência judiciária gratuita à pessoa natural, basta a declaração de hipossuficiência eco nômica firmada pela parte ou por seu advogado, desde que munido de procuração com poderes específicos para esse fim (art. 105 do CPC de 2015); II – No caso de pessoa jurídica, não basta a mera declaração: é neces sária a demonstração cabal de impossibilidade de a parte arcar com as despesas do processo. ## Orientação Jurisprudencial do Tribunal Superior do Trabalho Tribunal Pleno/Órgão Especial B-1 T R IA L OJ-TP/OE-1 PRECATÓRIO. CRÉDITO TRABALHISTA. PE QUENO VALOR. EMENDA CONSTITUCIONAL Nº 37/2002 (DJ 09.12.2003) Há dispensa da expedição de precatório, na forma do art. 100, § 3º, da CF/1988, quando a execução contra a Fazenda Pública não exce der os valores definidos, provisoriamente, pela Emenda Constitucio nal nº 37/2002, como obrigações de pequeno valor, inexistindo ilega lidade, sob esse prisma, na determinação de seqüestro da quantia de vida pelo ente público. OJ-TP/OE-2 PRECATÓRIO. REVISÃO DE CÁLCULOS. LIMI TES DA COMPETÊNCIA DO PRESIDENTE DO TRT (DJ 09.12.2003) O pedido de revisão dos cálculos, em fase de precatório, previsto no art. 1º-E da Lei nº 9.494/97, apenas poderá ser acolhido desde que: a) o requerente aponte e especifique claramente quais são as incorre ções existentes nos cálculos, discriminando o montante que seria correto, pois do contrário a incorreção torna-se abstrata; b) o defeito nos cálculos esteja ligado à incorreção material ou à utilização de critério em descompasso com a lei ou com o título executivo judici al; e c) o critério legal aplicável ao débito não tenha sido objeto de debate nem na fase de conhecimento, nem na fase de execução. OJ-TP/OE-3 PRECATÓRIO. SEQÜESTRO. EMENDA CONSTI TUCIONAL Nº 30/2000. PRETERIÇÃO. ADIN 1662-8. ART. 100, § 2º, DA CF/1988 (DJ 09.12.2003) O seqüestro de verbas públicas para satisfação de precatórios traba lhistas só é admitido na hipótese de preterição do direito de prece dência do credor, a ela não se equiparando as situações de não inclu são da despesa no orçamento ou de não-pagamento do precatório até o final do exercício, quando incluído no orçamento. OJ-TP/OE-4 MANDADO DE SEGURANÇA. DECISÃO DE TRT. INCOMPETÊNCIA ORIGINÁRIA DO TRIBUNAL SUPERI OR DO TRABALHO (DJ 17.03.2004) Ao Tribunal Superior do Trabalho não compete apreciar, originaria mente, mandado de segurança impetrado em face de decisão de TRT. OJ-TP/OE-5 RECURSO ORDINÁRIO. CABIMENTO (conversão da Orientação Jurisprudencial nº 70 da SBDI-I) - Res. 129/2005, DJ 20, 22 e 25.04.2005 B-2 T R IA L Não cabe recurso ordinário contra decisão em agravo regimental in terposto em reclamação correcional ou em pedido de providência. (ex-OJ nº 70 – inserida em 13.09.1994) OJ-TP/OE-6 PRECATÓRIO. EXECUÇÃO. LIMITAÇÃO DA CONDENAÇÃO IMPOSTA PELO TÍTULO JUDICIAL EXE QÜENDO À DATA DO ADVENTO DA LEI Nº 8.112, de 11.12.1990 (DJ 25.04.2007) Em sede de precatório, não configura ofensa à coisa julgada a limita ção dos efeitos pecuniários da sentença condenatória ao período an terior ao advento da Lei nº 8.112, de 11.12.1990, em que o exeqüen te submetia-se à legislação trabalhista, salvo disposição expressa em contrário na decisão exeqüenda. OJ-TP/OE-7 JUROS DE MORA. CONDENAÇÃO DA FAZENDA PÚBLICA. (nova redação) – Res. 175/2011, DEJT divulgado em 27, 30 e 31.05.2011 I - Nas condenações impostas à Fazenda Pública, incidem juros de mora segundo os seguintes critérios: a) 1% (um por cento) ao mês, até agosto de 2001, nos termos do § 1º do art. 39 da Lei n.º 8.177, de 1.03.1991; b) 0,5% (meio por cento) ao mês, de setembro de 2001 a junho de 2009, conforme determina o art. 1º - F da Lei nº 9.494, de 10.09.1997, introduzido pela Medida Provisória nº 2.180-35, de 24.08.2001; II – A partir de 30 de junho de 2009, atualizam-se os débitos traba lhistas da Fazenda Pública, mediante a incidência dos índices oficiais de remuneração básica e juros aplicados à caderneta de poupança, por força do art. 5º da Lei n.º 11.960, de 29.06.2009. III - A adequação do montante da condenação deve observar essa li mitação legal, ainda que em sede de precatório."
+  ),
+];

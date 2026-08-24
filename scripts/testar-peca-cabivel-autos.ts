@@ -97,6 +97,27 @@ function main() {
     "reconvenção Reconvinte/Reconvindo"
   );
 
+  const apel = rotulosEpigrafePeca("civil", "apelacao");
+  assert(
+    apel.ativo === "Apelante" && apel.passivo === "Apelado",
+    "apelação Apelante/Apelado"
+  );
+  const recInom = rotulosEpigrafePeca("jec", "recurso-inominado");
+  assert(
+    recInom.ativo === "Recorrente" && recInom.passivo === "Recorrido",
+    "recurso inominado Recorrente/Recorrido"
+  );
+  const agr = rotulosEpigrafePeca("civil", "agravo-instrumento");
+  assert(
+    agr.ativo === "Agravante" && agr.passivo === "Agravado",
+    "agravo Agravante/Agravado"
+  );
+  const ed = rotulosEpigrafePeca("civil", "embargos-declaracao");
+  assert(
+    ed.ativo === "Embargante" && ed.passivo === "Embargado",
+    "ED Embargante/Embargado"
+  );
+
   const autores = [autorVazio({ nomeCompleto: "JEFFERSON DA SILVA RIBEIRO" })];
   const reus = [
     reuVazio({
@@ -115,6 +136,25 @@ function main() {
   assert(epi.some((l) => /Processo nº:/.test(l)), "epígrafe tem Processo nº");
   assert(epi.some((l) => /Exequente:/.test(l)), "epígrafe tem Exequente");
   assert(epi.some((l) => /Executado:/.test(l)), "epígrafe tem Executado");
+
+  const epiApelPassivo = linhasEpigrafePeca({
+    areaId: "civil",
+    especie: "apelacao",
+    numeroProcesso: "1000000-00.2024.8.26.0100",
+    autores,
+    reus,
+    poloAdvocacia: "passivo",
+  });
+  assert(
+    epiApelPassivo.some((l) =>
+      /Apelante: FACULDADES METROPOLITANAS/.test(l)
+    ),
+    "apelação polo passivo: Apelante = réu"
+  );
+  assert(
+    epiApelPassivo.some((l) => /Apelado: JEFFERSON/.test(l)),
+    "apelação polo passivo: Apelado = autor"
+  );
 
   const marcador = montarMarcadorEspaco6(null, epi);
   const parseado = parseMarcadorEspaco(marcador);
