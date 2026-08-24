@@ -63,9 +63,9 @@ export function ProvasDoFatoSection({
         Provas do fato
       </h2>
       <p className="mb-4 text-sm leading-relaxed text-slate-500">
-        PDFs, Word e imagens (prints) são lidos pelo FACTO — com OCR leve quando
-        necessário — para fundamentar fatos e direito. O conteúdo entra na
-        redação; o protocolo e o link de nuvem ficam a seu cargo.
+        PDFs, Word e imagens (prints) são lidos pelo FACTO para fundamentar
+        fatos e direito. O conteúdo entra na redação; o protocolo e o link de
+        nuvem ficam a seu cargo.
       </p>
 
       <div className="space-y-5">

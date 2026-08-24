@@ -31,13 +31,13 @@ export function EstiloRedacaoDestaque() {
               Diferencial FACTO
             </p>
             <h2 className="mt-2 text-xl font-bold text-white md:text-2xl">
-              Minutas no seu estilo de redação{" "}
+              Peças no tom do seu escritório{" "}
               <span className="font-normal text-stone-400">(opcional)</span>
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-stone-400">
-              Envie até três peças de referência do escritório. A IA interpreta
-              tom, extensão e forma dos pedidos — sem copiar fatos — e aplica na
-              geração de novas minutas.
+              Envie até três peças de referência. O FACTO interpreta tom,
+              extensão e forma dos pedidos — sem copiar fatos — e aplica nas
+              próximas gerações, com o rito forense intacto.
             </p>
           </div>
           <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">

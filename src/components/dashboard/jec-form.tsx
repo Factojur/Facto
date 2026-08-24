@@ -73,7 +73,6 @@ import {
   reuOkParaChecklist,
   reusAPartirDosNomes,
   resolverPoloClienteQualificacao,
-  textoAjudaQualificacaoPeca,
 } from "@/lib/partes-ja-qualificadas";
 import type { FaseCasoJec } from "@/lib/jec-caso-types";
 import { metaFase } from "@/lib/jec-caso-types";
@@ -1112,15 +1111,6 @@ export function JecForm({
   ]);
 
   const jaQualificadas = pecaUsaPartesJaQualificadas(especieEfetiva, idsInicial);
-  const ajudaQualificacao = textoAjudaQualificacaoPeca(
-    areaId,
-    especieEfetiva,
-    comPoloAdvocacia
-      ? poloAdvocacia
-      : resolverPoloClienteQualificacao(areaId, especiePeca, null),
-    moduloUi.rotuloPoloAtivo,
-    moduloUi.rotuloPoloPassivo
-  );
   const checklistItens = montarChecklistJec({
     tipoSelecionado: tipoAcaoDefinido || (assistentePendente ? ASSISTENTE_FACTO : ""),
     fatos,
@@ -1851,10 +1841,6 @@ export function JecForm({
           <p className="mt-1 text-sm text-slate-500">
             {moduloUi.copyCabecalho}
           </p>
-          <p className="mt-2 text-sm text-slate-600">
-            Pode começar pela entrada do caso (preenche as abas). O formulário
-            é conferência — Gerar fica só em Pedidos.
-          </p>
           {cota?.trackingAtivo && cota.usoLabel && !cota.esgotada && (
             <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
               <span
@@ -2005,9 +1991,8 @@ export function JecForm({
             Peça e nome da ação
           </h2>
           <p className="mb-4 text-sm text-slate-500">
-            Escolha o tipo de peça (petição inicial, recurso, embargos etc.) e
-            como obter o nome da ação: pelos fatos, pelos autos em PDF ou
-            digitando você mesmo.
+            Escolha o tipo de peça que vai protocolar. O nome da ação o
+            Assistente sugere pelos fatos — ou você digita o título.
           </p>
 
           <div className="space-y-4 sm:max-w-2xl">
@@ -2344,13 +2329,6 @@ export function JecForm({
 
         <ComarcaSection areaId={areaId} value={comarca} onChange={setComarca} />
 
-        {ajudaQualificacao ? (
-          <p className="rounded-lg border border-sky-100 bg-sky-50/90 px-4 py-3 text-xs leading-relaxed text-sky-950">
-            <span className="font-semibold">Qualificação das partes: </span>
-            {ajudaQualificacao}
-          </p>
-        ) : null}
-
         <AutorSection
           value={autores}
           onChange={setAutores}
@@ -2405,7 +2383,7 @@ export function JecForm({
               htmlFor="fatos"
               className="mb-1.5 block text-sm font-medium text-slate-700"
             >
-              Descrição dos fatos
+              Descrição dos fatos ou complemento da Entrada do caso
             </label>
             <textarea
               id="fatos"
@@ -2539,9 +2517,8 @@ export function JecForm({
               Fundamentos do caso
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              São anexos diferentes: a jurisprudência deste caso pode ser citada
-              na peça; a lei municipal só fundamenta este município e não vira
-              lastro geral do FACTO.
+              Opcional: julgado deste caso e, se couber, norma municipal — cada
+              um no seu campo.
             </p>
           </div>
 
@@ -2550,9 +2527,7 @@ export function JecForm({
               Lei municipal (opcional)
             </h3>
             <p className="mb-4 text-sm text-slate-500">
-              Norma deste município (posturas, ISS, código de obras, etc.). Serve
-              para o sistema entender o fundamento deste caso — não é súmula nem
-              acórdão, e não entra na base geral do FACTO.
+              Norma deste município (posturas, ISS, código de obras…).
             </p>
             <label className="flex items-start gap-2 text-sm text-slate-700">
               <input
@@ -2690,10 +2665,9 @@ export function JecForm({
             Pedidos na peça
           </h2>
           <p className="mb-4 text-xs leading-relaxed text-slate-500">
-            Marque só o que deve constar no texto. Documentos de
-            hipossuficiência
-            {areaMostraMle(areaId) ? " e do MLE" : ""} você junta no protocolo,
-            não aqui.
+            Marque só o que deve constar no texto. Não se esqueça de juntar
+            o(s) documento(s) que assinalar aqui nos anexos antes de
+            protocolar.
           </p>
           <div className="space-y-3">
             <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-sm text-slate-700">

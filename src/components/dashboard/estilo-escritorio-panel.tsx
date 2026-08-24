@@ -77,7 +77,7 @@ export function EstiloEscritorioPanel() {
       setAtualizadoEm(data.atualizadoEm ?? null);
       setArquivos([]);
       setMsg(
-        "Perfil de estilo salvo. Nas próximas minutas, o FACTO ajusta tom e redação — o rito continua fixo."
+        "Perfil de estilo salvo. Nas próximas peças, o FACTO ajusta tom e redação — o rito continua fixo."
       );
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro ao processar amostras.");
@@ -117,7 +117,7 @@ export function EstiloEscritorioPanel() {
       className="scroll-mt-24 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
     >
       <h2 className="text-lg font-semibold text-slate-800">
-        Meu estilo de redação (opcional)
+        Tom do escritório (opcional)
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-slate-600">
         Envie até 3 peças que você já protocolou. O FACTO extrai{" "}

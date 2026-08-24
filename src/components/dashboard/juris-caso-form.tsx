@@ -281,9 +281,7 @@ export function JurisCasoSection({
         Jurisprudência e súmulas do caso (opcional)
       </h2>
       <p className="mb-4 text-sm text-slate-500">
-        Cole ou anexe acórdãos e súmulas deste caso. Entram na fundamentação
-        desta peça (citação) e seguem para conferência do FACTO se ainda não
-        estiverem no acervo.
+        Cole ou anexe acórdãos e súmulas que queira citar nesta peça.
       </p>
 
       <label className="flex items-start gap-2 text-sm text-slate-700">

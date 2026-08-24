@@ -314,7 +314,7 @@ export function DashboardHome({
                 <div>
                   <h2 className="text-lg font-semibold text-white">Áreas de atuação</h2>
                   <p className="mt-1 text-sm text-stone-500">
-                    Escolha o grupo do seu caso — cada módulo mantém o rito correto.
+                    Escolha o grupo do seu caso — cada módulo mantém o rito próprio.
                   </p>
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

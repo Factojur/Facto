@@ -504,23 +504,3 @@ export function foroLegadoDaArea(
       return n ? `${n}ª Vara Cível de ${local}` : `Vara Cível de ${local}`;
   }
 }
-
-/** Competência territorial do TJSP — só juízo estadual paulista. */
-export function areaMostraLinkTjsp(areaId: string): boolean {
-  return [
-    "jec",
-    "civil",
-    "consumidor",
-    "familia",
-    "imobiliario",
-    "jecr",
-    "criminal",
-    "constitucional",
-    "empresarial",
-    "medico",
-    "digital",
-    "ambiental",
-    "agrario",
-    "propriedade-intelectual",
-  ].includes(areaId);
-}

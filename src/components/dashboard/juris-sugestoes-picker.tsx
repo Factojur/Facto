@@ -245,9 +245,9 @@ export function JurisSugestoesPicker({
           Buscar no acervo FACTO
         </button>
         <p className="text-xs leading-relaxed text-slate-500">
-          Julgados curados e verificados — sem consulta ao vivo nos tribunais.
-          Casos semelhantes aos fatos, favoráveis ao seu polo. Se faltar lastro,
-          anexe a ementa abaixo; entra na fila de verificação do FACTO.
+          Julgados curados e verificados. Casos semelhantes aos fatos,
+          favoráveis ao seu polo. Fique à vontade para anexar abaixo a
+          jurisprudência de sua preferência para o caso.
         </p>
       </div>
 

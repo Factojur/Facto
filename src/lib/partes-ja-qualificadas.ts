@@ -355,30 +355,6 @@ export function formatarBlocoPartesJaQualificadas(opcoes: {
   );
 }
 
-/** Texto curto para o formulário (ajuda ao advogado). */
-export function textoAjudaQualificacaoPeca(
-  areaId: string,
-  especie: string,
-  polo: PoloAdvocacia,
-  rotuloAtivo: string,
-  rotuloPassivo: string
-): string | null {
-  const idsInicial = moduloDaArea(areaId).idsPeticaoInicial;
-  if (pecaUsaPartesJaQualificadas(especie, idsInicial)) {
-    const lado = polo === "ativo" ? rotuloAtivo : rotuloPassivo;
-    const outro = polo === "ativo" ? rotuloPassivo : rotuloAtivo;
-    const e = String(especie).toLowerCase();
-    if (ehEspecieRecursalOuContrarrazoes(e)) {
-      return `Nesta peça use apenas o nome do ${lado} (já qualificado nos autos). Não repita CPF, endereço nem qualificação completa. O recorrente/recorrido é quem você representa (${lado}).`;
-    }
-    if (polo === "passivo" && ehRespostaProcessual(e)) {
-      return `A abertura começa pelo ${lado} (seu cliente), citando o ${outro} como já qualificado nos autos. Não inverta a ordem nem qualifique de novo com CPF/endereço.`;
-    }
-    return `Partes já nos autos: só nomes. O parágrafo introdutório abre pelo ${lado} que você representa e menciona o ${outro} como já qualificado.`;
-  }
-  return `Qualificação completa do ${rotuloAtivo}; depois do nome da ação, linha "em face de" com qualificação completa do ${rotuloPassivo}. Não use "já qualificado nos autos" na petição inicial.`;
-}
-
 /** Regras para o prompt do Redator (system/user). */
 export function blocoInstrucoesQualificacaoPrompt(opcoes: {
   areaId: string;
