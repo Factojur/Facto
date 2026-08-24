@@ -1,4 +1,4 @@
-function IconeIA({ className }: { className?: string }) {
+function IconeChipProcessador({ className }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -7,19 +7,53 @@ function IconeIA({ className }: { className?: string }) {
       aria-hidden
       className={className}
     >
-      <path
-        d="M12 3.5l1.15 3.55H17l-2.9 2.1 1.1 3.55L12 10.7 8.8 12.7l1.1-3.55L7 7.05h3.85L12 3.5z"
-        fill="currentColor"
+      {/* Corpo do chip */}
+      <rect
+        x="7"
+        y="7"
+        width="10"
+        height="10"
+        rx="1.2"
+        stroke="currentColor"
+        strokeWidth="1.5"
       />
-      <path
-        d="M18.5 14.5l.55 1.7H21l-1.4 1 .55 1.7-1.4-1-1.4 1 .55-1.7-1.4-1h1.95l.55-1.7z"
+      {/* Die interno */}
+      <rect
+        x="9.5"
+        y="9.5"
+        width="5"
+        height="5"
+        rx="0.6"
         fill="currentColor"
-        opacity="0.75"
+        opacity="0.85"
       />
+      {/* Pinos — top */}
       <path
-        d="M5.2 15.2l.4 1.2H7l-1 0.75.4 1.2-1-.75-1 .75.4-1.2-1-.75h1.4l.4-1.2z"
-        fill="currentColor"
-        opacity="0.55"
+        d="M10 7V4.5M14 7V4.5"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      {/* Pinos — bottom */}
+      <path
+        d="M10 17v2.5M14 17v2.5"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      {/* Pinos — left */}
+      <path
+        d="M7 10H4.5M7 14H4.5"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      {/* Pinos — right */}
+      <path
+        d="M17 10h2.5M17 14h2.5"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
       />
     </svg>
   );
@@ -27,6 +61,7 @@ function IconeIA({ className }: { className?: string }) {
 
 /** Chip compacto no hero da home — presença de IA sem faixa larga. */
 export function AssistenteFactoDestaque({ leigo = false }: { leigo?: boolean }) {
+  void leigo;
   return (
     <div
       className="group relative inline-flex max-w-full items-center gap-2.5 rounded-full border border-facto-gold/40 bg-gradient-to-r from-facto-gold/[0.16] via-white/[0.05] to-facto-gold/[0.1] px-3.5 py-2 shadow-[0_0_28px_-10px_rgba(144,139,106,0.55)] backdrop-blur-sm"
@@ -39,7 +74,7 @@ export function AssistenteFactoDestaque({ leigo = false }: { leigo?: boolean }) 
           aria-hidden
         />
         <span className="relative flex h-8 w-8 items-center justify-center rounded-full border border-facto-gold/50 bg-[#1c1c16]/90 text-facto-gold shadow-inner shadow-facto-gold/20 transition group-hover:border-facto-gold/80">
-          <IconeIA className="h-4 w-4" />
+          <IconeChipProcessador className="h-4 w-4" />
         </span>
       </span>
 
@@ -52,9 +87,7 @@ export function AssistenteFactoDestaque({ leigo = false }: { leigo?: boolean }) 
           <span className="assistente-ia-shimmer">IA</span>
         </p>
         <p className="mt-0.5 truncate text-[11px] text-stone-500">
-          {leigo
-            ? "Orienta a minuta no JEC"
-            : "Orienta a minuta nesta área"}
+          acelera seu processo
         </p>
       </div>
     </div>

@@ -14,6 +14,25 @@ type Props = {
   previewAreas?: boolean;
 };
 
+function IconeGuia({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      className={className}
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+      <path
+        d="M12 11.2v5.3M12 8.2h.01"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export function AssistenteEscolhaArea({
   leigo = false,
   plano = null,
@@ -44,27 +63,49 @@ export function AssistenteEscolhaArea({
   if (leigo) return null;
 
   return (
-    <section className="rounded-xl border border-white/10 bg-white/[0.04] p-5">
+    <section
+      className={`rounded-lg border transition ${
+        aberto
+          ? "border-white/15 bg-white/[0.05]"
+          : "border-transparent bg-transparent hover:border-white/10 hover:bg-white/[0.03]"
+      }`}
+    >
       <button
         type="button"
         onClick={() => setAberto((v) => !v)}
-        className="flex w-full items-center justify-between gap-3 text-left"
+        aria-expanded={aberto}
+        className="flex w-full items-center gap-3 px-3 py-2.5 text-left"
       >
-        <div>
-          <h2 className="text-base font-semibold text-white">
-            Não sei qual área escolher
-          </h2>
-          <p className="mt-1 text-sm text-stone-400">
-            Responda em duas perguntas — o FACTO sugere o módulo certo.
-          </p>
-        </div>
-        <span className="text-facto-gold" aria-hidden>
-          {aberto ? "−" : "+"}
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-stone-400">
+          <IconeGuia className="h-4 w-4" />
+        </span>
+
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-medium text-stone-200">
+            Em dúvida sobre a área?
+          </span>
+          <span className="mt-0.5 block text-xs text-stone-500">
+            Duas perguntas e o FACTO sugere o módulo.
+          </span>
+        </span>
+
+        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.04] px-2.5 py-1 text-xs font-medium text-stone-300">
+          {aberto ? "Fechar" : "Abrir guia"}
+          <svg
+            viewBox="0 0 20 20"
+            className={`h-3.5 w-3.5 text-facto-gold transition-transform ${
+              aberto ? "rotate-180" : ""
+            }`}
+            fill="currentColor"
+            aria-hidden
+          >
+            <path d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" />
+          </svg>
         </span>
       </button>
 
       {aberto ? (
-        <div className="mt-4 space-y-4 border-t border-white/10 pt-4">
+        <div className="space-y-4 border-t border-white/10 px-3 pb-3.5 pt-3">
           <div>
             <label
               htmlFor="wizard-assunto"
