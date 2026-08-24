@@ -150,24 +150,24 @@ function CardOferta({ oferta }: { oferta: Oferta }) {
     <div
       className={`flex flex-col rounded-2xl border p-5 ${
         oferta.destaque
-          ? "border-facto-gold/50 bg-gradient-to-br from-amber-50 via-white to-stone-50 shadow-md shadow-amber-900/5"
-          : "border-slate-200 bg-white shadow-sm"
+          ? "border-facto-gold/45 bg-gradient-to-br from-facto-gold/[0.14] via-white/[0.04] to-transparent shadow-lg shadow-black/30"
+          : "border-white/10 bg-white/[0.03]"
       }`}
     >
       {oferta.destaque && (
-        <span className="mb-2 inline-flex w-fit rounded-full bg-facto-gold/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-900">
+        <span className="mb-2 inline-flex w-fit rounded-full border border-facto-gold/35 bg-facto-gold/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-facto-gold">
           Recomendado
         </span>
       )}
-      <p className="text-lg font-bold text-slate-900">{oferta.nome}</p>
-      <p className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
+      <p className="text-lg font-bold text-white">{oferta.nome}</p>
+      <p className="mt-1 text-2xl font-bold tracking-tight text-white">
         {oferta.preco}
-        <span className="text-sm font-medium text-slate-500">
+        <span className="text-sm font-medium text-stone-500">
           {oferta.periodo}
         </span>
       </p>
-      <p className="mt-1 text-sm font-medium text-slate-600">{oferta.pecas}</p>
-      <ul className="mt-4 flex-1 space-y-1.5 text-sm text-slate-600">
+      <p className="mt-1 text-sm font-medium text-stone-400">{oferta.pecas}</p>
+      <ul className="mt-4 flex-1 space-y-1.5 text-sm text-stone-400">
         {oferta.beneficios.map((b) => (
           <li key={b} className="flex gap-2">
             <span className="text-facto-gold" aria-hidden>
@@ -181,7 +181,7 @@ function CardOferta({ oferta }: { oferta: Oferta }) {
         <BotaoAssinarPlano
           planoId={oferta.id}
           hrefFallback={oferta.hrefFallback}
-          variante={oferta.destaque ? "primario" : "dashboard"}
+          variante={oferta.destaque ? "primario" : "secundario"}
         >
           {oferta.id === "jec" ||
           oferta.id === "mensal" ||
@@ -229,20 +229,25 @@ export function PlanosDashboardClient({
   }, []);
 
   return (
-    <div className="space-y-10">
-      <header>
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-800/80">
+    <div className="relative space-y-10 pb-8">
+      <div
+        className="pointer-events-none absolute -left-20 -top-16 h-56 w-56 rounded-full bg-facto-gold/10 blur-3xl"
+        aria-hidden
+      />
+
+      <header className="relative">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-facto-gold">
           Assinatura FACTO
         </p>
-        <h1 className="mt-1 text-2xl font-bold text-slate-900 md:text-3xl">
+        <h1 className="mt-1 text-2xl font-bold text-white md:text-3xl">
           {bloco.titulo}
         </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-400">
           {bloco.subtitulo}
         </p>
-        <p className="mt-3 inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700">
+        <p className="mt-3 inline-flex rounded-full border border-facto-gold/30 bg-facto-gold/10 px-3 py-1 text-xs font-medium text-stone-300">
           Situação atual:{" "}
-          <span className="ml-1 font-semibold text-slate-900">
+          <span className="ml-1 font-semibold text-facto-gold">
             {plano === "trial" || !plano
               ? "Teste grátis / sem plano"
               : rotuloPlano(plano) || label}
@@ -251,19 +256,19 @@ export function PlanosDashboardClient({
       </header>
 
       {bloco.ofertas.length > 0 && (
-        <section>
+        <section className="relative">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
               Opções
             </h2>
-            <div className="inline-flex rounded-full border border-slate-200 bg-white p-0.5 text-xs font-semibold">
+            <div className="inline-flex rounded-full border border-white/12 bg-white/[0.04] p-0.5 text-xs font-semibold">
               <button
                 type="button"
                 onClick={() => setCiclo("mensal")}
                 className={`rounded-full px-3 py-1.5 transition ${
                   ciclo === "mensal"
-                    ? "bg-stone-900 text-white"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-facto-gold text-facto-dark"
+                    : "text-stone-400 hover:text-white"
                 }`}
               >
                 Mensal
@@ -273,8 +278,8 @@ export function PlanosDashboardClient({
                 onClick={() => setCiclo("anual")}
                 className={`rounded-full px-3 py-1.5 transition ${
                   ciclo === "anual"
-                    ? "bg-stone-900 text-white"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-facto-gold text-facto-dark"
+                    : "text-stone-400 hover:text-white"
                 }`}
               >
                 Anual
@@ -299,25 +304,29 @@ export function PlanosDashboardClient({
 
       {mostraExtras && (
         <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-500">
             Pacotes extras
           </h2>
-          <PacotesExtrasPainel cota={cota} variante="painel" />
+          <PacotesExtrasPainel
+            cota={cota}
+            variante="banner"
+            tema="escuro"
+          />
         </section>
       )}
 
       <section>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-500">
           Sua assinatura
         </h2>
-        <AssinaturaPainel />
+        <AssinaturaPainel tema="escuro" ocultarExtras />
       </section>
 
-      <p className="text-center text-xs text-slate-500">
+      <p className="text-center text-xs text-stone-500">
         Dúvidas?{" "}
         <Link
           href="/dashboard/suporte"
-          className="font-medium text-amber-800 underline-offset-2 hover:underline"
+          className="font-medium text-facto-gold underline-offset-2 hover:underline"
         >
           Fale com o suporte
         </Link>

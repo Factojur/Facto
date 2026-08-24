@@ -47,6 +47,19 @@ export function DashboardLayoutClient({
     );
   }
 
+  if (isPlanos) {
+    return (
+      <div className="flex min-h-screen flex-col bg-facto-dark">
+        <DashboardTopBar perfil={perfil} plano={plano} />
+        <main className="flex-1 overflow-y-auto overflow-x-clip px-4 py-8 sm:px-6 md:px-10">
+          <div className="mx-auto max-w-5xl">{children}</div>
+        </main>
+        <WhatsAppFloat />
+        <AceiteTermosModal aberto={precisaAceiteTermos} />
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <DashboardTopBar
@@ -68,11 +81,7 @@ export function DashboardLayoutClient({
           <main className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-50 p-4 sm:p-6 md:p-8">
             <div
               className={`mx-auto min-w-0 text-slate-800 ${
-                isPlanos
-                  ? "max-w-5xl"
-                  : isPerfil || isSuporte
-                    ? "max-w-3xl"
-                    : "max-w-4xl"
+                isPerfil || isSuporte ? "max-w-3xl" : "max-w-4xl"
               }`}
             >
               {children}

@@ -6,7 +6,22 @@ import type { ResumoCota } from "@/lib/cota-pecas";
 import { PacotesExtrasPainel } from "@/components/dashboard/pacotes-extras-painel";
 import { TrialEsgotadoBanner } from "@/components/dashboard/trial-esgotado-banner";
 
-function badgeClasses(status: AssinaturaResumoUI["status"]): string {
+function badgeClasses(
+  status: AssinaturaResumoUI["status"],
+  tema: "claro" | "escuro" = "claro"
+): string {
+  if (tema === "escuro") {
+    switch (status) {
+      case "ativo":
+        return "bg-emerald-500/15 text-emerald-300 ring-emerald-500/30";
+      case "cancelado":
+        return "bg-red-500/15 text-red-300 ring-red-500/30";
+      case "pausado":
+        return "bg-amber-500/15 text-amber-200 ring-amber-500/30";
+      default:
+        return "bg-white/10 text-stone-300 ring-white/15";
+    }
+  }
   switch (status) {
     case "ativo":
       return "bg-emerald-50 text-emerald-800 ring-emerald-200";
@@ -23,7 +38,14 @@ function badgeClasses(status: AssinaturaResumoUI["status"]): string {
  * Painel de gerenciamento de assinatura.
  * Carrega dados reais via GET /api/assinatura e cancela via POST /api/assinatura/cancelar.
  */
-export function AssinaturaPainel() {
+export function AssinaturaPainel({
+  tema = "claro",
+  ocultarExtras = false,
+}: {
+  tema?: "claro" | "escuro";
+  ocultarExtras?: boolean;
+} = {}) {
+  const escuro = tema === "escuro";
   const [assinatura, setAssinatura] = useState<AssinaturaResumoUI | null>(null);
   const [cota, setCota] = useState<ResumoCota | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -116,21 +138,33 @@ export function AssinaturaPainel() {
     <>
       <section
         id="assinatura"
-        className="scroll-mt-24 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+        className={`scroll-mt-24 rounded-2xl border p-6 ${
+          escuro
+            ? "border-facto-gold/30 bg-white/[0.04] shadow-none"
+            : "border-slate-200 bg-white shadow-sm"
+        }`}
       >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-slate-800">
+            <h2
+              className={`text-lg font-semibold ${
+                escuro ? "text-white" : "text-slate-800"
+              }`}
+            >
               Gerenciamento de assinatura
             </h2>
-            <p className="mt-1 text-sm text-slate-500">
+            <p
+              className={`mt-1 text-sm ${
+                escuro ? "text-stone-500" : "text-slate-500"
+              }`}
+            >
               Acompanhe seu plano e cancele quando quiser. O cancelamento é
               processado no Mercado Pago.
             </p>
           </div>
           {assinatura && (
             <span
-              className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${badgeClasses(assinatura.status)}`}
+              className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${badgeClasses(assinatura.status, tema)}`}
             >
               {assinatura.statusLabel}
             </span>
@@ -138,17 +172,35 @@ export function AssinaturaPainel() {
         </div>
 
         {carregando && (
-          <p className="mt-6 text-sm text-slate-500">Carregando assinatura…</p>
+          <p
+            className={`mt-6 text-sm ${
+              escuro ? "text-stone-500" : "text-slate-500"
+            }`}
+          >
+            Carregando assinatura…
+          </p>
         )}
 
         {!carregando && erroLoad && (
-          <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div
+            className={`mt-6 rounded-lg border px-4 py-3 text-sm ${
+              escuro
+                ? "border-red-500/30 bg-red-500/10 text-red-200"
+                : "border-red-200 bg-red-50 text-red-700"
+            }`}
+          >
             {erroLoad}
           </div>
         )}
 
         {!carregando && !erroLoad && !assinatura && (
-          <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <div
+            className={`mt-6 rounded-xl border px-4 py-3 text-sm ${
+              escuro
+                ? "border-facto-gold/30 bg-facto-gold/10 text-stone-300"
+                : "border-amber-200 bg-amber-50 text-amber-900"
+            }`}
+          >
             Nenhuma assinatura registrada para o e-mail desta conta. Se você
             pagou com outro e-mail, fale com o suporte.
           </div>
@@ -157,19 +209,47 @@ export function AssinaturaPainel() {
         {!carregando && assinatura && (
           <>
             <dl className="mt-6 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <div
+                className={`rounded-xl border px-4 py-3 ${
+                  escuro
+                    ? "border-white/10 bg-white/[0.04]"
+                    : "border-slate-100 bg-slate-50"
+                }`}
+              >
+                <dt
+                  className={`text-xs font-semibold uppercase tracking-wide ${
+                    escuro ? "text-stone-500" : "text-slate-500"
+                  }`}
+                >
                   Plano atual
                 </dt>
-                <dd className="mt-1 text-base font-semibold text-slate-900">
+                <dd
+                  className={`mt-1 text-base font-semibold ${
+                    escuro ? "text-white" : "text-slate-900"
+                  }`}
+                >
                   {assinatura.planoLabel} — {assinatura.statusLabel}
                 </dd>
               </div>
-              <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <div
+                className={`rounded-xl border px-4 py-3 ${
+                  escuro
+                    ? "border-white/10 bg-white/[0.04]"
+                    : "border-slate-100 bg-slate-50"
+                }`}
+              >
+                <dt
+                  className={`text-xs font-semibold uppercase tracking-wide ${
+                    escuro ? "text-stone-500" : "text-slate-500"
+                  }`}
+                >
                   Próxima cobrança / ciclo
                 </dt>
-                <dd className="mt-1 text-base font-semibold text-slate-900">
+                <dd
+                  className={`mt-1 text-base font-semibold ${
+                    escuro ? "text-white" : "text-slate-900"
+                  }`}
+                >
                   {assinatura.proximaCobrancaLabel}
                 </dd>
               </div>
@@ -178,17 +258,33 @@ export function AssinaturaPainel() {
             {cota?.trackingAtivo && (
               <div
                 id="uso-pecas"
-                className="mt-4 rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-4"
+                className={`mt-4 rounded-xl border px-4 py-4 ${
+                  escuro
+                    ? "border-white/10 bg-white/[0.03]"
+                    : "border-slate-200 bg-gradient-to-br from-slate-50 to-white"
+                }`}
               >
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <p
+                  className={`text-xs font-semibold uppercase tracking-wide ${
+                    escuro ? "text-stone-500" : "text-slate-500"
+                  }`}
+                >
                   Uso de peças neste mês
                 </p>
-                <p className="mt-1 text-base font-semibold text-slate-900">
+                <p
+                  className={`mt-1 text-base font-semibold ${
+                    escuro ? "text-white" : "text-slate-900"
+                  }`}
+                >
                   {cota.usoLabel}
                 </p>
                 {cota.percentualUsado != null && (
                   <div className="mt-3">
-                    <div className="mb-1 flex justify-between text-xs text-slate-500">
+                    <div
+                      className={`mb-1 flex justify-between text-xs ${
+                        escuro ? "text-stone-500" : "text-slate-500"
+                      }`}
+                    >
                       <span>
                         {cota.restante ?? 0} peças restantes
                         {cota.extras > 0 ? ` · +${cota.extras} extras` : ""}
@@ -197,7 +293,11 @@ export function AssinaturaPainel() {
                         {cota.percentualUsado}%
                       </span>
                     </div>
-                    <div className="h-2.5 overflow-hidden rounded-full bg-slate-200/90">
+                    <div
+                      className={`h-2.5 overflow-hidden rounded-full ${
+                        escuro ? "bg-white/10" : "bg-slate-200/90"
+                      }`}
+                    >
                       <div
                         className={`h-full rounded-full transition-all ${
                           cota.percentualUsado >= 100
@@ -215,13 +315,25 @@ export function AssinaturaPainel() {
             )}
 
             {assinatura.mensagemAcesso && (
-              <p className="mt-4 text-sm text-slate-600">
+              <p
+                className={`mt-4 text-sm ${
+                  escuro ? "text-stone-400" : "text-slate-600"
+                }`}
+              >
                 {assinatura.mensagemAcesso}
               </p>
             )}
 
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-5">
-              <p className="max-w-md text-xs leading-relaxed text-slate-500">
+            <div
+              className={`mt-6 flex flex-wrap items-center justify-between gap-3 border-t pt-5 ${
+                escuro ? "border-white/10" : "border-slate-100"
+              }`}
+            >
+              <p
+                className={`max-w-md text-xs leading-relaxed ${
+                  escuro ? "text-stone-500" : "text-slate-500"
+                }`}
+              >
                 Dentro de 7 dias: corte imediato (CDC). Depois disso: acesso até
                 o fim do ciclo já pago, sem renovação.
               </p>
@@ -229,27 +341,44 @@ export function AssinaturaPainel() {
                 type="button"
                 onClick={abrirModal}
                 disabled={!assinatura.podeCancelar}
-                className="rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className={`rounded-lg border px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                  escuro
+                    ? "border-red-500/40 bg-red-500/10 text-red-300 hover:bg-red-500/20"
+                    : "border-red-200 bg-white text-red-700 hover:bg-red-50"
+                }`}
               >
                 Cancelar assinatura
               </button>
             </div>
 
-            {cota?.plano === "trial" && cota.esgotada ? (
-              <TrialEsgotadoBanner usoLabel={cota.usoLabel} />
-            ) : cota?.plano !== "trial" ? (
-              <PacotesExtrasPainel cota={cota} />
-            ) : null}
+            {!ocultarExtras &&
+              (cota?.plano === "trial" && cota.esgotada ? (
+                <TrialEsgotadoBanner usoLabel={cota.usoLabel} />
+              ) : cota?.plano !== "trial" ? (
+                <PacotesExtrasPainel cota={cota} tema={tema} />
+              ) : null)}
           </>
         )}
 
         {mensagemOk && (
-          <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <div
+            className={`mt-4 rounded-lg border px-4 py-3 text-sm ${
+              escuro
+                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+                : "border-emerald-200 bg-emerald-50 text-emerald-800"
+            }`}
+          >
             {mensagemOk}
           </div>
         )}
         {erroAcao && (
-          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div
+            className={`mt-4 rounded-lg border px-4 py-3 text-sm ${
+              escuro
+                ? "border-red-500/30 bg-red-500/10 text-red-200"
+                : "border-red-200 bg-red-50 text-red-700"
+            }`}
+          >
             {erroAcao}
           </div>
         )}
