@@ -12,6 +12,7 @@ import {
   MAX_TRIBUNAIS_POR_BUSCA,
   inferirSlugTribunalDoTexto,
   normalizarTribunaisEscolhidos,
+  selecionouSuperior,
 } from "@/lib/juris-provedores/tribunais-opcoes";
 import type { TipoFonteJurisCaso } from "@/lib/juris-caso-types";
 
@@ -118,10 +119,9 @@ export async function POST(request: Request) {
       const isSumula = cat.includes("súmula") || cat.includes("sumula");
       if (!isSumula) continue;
       const slug = inferirSlugTribunalDoTexto(t.titulo, t.categoria, t.texto);
-      const querFederal =
-        tribunais.includes("stf") || tribunais.includes("stj");
+      const querSuperior = selecionouSuperior(tribunais);
       if (slug && !tribunais.includes(slug)) continue;
-      if (!slug && !querFederal) continue;
+      if (!slug && !querSuperior) continue;
       melhorSumula = {
         origem: "sumula",
         tribunal: "Súmula",
@@ -135,7 +135,7 @@ export async function POST(request: Request) {
     /* segue */
   }
 
-  if (!melhorSumula && (tribunais.includes("stf") || tribunais.includes("stj"))) {
+  if (!melhorSumula && selecionouSuperior(tribunais)) {
     const s = SUMULAS_ATIVAS_CURADAS[0];
     if (s) {
       melhorSumula = {

@@ -261,7 +261,7 @@ export function JurisSugestoesPicker({
               <option value="">
                 Adicionar tribunal…
               </option>
-              <optgroup label="Superiores">
+              <optgroup label="Superiores (STF · STJ · TST · TSE)">
                 {opcoesDisponiveis
                   .filter((t) => t.grupo === "superior")
                   .map((t) => (

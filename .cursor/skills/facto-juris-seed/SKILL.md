@@ -22,13 +22,15 @@ Não muda a minuta sozinho. Alimenta a base que a Pesquisa usa.
 - Depois de cada dia: o diário já chama `reindex:embeddings`.
 - API: `stf stj tst trf3 trf4 tjce tjgo tjma tjmg tjmt tjpr tjrj tjrs tjsc tjsp carf`. Sem TSE, TRE, TRF1/2/5/6, TNU.
 
-## Estado (24/08)
+## Estado (24/08 → madrugada 25/08)
 
 - `proximoLote` **366** · `ate` / `LOTE_MAX` **683** · vencimento **2026-09-13** (pausa ~06/09).
-- Diário 24/08: lotes **329–365** ok; parou no **366** por cota Jurisprudências.ai (~2440 inserts). Reindex: **2008** embeddings; **16** falhas (Gemini 429) — rodar `npm run reindex:embeddings` quando a cota voltar.
-- Amanhã: retomar do **366** (`seed:juris-diario`).
-- Tarefa `FACTO-seed-juris-01h`: se falhar `0x800710E0`, rodar `npm run seed:juris-diario` logado.
-- **Não** criar lotes novos até esgotar 683; TRE/TSE = 2ª API.
+- Diário 24/08: lotes **329–365** ok; parou no **366** por cota Jurisprudências.ai. Reindex parcial Gemini 429 — `reindex:embeddings` quando a cota voltar (também roda no fim do diário).
+- **01h 25/08:** retomar do **366** (`FACTO-seed-juris-01h` / `seed:juris-diario`). PC ligado + sessão logada (tarefa Interactive).
+- **03h 25/08:** `FACTO-seed-sumulas-03h` — estado `faseIndice` 0 / `offset` 200 (continua upsert TST/TSE no código, depois OJs).
+- Tarefa juris: se Last Result `0x800710E0`, rodar `npm run seed:juris-diario` logado.
+- **Não** criar lotes novos até esgotar 683; TRE/TSE julgados = 2ª API (súmulas TSE já no seed 03h).
+- UI busca acervo: STF/STJ/**TST**/**TSE** + TJs 26+DF (máx. 3).
 
 ## Produto vs seed
 

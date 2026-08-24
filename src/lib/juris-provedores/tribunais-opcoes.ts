@@ -1,12 +1,12 @@
 /**
  * Opções de tribunal para busca de jurisprudência (API / UI).
- * Slugs alinhados ao Jurisprudências.ai (`/courts/{slug}/decisions`).
+ * Slugs alinhados ao Jurisprudências.ai (`/courts/{slug}/decisions`) quando houver.
  */
 
 export const MAX_TRIBUNAIS_POR_BUSCA = 3;
 
 export type OpcaoTribunal = {
-  /** Slug API (ex.: tjsp, stj). */
+  /** Slug API (ex.: tjsp, stj, tst). */
   id: string;
   /** Rótulo curto na UI. */
   rotulo: string;
@@ -15,13 +15,15 @@ export type OpcaoTribunal = {
   uf?: string;
 };
 
-/** Superiores sempre disponíveis. */
+/** Superiores — sempre na lista (STF/STJ + TST/TSE do acervo de súmulas). */
 export const TRIBUNAIS_SUPERIORES: OpcaoTribunal[] = [
-  { id: "stj", rotulo: "STJ", grupo: "superior" },
   { id: "stf", rotulo: "STF", grupo: "superior" },
+  { id: "stj", rotulo: "STJ", grupo: "superior" },
+  { id: "tst", rotulo: "TST", grupo: "superior" },
+  { id: "tse", rotulo: "TSE", grupo: "superior" },
 ];
 
-/** Principais TJs — 26 estados + DF. */
+/** TJs — 26 estados + DF. */
 export const TRIBUNAIS_ESTADUAIS: OpcaoTribunal[] = [
   { id: "tjac", rotulo: "TJAC", grupo: "estadual", uf: "AC" },
   { id: "tjal", rotulo: "TJAL", grupo: "estadual", uf: "AL" },
@@ -56,6 +58,13 @@ const POR_ID = new Map<string, OpcaoTribunal>(
   [...TRIBUNAIS_SUPERIORES, ...TRIBUNAIS_ESTADUAIS].map((t) => [t.id, t])
 );
 
+const IDS_SUPERIORES = new Set(TRIBUNAIS_SUPERIORES.map((t) => t.id));
+
+/** Há ao menos um superior marcado (súmula sem slug claro ainda pode entrar). */
+export function selecionouSuperior(tribunais: string[]): boolean {
+  return tribunais.some((id) => IDS_SUPERIORES.has(id.trim().toLowerCase()));
+}
+
 export function tribunalPorId(id: string): OpcaoTribunal | undefined {
   return POR_ID.get(id.toLowerCase());
 }
@@ -80,7 +89,7 @@ export function extrairUfDoForo(foro: string | null | undefined): string | null 
   return uf;
 }
 
-/** Opções exibidas: TJ do UF (se conhecido) + todos superiores + demais TJs principais. */
+/** Opções exibidas: TJ do UF (se conhecido) + superiores + demais TJs. */
 export function opcoesTribunaisParaUi(ufPreferida?: string | null): OpcaoTribunal[] {
   const tj = tjPorUf(ufPreferida);
   const superiores = TRIBUNAIS_SUPERIORES;
@@ -140,7 +149,7 @@ function blobTribunal(partes: (string | undefined)[]): string {
     .replace(/\p{M}/gu, "");
 }
 
-/** Lê STF/STJ/TJXX no título, categoria ou início da ementa (seed: "TJSP — 0001234-…"). */
+/** Lê STF/STJ/TST/TSE/TJXX no título, categoria ou início da ementa. */
 export function inferirSlugTribunalDoTexto(
   titulo: string,
   categoria?: string,
@@ -150,6 +159,8 @@ export function inferirSlugTribunalDoTexto(
   if (!t.trim()) return null;
   if (/\bstf\b|supremo tribunal federal/.test(t)) return "stf";
   if (/\bstj\b|superior tribunal de justica/.test(t)) return "stj";
+  if (/\btst\b|tribunal superior do trabalho/.test(t)) return "tst";
+  if (/\btse\b|tribunal superior eleitoral/.test(t)) return "tse";
   for (const op of TRIBUNAIS_ESTADUAIS) {
     const uf = (op.uf ?? "").toLowerCase();
     const re = new RegExp(
@@ -164,7 +175,7 @@ export function inferirSlugTribunalDoTexto(
 /**
  * Preferência pelos tribunais que o usuário marcou.
  * Slug na seleção sobe; outro TJ desce. Sem metadado = 0.
- * Súmula/lei: sobe se STF/STJ estiverem marcados.
+ * Súmula: sobe se o tribunal da súmula estiver marcado; sem slug, se houver superior.
  */
 export function bonusAfinidadeTribunais(opcoes: {
   titulo: string;
@@ -180,13 +191,13 @@ export function bonusAfinidadeTribunais(opcoes: {
     opcoes.categoria,
     opcoes.texto
   );
-  const querFederal = ids.includes("stf") || ids.includes("stj");
+  const querSuperior = selecionouSuperior(ids);
   if (cat.includes("sumula")) {
     if (slug && ids.includes(slug)) return 8;
-    return querFederal ? 5 : -4;
+    return querSuperior ? 5 : -4;
   }
   if (cat.includes("lei") && !cat.includes("juris")) {
-    return querFederal ? 3 : 1;
+    return querSuperior ? 3 : 1;
   }
   if (!slug) return 0;
   if (ids.includes(slug)) return 12;
