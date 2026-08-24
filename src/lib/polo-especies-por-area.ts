@@ -208,7 +208,13 @@ export const MATRIZ_POLO_POR_AREA: Record<AreaComPoloAdvocacia, MatrizPoloArea> 
       ]
     ),
     empresarial: m(
-      ["notificacao-extrajudicial", "peticao-inicial", "replica"],
+      [
+        "notificacao-extrajudicial",
+        "peticao-inicial",
+        "recuperacao-judicial",
+        "falencia",
+        "replica",
+      ],
       ["contestacao"],
       [
         "embargos-declaracao",

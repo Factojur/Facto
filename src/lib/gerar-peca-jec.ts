@@ -729,21 +729,34 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
       secao.chave === "razoes" ||
       secao.chave === "contraposto"
     ) {
-      // fundamentos incluem o título — usamos o romano correto desta espécie
-      const fundamentos = montarFundamentosDireitoJec({
-        tipoAcao,
-        fatos: input.fatos,
-        tutelaUrgencia,
-        pedirJusticaGratuita,
-        trechosBase: itensConhecimento.map((item) => ({
-          titulo: item.titulo,
-          categoria: item.categoria,
-          texto: item.texto,
-        })),
-        tituloSecao: titulo,
-      });
-      // evita duplicar o título já empurrado
-      corpoSecoes.push(...fundamentos.slice(1));
+      if (areaIdPeca === "jec") {
+        const fundamentos = montarFundamentosDireitoJec({
+          tipoAcao,
+          fatos: input.fatos,
+          tutelaUrgencia,
+          pedirJusticaGratuita,
+          trechosBase: itensConhecimento.map((item) => ({
+            titulo: item.titulo,
+            categoria: item.categoria,
+            texto: item.texto,
+          })),
+          tituloSecao: titulo,
+        });
+        corpoSecoes.push(...fundamentos.slice(1));
+      } else {
+        corpoSecoes.push(
+          "[Desenvolver a fundamentação jurídica conforme o rito desta área — não usar Lei 9.099/95 fora do Juizado Cível.]",
+          "",
+          ...(itensConhecimento.length
+            ? itensConhecimento.slice(0, 4).map(
+                (item) =>
+                  `Com apoio no acervo FACTO (${item.categoria} — ${item.titulo}): ${item.texto.slice(0, 400).trim()}…`
+              )
+            : [
+                "Incluir dispositivos legais e jurisprudência do rito competente, com lastro verificável.",
+              ])
+        );
+      }
     } else if (secao.chave === "valor") {
       corpoSecoes.push(...montarSecaoValorCausa(valorCausaResumo));
     } else if (secao.chave === "pedidos") {

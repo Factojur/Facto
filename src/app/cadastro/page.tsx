@@ -21,35 +21,41 @@ export default async function CadastroPage({
         <div className="relative w-full max-w-md text-center">
           <FactoLogo variant="stacked" size="md" className="mx-auto" />
           <h1 className="mt-8 text-2xl font-bold text-white">
-            Cadastro por convite
+            Como criar sua conta
           </h1>
           <p className="mt-4 text-stone-400">
-            A criação de conta no FACTO é liberada automaticamente após a
-            confirmação do pagamento de um dos planos. Você vai receber um
-            e-mail com o link de cadastro assim que o pagamento for aprovado.
+            Quer experimentar antes? Inicie o{" "}
+            <strong className="text-stone-200">teste grátis</strong> (e-mail ou
+            Google) — 1 área, 2 peças, 7 dias.
           </p>
-          <p className="mt-4 text-sm text-stone-500">
-            Já pagou e não recebeu o e-mail? Confira a caixa de spam ou fale
-            com o suporte — vamos conferir o pagamento e reenviar o convite.
+          <p className="mt-3 text-stone-400">
+            Já comprou um plano e ainda não tem conta? Use o link do e-mail de
+            boas-vindas (só quem paga{" "}
+            <strong className="text-stone-200">sem conta prévia</strong> recebe
+            esse convite).
+          </p>
+          <p className="mt-3 text-sm text-stone-500">
+            Já tem conta (teste ou assinatura)? Entre com o mesmo e-mail. Se
+            pagou e o e-mail não chegou, confira o spam ou fale com o suporte.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
             <Link
-              href="/suporte?motivo=cadastro"
+              href="/trial"
               className="rounded-lg bg-facto-gold px-6 py-2.5 text-sm font-semibold text-facto-dark transition hover:bg-[#a39a78]"
             >
-              Falar com o suporte
-            </Link>
-            <Link
-              href="/#precos"
-              className="rounded-lg border border-white/15 px-6 py-2.5 text-sm font-semibold text-white transition hover:border-facto-gold/50 hover:bg-white/5"
-            >
-              Ver planos
+              Iniciar teste grátis
             </Link>
             <Link
               href="/login"
               className="rounded-lg border border-white/15 px-6 py-2.5 text-sm font-semibold text-white transition hover:border-facto-gold/50 hover:bg-white/5"
             >
               Já tenho conta
+            </Link>
+            <Link
+              href="/suporte?motivo=cadastro"
+              className="rounded-lg border border-white/15 px-6 py-2.5 text-sm font-semibold text-white transition hover:border-facto-gold/50 hover:bg-white/5"
+            >
+              Suporte
             </Link>
           </div>
         </div>

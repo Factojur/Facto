@@ -238,10 +238,10 @@ function LoginForm() {
           <p className="mt-6 text-center text-sm text-stone-400">
             Não tem conta?{" "}
             <Link
-              href="/cadastro"
+              href="/trial"
               className="font-medium text-facto-gold hover:text-[#a39a78]"
             >
-              Cadastre-se
+              Criar conta / teste grátis
             </Link>
           </p>
         </form>

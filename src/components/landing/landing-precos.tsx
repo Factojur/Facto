@@ -16,6 +16,7 @@ import {
   PLANO_PRO_ANUAL,
   PLANO_TRIAL,
 } from "@/lib/planos-facto";
+import { ESCRITORIO_VENDA_ATIVA } from "@/lib/feature-flags";
 
 const LINK_JEC =
   (process.env.NEXT_PUBLIC_MP_LINK_JEC ?? "").trim() ||
@@ -39,7 +40,11 @@ type Ciclo = "mensal" | "anual";
 const ABAS: { id: Aba; rotulo: string; dica: string }[] = [
   { id: "comecar", rotulo: "Começar", dica: "Teste ou Juizado" },
   { id: "advogado", rotulo: "Advogado", dica: "OAB · todas as áreas" },
-  { id: "escritorio", rotulo: "Escritório", dica: "Assentos em equipe" },
+  {
+    id: "escritorio",
+    rotulo: "Escritório",
+    dica: ESCRITORIO_VENDA_ATIVA ? "Assentos em equipe" : "Fale conosco",
+  },
 ];
 
 function CardShell({
@@ -334,7 +339,56 @@ export function LandingPrecos() {
           </div>
         )}
 
-        {aba === "escritorio" && (
+        {aba === "escritorio" && !ESCRITORIO_VENDA_ATIVA && (
+          <div className="mt-10">
+            <CardShell destaque className="mx-auto max-w-xl">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-facto-gold/80">
+                Equipe · sob consulta
+              </p>
+              <h3 className="mt-2 text-lg font-semibold text-white">
+                Planos Escritório
+              </h3>
+              <p className="mt-3 text-sm leading-relaxed text-stone-400">
+                Assentos em equipe, cota em pool e OAB do administrador. Os
+                valores e a forma de pagamento são definidos sob medida — entre
+                em contato para verificar planos e valores.
+              </p>
+              <ul className="mt-6 space-y-2 text-sm text-stone-400">
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5 text-facto-gold">✓</span>
+                  <span>5 ou 10 assentos (sócios, estagiários, equipe)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5 text-facto-gold">✓</span>
+                  <span>Cota mensal compartilhada do escritório</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5 text-facto-gold">✓</span>
+                  <span>Todas as áreas liberadas ao responsável com OAB</span>
+                </li>
+              </ul>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <a
+                  href="mailto:contato@factoia.com.br?subject=FACTO%20Escrit%C3%B3rio%20%E2%80%94%20planos%20e%20valores"
+                  className="block flex-1 rounded-lg bg-facto-gold px-6 py-3.5 text-center font-semibold text-facto-dark transition hover:bg-[#a39a78]"
+                >
+                  Entre em contato
+                </a>
+                <Link
+                  href="/suporte?motivo=escritorio"
+                  className="block flex-1 rounded-lg border border-white/15 px-6 py-3.5 text-center font-semibold text-white transition hover:border-facto-gold/50 hover:bg-white/5"
+                >
+                  Formulário de suporte
+                </Link>
+              </div>
+              <p className="mt-4 text-center text-xs text-stone-500">
+                contato@factoia.com.br
+              </p>
+            </CardShell>
+          </div>
+        )}
+
+        {aba === "escritorio" && ESCRITORIO_VENDA_ATIVA && (
           <div className="mt-10">
             <div className="mb-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <p className="text-xs font-medium uppercase tracking-[0.16em] text-stone-500">

@@ -20,6 +20,7 @@
     "test:pecas": "npm run test:qualificacao-partes && npm run test:peca-cabivel && npm run test:auditor-peca && npm run test:skins-facto && npm run test:polo-especies && npm run test:lastro-polo && npm run test:transcrever-audio && npm run test:rate-limit && npm run test:casos-ouro && npm run test:formatacao-peca && npm run test:auditoria-pecas && npm run test:entrada-conferencia && npm run test:prazo-intimacao",
     "test:entrada-conferencia": "npx tsx scripts/testar-entrada-conferencia.ts",
     "test:prazo-intimacao": "npx tsx scripts/testar-prazo-intimacao.ts",
+    "test:smoke-areas-lastro": "npx tsx scripts/testar-smoke-areas-lastro.ts",
     "test:auditoria-pecas": "npx tsx scripts/testar-auditoria-pecas.ts",
     "excluir:conta-teste": "npx tsx scripts/excluir-conta-teste.ts",
     "test:scraper-tjsp": "npx tsx scripts/testar-scraper-tjsp.ts",

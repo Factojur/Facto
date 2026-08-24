@@ -61,6 +61,23 @@ export async function garantirConviteEEmailsPosCompra(
     if (ass?.plano) plano = ass.plano as PlanoId;
   }
 
+  const { data: perfil } = await admin
+    .from("profiles")
+    .select("id")
+    .ilike("email", email)
+    .maybeSingle();
+
+  const { data: assComPerfil } = await admin
+    .from("assinaturas")
+    .select("id, profile_id")
+    .ilike("email", email)
+    .not("profile_id", "is", null)
+    .order("atualizado_em", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const temConta = Boolean(perfil?.id || assComPerfil?.profile_id);
+
   let financeiroOk = false;
   try {
     const r = await enviarEmailsFinanceiroCompra({
@@ -69,6 +86,7 @@ export async function garantirConviteEEmailsPosCompra(
       mpPaymentId: opcoes.mpPaymentId,
       plano,
       forcar: opcoes.forcarEmails,
+      temConta,
     });
     financeiroOk = r.admin !== "falha" && r.cliente !== "falha";
   } catch (erro) {
@@ -86,29 +104,7 @@ export async function garantirConviteEEmailsPosCompra(
     console.error("[pos-compra] falha alerta ntfy", erro);
   }
 
-  const { data: perfil } = await admin
-    .from("profiles")
-    .select("id")
-    .ilike("email", email)
-    .maybeSingle();
-  if (perfil) {
-    return {
-      financeiroOk,
-      conviteOk: false,
-      motivoConvite: "ja_tem_perfil",
-    };
-  }
-
-  // Assinatura já vinculada a um profile_id (checkout com token).
-  const { data: assComPerfil } = await admin
-    .from("assinaturas")
-    .select("id, profile_id")
-    .ilike("email", email)
-    .not("profile_id", "is", null)
-    .order("atualizado_em", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (assComPerfil?.profile_id) {
+  if (temConta) {
     return {
       financeiroOk,
       conviteOk: false,

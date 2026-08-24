@@ -6,6 +6,27 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 
 **Juris / seed:** depois de cada lote ou dia de cota, atualizar a seção **Lacunas da base (áreas falhas)** abaixo — tribunal errado, 0 insert, ou API sem aquele tribunal. Não deixar falha só no chat.
 
+## Retomar quando voltar (24/08)
+
+1. **Gateway** — Asaas recomendado p/ Escritório / valores altos; MP ok até o teto (~R$4k). Escritório **fora da venda** (`ESCRITORIO_VENDA_ATIVA = false`) até seats + gateway.
+2. **Gemini paygo** + **ANTHROPIC_API_KEY** na Vercel.
+3. **Compra real** ponta a ponta (JEC ou Completo).
+4. **Seed** diário (`npm run seed:juris-diario`) — estado em `scripts/seed-juris-estado.json`.
+5. Smoke live: `npm run test:smoke-areas-lastro` (lastro + scaffold; não consome peça).
+
+### Feito 24/08 — checkup + Escritório off
+
+- [x] Flag `ESCRITORIO_VENDA_ATIVA` — aba/checkout Escritório ocultos (código preservado)
+- [x] Landing Escritório = **fale conosco** (mailto + `/suporte?motivo=escritorio`)
+- [x] Híbrido/reserva: **não** injeta Lei 9.099 fora do JEC
+- [x] Sem Sonnet/Gemini/modelo na UI Equipe FACTO / payload cliente
+- [x] Auth/Google/transcrição/ajuste: erros sem jargão de admin/provedor
+- [x] Copy: peças (não minutas no trial), Entrada do caso, acervo FACTO sem “Admin → Base”
+- [x] Cadastro: `/cadastro` sem token → trial; convite só pós-compra **sem** perfil; e-mail financeiro distingue `temConta`
+- [x] Empresarial: espécies **recuperação judicial** + **falência** (Lei 11.101)
+- [x] Eleitoral permanece aberto; TRE/TSE via Datajud depois do lastro Juris.ai
+- [x] Script `test:smoke-areas-lastro`
+
 ## Retomar quando voltar (20/08 — noite)
 
 1. **Supabase** — rodar `migration-sonnet-redacoes.sql` + Google OAuth (`migration-google-oauth-profile.sql` se pendente).

@@ -105,8 +105,9 @@ export function TrialEsgotadoBanner({
           </p>
         )}
         <p className="mt-3 text-xs text-slate-500">
-          Liberação só após pagamento aprovado. Anuais e Escritório: use a
-          seção Planos no perfil ou a landing logado.
+          Liberação só após pagamento aprovado. Planos anuais: veja a seção
+          Preços na página inicial (com a conta logada o checkout vincula à
+          sua conta).
         </p>
       </div>
     </section>

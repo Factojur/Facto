@@ -777,7 +777,6 @@ export async function gerarPecaComIA(params: {
 
   let redacaoModelo = "";
   let textoBrutoRedacao = "";
-  let usouSonnet = false;
 
   const sonnetUsadas = params.roteamento?.userId
     ? await obterContagemSonnet({ userId: params.roteamento.userId })
@@ -800,7 +799,6 @@ export async function gerarPecaComIA(params: {
     if (sonnetRes.ok) {
       textoBrutoRedacao = sonnetRes.texto;
       redacaoModelo = sonnetRes.modelo;
-      usouSonnet = true;
       if (params.roteamento?.userId) {
         await registrarUmaRedacaoSonnet({ userId: params.roteamento.userId });
       }
@@ -841,15 +839,10 @@ export async function gerarPecaComIA(params: {
     skin: "Redator forense",
     titulo: "Redação da peça",
     status: "ok",
-    detalhe: usouSonnet
-      ? `${detalheRedator({
-          caracteres: textoGerado.length,
-          tituloPeca: vinculos.tituloPeca,
-        })} · ${decisao.detalhe}`
-      : detalheRedator({
-          caracteres: textoGerado.length,
-          tituloPeca: vinculos.tituloPeca,
-        }),
+    detalhe: detalheRedator({
+      caracteres: textoGerado.length,
+      tituloPeca: vinculos.tituloPeca,
+    }),
     modelo: redacaoModelo,
   });
 

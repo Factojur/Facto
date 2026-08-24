@@ -300,10 +300,7 @@ export async function POST(request: Request) {
     console.error("[gerar-peca] exceção não tratada:", erro);
     return NextResponse.json(
       {
-        error:
-          erro instanceof Error
-            ? `Erro ao gerar a peça: ${erro.message}`
-            : "Erro interno ao gerar a peça. Tente novamente.",
+        error: "Erro ao gerar a peça. Tente novamente em instantes.",
         codigo: "ERRO_INTERNO",
       },
       { status: 500 }
@@ -822,7 +819,7 @@ async function postGerarPeca(request: Request) {
 
   const pecaBrutaIa = normalizarPecaGerada(ia.textoGerado);
 
-  if (pecaTemFundamentacaoGenerica(pecaBrutaIa)) {
+  if (pecaTemFundamentacaoGenerica(pecaBrutaIa) && areaId === "jec") {
     const blocoValor = montarSecaoValorCausa(valorCausaResumo).join("\n");
     const hibrida = mesclarFatosIaComDireitoReserva({
       pecaIa: pecaBrutaIa,
@@ -866,21 +863,29 @@ async function postGerarPeca(request: Request) {
           pecaHtml,
           timbrado: Boolean(body.escritorio?.usarTimbre),
           geradoPorIA: true,
-          modeloIA: ia.modelo,
+          modeloIA: "FACTO",
           citacoes: citacoesHibrida,
           marcadoresNaoEncontrado: contarMarcadoresNaoEncontrado(pecaAnotada),
           leiMunicipalUtilizada: leiMunicipal
             ? { nome: leiMunicipal.nome }
             : null,
           jurisDoCasoUtilizada: jurisMeta,
-          equipeEtapas: ia.equipeEtapas,
+          equipeEtapas: ia.equipeEtapas?.map((e) => ({
+            ...e,
+            modelo: undefined,
+          })),
           avisoIA:
-            "O DO DIREITO da IA veio genérico demais; os fatos reescritos pela IA foram mantidos e a fundamentação foi reforçada com o modelo forense FACTO. Revise antes de protocolar.",
+            "O DO DIREITO veio genérico demais; a fundamentação foi reforçada com o modelo forense do Juizado. Revise antes de protocolar.",
         },
         paramsAuditor
       )
     );
   }
+
+  const avisoFundamentosGenericos =
+    pecaTemFundamentacaoGenerica(pecaBrutaIa) && areaId !== "jec"
+      ? "A fundamentação jurídica veio genérica demais. Confira o DO DIREITO e o lastro antes de protocolar."
+      : null;
 
   const pecaComValor = garantirSecaoValorCausa(
     pecaBrutaIa,
@@ -908,7 +913,7 @@ async function postGerarPeca(request: Request) {
     pecaHtml,
     timbrado: Boolean(body.escritorio?.usarTimbre),
     geradoPorIA: true,
-    modeloIA: ia.modelo,
+    modeloIA: "FACTO",
     citacoes: ia.citacoes,
     marcadoresNaoEncontrado: ia.marcadoresNaoEncontrado,
     baseConhecimentoUtilizada: ia.contextoUtilizado,
@@ -916,8 +921,11 @@ async function postGerarPeca(request: Request) {
       ? { nome: leiMunicipal.nome }
       : null,
     jurisDoCasoUtilizada: jurisMeta,
-    avisoIA: null,
-    equipeEtapas: ia.equipeEtapas,
+    avisoIA: avisoFundamentosGenericos,
+    equipeEtapas: ia.equipeEtapas?.map((e) => ({
+      ...e,
+      modelo: undefined,
+    })),
     contextoVerificacao: ia.contextoVerificacao,
     analiseEstrategica: ia.analiseEstrategica
       ? {

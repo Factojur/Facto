@@ -201,7 +201,7 @@ export function detalhePesquisa(params: {
     params.nLeis ? `${params.nLeis} lei(s)` : null,
     params.nSumulas ? `${params.nSumulas} súmula(s)` : null,
     params.nJurisCaso ? `${params.nJurisCaso} juris do caso` : null,
-    params.nTeses ? `${params.nTeses} tese(s) do código` : null,
+    params.nTeses ? `${params.nTeses} tese(s) sugerida(s)` : null,
   ]
     .filter(Boolean)
     .join(" · ");

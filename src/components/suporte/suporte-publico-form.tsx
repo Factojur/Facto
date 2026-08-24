@@ -33,6 +33,11 @@ function SuportePublicoFormInner() {
           "Paguei o plano, mas ainda não recebi o e-mail com o link de cadastro."
         );
       }
+    } else if (motivo === "escritorio") {
+      setAssunto("Dúvida");
+      setMensagem(
+        "Gostaria de verificar planos e valores do FACTO Escritório (assentos em equipe)."
+      );
     }
   }, [motivo]);
 
@@ -88,7 +93,9 @@ function SuportePublicoFormInner() {
       setAssunto(
         motivo === "cadastro" || motivo === "pagamento"
           ? "Pagamento / Cadastro"
-          : ""
+          : motivo === "escritorio"
+            ? "Dúvida"
+            : ""
       );
       setMensagem("");
     } catch {

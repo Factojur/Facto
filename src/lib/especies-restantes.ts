@@ -573,28 +573,66 @@ export const KIT_EMPRESARIAL = kit(
       conectivoPartes: "pelo que NOTIFICA, nos termos a seguir.",
       prazoAviso: "Prazo da notificação é o que as partes/FATOS fixarem.",
     },
+    {
+      id: "recuperacao-judicial",
+      rotulo: "Recuperação judicial (petição)",
+      descricao:
+        "Lei 11.101/05 — pedido de recuperação judicial. Não invente plano aprovado nem assembleia.",
+      nomePecaHint: "Pedido de recuperação judicial",
+      exigeProcesso: false,
+      conectivoPartes:
+        "requerendo o processamento da recuperação judicial, pelos fundamentos a seguir.",
+      prazoAviso: "Prazos e stay da Lei 11.101 — não invente datas de assembleia.",
+    },
+    {
+      id: "falencia",
+      rotulo: "Falência (pedido / habilitação)",
+      descricao:
+        "Lei 11.101/05 — pedido de falência ou habilitação de crédito. Não invente decreto de falência.",
+      nomePecaHint: "Pedido de falência",
+      exigeProcesso: false,
+      conectivoPartes:
+        "requerendo a decretação da falência / habilitação, pelos fundamentos a seguir.",
+      prazoAviso: "Confira se já há processo falimentar instaurado antes de reabrir pedido.",
+    },
     ...metaCpc(
       "Dissolução parcial, adimplemento societário, responsabilidade de administrador. Não use JEC.",
       "Ação societária / empresarial"
     ),
   ],
   [
-    "   Rito: EMPRESARIAL (CC / Lei 6.404/76). Distinga notificação de ação judicial.",
-    "   Não invente contrato social, CNPJ nem percentual de quotas. NÃO use Lei 9.099 nem CLT.",
+    "   Rito: EMPRESARIAL (CC / Lei 6.404/76 / Lei 11.101/05). Distinga notificação, recuperação, falência e ação ordinária.",
+    "   Não invente contrato social, CNPJ, percentual de quotas nem plano de recuperação. NÃO use Lei 9.099 nem CLT.",
     "   Julgado contrário ao pedido: não cite como lastro favorável.",
   ],
   (t) => {
     if (/notifica/.test(t)) return "notificacao-extrajudicial";
+    if (/recupera/.test(t)) return "recuperacao-judicial";
+    if (/fal[eê]nc/.test(t)) return "falencia";
     if (/apela/.test(t)) return "apelacao";
     if (/contesta/.test(t)) return "contestacao";
     return null;
   },
-  { "notificacao-extrajudicial": "Notificação Extrajudicial" },
+  {
+    "notificacao-extrajudicial": "Notificação Extrajudicial",
+    "recuperacao-judicial": "Recuperação Judicial",
+    falencia: "Falência",
+  },
   {
     "notificacao-extrajudicial": [
       { chave: "fatos", titulo: "DOS FATOS", obrigatoria: true },
       { chave: "objeto", titulo: "DO OBJETO DA NOTIFICAÇÃO", obrigatoria: true },
       { chave: "prazo", titulo: "DO PRAZO E DAS CONSEQUÊNCIAS", obrigatoria: true },
+    ],
+    "recuperacao-judicial": [
+      { chave: "fatos", titulo: "DOS FATOS", obrigatoria: true },
+      { chave: "direito", titulo: "DO DIREITO", obrigatoria: true },
+      { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
+    ],
+    falencia: [
+      { chave: "fatos", titulo: "DOS FATOS", obrigatoria: true },
+      { chave: "direito", titulo: "DO DIREITO", obrigatoria: true },
+      { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
     ],
   },
   "peticao-inicial"

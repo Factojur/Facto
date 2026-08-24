@@ -35,7 +35,9 @@ export function GoogleSignInButton({
         },
       });
       if (error) {
-        setErro(error.message);
+        setErro(
+          "Não foi possível abrir o Google. Tente novamente ou use e-mail e senha."
+        );
         setLoading(false);
       }
     } catch {

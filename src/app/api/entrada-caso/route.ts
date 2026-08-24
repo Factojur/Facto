@@ -144,10 +144,7 @@ export async function POST(request: Request) {
     console.error("[entrada-caso]", erro);
     return NextResponse.json(
       {
-        error:
-          erro instanceof Error
-            ? erro.message
-            : "Falha ao preencher o caso.",
+        error: "Falha ao preencher o caso. Tente novamente em instantes.",
       },
       { status: 500 }
     );

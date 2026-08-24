@@ -8,6 +8,7 @@ import { anotarJurisprudenciasSemLastro, verificarCitacoes } from "@/lib/ia/veri
 import { anexarAuditoria } from "@/lib/ia/auditor-peca";
 import { normalizarPecaGerada } from "@/lib/ia/normalizar-peca-gerada";
 import { exigirAcessoAreaMinuta } from "@/lib/acesso-minuta-api";
+import { mensagemErroIaParaCliente } from "@/lib/erro-ia-cliente";
 
 export const maxDuration = 45;
 
@@ -57,7 +58,10 @@ export async function POST(request: Request) {
       trecho: String(body?.trecho ?? ""),
     });
     if (!resultado.ok) {
-      return NextResponse.json({ error: resultado.erro }, { status: 400 });
+      return NextResponse.json(
+        { error: mensagemErroIaParaCliente(resultado.erro) },
+        { status: 400 }
+      );
     }
 
     const peca = normalizarPecaGerada(resultado.peca);

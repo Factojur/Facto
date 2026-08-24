@@ -6,6 +6,7 @@ import {
 } from "@/lib/transcrever-audio";
 import { exigirAcessoAreaMinuta } from "@/lib/acesso-minuta-api";
 import { dentroDoLimite } from "@/lib/rate-limit-memoria";
+import { mensagemErroIaParaCliente } from "@/lib/erro-ia-cliente";
 
 export const maxDuration = 60;
 
@@ -73,7 +74,10 @@ export async function POST(request: Request) {
       dataBase64: b64,
     });
     if (!resultado.ok) {
-      return NextResponse.json({ error: resultado.erro }, { status: 400 });
+      return NextResponse.json(
+        { error: mensagemErroIaParaCliente(resultado.erro) },
+        { status: 400 }
+      );
     }
     return NextResponse.json({ texto: resultado.texto });
   } catch (erro) {

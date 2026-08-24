@@ -654,9 +654,9 @@ function PecasResultado({
             </p>
             {fontes.length === 0 ? (
               <p className="mt-1 text-sm text-amber-800">
-                Nenhum trecho da base foi recuperado para este tema. Súmulas e
-                acórdãos não devem ser citados até você cadastrar jurisprudência
-                pertinente em Admin → Base de conhecimento.
+                Nenhum trecho do acervo FACTO foi recuperado para este tema.
+                Evite citar súmulas ou acórdãos sem lastro — anexe a ementa do
+                caso na aba Fatos/juris ou gere de novo com mais detalhes.
               </p>
             ) : (
               <ul className="mt-1 space-y-1 text-sm text-slate-700">
@@ -2829,7 +2829,7 @@ export function JecForm({
               <p className="text-sm text-amber-800">
                 {cota.plano === "trial" ? (
                   <>
-                    Teste sem minutas —{" "}
+                    Teste sem peças —{" "}
                     <a
                       href="#trial-esgotado-jec"
                       className="font-semibold underline"

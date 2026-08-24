@@ -72,8 +72,13 @@ function htmlAvisoInterno(opcoes: {
 
 function htmlConfirmacaoCliente(opcoes: {
   valor: number | null | undefined;
+  /** true = já tem perfil (trial/upgrade); não promete e-mail de convite */
+  temConta?: boolean;
 }): string {
   const ano = new Date().getFullYear();
+  const corpo = opcoes.temConta
+    ? `Seu plano foi liberado na conta FACTO vinculada a este e-mail. Entre em <strong style="color:#e7e5e4;">factoia.com.br/login</strong> com o mesmo e-mail para continuar.`
+    : `Em instantes você receberá outro e-mail (remetente noreply) com o link para criar sua conta no FACTO.`;
   return `<!DOCTYPE html>
 <html lang="pt-BR">
   <body style="margin:0;padding:0;background-color:#1c1c16;font-family:Arial, Helvetica, sans-serif;">
@@ -109,7 +114,7 @@ function htmlConfirmacaoCliente(opcoes: {
                       ? `no valor de <strong style="color:#e7e5e4;">${escaparHtml(formatarValor(opcoes.valor))}</strong>`
                       : ""
                   }.
-              Em instantes você receberá outro e-mail com o link para criar sua conta no FACTO.
+                  ${corpo}
                 </p>
               </td>
             </tr>
@@ -147,6 +152,8 @@ export async function enviarEmailsFinanceiroCompra(opcoes: {
   plano?: PlanoId | null;
   /** Ignora idempotência (reenvio admin quando o 1º “enviado” não chegou). */
   forcar?: boolean;
+  /** Cliente já tem perfil — não promete e-mail de convite. */
+  temConta?: boolean;
 }): Promise<{ admin: StatusEnvioEmail; cliente: StatusEnvioEmail }> {
   const resend = getResend();
   if (!resend) {
@@ -217,7 +224,10 @@ export async function enviarEmailsFinanceiroCompra(opcoes: {
       from: fromCliente,
       destinatario: opcoes.emailCliente,
       subject: "Pagamento aprovado — FACTO",
-      html: htmlConfirmacaoCliente({ valor: opcoes.valor ?? null }),
+      html: htmlConfirmacaoCliente({
+        valor: opcoes.valor ?? null,
+        temConta: Boolean(opcoes.temConta),
+      }),
       replyTo: DESTINO_FINANCEIRO,
     });
   }

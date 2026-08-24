@@ -74,7 +74,7 @@ const PASSOS = [
     passo: "01",
     titulo: "Descreva o caso em minutos",
     texto:
-      "Descreva o caso, analise o processo ou deixe o Assistente indicar a peça. Partes, fatos e pedidos no formulário guiado — sem minuta em branco.",
+      "Descreva o caso, use a Entrada do caso (texto ou PDF) ou deixe o Assistente indicar a peça. Partes, fatos e pedidos no formulário guiado — sem minuta em branco.",
   },
   {
     passo: "02",

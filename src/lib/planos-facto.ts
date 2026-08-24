@@ -10,6 +10,8 @@
  * custoPorPecaAprox = preço do ciclo ÷ peças do ciclo (anuais: preço/ano ÷ 12×cota).
  */
 
+import { ESCRITORIO_VENDA_ATIVA } from "@/lib/feature-flags";
+
 export const PLANO_JEC = {
   id: "jec" as const,
   preco: 79.9,
@@ -492,8 +494,16 @@ export const PLANOS_CHECKOUT = [
 
 export type PlanoCheckoutId = (typeof PLANOS_CHECKOUT)[number];
 
+/** Planos vendáveis agora (Escritório oculto até seats + gateway). */
+export const PLANOS_CHECKOUT_ATIVOS: readonly PlanoCheckoutId[] =
+  ESCRITORIO_VENDA_ATIVA
+    ? PLANOS_CHECKOUT
+    : (PLANOS_CHECKOUT.filter(
+        (id) => !id.startsWith("escritorio_")
+      ) as PlanoCheckoutId[]);
+
 export function ehPlanoCheckout(id: string): id is PlanoCheckoutId {
-  return (PLANOS_CHECKOUT as readonly string[]).includes(id);
+  return (PLANOS_CHECKOUT_ATIVOS as readonly string[]).includes(id);
 }
 
 /**
