@@ -204,24 +204,27 @@ export function DashboardHome({
           aria-hidden
         />
         <div className="relative mx-auto max-w-7xl">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-            <h1 className="text-4xl font-bold text-white md:text-5xl">
-              {saudacao()}, {primeiroNome}
-            </h1>
-            <div className="shrink-0 overflow-visible sm:pt-2 sm:pr-2">
+          <div className="flex flex-col gap-5 md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-end md:gap-x-8 md:gap-y-0">
+            <div className="min-w-0">
+              <h1 className="text-4xl font-bold text-white md:text-5xl">
+                {saudacao()}, {primeiroNome}
+              </h1>
+              <p className="mt-5 max-w-2xl text-2xl font-bold leading-[1.15] tracking-tight text-facto-gold md:text-[1.75rem] lg:text-3xl">
+                {leigo
+                  ? "Você relata o caso. O FACTO redige a minuta."
+                  : "Você advoga. O FACTO redige."}
+              </p>
+              <p className="mt-3 max-w-lg text-sm leading-relaxed text-stone-400 md:text-base">
+                {leigo
+                  ? "Peças do Juizado no padrão forense — revise, baixe e protocole."
+                  : "Peças completas no padrão forense — revise e protocole no ritmo do seu escritório."}
+              </p>
+            </div>
+
+            <div className="flex shrink-0 justify-center overflow-visible md:justify-end md:pb-0 md:pr-1">
               <AssistenteFactoDestaque leigo={leigo} />
             </div>
           </div>
-          <p className="mt-5 max-w-2xl text-2xl font-bold leading-[1.15] tracking-tight text-facto-gold md:text-[1.75rem] lg:text-3xl">
-            {leigo
-              ? "Você relata o caso. O FACTO redige a minuta."
-              : "Você advoga. O FACTO redige."}
-          </p>
-          <p className="mt-3 max-w-lg text-sm leading-relaxed text-stone-400 md:text-base">
-            {leigo
-              ? "Peças do Juizado no padrão forense — revise, baixe e protocole."
-              : "Peças completas no padrão forense — revise e protocole no ritmo do seu escritório."}
-          </p>
         </div>
       </section>
 
