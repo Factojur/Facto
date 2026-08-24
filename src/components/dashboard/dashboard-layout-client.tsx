@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import {
   DashboardSidebar,
   DashboardSidebarMobile,
+  gravarSidebarRecolhida,
+  lerSidebarRecolhida,
 } from "@/components/dashboard/sidebar";
 import { DashboardTopBar } from "@/components/dashboard/dashboard-topbar";
 import { WhatsAppFloat } from "@/components/whatsapp-float";
@@ -30,11 +32,24 @@ export function DashboardLayoutClient({
   const isPlanos = pathname === "/dashboard/planos";
   const mostraSidebar = !isHome && !isPerfil && !isSuporte && !isPlanos;
   const [menuMobileAberto, setMenuMobileAberto] = useState(false);
+  const [sidebarRecolhida, setSidebarRecolhida] = useState(false);
 
   // Fecha a gaveta ao trocar de rota (ex.: voltar pro portal).
   useEffect(() => {
     setMenuMobileAberto(false);
   }, [pathname]);
+
+  useEffect(() => {
+    setSidebarRecolhida(lerSidebarRecolhida());
+  }, []);
+
+  function toggleSidebarRecolhida() {
+    setSidebarRecolhida((atual) => {
+      const proximo = !atual;
+      gravarSidebarRecolhida(proximo);
+      return proximo;
+    });
+  }
 
   if (isHome) {
     return (
@@ -76,7 +91,12 @@ export function DashboardLayoutClient({
         />
       )}
       <div className="flex min-w-0 flex-1 overflow-hidden">
-        {mostraSidebar && <DashboardSidebar />}
+        {mostraSidebar && (
+          <DashboardSidebar
+            recolhida={sidebarRecolhida}
+            onToggleRecolhida={toggleSidebarRecolhida}
+          />
+        )}
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <main className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-50 p-4 sm:p-6 md:p-8">
             <div
