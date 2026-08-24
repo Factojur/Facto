@@ -1,13 +1,25 @@
+"use client";
+
+import {
+  AssistenteFactoInovacoesModal,
+  useAssistenteInovacoesModal,
+} from "@/components/dashboard/assistente-facto-inovacoes-modal";
+
 /** Chip de processador com trilhas/neurônios — presença de IA no hero. */
 export function AssistenteFactoDestaque({ leigo = false }: { leigo?: boolean }) {
   void leigo;
+  const modal = useAssistenteInovacoesModal();
 
   return (
-    <div
-      className="assistente-chip-root group relative isolate inline-flex max-w-full select-none px-5 py-4"
-      role="status"
-      aria-label="Assistente Facto IA"
-    >
+    <>
+      <button
+        type="button"
+        onClick={modal.abrir}
+        className="assistente-chip-root group relative isolate inline-flex max-w-full cursor-pointer select-none px-5 py-4 text-left transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-facto-gold/60"
+        aria-label="Abrir inovações do Assistente Facto IA"
+        aria-haspopup="dialog"
+        aria-expanded={modal.aberto}
+      >
       {/* Halo externo pulsante */}
       <span
         className="assistente-chip-halo pointer-events-none absolute left-1/2 top-1/2 h-[72%] w-[78%] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-facto-gold/25 blur-2xl"
@@ -237,6 +249,12 @@ export function AssistenteFactoDestaque({ leigo = false }: { leigo?: boolean }) 
           ))}
         </div>
       </div>
-    </div>
+      </button>
+
+      <AssistenteFactoInovacoesModal
+        aberto={modal.aberto}
+        onFechar={modal.fechar}
+      />
+    </>
   );
 }

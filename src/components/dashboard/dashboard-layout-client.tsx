@@ -10,14 +10,17 @@ import { DashboardTopBar } from "@/components/dashboard/dashboard-topbar";
 import { WhatsAppFloat } from "@/components/whatsapp-float";
 import { AceiteTermosModal } from "@/components/dashboard/aceite-termos-modal";
 import type { PerfilResumo } from "@/lib/perfil-types";
+import type { PlanoId } from "@/lib/planos-facto";
 
 export function DashboardLayoutClient({
   children,
   perfil,
+  plano = null,
   precisaAceiteTermos = false,
 }: {
   children: React.ReactNode;
   perfil: PerfilResumo;
+  plano?: PlanoId | null;
   precisaAceiteTermos?: boolean;
 }) {
   const pathname = usePathname();
@@ -35,7 +38,7 @@ export function DashboardLayoutClient({
   if (isHome) {
     return (
       <div className="flex min-h-screen flex-col bg-facto-dark">
-        <DashboardTopBar perfil={perfil} />
+        <DashboardTopBar perfil={perfil} plano={plano} />
         <main className="flex-1 overflow-x-clip">{children}</main>
         <WhatsAppFloat />
         <AceiteTermosModal aberto={precisaAceiteTermos} />
@@ -47,6 +50,7 @@ export function DashboardLayoutClient({
     <div className="flex min-h-screen flex-col">
       <DashboardTopBar
         perfil={perfil}
+        plano={plano}
         mostrarMenuMobile={mostraSidebar}
         menuMobileAberto={menuMobileAberto}
         onToggleMenuMobile={() => setMenuMobileAberto((v) => !v)}

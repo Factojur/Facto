@@ -3,16 +3,20 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FactoLogo } from "@/components/brand/facto-logo";
+import { BotaoPlanoTopbar } from "@/components/dashboard/botao-plano-topbar";
 import { UserMenu } from "@/components/dashboard/user-menu";
 import type { PerfilResumo } from "@/lib/perfil-types";
+import type { PlanoId } from "@/lib/planos-facto";
 
 export function DashboardTopBar({
   perfil,
+  plano = null,
   mostrarMenuMobile = false,
   menuMobileAberto = false,
   onToggleMenuMobile,
 }: {
   perfil: PerfilResumo;
+  plano?: PlanoId | null;
   mostrarMenuMobile?: boolean;
   menuMobileAberto?: boolean;
   onToggleMenuMobile?: () => void;
@@ -22,7 +26,7 @@ export function DashboardTopBar({
 
   return (
     <header className="sticky top-0 z-30 border-b border-stone-800/60 bg-facto-dark">
-      <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 md:gap-4 md:px-6 md:py-4">
+      <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-3 md:gap-4 md:px-6 md:py-4">
         {mostrarMenuMobile && (
           <button
             type="button"
@@ -52,6 +56,7 @@ export function DashboardTopBar({
           </Link>
         )}
 
+        <BotaoPlanoTopbar plano={plano} />
         <UserMenu perfil={perfil} />
       </div>
     </header>

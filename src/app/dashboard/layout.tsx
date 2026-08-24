@@ -4,7 +4,12 @@ import { DashboardLayoutClient } from "@/components/dashboard/dashboard-layout-c
 import { mesclarPerfil } from "@/lib/perfil-merge";
 import { temAceiteTermos } from "@/lib/aceite-termos";
 import type { PerfilResumo } from "@/lib/perfil-types";
-import { getUsuarioServidor, getPerfilServidor } from "@/lib/sessao-servidor";
+import {
+  getUsuarioServidor,
+  getPerfilServidor,
+  getPlanoAtivoServidor,
+} from "@/lib/sessao-servidor";
+import { resolverAcessoConta } from "@/lib/emails-acesso-livre";
 
 export default async function DashboardLayout({
   children,
@@ -36,11 +41,19 @@ export default async function DashboardLayout({
     user.user_metadata as Record<string, unknown> | undefined
   );
 
+  const planoDb = await getPlanoAtivoServidor(user.email);
+  const tipoUsuario =
+    (profile?.tipo_usuario as string | undefined) ??
+    (user.user_metadata?.tipo_usuario as string | undefined) ??
+    "advogado";
+  const acesso = resolverAcessoConta(user.email, planoDb, tipoUsuario);
+
   return (
     <>
       <SessionGuard />
       <DashboardLayoutClient
         perfil={perfil}
+        plano={acesso.plano}
         precisaAceiteTermos={precisaAceiteTermos}
       >
         {children}
