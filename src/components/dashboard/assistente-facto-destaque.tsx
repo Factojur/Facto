@@ -1,75 +1,62 @@
 function IconeIA({ className }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 48 48"
+      viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
       className={className}
     >
       <path
-        d="M24 6l2.5 7.5H34l-6 4.5 2.5 7.5L24 21l-6.5 4.5 2.5-7.5-6-4.5h7.5L24 6z"
+        d="M12 3.5l1.15 3.55H17l-2.9 2.1 1.1 3.55L12 10.7 8.8 12.7l1.1-3.55L7 7.05h3.85L12 3.5z"
         fill="currentColor"
-        opacity="0.9"
       />
       <path
-        d="M10 32c4-6 10-9 14-9s10 3 14 9"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        opacity="0.5"
+        d="M18.5 14.5l.55 1.7H21l-1.4 1 .55 1.7-1.4-1-1.4 1 .55-1.7-1.4-1h1.95l.55-1.7z"
+        fill="currentColor"
+        opacity="0.75"
       />
-      <circle cx="24" cy="28" r="3" fill="currentColor" opacity="0.7" />
+      <path
+        d="M5.2 15.2l.4 1.2H7l-1 0.75.4 1.2-1-.75-1 .75.4-1.2-1-.75h1.4l.4-1.2z"
+        fill="currentColor"
+        opacity="0.55"
+      />
     </svg>
   );
 }
 
+/** Chip compacto no hero da home — presença de IA sem faixa larga. */
 export function AssistenteFactoDestaque({ leigo = false }: { leigo?: boolean }) {
   return (
-    <section className="relative px-6 md:px-10">
-      <div className="relative mx-auto max-w-7xl overflow-hidden rounded-2xl border border-facto-gold/35 bg-gradient-to-br from-facto-gold/[0.14] via-white/[0.04] to-transparent shadow-lg shadow-black/20">
-        <div
-          className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-facto-gold/15 blur-3xl"
+    <div
+      className="group relative inline-flex max-w-full items-center gap-2.5 rounded-full border border-facto-gold/40 bg-gradient-to-r from-facto-gold/[0.16] via-white/[0.05] to-facto-gold/[0.1] px-3.5 py-2 shadow-[0_0_28px_-10px_rgba(144,139,106,0.55)] backdrop-blur-sm"
+      role="status"
+      aria-label="Assistente Facto IA"
+    >
+      <span className="relative flex h-8 w-8 shrink-0 items-center justify-center">
+        <span
+          className="assistente-ia-pulse pointer-events-none absolute inset-0 rounded-full bg-facto-gold/30"
           aria-hidden
         />
-        <div
-          className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-facto-gold/10 blur-3xl"
-          aria-hidden
-        />
+        <span className="relative flex h-8 w-8 items-center justify-center rounded-full border border-facto-gold/50 bg-[#1c1c16]/90 text-facto-gold shadow-inner shadow-facto-gold/20 transition group-hover:border-facto-gold/80">
+          <IconeIA className="h-4 w-4" />
+        </span>
+      </span>
 
-        <div className="relative flex flex-col gap-6 p-6 md:flex-row md:items-center md:justify-between md:p-8">
-          <div className="max-w-2xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-facto-gold">
-              Assinatura FACTO
-            </p>
-            <h2 className="mt-2 text-2xl font-bold text-white md:text-3xl">
-              Assistente Facto{" "}
-              <span className="text-facto-gold">(IA)</span>
-            </h2>
-            <p className="mt-3 text-sm leading-relaxed text-stone-400 md:text-base">
-              {leigo
-                ? "Orienta a redação no Juizado Especial Cível — sugere fundamentos e acelera a minuta do início ao protocolo."
-                : "No módulo da área em que você estiver: orienta a redação, sugere fundamentos e acelera cada minuta."}
-            </p>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-facto-gold/40 bg-facto-gold/10 text-facto-gold shadow-inner shadow-facto-gold/10">
-              <IconeIA className="h-9 w-9" />
-            </div>
-            <div className="hidden sm:block">
-              <p className="text-sm font-semibold text-white">
-                {leigo ? "Módulo JEC" : "Todas as áreas do seu plano"}
-              </p>
-              <p className="mt-0.5 text-xs text-stone-500">
-                {leigo
-                  ? "Lei 9.099/95"
-                  : "O mesmo Assistente em cada especialidade"}
-              </p>
-            </div>
-          </div>
-        </div>
+      <div className="min-w-0 pr-0.5">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-facto-gold/85">
+          Assinatura FACTO
+        </p>
+        <p className="text-sm font-semibold leading-tight text-white">
+          Assistente Facto{" "}
+          <span className="assistente-ia-shimmer">IA</span>
+        </p>
+        <p className="mt-0.5 truncate text-[11px] text-stone-500">
+          {leigo
+            ? "Orienta a minuta no JEC"
+            : "Orienta a minuta nesta área"}
+        </p>
       </div>
-    </section>
+    </div>
   );
 }

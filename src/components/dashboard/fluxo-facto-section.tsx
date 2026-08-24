@@ -43,7 +43,7 @@ const PASSOS = [
   },
   {
     passo: "03",
-    titulo: "Assistente Facto (IA)",
+    titulo: "Assistente Facto IA",
     texto:
       "A equipe FACTO estrutura fundamentos e a redação forense — você revisa antes de protocolar.",
     destaque: true,

@@ -204,9 +204,14 @@ export function DashboardHome({
           aria-hidden
         />
         <div className="relative mx-auto max-w-7xl">
-          <h1 className="text-4xl font-bold text-white md:text-5xl">
-            {saudacao()}, {primeiroNome}
-          </h1>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+            <h1 className="text-4xl font-bold text-white md:text-5xl">
+              {saudacao()}, {primeiroNome}
+            </h1>
+            <div className="shrink-0 sm:pt-1">
+              <AssistenteFactoDestaque leigo={leigo} />
+            </div>
+          </div>
           <p className="mt-5 max-w-2xl text-2xl font-bold leading-[1.15] tracking-tight text-facto-gold md:text-[1.75rem] lg:text-3xl">
             {leigo
               ? "Você relata o caso. O FACTO redige a minuta."
@@ -219,8 +224,6 @@ export function DashboardHome({
           </p>
         </div>
       </section>
-
-      <AssistenteFactoDestaque leigo={leigo} />
 
       {!leigo && <EstiloRedacaoDestaque />}
 
