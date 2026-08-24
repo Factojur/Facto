@@ -39,7 +39,7 @@ export function BotaoPlanoTopbar({
   plano: PlanoId | null | undefined;
 }) {
   const { label, ehTrial } = rotuloBotaoPlanoTopbar(plano);
-  const href = ehTrial ? "/#precos" : "/dashboard/perfil#assinatura";
+  const href = "/dashboard/planos";
 
   return (
     <Link

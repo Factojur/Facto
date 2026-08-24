@@ -27,7 +27,8 @@ export function DashboardLayoutClient({
   const isHome = pathname === "/dashboard";
   const isPerfil = pathname === "/dashboard/perfil";
   const isSuporte = pathname.startsWith("/dashboard/suporte");
-  const mostraSidebar = !isHome && !isPerfil && !isSuporte;
+  const isPlanos = pathname === "/dashboard/planos";
+  const mostraSidebar = !isHome && !isPerfil && !isSuporte && !isPlanos;
   const [menuMobileAberto, setMenuMobileAberto] = useState(false);
 
   // Fecha a gaveta ao trocar de rota (ex.: voltar pro portal).
@@ -66,7 +67,13 @@ export function DashboardLayoutClient({
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <main className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-50 p-4 sm:p-6 md:p-8">
             <div
-              className={`mx-auto min-w-0 text-slate-800 ${isPerfil || isSuporte ? "max-w-3xl" : "max-w-4xl"}`}
+              className={`mx-auto min-w-0 text-slate-800 ${
+                isPlanos
+                  ? "max-w-5xl"
+                  : isPerfil || isSuporte
+                    ? "max-w-3xl"
+                    : "max-w-4xl"
+              }`}
             >
               {children}
             </div>

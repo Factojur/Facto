@@ -8,7 +8,7 @@ type Props = {
   /** Fallback público (visitante sem login) — link estático MP. */
   hrefFallback: string;
   children: React.ReactNode;
-  variante?: "primario" | "secundario";
+  variante?: "primario" | "secundario" | "dashboard";
 };
 
 /**
@@ -25,7 +25,9 @@ export function BotaoAssinarPlano({
   const classe =
     variante === "primario"
       ? "bg-facto-gold text-facto-dark shadow-lg shadow-facto-gold/20 hover:bg-[#a39a78]"
-      : "border border-white/15 text-white hover:border-facto-gold/50 hover:bg-white/5";
+      : variante === "dashboard"
+        ? "border border-slate-300 bg-white text-slate-900 hover:border-slate-400 hover:bg-slate-50"
+        : "border border-white/15 text-white hover:border-facto-gold/50 hover:bg-white/5";
 
   async function onClick(e: React.MouseEvent) {
     e.preventDefault();
