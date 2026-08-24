@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function TermosPage() {
   return (
-    <LegalShell titulo="Termos de Uso" atualizacao="4 de agosto de 2026">
+    <LegalShell titulo="Termos de Uso" atualizacao="24 de agosto de 2026">
       <p>
         Estes Termos de Uso (&quot;Termos&quot;) regulam o acesso e a utilização
         do site <strong>factoia.com.br</strong>, do aplicativo e de quaisquer
@@ -17,10 +17,10 @@ export default function TermosPage() {
         &quot;Plataforma&quot; ou o &quot;Serviço&quot;).
       </p>
       <p>
-        Ao criar conta, aceitar estes Termos no primeiro acesso, navegar no site
-        ou utilizar qualquer funcionalidade da Plataforma, você (&quot;Usuário&quot;)
-        declara ter lido, compreendido e concordado integralmente com estes
-        Termos e com a{" "}
+        Ao criar conta, aceitar estes Termos no primeiro acesso ou quando
+        solicitada nova versão, navegar no site ou utilizar qualquer
+        funcionalidade da Plataforma, você (&quot;Usuário&quot;) declara ter
+        lido, compreendido e concordado integralmente com estes Termos e com a{" "}
         <a
           href="/privacidade"
           className="font-medium text-stone-900 underline-offset-2 hover:underline"
@@ -36,7 +36,7 @@ export default function TermosPage() {
         </h2>
         <p>
           O FACTO é uma ferramenta tecnológica de apoio à organização de
-          informações e à redação assistida de minutas, análises e textos de
+          informações e à redação assistida de peças, análises e textos de
           natureza jurídica, inclusive com uso de inteligência artificial.
         </p>
         <ul className="mt-2 list-disc space-y-1 pl-5">
@@ -49,7 +49,8 @@ export default function TermosPage() {
           </li>
           <li>
             Todo conteúdo gerado (peças, análises, sugestões de tese,
-            fundamentação, pedidos, valores, endereçamento etc.) é{" "}
+            fundamentação, pedidos, valores, endereçamento, nome de ação,
+            jurisprudência sugerida etc.) é{" "}
             <strong>minuta / sugestão técnica auxiliar</strong>, sujeita a
             revisão, edição, validação e responsabilidade exclusiva do Usuário
             antes de qualquer uso, protocolo, intimação, petição ou divulgação.
@@ -62,8 +63,13 @@ export default function TermosPage() {
           </li>
           <li>
             Referências a leis, súmulas, julgados ou doutrina podem estar
-            incompletas, desatualizadas ou inadequados ao caso. Cabe ao Usuário
+            incompletas, desatualizadas ou inadequadas ao caso. Cabe ao Usuário
             conferir a fonte oficial e a aplicabilidade.
+          </li>
+          <li>
+            O FACTO <strong>não protocola</strong> peças em tribunais nem
+            envia petições ao juízo. O protocolo, a juntada de anexos e a
+            guarda do arquivo final são exclusivamente do Usuário.
           </li>
         </ul>
       </section>
@@ -76,52 +82,100 @@ export default function TermosPage() {
           O Usuário declara ser maior de 18 anos e ter capacidade civil para
           contratar. Contas de advogados devem observar as normas da OAB e o
           Código de Ética e Disciplina. Contas de não advogados (quando
-          admitidas) devem observar os limites legais de atuação perante o
-          Juizado Especial e demais normas aplicáveis.
+          admitidas, inclusive em trial ou causa própria no Juizado) devem
+          observar os limites legais de atuação perante o Juizado Especial e
+          demais normas aplicáveis.
         </p>
         <p className="mt-2">
           O aceite eletrônico (checkbox e registro de data/hora/versão) tem
           validade jurídica entre as partes, nos termos da legislação vigente,
-          inclusive como evidência de ciência e concordância.
+          inclusive como evidência de ciência e concordância. Alterações
+          relevantes destes Termos ou da Política de Privacidade podem exigir
+          novo aceite antes da continuidade do uso.
         </p>
       </section>
 
       <section>
         <h2 className="mb-2 text-lg font-semibold text-stone-900">
-          3. Conta, credenciais e veracidade
+          3. Conta, autenticação, credenciais e veracidade
         </h2>
         <ul className="list-disc space-y-1 pl-5">
           <li>
-            O acesso completo à Plataforma exige cadastro e, em regra, assinatura
-            ativa ou convite válido vinculado a pagamento.
+            O acesso completo à Plataforma exige cadastro e, em regra, plano
+            ativo (incluindo trial, quando disponível), assinatura ou convite
+            válido vinculado a pagamento.
           </li>
           <li>
-            Convites e acessos são pessoais e intransferíveis. É vedado
-            compartilhar login, revendê-lo ou permitir uso por terceiros não
-            autorizados.
+            A autenticação pode ocorrer por e-mail/senha ou por provedores de
+            identidade de terceiros (ex.: Google). O Usuário autoriza o
+            tratamento dos dados necessários a essa autenticação conforme a
+            Política de Privacidade e as políticas do provedor escolhido.
+          </li>
+          <li>
+            Convites, assentos e acessos são pessoais e intransferíveis, salvo
+            nos planos Escritório em que o administrador gerencia assentos
+            autorizados. É vedado compartilhar login, revendê-lo ou permitir
+            uso por terceiros não autorizados.
           </li>
           <li>
             O Usuário é responsável pela veracidade dos dados cadastrais (nome,
             e-mail, OAB, CPF/CNPJ quando informados, endereço etc.) e pela guarda
-            das credenciais. Atividades realizadas na conta presumem-se feitas
-            pelo titular, salvo prova de acesso indevido comunicado de imediato.
+            das credenciais, dispositivos e sessões. Atividades realizadas na
+            conta presumem-se feitas pelo titular ou por quem este autorizou,
+            salvo prova de acesso indevido comunicado de imediato ao FACTO.
           </li>
           <li>
             O FACTO pode suspender ou encerrar contas em caso de dados falsos,
-            uso indevido, inadimplemento, risco à segurança ou violação destes
-            Termos.
+            uso indevido, inadimplemento, risco à segurança, ilícito ou
+            violação destes Termos.
           </li>
         </ul>
       </section>
 
       <section>
         <h2 className="mb-2 text-lg font-semibold text-stone-900">
-          4. Obrigações do Usuário — revisão e protocolo
+          4. Planos, trial, cotas e pacotes extras
+        </h2>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            Planos, preços, benefícios, cotas de peças, limites de redator
+            avançado (quando houver), trial e condições comerciais são os
+            divulgados na página de compra, no painel do Usuário ou em proposta
+            específica. Em caso de divergência, prevalece o que estiver vigente
+            no momento da contratação.
+          </li>
+          <li>
+            Em regra, a <strong>Entrada do caso</strong> e análises auxiliares
+            não consomem cota de peça; o débito ocorre no{" "}
+            <strong>Gerar peça</strong> (ou equivalente), conforme regras do
+            plano.
+          </li>
+          <li>
+            Trial e períodos promocionais, quando oferecidos, são pessoais,
+            sujeitos a limite de uso e podem ser encerrados ou alterados a
+            qualquer tempo, sem criar expectativa de continuidade gratuita.
+          </li>
+          <li>
+            Pacotes extras de peças, quando disponíveis, acrescentam cota
+            conforme a oferta; não alteram automaticamente outros limites do
+            plano (ex.: teto de redator avançado), salvo indicação expressa.
+          </li>
+          <li>
+            Planos Escritório (quando contratados) operam com assentos e, quando
+            aplicável, cota em pool sob responsabilidade do administrador da
+            conta. O administrador responde pelo uso dos membros vinculados.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 className="mb-2 text-lg font-semibold text-stone-900">
+          5. Obrigações do Usuário — revisão, dados e protocolo
         </h2>
         <p>O Usuário obriga-se a:</p>
         <ul className="mt-2 list-disc space-y-1 pl-5">
           <li>
-            Revisar integralmente cada minuta antes de protocolar ou utilizar
+            Revisar integralmente cada peça antes de protocolar ou utilizar
             (fatos, qualificações, pedidos, valores, fundamentos, jurisprudência,
             documentos anexos, prazos, foro, tutelas e formatação).
           </li>
@@ -134,37 +188,58 @@ export default function TermosPage() {
             ou de terceiros sem base legal / autorização.
           </li>
           <li>
+            Obter e manter base legal (consentimento, legítimo interesse,
+            exercício regular de direitos etc.) para tratar dados de clientes,
+            partes, testemunhas e terceiros inseridos no Serviço.
+          </li>
+          <li>
             Respeitar segredo profissional, ética da advocacia, LGPD, direitos
             de personalidade e demais normas aplicáveis ao caso e aos documentos
             enviados.
           </li>
           <li>
+            Juntar no protocolo eletrônico os documentos que assinalar na peça
+            (ex.: hipossuficiência, MLE e provas), sob sua exclusiva
+            responsabilidade.
+          </li>
+          <li>
             Manter cópias locais de conteúdo relevante; o FACTO não é arquivo
-            permanente obrigatório de processos.
+            permanente obrigatório de processos nem substitui o sistema do
+            tribunal.
           </li>
         </ul>
       </section>
 
       <section>
         <h2 className="mb-2 text-lg font-semibold text-stone-900">
-          5. Uso permitido e proibido
+          6. Uso permitido e proibido — ilícitos e mau uso
         </h2>
-        <p>É permitido utilizar a Plataforma para fins lícitos profissionais ou de estudo, nos limites do plano contratado.</p>
+        <p>
+          É permitido utilizar a Plataforma para fins lícitos profissionais ou
+          de estudo, nos limites do plano contratado.
+        </p>
         <p className="mt-2">É vedado, entre outras condutas:</p>
         <ul className="mt-2 list-disc space-y-1 pl-5">
           <li>
             Utilizar o Serviço para fraude, prática ilícita, lavagem de
-            capitais, assédio, discriminação ilegal ou violação de direitos de
-            terceiros.
+            capitais, assédio, discriminação ilegal, violação de direitos de
+            terceiros, falsidade ideológica, uso indevido de dados pessoais ou
+            qualquer atividade tipificada como crime ou ilícito civil.
           </li>
           <li>
-            Tentar burlar limites de acesso, engenharia reversa indevida,
-            scraping abusivo, exploração de falhas, ataque a sistemas, envio de
-            malware, spam ou sobrecarga intencional da infraestrutura.
+            Inserir, gerar ou difundir conteúdo calunioso, difamatório,
+            discriminatório ilegal, obsceno ilegal, ou que viole segredo de
+            justiça, medida cautelar ou ordem judicial.
           </li>
           <li>
-            Representar que o conteúdo gerado é parecer oficial do FACTO, decisão
-            judicial, ou que o FACTO é o responsável pelo patrocínio da causa.
+            Tentar burlar limites de acesso, cotas, trial, engenharia reversa
+            indevida, scraping abusivo, exploração de falhas, ataque a sistemas,
+            envio de malware, spam ou sobrecarga intencional da infraestrutura.
+          </li>
+          <li>
+            Representar que o conteúdo gerado é parecer oficial do FACTO,
+            decisão judicial, ou que o FACTO é o responsável pelo patrocínio da
+            causa.
           </li>
           <li>
             Remover avisos de minuta, marcas ou menções de autoria/ferramenta
@@ -174,18 +249,32 @@ export default function TermosPage() {
             Usar a Plataforma para treinar modelos concorrentes ou extrair
             volumes anômalos de conteúdo sem autorização.
           </li>
+          <li>
+            Compartilhar, revender ou ceder acesso, peças ou dados obtidos via
+            FACTO de forma a violar estes Termos, a LGPD ou direitos de
+            terceiros.
+          </li>
         </ul>
+        <p className="mt-2">
+          O Usuário é o <strong>único responsável</strong> por qualquer ilícito,
+          mau uso, abuso de direito ou dano decorrente do conteúdo que inserir,
+          gerar, exportar, protocolar ou divulgar. O FACTO não endossa nem
+          assume autoria advocatícia desse conteúdo.
+        </p>
       </section>
 
       <section>
         <h2 className="mb-2 text-lg font-semibold text-stone-900">
-          6. Inteligência artificial e limitações técnicas
+          7. Inteligência artificial e limitações técnicas
         </h2>
         <ul className="list-disc space-y-1 pl-5">
           <li>
-            A geração de texto pode utilizar modelos e infraestrutura de
-            terceiros. Saídas podem conter imprecisões, omissões, alucinações
-            (inclusive citações inexistentes) ou vieses.
+            A geração de texto, triagem de peça, sugestão de nome de ação,
+            análise de anexos, OCR, transcrição de áudio, resumo de estilo de
+            redação e demais recursos assistidos podem utilizar modelos e
+            infraestrutura de terceiros (incluindo provedores de nuvem e de IA).
+            Saídas podem conter imprecisões, omissões, alucinações (inclusive
+            citações inexistentes) ou vieses.
           </li>
           <li>
             Anexos cujo conteúdo não seja lido pelo sistema (quando a interface
@@ -198,6 +287,12 @@ export default function TermosPage() {
             documentos públicos ou privados.
           </li>
           <li>
+            Jurisprudência ou súmula anexada pelo Usuário pode ser usada na
+            peça e, quando aplicável, encaminhada a fila interna de
+            conferência do FACTO para eventual inclusão no acervo — sem
+            garantia de aceite, prazo ou publicação.
+          </li>
+          <li>
             Disponibilidade, latência e qualidade podem variar conforme carga,
             manutenção, limites de provedores e condições de rede.
           </li>
@@ -206,14 +301,44 @@ export default function TermosPage() {
 
       <section>
         <h2 className="mb-2 text-lg font-semibold text-stone-900">
-          7. Assinatura, pagamento, renovação e cancelamento
+          8. Armazenamento de conteúdo, rascunhos e preservação
         </h2>
         <ul className="list-disc space-y-1 pl-5">
           <li>
-            Planos, preços e condições comerciais são os divulgados na página de
-            compra ou em proposta específica. O pagamento é processado por
-            intermediário (ex.: Mercado Pago); o FACTO não armazena o número
-            completo do cartão.
+            Por desenho de produto, a peça gerada e os dados das partes{" "}
+            <strong>não são armazenados como arquivo permanente na conta
+            do cliente</strong> para consulta posterior, salvo funcionalidades
+            expressamente indicadas na interface (ex.: rascunhos no navegador,
+            casos JEC quando habilitados, ou recursos futuros comunicados).
+          </li>
+          <li>
+            Rascunhos e memórias no dispositivo (ex.: armazenamento local do
+            navegador) permanecem sob controle do Usuário e do equipamento;
+            limpeza do navegador, troca de aparelho ou falha local podem
+            resultar em perda — o FACTO não se obriga a recuperar esse
+            conteúdo.
+          </li>
+          <li>
+            Durante o processamento, dados e arquivos podem transitar por
+            servidores, filas, logs técnicos e provedores de IA/nuvem pelo
+            tempo necessário à prestação, segurança, cobrança de cota, suporte
+            e cumprimento legal, conforme a Política de Privacidade.
+          </li>
+          <li>
+            A preservação do arquivo final (PDF, DOCX, protocolo) é{" "}
+            <strong>obrigação exclusiva do Usuário</strong>.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 className="mb-2 text-lg font-semibold text-stone-900">
+          9. Assinatura, pagamento, renovação e cancelamento
+        </h2>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            O pagamento é processado por intermediário (ex.: Mercado Pago); o
+            FACTO não armazena o número completo do cartão.
           </li>
           <li>
             A assinatura pode renovar-se automaticamente conforme a modalidade
@@ -241,7 +366,7 @@ export default function TermosPage() {
 
       <section>
         <h2 className="mb-2 text-lg font-semibold text-stone-900">
-          8. Propriedade intelectual
+          10. Propriedade intelectual
         </h2>
         <ul className="list-disc space-y-1 pl-5">
           <li>
@@ -255,35 +380,59 @@ export default function TermosPage() {
             responsabilidade e titularidade (ou de quem os legitimou). O Usuário
             concede ao FACTO licença limitada, não exclusiva, para processar
             esses conteúdos apenas na medida necessária à prestação, segurança,
-            suporte e melhoria do Serviço, conforme a Política de Privacidade.
+            suporte, cobrança, prevenção a abuso e melhoria do Serviço, conforme
+            a Política de Privacidade.
           </li>
           <li>
-            Salvo acordo em contrário, o Usuário pode utilizar as minutas
-            geradas para sua atividade profissional, mantendo a obrigação de
-            revisão e a ciência de que a ferramenta não assume autoria
-            advocatícia do patrocínio.
+            Salvo acordo em contrário, o Usuário pode utilizar as peças geradas
+            para sua atividade profissional, mantendo a obrigação de revisão e a
+            ciência de que a ferramenta não assume autoria advocatícia do
+            patrocínio.
           </li>
         </ul>
       </section>
 
       <section>
         <h2 className="mb-2 text-lg font-semibold text-stone-900">
-          9. Confidencialidade e dados de terceiros
+          11. Confidencialidade, dados de terceiros e vazamentos
         </h2>
         <p>
           O Usuário é o único responsável por obter autorização e base legal
           para tratar dados de clientes, partes, testemunhas e terceiros
           inseridos na Plataforma. O FACTO trata tais informações como
-          prestador de serviço tecnológico, nos limites da Política de
-          Privacidade, sem assumir o papel de controlador do caso jurídico do
-          Usuário perante o cliente final, salvo quando a lei dispuser de modo
-          diverso.
+          prestador de serviço tecnológico / operador, nos limites da Política
+          de Privacidade, sem assumir o papel de controlador do caso jurídico
+          do Usuário perante o cliente final, salvo quando a lei dispuser de
+          modo diverso quanto aos dados da própria conta FACTO.
         </p>
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          <li>
+            O Usuário responde por vazamento, divulgação indevida ou acesso não
+            autorizado decorrentes de: compartilhamento de senha; dispositivos
+            desprotegidos; envio de links, exports ou peças a terceiros;
+            configuração inadequada de e-mail; uso em ambientes públicos; ou
+            qualquer ato/omissão do Usuário ou de seus prepostos.
+          </li>
+          <li>
+            O FACTO adota medidas razoáveis de segurança, mas{" "}
+            <strong>não garante segurança absoluta</strong> contra ataques,
+            falhas de terceiros ou força maior. Incidentes atribuíveis a
+            provedores de nuvem, IA, pagamento, autenticação ou infraestrutura
+            de terceiros, quando o FACTO tiver agido com diligência razoável,
+            não geram responsabilidade automática do FACTO perante o Usuário
+            além do previsto nestes Termos e na lei cogente.
+          </li>
+          <li>
+            Em hipótese de incidente de segurança sob responsabilidade do
+            FACTO, serão adotadas as providências legais cabíveis, sem que isso
+            implique admissão de culpa por atos do Usuário ou de terceiros.
+          </li>
+        </ul>
       </section>
 
       <section>
         <h2 className="mb-2 text-lg font-semibold text-stone-900">
-          10. Isenção e limitação de responsabilidade
+          12. Isenção e limitação de responsabilidade
         </h2>
         <p>
           Na máxima extensão permitida pelo ordenamento jurídico brasileiro, o
@@ -295,12 +444,24 @@ export default function TermosPage() {
             sucumbência, honorários devidos a terceiros, prazos decadenciais ou
             prescricionais, preclusões, erros de protocolo eletrônico, escolha
             inadequada de juízo, tese ou pedido, nem por danos decorrentes de
-            uso de minuta sem revisão adequada.
+            uso de peça sem revisão adequada.
+          </li>
+          <li>
+            Não respondem por ilícitos, mau uso, fraude, violação de LGPD,
+            ética profissional ou direitos de terceiros praticados pelo Usuário
+            ou por quem utilize suas credenciais.
+          </li>
+          <li>
+            Não respondem por vazamento ou perda de dados causados por ato ou
+            omissão do Usuário, de seus colaboradores, de destinatários a quem
+            o Usuário enviar conteúdo, ou por armazenamento apenas local no
+            dispositivo do Usuário.
           </li>
           <li>
             Não respondem por falhas de internet, navegador, dispositivos do
             Usuário, indisponibilidade de tribunais (PJe e correlatos),
-            provedores de nuvem, pagamento ou inteligência artificial.
+            provedores de nuvem, pagamento, autenticação ou inteligência
+            artificial.
           </li>
           <li>
             Prestam o Serviço &quot;como está&quot; e &quot;conforme
@@ -314,45 +475,53 @@ export default function TermosPage() {
             limitado, salvo dolo ou culpa grave comprovados e ressalvados
             direitos indisponíveis do consumidor, ao montante efetivamente pago
             pelo Usuário ao FACTO nos 12 (doze) meses anteriores ao evento
-            danoso.
+            danoso (ou ao valor do trial/benefício equivalente, se não houver
+            pagamento).
           </li>
         </ul>
         <p className="mt-2">
           Nada nestes Termos exclui direitos irrenunciáveis previstos no CDC
-          quando o Usuário for consumidor final nos termos da lei.
+          quando o Usuário for consumidor final nos termos da lei, nem
+          responsabilidades que a LGPD imponha de forma cogente ao FACTO na
+          qualidade de controlador dos dados da conta do Usuário.
         </p>
       </section>
 
       <section>
         <h2 className="mb-2 text-lg font-semibold text-stone-900">
-          11. Indenização
+          13. Indenização
         </h2>
         <p>
-          O Usuário indenizará e manterá indene o FACTO de reclamações,
-          processos, prejuízos, custas e honorários razoáveis decorrentes de: (a)
-          uso da Plataforma em desacordo com estes Termos ou com a lei; (b)
-          conteúdo enviado pelo Usuário; (c) protocolo ou divulgação de minutas
-          sem revisão adequada; (d) violação de direitos de terceiros ou do
-          segredo profissional imputável ao Usuário.
+          O Usuário indenizará e manterá indene o FACTO, seus sócios,
+          administradores, colaboradores e prestadores de reclamações,
+          processos, prejuízos, custas e honorários razoáveis decorrentes de:
+          (a) uso da Plataforma em desacordo com estes Termos ou com a lei; (b)
+          conteúdo enviado, gerado, exportado ou protocolado pelo Usuário; (c)
+          protocolo ou divulgação de peças sem revisão adequada; (d) violação
+          de direitos de terceiros, LGPD ou segredo profissional imputável ao
+          Usuário; (e) ilícito, fraude ou mau uso praticado por meio da conta;
+          (f) vazamento ou acesso indevido causado por falha do Usuário na
+          guarda de credenciais, dispositivos ou cópias locais.
         </p>
       </section>
 
       <section>
         <h2 className="mb-2 text-lg font-semibold text-stone-900">
-          12. Suspensão, encerramento e sobrevivência
+          14. Suspensão, encerramento e sobrevivência
         </h2>
         <p>
           O FACTO pode suspender ou encerrar o acesso, total ou parcialmente,
-          em caso de violação destes Termos, risco à segurança, ordem legal ou
+          imediatamente e sem indenização, em caso de violação destes Termos,
+          ilícito, risco à segurança, ordem legal, abuso de trial/cota ou
           encerramento do Serviço. Cláusulas de propriedade intelectual,
-          limitação de responsabilidade, indenização, confidencialidade e foro
-          sobrevivem ao término.
+          limitação de responsabilidade, indenização, confidencialidade,
+          retenção legal e foro sobrevivem ao término.
         </p>
       </section>
 
       <section>
         <h2 className="mb-2 text-lg font-semibold text-stone-900">
-          13. Alterações destes Termos
+          15. Alterações destes Termos
         </h2>
         <p>
           Podemos atualizar estes Termos a qualquer tempo. A data de
@@ -366,7 +535,7 @@ export default function TermosPage() {
 
       <section>
         <h2 className="mb-2 text-lg font-semibold text-stone-900">
-          14. Privacidade
+          16. Privacidade
         </h2>
         <p>
           O tratamento de dados pessoais está descrito na{" "}
@@ -382,7 +551,7 @@ export default function TermosPage() {
 
       <section>
         <h2 className="mb-2 text-lg font-semibold text-stone-900">
-          15. Contato, lei aplicável e foro
+          17. Contato, lei aplicável e foro
         </h2>
         <p>
           Suporte: formulário na área logada ou{" "}
@@ -412,7 +581,7 @@ export default function TermosPage() {
 
       <section>
         <h2 className="mb-2 text-lg font-semibold text-stone-900">
-          16. Disposições gerais
+          18. Disposições gerais
         </h2>
         <p>
           A invalidade de qualquer cláusula não prejudica as demais. A tolerância

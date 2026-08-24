@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { GerarPecaJecOutput } from "@/lib/gerar-peca-jec";
 import {
   ASSISTENTE_FACTO,
@@ -1151,6 +1151,18 @@ export function JecForm({
     itemOk("valores") ||
     pedidos.some((p) => p.descricao.trim().length > 0);
 
+  const guiaInicialRef = useRef(true);
+  useEffect(() => {
+    if (guiaInicialRef.current) {
+      guiaInicialRef.current = false;
+      return;
+    }
+    const topo = document.getElementById("dashboard-minuta-topo");
+    if (!topo) return;
+    // main do layout é overflow-y-auto — scrollIntoView respeita o scrollport.
+    topo.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [guiaAtiva]);
+
   const tesesAtivas = useMemo(
     () =>
       detectarTesesCanonicas(
@@ -1819,7 +1831,7 @@ export function JecForm({
   return (
     <div className={`space-y-8 ${resultado ? "pb-24" : ""}`}>
       <form onSubmit={handleSubmit} className="space-y-6">
-        <header>
+        <header id="dashboard-minuta-topo" className="scroll-mt-24">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <Link
               href="/dashboard"

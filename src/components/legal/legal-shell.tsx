@@ -4,7 +4,7 @@ import { FactoLogo } from "@/components/brand/facto-logo";
 
 export function LegalShell({
   titulo,
-  atualizacao = "4 de agosto de 2026",
+  atualizacao = "24 de agosto de 2026",
   children,
 }: {
   titulo: string;

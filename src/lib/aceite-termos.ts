@@ -1,5 +1,5 @@
 /** Versão do pacote Termos + Privacidade. Ao mudar, usuários precisam aceitar de novo. */
-export const ACEITE_TERMOS_VERSAO = "2026-08-04b";
+export const ACEITE_TERMOS_VERSAO = "2026-08-24";
 
 export function temAceiteTermos(metadata: Record<string, unknown> | null | undefined): boolean {
   if (!metadata) return false;

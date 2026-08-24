@@ -84,13 +84,35 @@ export function JurisSugestoesPicker({
   function toggleTribunal(id: string) {
     setTribunaisSel((prev) => {
       if (prev.includes(id)) {
-        if (prev.length <= 1) return prev;
         return prev.filter((x) => x !== id);
       }
       if (prev.length >= MAX_TRIBUNAIS_POR_BUSCA) return prev;
       return [...prev, id];
     });
   }
+
+  function adicionarTribunal(id: string) {
+    if (!id) return;
+    setTribunaisSel((prev) => {
+      if (prev.includes(id) || prev.length >= MAX_TRIBUNAIS_POR_BUSCA) {
+        return prev;
+      }
+      return [...prev, id];
+    });
+  }
+
+  const opcoesDisponiveis = useMemo(
+    () => opcoesTribunal.filter((t) => !tribunaisSel.includes(t.id)),
+    [opcoesTribunal, tribunaisSel]
+  );
+
+  const selecionadosMeta = useMemo(
+    () =>
+      tribunaisSel
+        .map((id) => opcoesTribunal.find((t) => t.id === id))
+        .filter(Boolean) as typeof opcoesTribunal,
+    [tribunaisSel, opcoesTribunal]
+  );
 
   async function abrirEBuscar() {
     if (tribunaisSel.length < 1) {
@@ -189,40 +211,84 @@ export function JurisSugestoesPicker({
         <p className="mb-2 text-xs font-medium text-slate-700">
           Tribunais da busca
           <span className="ml-1 font-normal text-slate-500">
-            (escolha de 1 a {MAX_TRIBUNAIS_POR_BUSCA} · filtra o acervo FACTO)
+            (até {MAX_TRIBUNAIS_POR_BUSCA} · filtra o acervo FACTO)
           </span>
         </p>
-        <div className="flex flex-wrap gap-2">
-          {opcoesTribunal.map((t) => {
-            const ativo = tribunaisSel.includes(t.id);
-            const desabilitaMarcar =
-              !ativo && tribunaisSel.length >= MAX_TRIBUNAIS_POR_BUSCA;
-            return (
-              <label
+
+        {selecionadosMeta.length > 0 ? (
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            {selecionadosMeta.map((t) => (
+              <button
                 key={t.id}
-                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs ${
-                  ativo
-                    ? "border-facto-gold/50 bg-amber-50 text-stone-800"
-                    : "border-slate-200 bg-slate-50 text-slate-600"
-                } ${desabilitaMarcar ? "opacity-40" : ""}`}
+                type="button"
+                onClick={() => toggleTribunal(t.id)}
+                title={`Remover ${t.rotulo}`}
+                className="inline-flex items-center gap-1 rounded-full border border-facto-gold/40 bg-amber-50 px-2.5 py-1 text-xs font-medium text-stone-800 hover:bg-amber-100"
               >
-                <input
-                  type="checkbox"
-                  className="rounded border-slate-300"
-                  checked={ativo}
-                  disabled={desabilitaMarcar}
-                  onChange={() => toggleTribunal(t.id)}
-                />
                 {t.rotulo}
                 {t.grupo === "superior" ? (
-                  <span className="text-[10px] uppercase text-slate-400">
-                    {t.grupo}
+                  <span className="text-[10px] font-normal uppercase text-slate-400">
+                    sup.
+                  </span>
+                ) : t.uf ? (
+                  <span className="text-[10px] font-normal text-slate-400">
+                    {t.uf}
                   </span>
                 ) : null}
-              </label>
-            );
-          })}
-        </div>
+                <span aria-hidden className="text-slate-500">
+                  ×
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="mb-2 text-[11px] text-slate-500">
+            Nenhum tribunal ainda — adicione abaixo (ex.: TJ do foro + STJ).
+          </p>
+        )}
+
+        {tribunaisSel.length < MAX_TRIBUNAIS_POR_BUSCA ? (
+          <label className="block">
+            <span className="sr-only">Adicionar tribunal</span>
+            <select
+              value=""
+              onChange={(e) => {
+                adicionarTribunal(e.target.value);
+                e.target.value = "";
+              }}
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
+            >
+              <option value="">
+                Adicionar tribunal…
+              </option>
+              <optgroup label="Superiores">
+                {opcoesDisponiveis
+                  .filter((t) => t.grupo === "superior")
+                  .map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.rotulo}
+                    </option>
+                  ))}
+              </optgroup>
+              <optgroup label="Tribunais de Justiça">
+                {opcoesDisponiveis
+                  .filter((t) => t.grupo === "estadual")
+                  .map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.rotulo}
+                      {t.uf ? ` (${t.uf})` : ""}
+                      {ufForo && t.uf === ufForo ? " — foro" : ""}
+                    </option>
+                  ))}
+              </optgroup>
+            </select>
+          </label>
+        ) : (
+          <p className="text-[11px] text-slate-500">
+            Limite de {MAX_TRIBUNAIS_POR_BUSCA} atingido — remova um para trocar.
+          </p>
+        )}
+
         {!ufForo ? (
           <p className="mt-2 text-[11px] text-slate-500">
             Informe a UF no foro (ex.: …/SP) para o TJ local aparecer no topo da

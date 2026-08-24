@@ -21,22 +21,35 @@ export const TRIBUNAIS_SUPERIORES: OpcaoTribunal[] = [
   { id: "stf", rotulo: "STF", grupo: "superior" },
 ];
 
-/** Principais TJs (expansão gradual). */
+/** Principais TJs — 26 estados + DF. */
 export const TRIBUNAIS_ESTADUAIS: OpcaoTribunal[] = [
-  { id: "tjsp", rotulo: "TJSP", grupo: "estadual", uf: "SP" },
-  { id: "tjrj", rotulo: "TJRJ", grupo: "estadual", uf: "RJ" },
-  { id: "tjmg", rotulo: "TJMG", grupo: "estadual", uf: "MG" },
-  { id: "tjrs", rotulo: "TJRS", grupo: "estadual", uf: "RS" },
-  { id: "tjpr", rotulo: "TJPR", grupo: "estadual", uf: "PR" },
-  { id: "tjsc", rotulo: "TJSC", grupo: "estadual", uf: "SC" },
+  { id: "tjac", rotulo: "TJAC", grupo: "estadual", uf: "AC" },
+  { id: "tjal", rotulo: "TJAL", grupo: "estadual", uf: "AL" },
+  { id: "tjap", rotulo: "TJAP", grupo: "estadual", uf: "AP" },
+  { id: "tjam", rotulo: "TJAM", grupo: "estadual", uf: "AM" },
   { id: "tjba", rotulo: "TJBA", grupo: "estadual", uf: "BA" },
-  { id: "tjpe", rotulo: "TJPE", grupo: "estadual", uf: "PE" },
   { id: "tjce", rotulo: "TJCE", grupo: "estadual", uf: "CE" },
-  { id: "tjgo", rotulo: "TJGO", grupo: "estadual", uf: "GO" },
   { id: "tjdft", rotulo: "TJDFT", grupo: "estadual", uf: "DF" },
   { id: "tjes", rotulo: "TJES", grupo: "estadual", uf: "ES" },
+  { id: "tjgo", rotulo: "TJGO", grupo: "estadual", uf: "GO" },
+  { id: "tjma", rotulo: "TJMA", grupo: "estadual", uf: "MA" },
   { id: "tjmt", rotulo: "TJMT", grupo: "estadual", uf: "MT" },
   { id: "tjms", rotulo: "TJMS", grupo: "estadual", uf: "MS" },
+  { id: "tjmg", rotulo: "TJMG", grupo: "estadual", uf: "MG" },
+  { id: "tjpa", rotulo: "TJPA", grupo: "estadual", uf: "PA" },
+  { id: "tjpb", rotulo: "TJPB", grupo: "estadual", uf: "PB" },
+  { id: "tjpr", rotulo: "TJPR", grupo: "estadual", uf: "PR" },
+  { id: "tjpe", rotulo: "TJPE", grupo: "estadual", uf: "PE" },
+  { id: "tjpi", rotulo: "TJPI", grupo: "estadual", uf: "PI" },
+  { id: "tjrj", rotulo: "TJRJ", grupo: "estadual", uf: "RJ" },
+  { id: "tjrn", rotulo: "TJRN", grupo: "estadual", uf: "RN" },
+  { id: "tjrs", rotulo: "TJRS", grupo: "estadual", uf: "RS" },
+  { id: "tjro", rotulo: "TJRO", grupo: "estadual", uf: "RO" },
+  { id: "tjrr", rotulo: "TJRR", grupo: "estadual", uf: "RR" },
+  { id: "tjsc", rotulo: "TJSC", grupo: "estadual", uf: "SC" },
+  { id: "tjsp", rotulo: "TJSP", grupo: "estadual", uf: "SP" },
+  { id: "tjse", rotulo: "TJSE", grupo: "estadual", uf: "SE" },
+  { id: "tjto", rotulo: "TJTO", grupo: "estadual", uf: "TO" },
 ];
 
 const POR_ID = new Map<string, OpcaoTribunal>(
