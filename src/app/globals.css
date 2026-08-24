@@ -134,6 +134,47 @@ body {
   animation: assistente-ia-shimmer 3.6s ease-in-out infinite;
 }
 
+@keyframes assistente-chip-scan {
+  0% {
+    transform: translateX(-120%);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 0.35;
+  }
+  100% {
+    transform: translateX(320%);
+    opacity: 0;
+  }
+}
+
+.assistente-chip-scan {
+  animation: assistente-chip-scan 4.8s ease-in-out infinite;
+}
+
+@keyframes assistente-chip-dot-vert {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.75);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+.assistente-chip-dot-vert {
+  animation: assistente-chip-dot-vert 2.2s ease-in-out infinite;
+}
+
+.assistente-chip-root:hover .assistente-chip-dots circle {
+  filter: drop-shadow(0 0 3px rgba(240, 235, 208, 0.85));
+}
+
 @media (prefers-reduced-motion: reduce) {
   .facto-node-pulse {
     animation-duration: 6s;
@@ -142,7 +183,9 @@ body {
   .facto-star-twinkle,
   .facto-fluxo-node,
   .assistente-ia-pulse,
-  .assistente-ia-shimmer {
+  .assistente-ia-shimmer,
+  .assistente-chip-scan,
+  .assistente-chip-dot-vert {
     animation: none !important;
   }
   .assistente-ia-shimmer {
@@ -150,5 +193,8 @@ body {
     background-image: none;
     -webkit-background-clip: unset;
     background-clip: unset;
+  }
+  .assistente-chip-dots {
+    display: none;
   }
 }

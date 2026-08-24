@@ -198,9 +198,9 @@ export function DashboardHome({
     <div className="relative overflow-x-clip pb-24">
       <div className="relative z-10">
       {/* Hero */}
-      <section className="relative overflow-hidden px-6 pb-10 pt-10 md:px-10 md:pt-14">
+      <section className="relative overflow-visible px-6 pb-10 pt-10 md:px-10 md:pt-14">
         <div
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(144,139,106,0.18),transparent_60%)]"
+          className="pointer-events-none absolute inset-0 overflow-hidden bg-[radial-gradient(ellipse_at_top,rgba(144,139,106,0.18),transparent_60%)]"
           aria-hidden
         />
         <div className="relative mx-auto max-w-7xl">
@@ -208,7 +208,7 @@ export function DashboardHome({
             <h1 className="text-4xl font-bold text-white md:text-5xl">
               {saudacao()}, {primeiroNome}
             </h1>
-            <div className="shrink-0 sm:pt-1">
+            <div className="shrink-0 overflow-visible sm:pt-2 sm:pr-2">
               <AssistenteFactoDestaque leigo={leigo} />
             </div>
           </div>
