@@ -57,20 +57,22 @@ function CardShell({
   className?: string;
 }) {
   return (
-    <div
-      className={`relative flex flex-col overflow-hidden rounded-2xl border p-8 ${
-        destaque
-          ? "border-facto-gold/55 bg-gradient-to-br from-facto-gold/[0.22] via-[#2a261c]/90 to-[#16140f] shadow-[0_0_40px_-8px_rgba(196,191,154,0.55),0_0_80px_-20px_rgba(144,139,106,0.4)] ring-1 ring-facto-gold/35"
-          : "border-white/10 bg-white/[0.03]"
-      } ${className}`}
-    >
+    <div className={`plano-card-wrap ${className}`}>
       {destaque && (
         <span
-          className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-facto-gold/25 blur-3xl"
+          className="plano-card-glow-orb -right-10 -top-10 h-36 w-36 rounded-full bg-facto-gold/25 blur-3xl"
           aria-hidden
         />
       )}
-      <div className="relative flex flex-1 flex-col">{children}</div>
+      <div
+        className={`plano-card-inner flex flex-col rounded-2xl border p-8 ${
+          destaque
+            ? "border-facto-gold/55 bg-gradient-to-br from-facto-gold/[0.22] via-[#2a261c]/90 to-[#16140f] shadow-[0_0_40px_-8px_rgba(196,191,154,0.55),0_0_80px_-20px_rgba(144,139,106,0.4)] ring-1 ring-facto-gold/35"
+            : "border-white/10 bg-white/[0.03]"
+        }`}
+      >
+        {children}
+      </div>
     </div>
   );
 }

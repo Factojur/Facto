@@ -147,58 +147,60 @@ function ofertasParaPlano(
 
 function CardOferta({ oferta }: { oferta: Oferta }) {
   return (
-    <div
-      className={`relative flex flex-col overflow-hidden rounded-2xl border p-5 ${
-        oferta.destaque
-          ? "border-facto-gold/55 bg-gradient-to-br from-facto-gold/[0.22] via-[#2a261c]/90 to-[#16140f] shadow-[0_0_40px_-8px_rgba(196,191,154,0.55),0_0_80px_-20px_rgba(144,139,106,0.4)] ring-1 ring-facto-gold/35"
-          : "border-white/10 bg-white/[0.03]"
-      }`}
-    >
+    <div className="plano-card-wrap">
       {oferta.destaque && (
-        <>
-          <span
-            className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-facto-gold/25 blur-3xl"
-            aria-hidden
-          />
+        <span
+          className="plano-card-glow-orb -right-10 -top-10 h-36 w-36 rounded-full bg-facto-gold/25 blur-3xl"
+          aria-hidden
+        />
+      )}
+      <div
+        className={`plano-card-inner flex flex-col rounded-2xl border p-5 ${
+          oferta.destaque
+            ? "border-facto-gold/55 bg-gradient-to-br from-facto-gold/[0.22] via-[#2a261c]/90 to-[#16140f] shadow-[0_0_40px_-8px_rgba(196,191,154,0.55),0_0_80px_-20px_rgba(144,139,106,0.4)] ring-1 ring-facto-gold/35"
+            : "border-white/10 bg-white/[0.03]"
+        }`}
+      >
+        {oferta.destaque && (
           <span className="relative mb-2 inline-flex w-fit rounded-full border border-facto-gold/45 bg-facto-gold/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#f0ebd0] shadow-[0_0_12px_rgba(240,235,208,0.35)]">
             Recomendado
           </span>
-        </>
-      )}
-      <p className="relative text-lg font-bold text-white">{oferta.nome}</p>
-      <p className="relative mt-1 text-2xl font-bold tracking-tight text-white">
-        {oferta.preco}
-        <span className="text-sm font-medium text-stone-500">
-          {oferta.periodo}
-        </span>
-      </p>
-      <p className="relative mt-1 text-sm font-medium text-stone-400">
-        {oferta.pecas}
-      </p>
-      <ul className="relative mt-4 flex-1 space-y-1.5 text-sm text-stone-400">
-        {oferta.beneficios.map((b) => (
-          <li key={b} className="flex gap-2">
-            <span className="text-facto-gold" aria-hidden>
-              ✓
-            </span>
-            <span>{b}</span>
-          </li>
-        ))}
-      </ul>
-      <div className="relative mt-5">
-        <BotaoAssinarPlano
-          planoId={oferta.id}
-          hrefFallback={oferta.hrefFallback}
-          variante={oferta.destaque ? "primario" : "secundario"}
-        >
-          {oferta.id === "jec" ||
-          oferta.id === "mensal" ||
-          oferta.id === "anual" ||
-          oferta.id === "pro" ||
-          oferta.id === "pro_anual"
-            ? `Assinar ${oferta.nome.replace(/^Plano\s+/i, "")}`
-            : "Assinar"}
-        </BotaoAssinarPlano>
+        )}
+        <p className="relative text-lg font-bold text-white">{oferta.nome}</p>
+        <p className="relative mt-1 text-2xl font-bold tracking-tight text-white">
+          {oferta.preco}
+          <span className="text-sm font-medium text-stone-500">
+            {oferta.periodo}
+          </span>
+        </p>
+        <p className="relative mt-1 text-sm font-medium text-stone-400">
+          {oferta.pecas}
+        </p>
+        <ul className="relative mt-4 flex-1 space-y-1.5 text-sm text-stone-400">
+          {oferta.beneficios.map((b) => (
+            <li key={b} className="flex gap-2">
+              <span className="text-facto-gold" aria-hidden>
+                ✓
+              </span>
+              <span>{b}</span>
+            </li>
+          ))}
+        </ul>
+        <div className="relative mt-5">
+          <BotaoAssinarPlano
+            planoId={oferta.id}
+            hrefFallback={oferta.hrefFallback}
+            variante={oferta.destaque ? "primario" : "secundario"}
+          >
+            {oferta.id === "jec" ||
+            oferta.id === "mensal" ||
+            oferta.id === "anual" ||
+            oferta.id === "pro" ||
+            oferta.id === "pro_anual"
+              ? `Assinar ${oferta.nome.replace(/^Plano\s+/i, "")}`
+              : "Assinar"}
+          </BotaoAssinarPlano>
+        </div>
       </div>
     </div>
   );

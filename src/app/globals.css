@@ -159,23 +159,30 @@ body {
 @keyframes assistente-chip-sheen {
   0%,
   100% {
-    background: radial-gradient(
-      ellipse at 30% 20%,
-      rgba(240, 235, 208, 0.14),
-      transparent 55%
-    );
+    opacity: 0.35;
   }
   50% {
-    background: radial-gradient(
-      ellipse at 70% 80%,
-      rgba(240, 235, 208, 0.2),
-      transparent 58%
-    );
+    opacity: 0.85;
   }
 }
 
 .assistente-chip-sheen {
+  background: radial-gradient(
+    ellipse at 50% 40%,
+    rgba(240, 235, 208, 0.18),
+    transparent 58%
+  );
   animation: assistente-chip-sheen 3.2s ease-in-out infinite;
+}
+
+.assistente-chip--js .assistente-chip-halo,
+.assistente-chip--js .assistente-chip-scan,
+.assistente-chip--js .assistente-chip-sheen,
+.assistente-chip--js .assistente-chip-body,
+.assistente-chip--js .assistente-chip-dot-vert,
+.assistente-chip--js .assistente-chip-pin,
+.assistente-chip--js .assistente-ia-shimmer {
+  animation: none !important;
 }
 
 @keyframes assistente-chip-body-glow {
@@ -238,11 +245,9 @@ body {
   0%,
   100% {
     opacity: 0.55;
-    filter: drop-shadow(0 0 1px rgba(144, 139, 106, 0.2));
   }
   50% {
     opacity: 1;
-    filter: drop-shadow(0 0 5px rgba(240, 235, 208, 0.75));
   }
 }
 
@@ -363,6 +368,38 @@ body {
   z-index: 2;
 }
 
+.plano-card-wrap {
+  position: relative;
+  isolation: isolate;
+}
+
+.plano-card-glow-orb {
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  animation: plano-card-glow-pulse 3.2s ease-in-out infinite;
+}
+
+.plano-card-inner {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes plano-card-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: translateZ(0) scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: translateZ(0) scale(1.1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .facto-node-pulse {
     animation-duration: 6s;
@@ -371,25 +408,28 @@ body {
   .facto-star-twinkle,
   .facto-fluxo-node,
   .assistente-ia-pulse,
-  .assistente-ia-shimmer,
-  .assistente-chip-scan,
-  .assistente-chip-dot-vert,
-  .assistente-chip-sheen,
-  .assistente-chip-body,
-  .assistente-chip-halo,
-  .assistente-chip-pin,
-  .assistente-chip-trails,
-  .assistente-chip-nodes,
-  .grupo-area-card::after {
+  .grupo-area-card::after,
+  .plano-card-glow-orb {
     animation: none !important;
   }
-  .assistente-ia-shimmer {
+  .assistente-chip-root:not(.assistente-chip--js) .assistente-ia-shimmer,
+  .assistente-chip-root:not(.assistente-chip--js) .assistente-chip-scan,
+  .assistente-chip-root:not(.assistente-chip--js) .assistente-chip-dot-vert,
+  .assistente-chip-root:not(.assistente-chip--js) .assistente-chip-sheen,
+  .assistente-chip-root:not(.assistente-chip--js) .assistente-chip-body,
+  .assistente-chip-root:not(.assistente-chip--js) .assistente-chip-halo,
+  .assistente-chip-root:not(.assistente-chip--js) .assistente-chip-pin,
+  .assistente-chip-root:not(.assistente-chip--js) [data-chip-trails],
+  .assistente-chip-root:not(.assistente-chip--js) [data-chip-nodes] {
+    animation: none !important;
+  }
+  .assistente-chip-root:not(.assistente-chip--js) .assistente-ia-shimmer {
     color: #908b6a;
     background-image: none;
     -webkit-background-clip: unset;
     background-clip: unset;
   }
-  .assistente-chip-dots {
-    display: none;
+  .plano-card-glow-orb {
+    opacity: 0.65;
   }
 }
