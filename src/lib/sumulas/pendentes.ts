@@ -70,18 +70,18 @@ export const SUMULAS_PENDENTES: SumulaPendenteItem[] = [
   },
   {
     numero: "TST OJs/PNs",
-    titulo: "OJs e Precedentes Normativos do TST (fila 03h)",
+    titulo: "OJs e Precedentes Normativos do TST (fila 04h)",
     enunciado:
-      "SBDI-I, SBDI-I Transitória, SBDI-II, TP/OE, SDC e PNs — seed diário FACTO-seed-sumulas-03h.",
+      "SBDI-I, SBDI-I Transitória, SBDI-II, TP/OE, SDC e PNs — seed diário FACTO-seed-sumulas-04h.",
     tribunal: "TST",
     status: "pendente_publicacao",
     observacao:
-      "Rodar npm run seed:sumulas-diario / tarefa 03h até scripts/seed-sumulas-estado.json concluido=true. Fonte: scripts/sumulas-fonte/tst-livro-2025.txt.",
+      "Rodar npm run seed:sumulas-diario / tarefa 04h até scripts/seed-sumulas-estado.json concluido=true. Fonte: scripts/sumulas-fonte/tst-livro-2025.txt.",
   },
   {
     numero: "TSE 74+",
     titulo: "Súmulas do TSE a partir da 74",
-    enunciado: "Refresh automático no portal via fase tse_portal da fila 03h.",
+    enunciado: "Refresh automático no portal via fase tse_portal da fila 04h.",
     tribunal: "TSE",
     status: "pendente_publicacao",
     observacao:

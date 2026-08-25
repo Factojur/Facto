@@ -1,5 +1,5 @@
 /**
- * Fila do seed diário de súmulas / OJs / PNs (03h).
+ * Fila do seed diário de súmulas / OJs / PNs (04h).
  * Ordem: completar TST (OJs/PNs) → refresh TSE → TJs com fonte → reindex final.
  * Cada noite, após upsert, já roda reindex (só sem vetor; fail-open em 429).
  * TRE: sem súmula nacional (lastro = TSE) — unidade informativa, não busca.

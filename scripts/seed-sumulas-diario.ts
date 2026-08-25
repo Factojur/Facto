@@ -1,5 +1,5 @@
 /**
- * Seed diário 03h — súmulas / OJs / PNs (TST, TSE, TJSP…) até zerar a fila.
+ * Seed diário 04h — súmulas / OJs / PNs (TST, TSE, TJSP…) até zerar a fila.
  *
  * Estado: scripts/seed-sumulas-estado.json
  * Uso: npm run seed:sumulas-diario
