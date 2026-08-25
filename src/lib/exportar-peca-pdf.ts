@@ -160,13 +160,15 @@ function desenharParagrafoRuns(
       gaps.length > 0;
 
     if (justificar) {
+      // Distribui só a sobra nos gaps — sem somar de novo a largura do espaço
+      // original (senão a linha ultrapassa a margem direita ABNT de 2 cm).
       const sobra = Math.max(0, util - larguraPalavras);
       const extraPorGap = sobra / gaps.length;
       let x = xBase;
       for (const token of linha.tokens) {
         doc.setFont("times", estiloFonte(token));
         if (token.espaco) {
-          x += token.width + extraPorGap;
+          x += extraPorGap;
           continue;
         }
         doc.text(token.text, x, y);
@@ -176,6 +178,10 @@ function desenharParagrafoRuns(
       let x = xBase;
       for (const token of linha.tokens) {
         doc.setFont("times", estiloFonte(token));
+        if (token.espaco) {
+          x += token.width;
+          continue;
+        }
         doc.text(token.text, x, y);
         x += token.width;
       }
