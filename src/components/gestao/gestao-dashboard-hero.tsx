@@ -229,14 +229,6 @@ export function GestaoDashboardHero({
               style={fade(240)}
             >
               <Link
-                href="/dashboard"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-stone-700/80 bg-stone-950/50 px-4 py-2 text-xs font-medium text-stone-300 backdrop-blur-sm transition hover:border-facto-gold/45 hover:text-facto-gold"
-              >
-                Minutas FACTO ↗
-              </Link>
-              <Link
                 href="/gestao/prazos"
                 className="inline-flex items-center rounded-xl bg-facto-gold px-4 py-2 text-xs font-semibold text-facto-dark shadow-md shadow-facto-gold/15 transition hover:bg-[#b8ae8a]"
               >

@@ -85,14 +85,6 @@ export function GestaoShell({
                   : ""}
               </span>
             ) : null}
-            <Link
-              href="/dashboard"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-lg border border-stone-700 px-2.5 py-1 text-xs text-stone-400 transition hover:border-facto-gold/40 hover:text-facto-gold"
-            >
-              Minutas ↗
-            </Link>
           </div>
         </div>
       </header>

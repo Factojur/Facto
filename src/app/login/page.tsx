@@ -8,8 +8,6 @@ import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { createClient } from "@/lib/supabase/client";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { PLANO_TRIAL } from "@/lib/planos-facto";
-import { destinoLoginGestao } from "@/lib/gestao/gestao-flags";
-import { GestaoLoginEntry } from "@/components/gestao/gestao-login-entry";
 
 async function registrarSessaoAtiva(): Promise<{ ok: boolean; erro?: string }> {
   try {
@@ -38,18 +36,6 @@ function LoginForm() {
   const sessaoEncerrada = searchParams.get("sessao") === "encerrada";
   const acessoExpirado = searchParams.get("acesso") === "expirado";
   const oauthErro = searchParams.get("oauth");
-  const destinoGestao = destinoLoginGestao(searchParams.get("destino"));
-  const conviteGestao = searchParams.get("convite");
-
-  function urlPosLogin(): string {
-    if (destinoGestao) {
-      if (conviteGestao) {
-        return `/gestao/entrar?convite=${encodeURIComponent(conviteGestao)}`;
-      }
-      return "/gestao";
-    }
-    return "/dashboard";
-  }
 
   useEffect(() => {
     async function preparar() {
@@ -64,11 +50,6 @@ function LoginForm() {
       } = await supabase.auth.getUser();
 
       if (user) {
-        if (destinoGestao) {
-          window.location.assign(urlPosLogin());
-          return;
-        }
-
         const check = await fetch("/api/auth/sessao", { cache: "no-store" });
         if (check.status === 401 || check.status === 200) {
           const data = check.ok
@@ -83,7 +64,7 @@ function LoginForm() {
             }
           }
         }
-        window.location.assign(urlPosLogin());
+        window.location.assign("/dashboard");
         return;
       }
 
@@ -92,7 +73,7 @@ function LoginForm() {
 
     void preparar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router, sessaoEncerrada, acessoExpirado, destinoGestao, conviteGestao]);
+  }, [router, sessaoEncerrada, acessoExpirado]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -114,11 +95,6 @@ function LoginForm() {
       return;
     }
 
-    if (destinoGestao) {
-      window.location.assign(urlPosLogin());
-      return;
-    }
-
     const reg = await registrarSessaoAtiva();
     if (!reg.ok) {
       setError(reg.erro ?? "Não foi possível registrar a sessão.");
@@ -128,7 +104,7 @@ function LoginForm() {
 
     // Navegação completa garante que o cookie facto_sessao vá no próximo
     // request (router.push às vezes corre antes do browser aplicar Set-Cookie).
-    window.location.assign(urlPosLogin());
+    window.location.assign("/dashboard");
   }
 
   if (checkingSession) {
@@ -148,13 +124,9 @@ function LoginForm() {
       <div className="relative w-full max-w-md">
         <div className="mb-8 flex flex-col items-center">
           <FactoLogo variant="stacked" size="md" />
-          <h1 className="mt-6 text-3xl font-bold text-white">
-            {destinoGestao ? "Entrar no FACTO Gestão" : "Entrar"}
-          </h1>
+          <h1 className="mt-6 text-3xl font-bold text-white">Entrar</h1>
           <p className="mt-2 text-sm text-stone-400">
-            {destinoGestao
-              ? "Processos, prazos e agenda do escritório"
-              : "Acesse sua conta para gerar peças jurídicas"}
+            Acesse sua conta para gerar peças jurídicas
           </p>
         </div>
 
@@ -199,15 +171,7 @@ function LoginForm() {
             </div>
           )}
 
-          {destinoGestao ? (
-            <GestaoLoginEntry somenteAviso modoGestao className="mb-4" />
-          ) : null}
-
-          <GoogleSignInButton
-            intent="login"
-            destinoGestao={destinoGestao}
-            className="mb-4"
-          />
+          <GoogleSignInButton intent="login" className="mb-4" />
 
           <div className="mb-4 flex items-center gap-3 text-xs text-stone-500">
             <span className="h-px flex-1 bg-stone-700" />
@@ -276,20 +240,6 @@ function LoginForm() {
               Criar conta / teste grátis
             </Link>
           </p>
-
-          {!destinoGestao ? (
-            <GestaoLoginEntry
-              convite={conviteGestao}
-              className="mt-6 border-t border-stone-800 pt-6"
-            />
-          ) : (
-            <p className="mt-6 text-center text-xs text-stone-500">
-              Quer gerar minutas?{" "}
-              <Link href="/login" className="text-facto-gold hover:text-[#a39a78]">
-                Entrar no FACTO Minutas
-              </Link>
-            </p>
-          )}
         </form>
       </div>
     </div>

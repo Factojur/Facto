@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FactoLogo } from "@/components/brand/facto-logo";
 import { BotaoPlanoTopbar } from "@/components/dashboard/botao-plano-topbar";
-import { BotaoGestaoTopbar } from "@/components/dashboard/botao-gestao-topbar";
 import { UserMenu } from "@/components/dashboard/user-menu";
 import type { PerfilResumo } from "@/lib/perfil-types";
 import type { PlanoId } from "@/lib/planos-facto";
@@ -58,7 +57,6 @@ export function DashboardTopBar({
         )}
 
         <BotaoPlanoTopbar plano={plano} />
-        <BotaoGestaoTopbar />
         <UserMenu perfil={perfil} />
       </div>
     </header>

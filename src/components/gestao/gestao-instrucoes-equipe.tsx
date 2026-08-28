@@ -29,9 +29,8 @@ export function GestaoInstrucoesEquipe({ variante = "admin" }: Props) {
           </li>
         </ol>
         <p className="mt-4 rounded-lg border border-stone-800 bg-stone-950/60 px-3 py-2 text-xs text-stone-500">
-          Minutas FACTO (geração de peças) são outro módulo — exigem plano
-          próprio. Aqui você gerencia clientes, pastas, prazos e agenda do
-          escritório.
+          Este módulo é independente — use a conta indicada pelo administrador
+          do escritório.
         </p>
       </GestaoPainel>
     );

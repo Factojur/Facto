@@ -39,8 +39,8 @@ export default async function GestaoHomePage() {
               Configure o escritório
             </h1>
             <p className="mt-2 max-w-md text-sm text-stone-400">
-              Primeiro acesso do titular. Depois de criado, você e os sócios
-              entram pelo botão Gestão na área de minutas.
+              Primeiro acesso do titular. Depois de criado, acesse pelo login
+              em /gestao/login.
             </p>
           </div>
           <div className="mt-10">

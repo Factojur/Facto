@@ -4,7 +4,7 @@ import { limparFotoDeMetadata } from "@/lib/perfil-merge";
 import { acessoAssinaturaLiberado } from "@/lib/acesso-assinatura";
 import { isAdminEmail } from "@/lib/admin-auth";
 import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
-import { gestaoHabilitada, destinoLoginGestao } from "@/lib/gestao/gestao-flags";
+import { gestaoHabilitada } from "@/lib/gestao/gestao-flags";
 
 const COOKIE_SESSAO = "facto_sessao";
 /** Evita consultar assinaturas a cada clique no dashboard (5 min). */
@@ -74,6 +74,18 @@ export async function middleware(request: NextRequest) {
       );
     }
     return NextResponse.redirect(loginUrl);
+  }
+
+  if (!user && pathname === "/login") {
+    const destinoGestao = request.nextUrl.searchParams.get("destino");
+    if (destinoGestao === "gestao" && gestaoHabilitada()) {
+      const gestaoLogin = request.nextUrl.clone();
+      gestaoLogin.pathname = "/gestao/login";
+      const convite = request.nextUrl.searchParams.get("convite");
+      gestaoLogin.searchParams.delete("destino");
+      if (convite) gestaoLogin.searchParams.set("convite", convite);
+      return NextResponse.redirect(gestaoLogin);
+    }
   }
 
   const isAuthBridge =
@@ -186,6 +198,16 @@ export async function middleware(request: NextRequest) {
     const veioDeConflito =
       request.nextUrl.searchParams.get("sessao") === "encerrada";
     if (!veioDeConflito) {
+      const destinoGestao = request.nextUrl.searchParams.get("destino");
+      if (destinoGestao === "gestao" && gestaoHabilitada()) {
+        const gestaoLogin = request.nextUrl.clone();
+        gestaoLogin.pathname = "/gestao/login";
+        const convite = request.nextUrl.searchParams.get("convite");
+        gestaoLogin.searchParams.delete("destino");
+        if (convite) gestaoLogin.searchParams.set("convite", convite);
+        return NextResponse.redirect(gestaoLogin);
+      }
+
       const sessaoCookie = request.cookies.get(COOKIE_SESSAO)?.value;
       const { data: profile } = await supabase
         .from("profiles")
@@ -198,18 +220,10 @@ export async function middleware(request: NextRequest) {
         (sessaoCookie != null && sessaoCookie === profile.sessao_ativa_id);
 
       if (sessaoOk) {
-        const destino = request.nextUrl.searchParams.get("destino");
-        const convite = request.nextUrl.searchParams.get("convite");
         const dashboardUrl = request.nextUrl.clone();
-        if (destinoLoginGestao(destino)) {
-          dashboardUrl.pathname = convite
-            ? "/gestao/entrar"
-            : "/gestao";
-          if (convite) dashboardUrl.searchParams.set("convite", convite);
-          dashboardUrl.searchParams.delete("destino");
-        } else {
-          dashboardUrl.pathname = "/dashboard";
-        }
+        dashboardUrl.pathname = "/dashboard";
+        dashboardUrl.searchParams.delete("destino");
+        dashboardUrl.searchParams.delete("convite");
         return NextResponse.redirect(dashboardUrl);
       }
     }
