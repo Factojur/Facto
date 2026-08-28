@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { GestaoInstrucoesEquipe } from "@/components/gestao/gestao-instrucoes-equipe";
 
 export function CriarEscritorioForm() {
   const router = useRouter();
@@ -20,10 +19,20 @@ export function CriarEscritorioForm() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ nomeEscritorio: nome, oabResponsavel: oab }),
     });
-    const data = (await res.json()) as { error?: string };
+    const data = (await res.json()) as { error?: string; escritorio?: { id: string } };
     if (!res.ok) {
+      if (data.error?.includes("já pertence")) {
+        router.replace("/gestao");
+        router.refresh();
+        return;
+      }
       setErro(data.error ?? "Não foi possível criar o escritório.");
       setLoading(false);
+      return;
+    }
+    if (data.escritorio?.id) {
+      router.replace("/gestao");
+      router.refresh();
       return;
     }
     router.refresh();
@@ -36,8 +45,8 @@ export function CriarEscritorioForm() {
     >
       <h2 className="text-lg font-medium text-white">Criar escritório</h2>
       <p className="mt-1 text-sm text-stone-400">
-        Você será o administrador. Convide sócios, colaboradores e estagiários
-        em Equipe depois.
+        Primeiro acesso do titular. Você será o administrador e poderá convidar
+        sócios, colaboradores e estagiários em Equipe depois.
       </p>
       <div className="mt-4 space-y-3">
         <div>
@@ -125,8 +134,6 @@ export function EntrarConviteForm({ tokenInicial }: { tokenInicial?: string }) {
 
   return (
     <div className="space-y-6">
-      <GestaoInstrucoesEquipe variante="convidado" />
-
       <form
         onSubmit={handleSubmit}
         className="rounded-xl border border-stone-800 bg-stone-900/60 p-6"
@@ -135,7 +142,7 @@ export function EntrarConviteForm({ tokenInicial }: { tokenInicial?: string }) {
         <p className="mt-1 text-sm text-stone-400">
           {tokenUrl
             ? "Entrando pelo link… se não concluir sozinho, confira o código abaixo."
-            : "Cole o token do link ou use o link completo enviado pelo administrador."}
+            : "Use o link enviado pelo administrador do escritório."}
         </p>
         <div className="mt-4 space-y-3">
           <div>

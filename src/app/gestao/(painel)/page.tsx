@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { GestaoShell } from "@/components/gestao/gestao-shell";
 import { GestaoDashboard } from "@/components/gestao/gestao-dashboard";
-import {
-  CriarEscritorioForm,
-  EntrarConviteForm,
-} from "@/components/gestao/gestao-onboarding";
+import { CriarEscritorioForm } from "@/components/gestao/gestao-onboarding";
+import { GestaoOnboardingGate } from "@/components/gestao/gestao-onboarding-gate";
 import { montarResumoGestaoDashboard } from "@/lib/gestao/gestao-dashboard-stats";
 import { podeVerHonorariosGestao } from "@/lib/gestao/gestao-permissoes";
 import {
@@ -30,7 +28,8 @@ export default async function GestaoHomePage() {
   if (!escritorio || !membro) {
     return (
       <div className="min-h-screen bg-stone-950 px-4 py-12">
-        <div className="mx-auto max-w-3xl">
+        <GestaoOnboardingGate />
+        <div className="mx-auto max-w-lg">
           <div className="flex flex-col items-center text-center">
             <FactoLogo variant="icon" size="sm" />
             <p className="mt-4 text-xs font-medium uppercase tracking-[0.2em] text-facto-gold">
@@ -40,17 +39,17 @@ export default async function GestaoHomePage() {
               Configure o escritório
             </h1>
             <p className="mt-2 max-w-md text-sm text-stone-400">
-              Crie um escritório novo (titular) ou entre com o convite que o
-              administrador enviou.
+              Primeiro acesso do titular. Depois de criado, você e os sócios
+              entram pelo botão Gestão na área de minutas.
             </p>
           </div>
-          <div className="mt-10 grid gap-6 md:grid-cols-2">
+          <div className="mt-10">
             <CriarEscritorioForm />
-            <EntrarConviteForm />
           </div>
-          <p className="mt-8 text-center text-xs text-stone-600">
-            <Link href="/gestao/login" className="text-stone-500 hover:text-facto-gold">
-              ← Voltar à apresentação
+          <p className="mt-8 text-center text-xs text-stone-500">
+            Colaborador ou estagiário?{" "}
+            <Link href="/gestao/login" className="text-stone-400 hover:text-facto-gold">
+              Entrar com convite
             </Link>
           </p>
         </div>

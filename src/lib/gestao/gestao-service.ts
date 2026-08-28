@@ -1,10 +1,18 @@
 import {
-  alterarGestaoStore,
   codigoConvite,
-  lerGestaoStore,
   novoId,
   tokenConvite,
 } from "@/lib/gestao/gestao-local-store";
+import {
+  alterarGestaoStorePersistido,
+  buscarConvitePorToken,
+  criarEscritorioPersistido,
+  inserirMembroPersistido,
+  lerGestaoEscritorio,
+  listarMembrosPersistidos,
+  obterContextoGestaoPersistido,
+  atualizarPapelMembroPersistido,
+} from "@/lib/gestao/gestao-persistencia";
 import { getSiteUrl } from "@/lib/site-url";
 import { limiteColaboradores } from "@/lib/gestao/limites-colaboradores";
 import type {
@@ -13,6 +21,7 @@ import type {
   ConviteGestao,
   EscritorioGestao,
   EventoAgendaGestao,
+  GestaoStore,
   MembroGestao,
   PlanoGestaoId,
   PrazoGestao,
@@ -25,8 +34,15 @@ import { processoGestaoPadrao } from "@/lib/gestao/gestao-types";
 
 const DIAS_CONVITE = 14;
 
+async function alterarEscritorio<T>(
+  escritorioId: string,
+  fn: (store: GestaoStore) => T
+): Promise<T> {
+  return alterarGestaoStorePersistido(escritorioId, fn);
+}
+
 export function escritorioDoUsuario(
-  store: Awaited<ReturnType<typeof lerGestaoStore>>,
+  store: GestaoStore,
   userId: string
 ): EscritorioGestao | null {
   const membro = store.membros.find((m) => m.userId === userId);
@@ -35,19 +51,14 @@ export function escritorioDoUsuario(
 }
 
 export function membroDoUsuario(
-  store: Awaited<ReturnType<typeof lerGestaoStore>>,
+  store: GestaoStore,
   userId: string
 ): MembroGestao | null {
   return store.membros.find((m) => m.userId === userId) ?? null;
 }
 
 export async function obterContextoGestao(userId: string) {
-  const store = await lerGestaoStore();
-  const membro = membroDoUsuario(store, userId);
-  const escritorio = membro
-    ? (store.escritorios.find((e) => e.id === membro.escritorioId) ?? null)
-    : null;
-  return { store, membro, escritorio };
+  return obterContextoGestaoPersistido(userId);
 }
 
 export async function criarEscritorioGestao(opcoes: {
@@ -60,7 +71,7 @@ export async function criarEscritorioGestao(opcoes: {
 }): Promise<{ ok: true; escritorio: EscritorioGestao } | { ok: false; erro: string }> {
   const existente = await obterContextoGestao(opcoes.userId);
   if (existente.escritorio) {
-    return { ok: false, erro: "Você já pertence a um escritório." };
+    return { ok: true, escritorio: existente.escritorio };
   }
 
   const escritorio: EscritorioGestao = {
@@ -82,10 +93,7 @@ export async function criarEscritorioGestao(opcoes: {
     criadoEm: new Date().toISOString(),
   };
 
-  await alterarGestaoStore((store) => {
-    store.escritorios.push(escritorio);
-    store.membros.push(membro);
-  });
+  await criarEscritorioPersistido(escritorio, membro);
 
   return { ok: true, escritorio };
 }
@@ -98,17 +106,18 @@ export async function criarConviteGestao(opcoes: {
   | { ok: true; convite: ConviteGestao; link: string }
   | { ok: false; erro: string }
 > {
-  const resultado = await alterarGestaoStore((store) => {
-    const membro = store.membros.find((m) => m.userId === opcoes.userId);
-    if (!membro) {
-      return { ok: false as const, erro: "Escritório não encontrado." };
-    }
-    const escritorio = store.escritorios.find((e) => e.id === membro.escritorioId);
+  const ctx = await obterContextoGestao(opcoes.userId);
+  if (!ctx.membro || !ctx.escritorio) {
+    return { ok: false, erro: "Escritório não encontrado." };
+  }
+  if (ctx.membro.papel !== "admin") {
+    return { ok: false, erro: "Somente o administrador pode convidar." };
+  }
+
+  const resultado = await alterarEscritorio(ctx.escritorio.id, (store) => {
+    const escritorio = store.escritorios.find((e) => e.id === ctx.escritorio!.id);
     if (!escritorio) {
       return { ok: false as const, erro: "Escritório não encontrado." };
-    }
-    if (membro.papel !== "admin") {
-      return { ok: false as const, erro: "Somente o administrador pode convidar." };
     }
 
     const colaboradores = store.membros.filter(
@@ -156,16 +165,15 @@ export async function aceitarConviteGestao(opcoes: {
 }): Promise<{ ok: true; escritorio: EscritorioGestao } | { ok: false; erro: string }> {
   const ctx = await obterContextoGestao(opcoes.userId);
   if (ctx.escritorio) {
-    return { ok: false, erro: "Você já está vinculado a um escritório." };
+    return { ok: true, escritorio: ctx.escritorio };
   }
 
-  const store = await lerGestaoStore();
-  const convite = store.convites.find(
-    (c) => c.token === opcoes.token && !c.usadoEm
-  );
-  if (!convite) {
+  const encontrado = await buscarConvitePorToken(opcoes.token);
+  if (!encontrado) {
     return { ok: false, erro: "Convite inválido ou já utilizado." };
   }
+
+  const { convite, escritorio } = encontrado;
   if (new Date(convite.expiraEm).getTime() < Date.now()) {
     return { ok: false, erro: "Convite expirado." };
   }
@@ -175,12 +183,7 @@ export async function aceitarConviteGestao(opcoes: {
     }
   }
 
-  const escritorio = store.escritorios.find((e) => e.id === convite.escritorioId);
-  if (!escritorio) {
-    return { ok: false, erro: "Escritório não encontrado." };
-  }
-
-  const membros = store.membros.filter((m) => m.escritorioId === escritorio.id);
+  const membros = await listarMembrosPersistidos(escritorio.id);
   if (membros.length >= limiteColaboradores(escritorio.planoGestao)) {
     return { ok: false, erro: "Escritório sem vagas para novos membros." };
   }
@@ -194,8 +197,8 @@ export async function aceitarConviteGestao(opcoes: {
     criadoEm: new Date().toISOString(),
   };
 
-  await alterarGestaoStore((s) => {
-    s.membros.push(membro);
+  await inserirMembroPersistido(membro);
+  await alterarEscritorio(escritorio.id, (s) => {
     const c = s.convites.find((x) => x.id === convite.id);
     if (c) {
       c.usadoEm = new Date().toISOString();
@@ -207,12 +210,12 @@ export async function aceitarConviteGestao(opcoes: {
 }
 
 export async function listarMembrosEscritorio(escritorioId: string) {
-  const store = await lerGestaoStore();
-  return store.membros.filter((m) => m.escritorioId === escritorioId);
+  return listarMembrosPersistidos(escritorioId);
 }
 
 export async function listarConvitesAtivos(escritorioId: string) {
-  const store = await lerGestaoStore();
+  const store = await lerGestaoEscritorio(escritorioId);
+  if (!store) return [];
   const agora = Date.now();
   return store.convites.filter(
     (c) =>
@@ -227,28 +230,29 @@ export async function atualizarPapelMembroGestao(opcoes: {
   alvoUserId: string;
   papel: "socio" | "colaborador";
 }): Promise<{ ok: true } | { ok: false; erro: string }> {
-  const resultado = await alterarGestaoStore((store) => {
-    const admin = store.membros.find((m) => m.userId === opcoes.adminUserId);
-    if (!admin || admin.papel !== "admin") {
-      return { ok: false as const, erro: "Somente o titular pode alterar papéis." };
-    }
-    if (opcoes.alvoUserId === opcoes.adminUserId) {
-      return { ok: false as const, erro: "O titular não pode alterar o próprio papel." };
-    }
-    const alvo = store.membros.find(
-      (m) =>
-        m.userId === opcoes.alvoUserId && m.escritorioId === admin.escritorioId
-    );
-    if (!alvo) {
-      return { ok: false as const, erro: "Membro não encontrado." };
-    }
-    if (alvo.papel === "admin") {
-      return { ok: false as const, erro: "Não é possível alterar o titular." };
-    }
-    alvo.papel = opcoes.papel;
-    return { ok: true as const };
-  });
-  return resultado;
+  const ctx = await obterContextoGestao(opcoes.adminUserId);
+  if (!ctx.membro || ctx.membro.papel !== "admin" || !ctx.escritorio) {
+    return { ok: false, erro: "Somente o titular pode alterar papéis." };
+  }
+  if (opcoes.alvoUserId === opcoes.adminUserId) {
+    return { ok: false, erro: "O titular não pode alterar o próprio papel." };
+  }
+
+  const membros = await listarMembrosPersistidos(ctx.escritorio.id);
+  const alvo = membros.find((m) => m.userId === opcoes.alvoUserId);
+  if (!alvo) {
+    return { ok: false, erro: "Membro não encontrado." };
+  }
+  if (alvo.papel === "admin") {
+    return { ok: false, erro: "Não é possível alterar o titular." };
+  }
+
+  await atualizarPapelMembroPersistido(
+    ctx.escritorio.id,
+    opcoes.alvoUserId,
+    opcoes.papel
+  );
+  return { ok: true };
 }
 
 export async function criarClienteGestao(
@@ -267,21 +271,23 @@ export async function criarClienteGestao(
     criadoEm: agora,
     atualizadoEm: agora,
   };
-  await alterarGestaoStore((s) => {
+  await alterarEscritorio(escritorioId, (s) => {
     s.clientes.push(cliente);
   });
   return cliente;
 }
 
 export async function listarClientesGestao(escritorioId: string) {
-  const store = await lerGestaoStore();
+  const store = await lerGestaoEscritorio(escritorioId);
+  if (!store) return [];
   return store.clientes
     .filter((c) => c.escritorioId === escritorioId)
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 }
 
 export async function obterClienteGestao(escritorioId: string, clienteId: string) {
-  const store = await lerGestaoStore();
+  const store = await lerGestaoEscritorio(escritorioId);
+  if (!store) return null;
   return (
     store.clientes.find(
       (c) => c.id === clienteId && c.escritorioId === escritorioId
@@ -297,7 +303,7 @@ export async function atualizarClienteGestao(
   >
 ): Promise<ClienteGestao | null> {
   let atualizado: ClienteGestao | null = null;
-  await alterarGestaoStore((s) => {
+  await alterarEscritorio(escritorioId, (s) => {
     const c = s.clientes.find(
       (x) => x.id === clienteId && x.escritorioId === escritorioId
     );
@@ -333,8 +339,8 @@ export async function criarProcessoGestao(
   let clienteId = dados.clienteId ?? null;
 
   if (clienteId) {
-    const store = await lerGestaoStore();
-    const cli = store.clientes.find(
+    const store = await lerGestaoEscritorio(escritorioId);
+    const cli = store?.clientes.find(
       (c) => c.id === clienteId && c.escritorioId === escritorioId
     );
     if (cli) clienteNome = cli.nome;
@@ -356,21 +362,23 @@ export async function criarProcessoGestao(
     criadoEm: agora,
     atualizadoEm: agora,
   });
-  await alterarGestaoStore((s) => {
+  await alterarEscritorio(escritorioId, (s) => {
     s.processos.push(processo);
   });
   return processo;
 }
 
 export async function listarProcessosGestao(escritorioId: string) {
-  const store = await lerGestaoStore();
+  const store = await lerGestaoEscritorio(escritorioId);
+  if (!store) return [];
   return store.processos
     .filter((p) => p.escritorioId === escritorioId)
     .sort((a, b) => b.atualizadoEm.localeCompare(a.atualizadoEm));
 }
 
 export async function obterProcessoGestao(escritorioId: string, processoId: string) {
-  const store = await lerGestaoStore();
+  const store = await lerGestaoEscritorio(escritorioId);
+  if (!store) return null;
   return (
     store.processos.find(
       (p) => p.id === processoId && p.escritorioId === escritorioId
@@ -402,7 +410,7 @@ export async function atualizarProcessoGestao(
   }>
 ): Promise<ProcessoGestao | null> {
   let atualizado: ProcessoGestao | null = null;
-  await alterarGestaoStore((s) => {
+  await alterarEscritorio(escritorioId, (s) => {
     const p = s.processos.find(
       (x) => x.id === processoId && x.escritorioId === escritorioId
     );
@@ -465,14 +473,15 @@ export async function criarPrazoGestao(
     concluido: false,
     criadoEm: new Date().toISOString(),
   };
-  await alterarGestaoStore((s) => {
+  await alterarEscritorio(escritorioId, (s) => {
     s.prazos.push(prazo);
   });
   return prazo;
 }
 
 export async function listarPrazosGestao(escritorioId: string) {
-  const store = await lerGestaoStore();
+  const store = await lerGestaoEscritorio(escritorioId);
+  if (!store) return [];
   return store.prazos
     .filter((p) => p.escritorioId === escritorioId)
     .sort((a, b) => a.vencimento.localeCompare(b.vencimento));
@@ -484,7 +493,7 @@ export async function atualizarPrazoGestao(
   patch: { concluido?: boolean }
 ): Promise<PrazoGestao | null> {
   let atualizado: PrazoGestao | null = null;
-  await alterarGestaoStore((s) => {
+  await alterarEscritorio(escritorioId, (s) => {
     const p = s.prazos.find(
       (x) => x.id === prazoId && x.escritorioId === escritorioId
     );
@@ -513,14 +522,15 @@ export async function criarEventoAgendaGestao(
     responsavelUserId: dados.responsavelUserId,
     criadoEm: new Date().toISOString(),
   };
-  await alterarGestaoStore((s) => {
+  await alterarEscritorio(escritorioId, (s) => {
     s.agenda.push(evento);
   });
   return evento;
 }
 
 export async function listarAgendaGestao(escritorioId: string) {
-  const store = await lerGestaoStore();
+  const store = await lerGestaoEscritorio(escritorioId);
+  if (!store) return [];
   return store.agenda
     .filter((e) => e.escritorioId === escritorioId)
     .sort((a, b) => a.inicio.localeCompare(b.inicio));
@@ -543,7 +553,7 @@ export async function criarAtividadeGestao(
     criadoPorUserId: dados.criadoPorUserId,
     criadoEm: new Date().toISOString(),
   };
-  await alterarGestaoStore((s) => {
+  await alterarEscritorio(escritorioId, (s) => {
     s.atividades.push(atividade);
   });
   return atividade;
@@ -553,7 +563,8 @@ export async function listarAtividadesGestao(
   escritorioId: string,
   filtros?: { processoId?: string; clienteId?: string }
 ) {
-  const store = await lerGestaoStore();
+  const store = await lerGestaoEscritorio(escritorioId);
+  if (!store) return [];
   return store.atividades
     .filter((a) => {
       if (a.escritorioId !== escritorioId) return false;
@@ -568,7 +579,8 @@ export async function listarProcessosPorCliente(
   escritorioId: string,
   clienteId: string
 ) {
-  const store = await lerGestaoStore();
+  const store = await lerGestaoEscritorio(escritorioId);
+  if (!store) return [];
   return store.processos.filter(
     (p) => p.escritorioId === escritorioId && p.clienteId === clienteId
   );

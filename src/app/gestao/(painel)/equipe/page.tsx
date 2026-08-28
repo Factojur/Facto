@@ -190,6 +190,7 @@ export default function GestaoEquipePage() {
                   </strong>
                 </p>
               ) : null}
+              <GestaoInstrucoesEquipe variante="convidado" />
               <p className="text-xs text-stone-500">
                 Válido por 14 dias · uso único · a pessoa deve entrar com a
                 própria conta FACTO

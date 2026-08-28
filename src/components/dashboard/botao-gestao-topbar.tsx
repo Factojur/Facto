@@ -13,8 +13,6 @@ export function BotaoGestaoTopbar() {
   return (
     <Link
       href="/gestao"
-      target="_blank"
-      rel="noopener noreferrer"
       className="inline-flex max-w-[9.5rem] items-center justify-center gap-1 truncate rounded-full border border-white/12 bg-white/[0.04] px-2.5 py-1.5 text-[11px] font-medium text-stone-300 transition hover:border-facto-gold/40 hover:text-facto-gold sm:max-w-none sm:px-3 sm:text-xs"
       title="FACTO Gestão — processos, prazos e agenda do escritório"
     >
