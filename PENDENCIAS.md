@@ -6,6 +6,46 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 
 **Juris / seed:** depois de cada lote ou dia de cota, atualizar a seção **Lacunas da base (áreas falhas)** abaixo — tribunal errado, 0 insert, ou API sem aquele tribunal. Não deixar falha só no chat.
 
+## Retomar quando voltar (28/08)
+
+### Feito nesta rodada (28/08)
+
+- [x] **FACTO Gestão gratuita** — deploy `babce07`+ (`/gestao/cadastro`, 10 pessoas, sem honorários, admin `/admin/gestao`)
+- [x] **Migration gestão** — `migration-gestao-mvp.sql` rodada no Supabase (Jefferson)
+- [x] **Vercel** — `MERCADOPAGO_WEBHOOK_SECRET` já em Production; **`CRON_SECRET` adicionado** 28/08; `ANTHROPIC_API_KEY` **opcional** (sem ela = Redator 100% Flash)
+- [x] **LGPD memória local** — aviso no dashboard (rascunhos/histórico JEC/memória cliente só no navegador)
+- [x] **Smoke scaffold** — corrigido vazamento Lei 9.099 fora do JEC (`221239a`: qualificação CPC/CLT + placeholder + filtro lastro)
+- [x] **Tarefa smoke diária** — `FACTO-smoke-lastro-06h` (06:00) · log `scripts/smoke-areas-lastro.log` · instalar: `scripts\instalar-tarefa-smoke-lastro.ps1`
+- [x] **Reindex único** 28/08 — +811 embeddings (17 falhas cota Gemini 429)
+
+### Em andamento (Jefferson)
+
+- [ ] **Compra real MP** — testando ponta a ponta
+- [ ] **Seed juris** — lote **488** / **683** (aguardar cota; depois cobrir lacunas)
+- [ ] **Testar gestão** em produção (`factoia.com.br/gestao`)
+- [ ] **Smoke** — revalidar após fix (`npm run test:smoke-areas-lastro` ou aguardar 06:00 de 29/08)
+- [ ] **Peças reais** Const + Prev (manual, depois do lastro)
+
+### P1 — o que fazer de verdade (decisões 28/08)
+
+| Item | O que é | Próximo passo |
+|------|---------|---------------|
+| **Histórico minutas na nuvem** | Salvar peças no Supabase por usuário (todas as áreas) | Migration + API + UI “Meus casos”. **Supabase Pro** não é só isso — Free aguenta MVP pequeno; **Pro** antes de escalar (disco, uptime, sem pausa por inatividade). |
+| **Réplica à contestação** | Anexar contestação → FACTO detecta argumentos do réu e pré-monta réplica | **Implementar** (padrões forenses; espécie réplica + blocos contra-argumento). |
+| **Alerta fatos × pedidos** | Antes de Gerar, avisar contradição (valor, obrigação, parte) | **Implementar** detector + chips na conferência; você **confere** antes de protocolar. |
+| **Checklist protocolo por tribunal** | Lista de docs para juntar no e-SAJ/PJe | **Já existe** pós-geração (`ProtocoloDocsChecklist` na preview, **não** é aba do formulário). Falta: **camada por tribunal** (TJSP, TRT-2, JF…) usando comarca/tribunal escolhido — enriquecer `docs-conferencia-protocolo.ts`. |
+| **Sync memória cliente nuvem** | Opt-in LGPD | Depois do histórico; termo antes de subir. |
+
+### Sequência P0 atualizada (28/08)
+
+1. **Compra real MP** — em teste (Jefferson)
+2. ~~Vercel `MERCADOPAGO_WEBHOOK_SECRET` + `CRON_SECRET`~~ — ok · `ANTHROPIC_API_KEY` quando quiser Sonnet
+3. **Seed** — **488→683** · diário 01h · lacunas depois
+4. **Smoke** — código corrigido; tarefa **06:00** · última execução manual: 2/20 ok (antes do fix)
+5. **P1 código** — réplica contestação → alerta fatos×pedidos → checklist por tribunal → histórico nuvem (com Pro)
+6. ~~LGPD aviso memória local~~ — feito · sync nuvem pendente
+7. **Gestão** — no ar; Jefferson testando
+
 ## Retomar quando voltar (24/08)
 
 ### Sequência agora (competir com MinutaIA sem dispersar)
@@ -14,10 +54,10 @@ Ordem fechada 24/08: **receita + lastro + confiança na peça** antes de marketi
 
 1. **Compra real MP** ponta a ponta (JEC ou Completo) — webhook + e-mail + convite só sem perfil + login upgrade.
 2. **Vercel** — `ANTHROPIC_API_KEY` + Gemini **paygo**; conferir `MERCADOPAGO_WEBHOOK_SECRET` e `CRON_SECRET`.
-3. **Seed** — `proximoLote` **329** / `ate` **683** (reconciliado 24/08; drift 366 sem evidência). `npm run seed:juris-diario` na próxima cota; **sem lotes novos** até 683; TRE/TSE = 2ª API depois.
-4. **Smoke live** — `npm run test:smoke-areas-lastro` + 1 peça real Constitucional e 1 Previdenciário com “Buscar na base FACTO”.
+3. **Seed** — `proximoLote` **488** / `ate` **683** (atualizado 28/08; era 329 em 24/08). `npm run seed:juris-diario` na próxima cota; **sem lotes novos** até 683; TRE/TSE = 2ª API depois.
+4. **Smoke live** — `npm run test:smoke-areas-lastro` (tarefa `FACTO-smoke-lastro-06h`) + 1 peça real Constitucional e 1 Previdenciário com “Buscar na base FACTO”.
 5. **Diferenciação P1 (próximas features de código):** (a) histórico de minutas na nuvem (todas as áreas); (b) réplica a partir da contestação anexada; (c) alerta fatos × pedidos; (d) checklist de protocolo por tribunal.
-6. **LGPD** — aviso memória local; termo antes de sync nuvem (cliente / histórico).
+6. **LGPD** — aviso memória local **feito** (28/08); termo antes de sync nuvem (cliente / histórico) **pendente**.
 7. **Escritório / Asaas** — só depois de seats + gateway; até lá = fale conosco.
 
 **Adiado de propósito (não abrir agora):**
@@ -49,6 +89,13 @@ Ordem fechada 24/08: **receita + lastro + confiança na peça** antes de marketi
 - Rodar agora: `npm run test:pecas-diario` · instalar: `powershell -ExecutionPolicy Bypass -File scripts\instalar-tarefa-testes-pecas.ps1`
 - Pasta: `tmp/testes-pecas-scaffold/<data>/` — abrir os `.pdf` (Times 12, margens do app).
 - Modo IA depois do Gemini paygo: `TESTES_PECAS_MODO=ia` (ainda não gera peça real no script — amostragem manual primeiro).
+
+## Smoke lastro (20 áreas) — 28/08
+
+- **Comando:** `npm run test:smoke-areas-lastro` — 1 busca na base + scaffold por área (usa embedding Gemini, **não** gasta cota de peça).
+- **Tarefa:** `FACTO-smoke-lastro-06h` (diária **06:00**, após seed 01h) · log `scripts/smoke-areas-lastro.log`
+- **Instalar:** `powershell -ExecutionPolicy Bypass -File scripts\instalar-tarefa-smoke-lastro.ps1`
+- **28/08:** execução manual **2 ok · 18 falhas** (Lei 9.099 no scaffold fora do JEC) — **corrigido** em `221239a`; revalidar na tarefa de 29/08 ou manual.
 
 ## Marca INPI (FACTO / FACTOIA) — 24/08
 
@@ -130,10 +177,10 @@ Ordem realista: **receita e lastro primeiro**; diferenciação visível em segui
 | # | Item | Status | Por quê |
 |---|------|--------|---------|
 | 1 | **Compra real MP ponta a ponta** — webhook + e-mail + convite + cadastro + cancelamento CDC | Parcial | Único bloqueio comercial crítico |
-| 2 | **Confirmar na Vercel** `MERCADOPAGO_WEBHOOK_SECRET` e `CRON_SECRET` | Falta conferir vars | Segurança já no código |
-| 3 | **Seed / lastro** lotes **329–683** + lacunas vitrine + mapa `tribunal`/`area_tags` | Em curso (01h; retomar 329) | “Buscar na base FACTO” fraco = peça fraca |
+| 2 | **Confirmar na Vercel** `MERCADOPAGO_WEBHOOK_SECRET` e `CRON_SECRET` | **Ok 28/08** (`ANTHROPIC_API_KEY` opcional) | Segurança já no código |
+| 3 | **Seed / lastro** lotes **488–683** + lacunas vitrine + mapa `tribunal`/`area_tags` | Em curso (488; retomar na cota) | “Buscar na base FACTO” fraco = peça fraca |
 | 4 | **Testes reais Constitucional + Previdenciário** após lastro | Pendente | Áreas abertas sem validação de usuário |
-| 5 | **LGPD — memória de cliente** | Pendente | Aviso na UI: localStorage só no navegador; termo antes de sync na nuvem (ver item P1-2) |
+| 5 | **LGPD — memória de cliente** | Parcial (aviso local 28/08) | Sync nuvem + termo opt-in pendente |
 | 6 | **Rodar migrations trial / tribunal / escritório no Supabase** | Pendente (ops) | Código já no repo |
 
 ### P1 — Diferenciação vs MinutaIA (impacto alto, escopo médio)
@@ -144,7 +191,7 @@ Ordem realista: **receita e lastro primeiro**; diferenciação visível em segui
 | 2 | **Memória de cliente na nuvem** (Supabase, opt-in) | Pendente | Mesmo cliente em outro PC; hoje só `localStorage` |
 | 3 | **Histórico de minutas na nuvem** — todas as áreas, não só JEC local | Parcial (JEC local + versões sessão) | Não perder trabalho ao trocar máquina |
 | 4 | **Réplica a partir da contestação anexada** — detectar argumentos do réu e pré-montar contra-argumentos | Pendente | Automatização forte; MinutaIA não faz bem |
-| 5 | **Checklist de protocolo por tribunal** (TJSP, TRT, etc.) pós-geração | Pendente | Reduz erro de protocolo |
+| 5 | **Checklist de protocolo por tribunal** (TJSP, TRT, etc.) pós-geração | Parcial (lista genérica por área na preview) | Falta recorte por tribunal/comarca em `docs-conferencia-protocolo.ts` |
 | 6 | **Alerta contradição fatos × pedidos** (valor, obrigação, parte) | Pendente | Conferência antes de gerar |
 | 7 | **Citação rastreável** — distinguir base FACTO vs anexo no auditor | Parcial (página no anexo ok) | Credibilidade forense |
 | 8 | **Prazo com feriados** (calendário BR por comarca/tribunal) | Pendente | Hoje só dias úteis seg–sex |
@@ -700,7 +747,7 @@ Critério de “falha”: lote com **0** insert, ou &lt;10 insert em tema que de
 - [x] Lotes **84–115** (17/08 madrugada) — seed diário 01h; cota 429 no **116**; `reindex` **+1607**.
 - [x] Lotes **116–148** (18/08 01h) — diário até o 149; cota 429 no meio do **149** (TJRS imobiliário). Retoma o **149**.
 - [x] Lotes **149–328** — avançados nas madrugadas 19–23/08 (ver log); **329** parou por cota **23/08**.
-- [ ] Lotes **329–683** — retomar diário / `npx tsx scripts/seed-juris-ai-faixa.ts 329 683`. **Estado 24/08:** `proximoLote` **329** (drift 366 sem evidência — corrigido). `LOTE_MAX` **683**.
+- [ ] Lotes **488–683** — retomar diário / `npx tsx scripts/seed-juris-ai-faixa.ts 488 683`. **Estado 28/08:** `proximoLote` **488**. `LOTE_MAX` **683**.
 - [x] Após seed diário 17/08: `reindex:embeddings` (+1607).
 - [ ] Conferir reindex após cada madrugada (diário já chama no fim).
 - [ ] Segunda API (pós-683 ou lacunas): priorizar **eleitoral (TRE/TSE)** e TRF1/2/5/6 / TNU. **Não** criar lotes Juris.ai extras só por volume até esgotar 683.
