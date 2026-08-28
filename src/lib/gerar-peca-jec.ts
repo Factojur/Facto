@@ -784,7 +784,7 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
         corpoSecoes.push(...fundamentos.slice(1));
       } else {
         corpoSecoes.push(
-          "[Desenvolver a fundamentação jurídica conforme o rito desta área — não usar Lei 9.099/95 fora do Juizado Cível.]",
+          "[Desenvolver a fundamentação jurídica conforme o rito desta área — sem norma do Juizado Cível fora do JEC.]",
           "",
           ...(itensConhecimento.length
             ? itensConhecimento.slice(0, 4).map(
