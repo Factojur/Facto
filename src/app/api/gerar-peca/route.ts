@@ -13,6 +13,7 @@ import {
   especieParaScaffoldJec,
   aplicarFlagReconvencao,
   tituloPecaDaArea,
+  secaoValorDaEspecie,
 } from "@/lib/peca-especie-area";
 import { enfileirarUploadsJurisDoCaso } from "@/lib/juris-provedores/salvar-na-base";
 import { areaAbertaParaCliente } from "@/lib/acesso-areas";
@@ -29,6 +30,12 @@ import {
   TIPOS_ARQUIVO_ACEITOS,
 } from "@/lib/base-conhecimento";
 import { gerarPecaComIA } from "@/lib/ia/gerar-peca-com-ia";
+import { montarBriefingCasoLivre } from "@/lib/ia/briefing-caso-livre";
+import type { TriagemPrecalculada } from "@/lib/ia/triagem-caso-peca";
+import type { TopicoPlanejado } from "@/lib/ia/plano-topicos-peca";
+import type { ItemCoberturaTese } from "@/lib/ia/cobertura-teses-peca";
+import { auditarTopicosNaPeca } from "@/lib/ia/cobertura-teses-peca";
+import { detectarTesesCanonicas } from "@/lib/teses-canonicas";
 import {
   normalizarPecaGerada,
   pecaTemFundamentacaoGenerica,
@@ -42,6 +49,7 @@ import {
 import { anexarAuditoria } from "@/lib/ia/auditor-peca";
 import { geminiConfigurado } from "@/lib/ia/gemini-client";
 import { consumirUmaPeca, verificarSaldoCota } from "@/lib/cota-pecas-server";
+import { validarSessaoPecasAtiva } from "@/lib/sessao-pecas-server";
 import { formatarOabAssinatura } from "@/lib/formatar-oab";
 import { gerarDocumentoTimbrado } from "@/lib/formatacao-juridica";
 import { calcularResumoValorCausa, inferirResumoValorCausaDosFatos } from "@/lib/valores-causa";
@@ -101,6 +109,18 @@ type GerarPecaBody = GerarPecaJecInput & {
   areaId?: string;
   tesesIds?: string[];
   provasTexto?: { nome: string; texto: string; tipo?: string }[];
+  /** Resumo da entrada única (IA) — orientação, não barreira. */
+  resumoEntrada?: string | null;
+  leituraRelato?: string | null;
+  ultimoAto?: string | null;
+  /** Triagem já aprovada no preview — evita segunda chamada de triagem. */
+  triagemPrecalculada?: {
+    estrategiaJuridica: string;
+    topicos: TopicoPlanejado[];
+    cobertura: ItemCoberturaTese[];
+    modelo: string;
+    analiseEstrategica?: TriagemPrecalculada["analiseEstrategica"];
+  } | null;
 };
 
 const LIMITE_TEXTO_LEI_MUNICIPAL = 40_000;
@@ -316,6 +336,17 @@ async function postGerarPeca(request: Request) {
 
   if (!user) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  }
+
+  const sessaoPecas = await validarSessaoPecasAtiva(user.id);
+  if (!sessaoPecas.ok) {
+    return NextResponse.json(
+      {
+        error: sessaoPecas.erro,
+        codigo: "SESSAO_PECAS_ENCERRADA",
+      },
+      { status: sessaoPecas.status }
+    );
   }
 
   const email = user.email?.trim();
@@ -708,6 +739,51 @@ async function postGerarPeca(request: Request) {
   const localFechamento =
     cidade && uf ? `${cidade}/${uf.toUpperCase()}` : undefined;
 
+  const secaoValor = secaoValorDaEspecie(areaId, especieResolvida);
+  const blocoValorDeterministico = secaoValor
+    ? montarSecaoValorCausa(valorCausaResumo, secaoValor.titulo).join("\n")
+    : "";
+
+  const tesesDetectadas = detectarTesesCanonicas(
+    areaId,
+    body.fatos,
+    Array.isArray(body.tesesIds)
+      ? body.tesesIds.map((id) => String(id)).filter(Boolean)
+      : []
+  );
+  const briefingFormulario = montarBriefingCasoLivre({
+    areaId,
+    tipoAcao: tipoResolvido,
+    especiePeca: especieResolvida,
+    poloAdvocacia: poloGeracao ?? body.poloAdvocacia ?? undefined,
+    autoresNomes: autoresBody
+      .map((a) => String(a.nomeCompleto ?? "").trim())
+      .filter(Boolean),
+    reusNomes: (body.reus ?? [])
+      .map((r) =>
+        String(
+          r.tipo === "pj"
+            ? r.razaoSocial || r.nomeFantasia
+            : r.nomeCompleto
+        ).trim()
+      )
+      .filter(Boolean),
+    numeroProcesso: body.comarca?.numeroProcesso,
+    foro: body.comarca?.foro,
+    cidade,
+    uf,
+    ultimoAto: body.ultimoAto,
+    pedidosUsuario: body.pedidosUsuario,
+    pedirJusticaGratuita: Boolean(
+      body.pedirJusticaGratuita ||
+        (body.documentos?.declaracaoHipossuficiencia?.length ?? 0) > 0
+    ),
+    tutelaUrgencia: tutelaResolvida,
+    resumoEntrada: body.resumoEntrada,
+    leituraRelato: body.leituraRelato,
+    tesesRotulos: tesesDetectadas.map((t) => t.rotulo),
+  });
+
   const ia = await gerarPecaComIA({
     tipoAcao: tipoResolvido,
     fatos: body.fatos,
@@ -727,9 +803,23 @@ async function postGerarPeca(request: Request) {
       userId: user.id,
       plano: saldo.cota.plano,
     },
+    briefingFormulario,
+    dispositivoSentenca: body.dispositivoSentenca,
+    triagemPrecalculada: body.triagemPrecalculada
+      ? {
+          estrategiaJuridica: body.triagemPrecalculada.estrategiaJuridica,
+          topicos: body.triagemPrecalculada.topicos,
+          cobertura: body.triagemPrecalculada.cobertura,
+          analiseEstrategica:
+            body.triagemPrecalculada.analiseEstrategica ?? {
+              bruto: body.triagemPrecalculada.estrategiaJuridica,
+            },
+          modelo: body.triagemPrecalculada.modelo,
+        }
+      : null,
     instrucoes: {
       enderecamento,
-      valorCausa: montarSecaoValorCausa(valorCausaResumo).join("\n"),
+      valorCausa: blocoValorDeterministico || undefined,
       tutelaUrgencia: tutelaResolvida,
       pedirJusticaGratuita: Boolean(
         body.pedirJusticaGratuita ||
@@ -821,7 +911,6 @@ async function postGerarPeca(request: Request) {
   const pecaBrutaIa = normalizarPecaGerada(ia.textoGerado);
 
   if (pecaTemFundamentacaoGenerica(pecaBrutaIa) && areaId === "jec") {
-    const blocoValor = montarSecaoValorCausa(valorCausaResumo).join("\n");
     const hibrida = mesclarFatosIaComDireitoReserva({
       pecaIa: pecaBrutaIa,
       tipoAcao: tipoResolvido,
@@ -836,7 +925,9 @@ async function postGerarPeca(request: Request) {
         categoria: item.categoria,
         texto: item.texto,
       })),
-      blocoValorCausa: blocoValor,
+      blocoValorCausa: blocoValorDeterministico || undefined,
+      tituloSecaoValor: secaoValor?.titulo,
+      romanoSecaoValor: secaoValor?.romano,
     });
     const peca = finalizarTextoPeca(
       hibrida,
@@ -888,10 +979,13 @@ async function postGerarPeca(request: Request) {
       ? "A fundamentação jurídica veio genérica demais. Confira o DO DIREITO e o lastro antes de protocolar."
       : null;
 
-  const pecaComValor = garantirSecaoValorCausa(
-    pecaBrutaIa,
-    montarSecaoValorCausa(valorCausaResumo).join("\n")
-  );
+  const pecaComValor =
+    secaoValor && blocoValorDeterministico
+      ? garantirSecaoValorCausa(pecaBrutaIa, blocoValorDeterministico, {
+          tituloSecao: secaoValor.titulo,
+          romano: secaoValor.romano,
+        })
+      : pecaBrutaIa;
   const peca = finalizarTextoPeca(
     pecaComValor,
     body,
@@ -935,8 +1029,16 @@ async function postGerarPeca(request: Request) {
           nomeAcao: ia.analiseEstrategica.nomeAcao,
           direitosViolados: ia.analiseEstrategica.direitosViolados,
           topicosPlanejados: ia.analiseEstrategica.topicosPlanejados,
+          pedidosEssenciais: ia.analiseEstrategica.pedidosEssenciais,
+          riscosOuLacunas: ia.analiseEstrategica.riscosOuLacunas,
         }
       : null,
+    estrategiaJuridicaBruta: body.triagemPrecalculada?.estrategiaJuridica,
+    topicosPlanejadosDetalhe: body.triagemPrecalculada?.topicos,
+    coberturaTeses: body.triagemPrecalculada?.cobertura,
+    conferenciaTitulos: body.triagemPrecalculada?.topicos?.length
+      ? auditarTopicosNaPeca(peca, body.triagemPrecalculada.topicos)
+      : undefined,
   };
 
   return debitarEResponder(anexarAuditoria(resultado, paramsAuditor));

@@ -13,6 +13,7 @@ import {
 } from "@/lib/entrada-caso-types";
 import { juntarTranscricao } from "@/lib/transcrever-audio";
 import { BotaoFalarCampo } from "@/components/dashboard/botao-falar-campo";
+import { placeholderEntradaPorArea } from "@/lib/placeholders-por-area";
 
 type ArquivoEnvio = { nome: string; mimeType: string; base64: string };
 
@@ -139,7 +140,7 @@ export function EntradaCasoSection({
         rows={6}
         value={relato}
         onChange={(e) => setRelato(e.target.value)}
-        placeholder="Ex.: Cliente comprou notebook no site em 02/08, recebeu em 05/08, pediu arrependimento no 6º dia e a loja recusou a devolução…"
+        placeholder={placeholderEntradaPorArea(areaId)}
         className="mt-3 w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
       />
       <div className="mt-3 flex flex-wrap items-end gap-3">

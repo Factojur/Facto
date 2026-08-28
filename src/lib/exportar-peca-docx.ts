@@ -401,6 +401,16 @@ export async function gerarPecaDocxBlob(
   return Packer.toBlob(doc);
 }
 
+/** Buffer para scripts Node (testes diários / export em disco). */
+export async function gerarPecaDocxBuffer(
+  peca: string,
+  escritorio?: EscritorioConfig
+): Promise<Buffer> {
+  const blob = await gerarPecaDocxBlob(peca, escritorio);
+  const ab = await blob.arrayBuffer();
+  return Buffer.from(ab);
+}
+
 export async function baixarPecaDocx(
   peca: string,
   escritorio?: EscritorioConfig,

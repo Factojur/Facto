@@ -8,6 +8,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const intent = url.searchParams.get("intent") === "trial" ? "trial" : "login";
+  const destino = url.searchParams.get("destino");
   const err = url.searchParams.get("error");
   const errDesc = url.searchParams.get("error_description");
 
@@ -33,5 +34,6 @@ export async function GET(request: Request) {
 
   const next = new URL("/auth/completar", url.origin);
   next.searchParams.set("intent", intent);
+  if (destino === "gestao") next.searchParams.set("destino", "gestao");
   return NextResponse.redirect(next);
 }

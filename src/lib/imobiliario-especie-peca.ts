@@ -361,6 +361,10 @@ export function tituloPecaImobiliario(
   }
 }
 
+export function esqueletoPorEspecieImobiliario(especie: string): Secao[] {
+  return ESQUELETOS[especie as EspeciePecaImobiliario] ?? INICIAL;
+}
+
 export function blocoEstruturaPromptImobiliario(
   especie: EspeciePecaImobiliario
 ): string {

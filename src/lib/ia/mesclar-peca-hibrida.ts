@@ -67,20 +67,28 @@ export function substituirSecaoDoDireito(
   ].join("\n");
 }
 
-/** Garante DO VALOR DA CAUSA com texto determinístico (após provas, antes dos pedidos). */
+import { RE_TITULO_SECAO_VALOR } from "@/lib/secao-valor-peca";
 export function garantirSecaoValorCausa(
   peca: string,
-  blocoValor: string
+  blocoValor: string,
+  opcoes?: { tituloSecao?: string; romano?: string }
 ): string {
-  if (/DO VALOR DA CAUSA/i.test(peca)) {
-    // Substitui placeholder se houver valor real
+  const tituloSecao = (opcoes?.tituloSecao ?? "DO VALOR DA CAUSA").trim();
+  const romano = opcoes?.romano ?? "III";
+  const tituloRegex = tituloSecao.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  if (new RegExp(tituloRegex, "i").test(peca) || RE_TITULO_SECAO_VALOR.test(peca)) {
     if (
-      /R\$\s*\[VALOR DA CAUSA\]/i.test(peca) &&
+      /R\$\s*\[VALOR DA (?:CAUSA|RECONVENÇÃO|REPARAÇÃO)|\[VALOR DO PEDIDO(?: CONTRAPOSTO)?\]/i.test(
+        peca
+      ) &&
       blocoValor.trim() &&
-      !/R\$\s*\[VALOR DA CAUSA\]/i.test(blocoValor)
+      !/\[VALOR DA (?:CAUSA|RECONVENÇÃO|REPARAÇÃO)|\[VALOR DO PEDIDO(?: CONTRAPOSTO)?\]/i.test(
+        blocoValor
+      )
     ) {
       return peca.replace(
-        /Dá-se à causa o valor de R\$ \[VALOR DA CAUSA\][^\n]*/i,
+        /Dá-se à (?:causa|reconvenção|pedido contraposto|reparação civil dos danos|pedido) o valor de R\$ \[[^\]]+\][^\n]*/i,
         blocoValor.trim()
       );
     }
@@ -89,7 +97,7 @@ export function garantirSecaoValorCausa(
   const valor = blocoValor.trim();
   if (!valor) return peca;
 
-  const secao = `III - DO VALOR DA CAUSA\n${valor}`;
+  const secao = `${romano} - ${tituloSecao}\n${valor}`;
   const texto = peca.replace(/\r\n/g, "\n");
 
   // Após DAS PROVAS → antes dos PEDIDOS
@@ -157,6 +165,8 @@ export function mesclarFatosIaComDireitoReserva(opcoes: {
   pedirJusticaGratuita?: boolean;
   trechosBase?: { titulo: string; categoria: string; texto: string }[];
   blocoValorCausa?: string;
+  tituloSecaoValor?: string;
+  romanoSecaoValor?: string;
 }): string {
   const direito = montarFundamentosDireitoJec({
     tipoAcao: opcoes.tipoAcao,
@@ -167,8 +177,11 @@ export function mesclarFatosIaComDireitoReserva(opcoes: {
   }).join("\n");
 
   let peca = substituirSecaoDoDireito(opcoes.pecaIa, direito);
-  if (opcoes.blocoValorCausa) {
-    peca = garantirSecaoValorCausa(peca, opcoes.blocoValorCausa);
+  if (opcoes.blocoValorCausa?.trim()) {
+    peca = garantirSecaoValorCausa(peca, opcoes.blocoValorCausa, {
+      tituloSecao: opcoes.tituloSecaoValor,
+      romano: opcoes.romanoSecaoValor,
+    });
   }
   return normalizarParagrafosDoDireito(peca);
 }

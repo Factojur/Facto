@@ -17,12 +17,17 @@ export const GUIAS_MINUTA: { id: GuiaMinuta; label: string }[] = [
 export const GUIA_GERAR_PECA: GuiaMinuta = "pedidos";
 
 export const LOADING_STAGES_GERACAO = [
-  "Maestro: montando o plano…",
-  "Analista Facto: estudando o caso…",
+  "Analista Facto: lendo o dossiê…",
+  "Triagem: montando plano de tópicos…",
   "Pesquisa & súmulas: buscando fundamentos…",
   "Estrategista: definindo a tese…",
   "Redator forense: escrevendo a peça…",
   "Auditor: conferindo a minuta…",
+] as const;
+
+export const LOADING_STAGES_TRIAGEM = [
+  "Analista Facto: lendo o dossiê…",
+  "Triagem: plano de tópicos e teses…",
 ] as const;
 
 /**

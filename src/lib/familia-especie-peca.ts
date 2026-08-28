@@ -333,6 +333,12 @@ export function tituloPecaFamilia(
   }
 }
 
+export function esqueletoPorEspecieFamilia(especie: string): Secao[] {
+  return (
+    ESQUELETOS[especie as EspeciePecaFamilia] ?? ESQUELETOS["peticao-inicial"]
+  );
+}
+
 export function blocoEstruturaPromptFamilia(especie: EspeciePecaFamilia): string {
   const meta = metaEspecieFamilia(especie);
   const secoes = ESQUELETOS[especie] ?? ESQUELETOS["peticao-inicial"];

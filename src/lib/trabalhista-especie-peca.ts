@@ -322,6 +322,10 @@ export function tituloPecaTrabalhista(
   }
 }
 
+export function esqueletoPorEspecieTrabalhista(especie: string): Secao[] {
+  return ESQUELETOS[especie as EspeciePecaTrabalhista] ?? ESQUELETOS.reclamacao;
+}
+
 export function blocoEstruturaPromptTrabalhista(
   especie: EspeciePecaTrabalhista
 ): string {

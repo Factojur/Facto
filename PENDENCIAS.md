@@ -53,10 +53,10 @@ Ordem fechada 24/08: **receita + lastro + confiança na peça** antes de marketi
 ## Marca INPI (FACTO / FACTOIA) — 24/08
 
 ### Já feito
-| Marca | Processo | Protocolo | Classe | Status pePI (24/08) |
+| Marca | Processo | Protocolo | Classe | Status pePI (25/08) |
 |-------|----------|-----------|--------|---------------------|
-| **FACTO** | **944677347** | **850260390405** | 42 nominativa | **Consta** na base; ficha/RPI ainda sem detalhe público (pré-publicação). Base até 18/08 · RPI 2902 |
-| **FACTOIA** | *(nº no recibo — informar)* | **850260430578** | 42 nominativa | Protocolo **não** busca no pePI (só nº de processo). Marca exata 42 ainda **0** (normal se depositado hoje) |
+| **FACTO** | **944677347** | **850260390405** | 42 nominativa | **Consta** na base; ficha/RPI ainda sem detalhe público (pré-publicação). Base até **25/08** · RPI **2903** |
+| **FACTOIA** | *(nº no recibo — informar)* | **850260430578** | 42 nominativa | Protocolo **não** busca no pePI (só nº de processo). Marca exata 42 ainda **0** |
 
 Titular: PF Jefferson · GRU 389 · especificação SaaS/TI. Comprovante FACTO: `…\PROJETO FACTO\INPI\29409172362117530.pdf`
 
@@ -65,6 +65,12 @@ Titular: PF Jefferson · GRU 389 · especificação SaaS/TI. Comprovante FACTO: 
 - **Protocolo 850260430578** (FACTOIA): pePI por “nº processo” → **nenhum resultado** (protocolo ≠ processo).
 - Busca exata **FACTOIA** / classe 42 → **0** (ainda não indexado).
 - Interpretação: ambos **depositados / em fila**; sem indeferimento visível.
+
+### RPI 2903 (25/08/2026 — consulta ~19:37)
+- **XML Marcas** (`RM2903.zip`): **944677347** e **FACTOIA** **ausentes** (2902 também sem 944677347).
+- **Comunicados2903.pdf:** sem menção aos processos.
+- **Próxima checagem:** RPI **2904** (~**02/09/2026**, terça).
+- Arquivos locais: `tmp/rpi-check/` (gitignored).
 
 ### Próximos registros — ordem
 1. Acompanhar **FACTO** + **FACTOIA** (RPI terças; Meus pedidos).
@@ -76,7 +82,8 @@ Titular: PF Jefferson · GRU 389 · especificação SaaS/TI. Comprovante FACTO: 
 ### Pendências marca
 - [ ] Anotar **nº do processo FACTOIA** do recibo e-Marcas (não só o protocolo)
 - [ ] Logado: Meus pedidos para **944677347** + processo FACTOIA
-- [ ] Conferir RPI nas terças até 1ª publicação
+- [ ] Conferir **RPI 2904** (~02/09) até 1ª publicação
+- [x] RPI 2903 conferida — sem publicação FACTO/FACTOIA (25/08)
 - [x] FACTOIA 42 depositado (protocolo 850260430578) — 24/08
 
 ## Retomar quando voltar (20/08 — noite)

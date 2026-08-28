@@ -18,5 +18,5 @@ Set-ScheduledTask -TaskName "FACTO-testes-pecas-22h" -Settings $settings | Out-N
 Write-Host "Tarefa FACTO-testes-pecas-22h criada (diária 22:00)."
 Write-Host "PC ligado (sem dormir). Log: scripts\testes-pecas-diario.log"
 Write-Host "Estado: scripts\testes-pecas-estado.json (modo scaffold, 40/dia)."
-Write-Host "Saída: tmp\testes-pecas-scaffold\<data>\ (PDF forense)"
+Write-Host "Saída: tmp\testes-pecas-scaffold\<data>\ (PDF + Word forense)"
 Write-Host "Para rodar agora: npm run test:pecas-diario"

@@ -13,11 +13,13 @@ function CompletarOAuth() {
     async function rodar() {
       const intent =
         searchParams.get("intent") === "trial" ? "trial" : "login";
+      const destino =
+        searchParams.get("destino") === "gestao" ? "gestao" : undefined;
       try {
         const res = await fetch("/api/auth/google-bootstrap", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ intent }),
+          body: JSON.stringify({ intent, destino }),
         });
         const data = (await res.json()) as {
           redirect?: string;

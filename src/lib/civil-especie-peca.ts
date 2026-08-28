@@ -353,6 +353,12 @@ export function tituloPecaCivil(
   }
 }
 
+export function esqueletoPorEspecieCivil(especie: string): Secao[] {
+  return (
+    ESQUELETOS[especie as EspeciePecaCivil] ?? ESQUELETOS["peticao-inicial"]
+  );
+}
+
 export function blocoEstruturaPromptCivil(
   especie: EspeciePecaCivil
 ): string {

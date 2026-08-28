@@ -211,10 +211,12 @@ export function detalheEstrategista(params: {
   tesePrincipal?: string;
   nPedidos: number;
   nTeses: number;
+  nTopicos?: number;
 }): string {
   const tese = params.tesePrincipal?.replace(/\s+/g, " ").trim().slice(0, 140);
   return [
     tese || "Estratégia montada",
+    params.nTopicos ? `${params.nTopicos} tópico(s) no plano` : null,
     params.nTeses ? `${params.nTeses} tese(s) travada(s)` : null,
     params.nPedidos ? `${params.nPedidos} pedido(s) do formulário` : null,
   ]

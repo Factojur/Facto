@@ -35,6 +35,19 @@ const INICIAL: Secao[] = [
   { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
 ];
 
+/** Petição inaugural sem valor econômico (remédios constitucionais, eleitoral, penal). */
+const INICIAL_SEM_VALOR: Secao[] = [
+  { chave: "fatos", titulo: "DOS FATOS", obrigatoria: true },
+  { chave: "direito", titulo: "DO DIREITO", obrigatoria: true },
+  {
+    chave: "provas",
+    titulo: "DAS PROVAS E ANEXOS",
+    obrigatoria: false,
+    opcionalSistema: true,
+  },
+  { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
+];
+
 const DEFESA: Secao[] = [
   { chave: "preliminares", titulo: "DAS PRELIMINARES", obrigatoria: true },
   { chave: "merito", titulo: "DO MÉRITO — DOS FATOS E DO DIREITO", obrigatoria: true },
@@ -355,7 +368,17 @@ export const KIT_CRIMINAL = kit(
     apelacao: RECURSO,
     "recurso-sentido-estrito": RECURSO,
     "agravo-execucao": RECURSO,
-    "revisao-criminal": INICIAL,
+    "revisao-criminal": [
+      { chave: "fatos", titulo: "DOS FATOS", obrigatoria: true },
+      { chave: "direito", titulo: "DO DIREITO", obrigatoria: true },
+      {
+        chave: "provas",
+        titulo: "DAS PROVAS E ANEXOS",
+        obrigatoria: false,
+        opcionalSistema: true,
+      },
+      { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
+    ],
     "embargos-declaracao": ED,
   },
   "resposta-acusacao"
@@ -877,9 +900,9 @@ export const KIT_ELEITORAL = kit(
     "recurso-eleitoral": "Recurso Eleitoral",
   },
   {
-    representacao: INICIAL,
-    aije: INICIAL,
-    "registro-candidatura": INICIAL,
+    representacao: INICIAL_SEM_VALOR,
+    aije: INICIAL_SEM_VALOR,
+    "registro-candidatura": INICIAL_SEM_VALOR,
     defesa: DEFESA,
     "recurso-eleitoral": RECURSO,
   },
@@ -1315,17 +1338,17 @@ export const KIT_CONSTITUCIONAL = kit(
       { chave: "direito", titulo: "DO DIREITO", obrigatoria: true },
       { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
     ],
-    "habeas-data": INICIAL,
-    "mandado-injuncao": INICIAL,
-    "acao-popular": INICIAL,
-    "reclamacao-constitucional": INICIAL,
+    "habeas-data": INICIAL_SEM_VALOR,
+    "mandado-injuncao": INICIAL_SEM_VALOR,
+    "acao-popular": INICIAL_SEM_VALOR,
+    "reclamacao-constitucional": INICIAL_SEM_VALOR,
     "recurso-extraordinario": RECURSO,
     "agravo-recurso-extraordinario": RECURSO,
     "recurso-ordinario-constitucional": RECURSO,
-    adpf: INICIAL,
-    adi: INICIAL,
-    adc: INICIAL,
-    ado: INICIAL,
+    adpf: INICIAL_SEM_VALOR,
+    adi: INICIAL_SEM_VALOR,
+    adc: INICIAL_SEM_VALOR,
+    ado: INICIAL_SEM_VALOR,
     apelacao: RECURSO,
     "agravo-instrumento": [
       {
@@ -1421,6 +1444,12 @@ export function tituloPecaKit(
   const meta = k.especies.find((e) => e.id === especie);
   if (especie === "peticao-inicial") return String(tipoSugerido ?? "").trim();
   return meta?.rotulo ?? String(tipoSugerido ?? "").trim();
+}
+
+export function esqueletoKit(areaId: string, especie: string): Secao[] {
+  const k = kitDaArea(areaId);
+  if (!k) return INICIAL;
+  return k.esqueletos[especie] ?? INICIAL;
 }
 
 export function blocoEstruturaKit(areaId: string, especie: string): string {

@@ -16,6 +16,8 @@ import {
 } from "@/lib/partes-ja-qualificadas";
 import { idsPeticaoInicialDaArea, tituloPecaDaArea } from "@/lib/peca-especie-area";
 import { areaMostraMle } from "@/lib/minuta-modulo";
+import type { TopicoPlanejado } from "@/lib/ia/plano-topicos-peca";
+import { auditarTopicosNaPeca } from "@/lib/ia/cobertura-teses-peca";
 import type { AutorValue } from "@/lib/autor-types";
 import type { ReuValue } from "@/lib/reu-types";
 
@@ -50,6 +52,7 @@ export type AuditorPecaParams = {
   marcadoresNaoEncontrado?: number;
   autores?: AutorValue[] | null;
   reus?: ReuValue[] | null;
+  topicosPlanejados?: TopicoPlanejado[] | null;
 };
 
 function blob(texto: string): string {
@@ -413,6 +416,22 @@ export function auditarPecaGerada(
       "Trecho sem lastro na base",
       `${nMarc} marcador(es) [NÃO ENCONTRADO NA BASE] na minuta.`
     );
+  }
+
+  const topicos = params.topicosPlanejados ?? [];
+  if (topicos.length >= 2) {
+    const { faltando, ok } = auditarTopicosNaPeca(peca, topicos);
+    if (faltando.length > 0) {
+      push(
+        achados,
+        "topicos-plano",
+        faltando.length >= topicos.length ? "alerta" : "info",
+        "Títulos do plano estratégico",
+        faltando.length
+          ? `Não localizados na minuta: ${faltando.slice(0, 4).join("; ")}${faltando.length > 4 ? "…" : ""}.`
+          : `${ok}/${topicos.length} tópicos do plano conferidos.`
+      );
+    }
   }
 
   const citOk = citacoes.filter((c) => c.verificada).length;

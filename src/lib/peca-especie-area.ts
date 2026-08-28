@@ -8,11 +8,13 @@ import {
   metaEspecie,
   tituloPecaCabivel,
   ESPECIES_PECA_JEC,
+  esqueletoPorEspecie,
   type EspeciePecaJec,
 } from "@/lib/jec-especie-peca";
 import {
   blocoEstruturaPromptConsumidor,
   ESPECIES_PECA_CONSUMIDOR,
+  esqueletoPorEspecieConsumidor,
   inferirEspecieConsumidor,
   metaEspecieConsumidor,
   tituloPecaConsumidor,
@@ -21,6 +23,7 @@ import {
 import {
   blocoEstruturaPromptCivil,
   ESPECIES_PECA_CIVIL,
+  esqueletoPorEspecieCivil,
   inferirEspecieCivil,
   metaEspecieCivil,
   tituloPecaCivil,
@@ -29,6 +32,7 @@ import {
 import {
   blocoEstruturaPromptTrabalhista,
   ESPECIES_PECA_TRABALHISTA,
+  esqueletoPorEspecieTrabalhista,
   inferirEspecieTrabalhista,
   metaEspecieTrabalhista,
   tituloPecaTrabalhista,
@@ -37,6 +41,7 @@ import {
 import {
   blocoEstruturaPromptFamilia,
   ESPECIES_PECA_FAMILIA,
+  esqueletoPorEspecieFamilia,
   inferirEspecieFamilia,
   metaEspecieFamilia,
   tituloPecaFamilia,
@@ -45,6 +50,7 @@ import {
 import {
   blocoEstruturaPromptImobiliario,
   ESPECIES_PECA_IMOBILIARIO,
+  esqueletoPorEspecieImobiliario,
   inferirEspecieImobiliario,
   metaEspecieImobiliario,
   tituloPecaImobiliario,
@@ -53,6 +59,7 @@ import {
 import {
   blocoEstruturaPromptJecr,
   ESPECIES_PECA_JECR,
+  esqueletoPorEspecieJecr,
   inferirEspecieJecr,
   metaEspecieJecr,
   tituloPecaJecr,
@@ -62,12 +69,62 @@ import { moduloDaArea } from "@/lib/minuta-modulo";
 import { extrasQualificacaoEstruturaPrompt } from "@/lib/partes-ja-qualificadas";
 import {
   blocoEstruturaKit,
+  esqueletoKit,
   inferirEspecieKit,
   kitDaArea,
   metaEspecieKit,
   tituloPecaKit,
 } from "@/lib/especies-restantes";
 import { ajustarEspecieCabivel } from "@/lib/peca-cabivel-autos";
+
+const ROMANOS_ESQUELETO = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"] as const;
+
+export type SecaoEsqueletoArea = {
+  chave: string;
+  titulo: string;
+  obrigatoria: boolean;
+  opcionalSistema?: boolean;
+};
+
+/** Esqueleto romano da espécie no módulo da área (sem provas opcionais do sistema). */
+export function esqueletosDaEspecie(
+  areaId: string,
+  especie: string
+): SecaoEsqueletoArea[] {
+  let secoes: SecaoEsqueletoArea[];
+  if (areaId === "consumidor") {
+    secoes = esqueletoPorEspecieConsumidor(especie);
+  } else if (areaId === "civil") {
+    secoes = esqueletoPorEspecieCivil(especie);
+  } else if (areaId === "trabalhista") {
+    secoes = esqueletoPorEspecieTrabalhista(especie);
+  } else if (areaId === "familia") {
+    secoes = esqueletoPorEspecieFamilia(especie);
+  } else if (areaId === "imobiliario") {
+    secoes = esqueletoPorEspecieImobiliario(especie);
+  } else if (areaId === "jecr") {
+    secoes = esqueletoPorEspecieJecr(especie);
+  } else if (kitDaArea(areaId)) {
+    secoes = esqueletoKit(areaId, especie);
+  } else {
+    secoes = esqueletoPorEspecie(especie as EspeciePecaJec);
+  }
+  return secoes.filter((s) => !s.opcionalSistema);
+}
+
+/** Seção de valor (causa/reconvenção/contraposto), quando prevista no esqueleto da espécie. */
+export function secaoValorDaEspecie(
+  areaId: string,
+  especie: string
+): { titulo: string; romano: string } | null {
+  const secoes = esqueletosDaEspecie(areaId, especie);
+  const idx = secoes.findIndex((s) => s.chave === "valor");
+  if (idx < 0) return null;
+  return {
+    titulo: secoes[idx]!.titulo,
+    romano: ROMANOS_ESQUELETO[idx] ?? String(idx + 1),
+  };
+}
 
 export function ehJusticaComumCpc(areaId: string): boolean {
   return (

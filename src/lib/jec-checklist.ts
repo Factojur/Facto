@@ -18,6 +18,8 @@ export function montarChecklistJec(opcoes: {
   temValor: boolean;
   assistentePendente?: boolean;
   partesJaQualificadas?: boolean;
+  incluirValores?: boolean;
+  rotuloValores?: string;
 }): ItemChecklistJec[] {
   const fatosOk = opcoes.fatos.trim().length >= 40;
   const tipoOk =
@@ -26,7 +28,7 @@ export function montarChecklistJec(opcoes: {
     !opcoes.assistentePendente;
   const comarcaOk = opcoes.comarcaForo.trim().length >= 12;
 
-  return [
+  const itens: ItemChecklistJec[] = [
     {
       id: "tipo",
       label: opcoes.assistentePendente
@@ -63,13 +65,18 @@ export function montarChecklistJec(opcoes: {
       ok: comarcaOk,
       bloqueante: true,
     },
-    {
+  ];
+
+  if (opcoes.incluirValores !== false) {
+    itens.push({
       id: "valores",
-      label: "Valores da causa",
+      label: opcoes.rotuloValores ?? "Valores da causa",
       ok: opcoes.temValor,
       bloqueante: false,
-    },
-  ];
+    });
+  }
+
+  return itens;
 }
 
 export function podeGerarPeca(itens: ItemChecklistJec[]): boolean {

@@ -28,7 +28,7 @@ import {
   type JecRascunhoSalvo,
 } from "@/lib/jec-rascunho-storage";
 import { montarChecklistJec, podeGerarPeca } from "@/lib/jec-checklist";
-import { placeholderFatosPorTipo } from "@/lib/jec-placeholders";
+import { placeholderFatosPorArea } from "@/lib/placeholders-por-area";
 import { docsConferenciaDaArea } from "@/lib/docs-conferencia-protocolo";
 import {
   ESPECIES_PECA_JEC,
@@ -57,15 +57,25 @@ import {
   areaMostraCheckboxReconvencao,
   rotuloCheckboxReconvencao,
   especiePublicaDoFormulario,
+  secaoValorDaEspecie,
 } from "@/lib/peca-especie-area";
+import {
+  rotuloFormularioValor,
+  textoAjudaFormularioValor,
+} from "@/lib/secao-valor-peca";
 import {
   GUIAS_MINUTA,
   LOADING_STAGES_GERACAO,
+  LOADING_STAGES_TRIAGEM,
   areaMostraMle,
   moduloDaArea,
   type AreaIdMinuta,
   type GuiaMinuta,
 } from "@/lib/minuta-modulo";
+import {
+  PreviewTriagemPeca,
+  type PreviewTriagemData,
+} from "@/components/dashboard/preview-triagem-peca";
 import {
   autoresAPartirDosNomes,
   autorOkParaChecklist,
@@ -148,10 +158,10 @@ import {
   type PerfilClienteSalvo,
 } from "@/lib/memoria-cliente-local";
 import { AJUSTES_POR_GERACAO } from "@/lib/ia/ajustar-trecho-peca";
+import { auditarTopicosNaPeca } from "@/lib/ia/cobertura-teses-peca";
 
 type GuiaJec = GuiaMinuta;
 const GUIAS_JEC = GUIAS_MINUTA;
-const LOADING_STAGES = LOADING_STAGES_GERACAO;
 
 function getFileNames(input: HTMLInputElement | null): string[] {
   if (!input?.files?.length) return [];
@@ -344,6 +354,9 @@ function PecasResultado({
   versoes = [],
   versaoAtivaId = null,
   onSelecionarVersao,
+  tesesIds = [],
+  poloAdvocacia,
+  onAjusteConcluido,
 }: {
   resultado: GerarPecaJecOutput;
   escritorio?: EscritorioConfig;
@@ -355,6 +368,7 @@ function PecasResultado({
     auditoria?: GerarPecaJecOutput["auditoria"];
     equipeEtapas?: GerarPecaJecOutput["equipeEtapas"];
   }) => void;
+  onAjusteConcluido?: () => void;
   ajustesFeitos: number;
   auditorContexto?: {
     areaId: string;
@@ -372,6 +386,8 @@ function PecasResultado({
   versoes?: { id: string; rotulo: string }[];
   versaoAtivaId?: string | null;
   onSelecionarVersao?: (id: string) => void;
+  tesesIds?: string[];
+  poloAdvocacia?: PoloAdvocacia;
 }) {
   async function copiar(texto: string) {
     await navigator.clipboard.writeText(texto);
@@ -381,7 +397,75 @@ function PecasResultado({
   const [trechoAjuste, setTrechoAjuste] = useState("");
   const [ajustando, setAjustando] = useState(false);
   const [erroAjuste, setErroAjuste] = useState<string | null>(null);
+  const [regenerandoDireito, setRegenerandoDireito] = useState(false);
+  const [erroRegenerar, setErroRegenerar] = useState<string | null>(null);
+  const [regeneracoesDireito, setRegeneracoesDireito] = useState(0);
   const ajustesRestantes = Math.max(0, AJUSTES_POR_GERACAO - ajustesFeitos);
+  const regeneracoesRestantes = Math.max(0, 2 - regeneracoesDireito);
+
+  const conferenciaTitulos =
+    resultado.conferenciaTitulos ??
+    (resultado.topicosPlanejadosDetalhe?.length
+      ? auditarTopicosNaPeca(
+          resultado.peca,
+          resultado.topicosPlanejadosDetalhe
+        )
+      : null);
+
+  async function handleRegenerarDireito() {
+    if (!resultado.estrategiaJuridicaBruta?.trim()) {
+      setErroRegenerar("Triagem não disponível para regenerar o direito.");
+      return;
+    }
+    setRegenerandoDireito(true);
+    setErroRegenerar(null);
+    try {
+      const res = await fetch("/api/regenerar-direito", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          peca: resultado.peca,
+          estrategiaJuridica: resultado.estrategiaJuridicaBruta,
+          topicos: resultado.topicosPlanejadosDetalhe ?? [],
+          cobertura: resultado.coberturaTeses ?? [],
+          fatos: auditorContexto?.fatos,
+          areaId: auditorContexto?.areaId,
+          especie: auditorContexto?.especie,
+          tipoAcao: auditorContexto?.tipoAcao,
+          tesesIds,
+          poloAdvocacia,
+          contextoVerificacao: resultado.contextoVerificacao,
+          regeneracoesJaFeitas: regeneracoesDireito,
+          auditor: auditorContexto,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        peca?: string;
+        pecaHtml?: string;
+        citacoes?: GerarPecaJecOutput["citacoes"];
+        auditoria?: GerarPecaJecOutput["auditoria"];
+        equipeEtapas?: GerarPecaJecOutput["equipeEtapas"];
+        conferenciaTitulos?: GerarPecaJecOutput["conferenciaTitulos"];
+      };
+      if (!res.ok || !data.peca || !data.pecaHtml) {
+        setErroRegenerar(data.error ?? "Não foi possível regenerar o direito.");
+        return;
+      }
+      onPecaAjustada({
+        peca: data.peca,
+        pecaHtml: data.pecaHtml,
+        citacoes: data.citacoes,
+        auditoria: data.auditoria,
+        equipeEtapas: data.equipeEtapas,
+      });
+      setRegeneracoesDireito((n) => n + 1);
+    } catch {
+      setErroRegenerar("Falha de rede ao regenerar o direito.");
+    } finally {
+      setRegenerandoDireito(false);
+    }
+  }
 
   async function handleAjustarTrecho() {
     if (pedidoAjuste.trim().length < 8) {
@@ -422,6 +506,7 @@ function PecasResultado({
         auditoria: data.auditoria,
         equipeEtapas: data.equipeEtapas,
       });
+      onAjusteConcluido?.();
       setPedidoAjuste("");
       setTrechoAjuste("");
     } catch {
@@ -565,6 +650,63 @@ function PecasResultado({
           </ul>
         </section>
       )}
+      {conferenciaTitulos &&
+        resultado.topicosPlanejadosDetalhe &&
+        resultado.topicosPlanejadosDetalhe.length > 0 && (
+          <section className="rounded-lg border border-slate-200 bg-white p-4">
+            <h3 className="text-sm font-semibold text-slate-800">
+              Conferência título-a-título
+            </h3>
+            <p className="mt-1 text-xs text-slate-500">
+              {conferenciaTitulos.ok} de{" "}
+              {resultado.topicosPlanejadosDetalhe.length} tópicos do plano
+              localizados na minuta.
+            </p>
+            <ul className="mt-2 space-y-1">
+              {resultado.topicosPlanejadosDetalhe.map((t) => {
+                const faltou = conferenciaTitulos.faltando.some((f) =>
+                  f.includes(t.titulo)
+                );
+                return (
+                  <li
+                    key={`${t.romano}-${t.titulo}`}
+                    className="flex items-start gap-2 text-sm text-slate-700"
+                  >
+                    <span
+                      className={faltou ? "text-amber-600" : "text-emerald-600"}
+                    >
+                      {faltou ? "!" : "✓"}
+                    </span>
+                    <span>
+                      {t.romano}. {t.titulo}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+            {resultado.estrategiaJuridicaBruta && regeneracoesRestantes > 0 && (
+              <div className="mt-4 border-t border-slate-100 pt-3">
+                <button
+                  type="button"
+                  onClick={() => void handleRegenerarDireito()}
+                  disabled={regenerandoDireito}
+                  className="rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm font-medium text-stone-800 hover:bg-stone-100 disabled:opacity-60"
+                >
+                  {regenerandoDireito
+                    ? "Regenerando DO DIREITO…"
+                    : "Regenerar só DO DIREITO"}
+                </button>
+                <p className="mt-1 text-xs text-slate-500">
+                  Reescreve a fundamentação com o plano e o lastro —{" "}
+                  {regeneracoesRestantes} tentativa(s) restante(s).
+                </p>
+                {erroRegenerar && (
+                  <p className="mt-2 text-sm text-red-700">{erroRegenerar}</p>
+                )}
+              </div>
+            )}
+          </section>
+        )}
       {!resultado.geradoPorIA && !resultado.avisoIA && (
         <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           Peça de reserva (fundamentação genérica). Gere novamente para obter a
@@ -887,6 +1029,15 @@ export function JecForm({
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [loadingStage, setLoadingStage] = useState(0);
+  const [faseGeracao, setFaseGeracao] = useState<"idle" | "triagem" | "redacao">(
+    "idle"
+  );
+  const [triagemPreview, setTriagemPreview] =
+    useState<PreviewTriagemData | null>(null);
+  const [payloadPendente, setPayloadPendente] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<GerarPecaJecOutput | null>(null);
   const [versoesPeca, setVersoesPeca] = useState<
@@ -1076,6 +1227,7 @@ export function JecForm({
     especiePeca,
     comReconvencao
   );
+  const secaoValor = secaoValorDaEspecie(areaId, especieEfetiva);
 
   const tituloAcaoCompleto = useMemo(() => {
     if (!tipoAcaoDefinido) return "";
@@ -1124,6 +1276,10 @@ export function JecForm({
       assistentePendente ||
       (modoAcao === "livre" && tipoAcaoTexto.trim().length < 8),
     partesJaQualificadas: jaQualificadas,
+    incluirValores: Boolean(secaoValor),
+    rotuloValores: secaoValor
+      ? rotuloFormularioValor(secaoValor.titulo).replace(" (opcional)", "")
+      : undefined,
   });
 
   const checklistComPolo =
@@ -1148,7 +1304,7 @@ export function JecForm({
     itemOk("tipo") && itemOk("autor") && itemOk("reus") && itemOk("comarca");
   const guiaFatosOk = itemOk("fatos");
   const guiaPedidosOk =
-    itemOk("valores") ||
+    (secaoValor ? itemOk("valores") : true) ||
     pedidos.some((p) => p.descricao.trim().length > 0);
 
   const guiaInicialRef = useRef(true);
@@ -1183,12 +1339,16 @@ export function JecForm({
       setLoadingStage(0);
       return;
     }
+    const stages =
+      faseGeracao === "triagem"
+        ? LOADING_STAGES_TRIAGEM
+        : LOADING_STAGES_GERACAO;
     setLoadingStage(0);
     const id = window.setInterval(() => {
-      setLoadingStage((s) => (s + 1) % LOADING_STAGES.length);
+      setLoadingStage((s) => (s + 1) % stages.length);
     }, 4500);
     return () => window.clearInterval(id);
-  }, [loading]);
+  }, [loading, faseGeracao]);
 
   function handleToggleTimbre(checked: boolean) {
     const next = { ...escritorio, usarTimbre: checked };
@@ -1623,7 +1783,10 @@ export function JecForm({
     }
 
     setLoading(true);
+    setFaseGeracao("triagem");
     setError(null);
+    setTriagemPreview(null);
+    setPayloadPendente(null);
 
     const form = e.currentTarget;
     const formData = new FormData(form);
@@ -1747,13 +1910,83 @@ export function JecForm({
       valoresCausa,
       leiMunicipal,
       tesesIds: tesesAtivas.map((t) => t.id),
+      resumoEntrada: avisoEntrada?.trim() || undefined,
     };
+
+    try {
+      const response = await fetch("/api/triagem-peca", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const texto = await response.text();
+      let data: {
+        error?: string;
+        ok?: boolean;
+      } & Partial<PreviewTriagemData> = {};
+      try {
+        data = JSON.parse(texto) as typeof data;
+      } catch {
+        setError(
+          `Falha na triagem (HTTP ${response.status || "—"}). Tente novamente.`
+        );
+        setLoading(false);
+        setFaseGeracao("idle");
+        return;
+      }
+
+      if (!response.ok || !data.ok) {
+        setError(data.error ?? "Erro na triagem estratégica.");
+        setLoading(false);
+        setFaseGeracao("idle");
+        return;
+      }
+
+      setPayloadPendente(payload);
+      setTriagemPreview({
+        estrategiaJuridica: data.estrategiaJuridica!,
+        analiseEstrategica: data.analiseEstrategica!,
+        topicos: data.topicos ?? [],
+        cobertura: data.cobertura ?? [],
+        coberturaResumo: data.coberturaResumo,
+        modelo: data.modelo,
+        pedidosFormulario: pedidosUsuario,
+      });
+      window.setTimeout(() => {
+        document
+          .getElementById("preview-triagem")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
+    } catch {
+      setError("Falha de rede na triagem. Tente novamente.");
+    }
+
+    setLoading(false);
+    setFaseGeracao("idle");
+  }
+
+  async function confirmarRedacao() {
+    if (!triagemPreview || !payloadPendente) return;
+
+    setLoading(true);
+    setFaseGeracao("redacao");
+    setError(null);
 
     try {
       const response = await fetch("/api/gerar-peca", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          ...payloadPendente,
+          triagemPrecalculada: {
+            estrategiaJuridica: triagemPreview.estrategiaJuridica,
+            topicos: triagemPreview.topicos,
+            cobertura: triagemPreview.cobertura,
+            modelo: triagemPreview.modelo ?? "triagem",
+            analiseEstrategica: triagemPreview.analiseEstrategica,
+          },
+        }),
       });
 
       const texto = await response.text();
@@ -1767,30 +2000,23 @@ export function JecForm({
       } catch {
         const dicaTimeout =
           response.status === 504 || response.status === 408
-            ? " A geração pode ter estourado o tempo limite — tente de novo com fatos um pouco mais objetivos."
+            ? " A geração pode ter estourado o tempo limite — tente de novo."
             : "";
         setError(
-          `Falha na comunicação com o servidor (HTTP ${response.status || "—"}). Tente novamente.${dicaTimeout}`
+          `Falha na redação (HTTP ${response.status || "—"}).${dicaTimeout}`
         );
         setLoading(false);
+        setFaseGeracao("idle");
         return;
       }
 
       if (!response.ok) {
         if (data.codigo === "COTA_ESGOTADA" && data.cota) {
           setCota(data.cota);
-          const alvo =
-            data.cota.plano === "trial"
-              ? "trial-esgotado-jec"
-              : "pacotes-extras-jec";
-          window.setTimeout(() => {
-            document
-              .getElementById(alvo)
-              ?.scrollIntoView({ behavior: "smooth", block: "start" });
-          }, 50);
         }
-        setError(data.error ?? "Erro ao gerar a peça.");
+        setError(data.error ?? "Erro ao redigir a peça.");
         setLoading(false);
+        setFaseGeracao("idle");
         return;
       }
 
@@ -1803,6 +2029,8 @@ export function JecForm({
       });
       setVersaoAtivaId(id);
       setResultado(gerado);
+      setTriagemPreview(null);
+      setPayloadPendente(null);
       setAjustesFeitos(0);
       setMsgCaso(null);
       if (comPoloAdvocacia) {
@@ -1817,16 +2045,38 @@ export function JecForm({
           .getElementById("peca-gerada")
           ?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 50);
-    } catch (erro) {
-      setError(
-        erro instanceof TypeError
-          ? "Falha de rede ao falar com o servidor. Verifique a conexão e tente novamente."
-          : "Falha na comunicação com o servidor. Tente novamente."
-      );
+    } catch {
+      setError("Falha de rede ao redigir a peça.");
     }
 
     setLoading(false);
+    setFaseGeracao("idle");
   }
+
+  function cancelarTriagem() {
+    setTriagemPreview(null);
+    setPayloadPendente(null);
+    window.setTimeout(() => {
+      document
+        .getElementById("dashboard-minuta-topo")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }
+
+  function reanalisarTriagem() {
+    setTriagemPreview(null);
+    setPayloadPendente(null);
+    window.setTimeout(() => {
+      document
+        .getElementById("botao-analisar-peca")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 50);
+  }
+
+  const loadingStages =
+    faseGeracao === "triagem"
+      ? LOADING_STAGES_TRIAGEM
+      : LOADING_STAGES_GERACAO;
 
   return (
     <div className={`space-y-8 ${resultado ? "pb-24" : ""}`}>
@@ -2404,7 +2654,8 @@ export function JecForm({
               rows={10}
               value={fatos}
               onChange={(e) => setFatos(e.target.value)}
-              placeholder={placeholderFatosPorTipo(
+              placeholder={placeholderFatosPorArea(
+                areaId,
                 tipoAcaoDefinido || tipoAcaoTexto || ASSISTENTE_FACTO
               )}
               className="w-full resize-y rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-800 placeholder-slate-400 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
@@ -2661,15 +2912,19 @@ export function JecForm({
 
         <div className={guiaAtiva === "pedidos" ? "space-y-6" : "hidden"}>
         <div id="secao-valores" className="scroll-mt-24">
-          <ValoresCausaSection
-            value={valoresCausa}
-            onChange={setValoresCausa}
-            comAdvogado={comAdvogado}
-            expandidoManual={valoresManualExpandido}
-            onExpandidoManualChange={setValoresManualExpandido}
-            valorInferido={valorInferido}
-            onAplicarValorInferido={aplicarValorInferido}
-          />
+          {secaoValor ? (
+            <ValoresCausaSection
+              value={valoresCausa}
+              onChange={setValoresCausa}
+              comAdvogado={comAdvogado}
+              expandidoManual={valoresManualExpandido}
+              onExpandidoManualChange={setValoresManualExpandido}
+              valorInferido={valorInferido}
+              onAplicarValorInferido={aplicarValorInferido}
+              tituloSecao={rotuloFormularioValor(secaoValor.titulo)}
+              textoAjuda={textoAjudaFormularioValor(secaoValor.titulo)}
+            />
+          ) : null}
         </div>
 
         <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
@@ -2805,6 +3060,22 @@ export function JecForm({
             </ul>
           </div>
 
+          <div className="mb-4 rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-700">
+            <p className="font-medium text-stone-800">Duas etapas antes da minuta</p>
+            <ol className="mt-2 list-inside list-decimal space-y-1 text-stone-600">
+              <li>
+                <strong className="font-medium text-stone-800">Analisar e planejar</strong>{" "}
+                — triagem do dossiê, plano de tópicos e pedidos{" "}
+                <span className="text-emerald-800">(não consome cota)</span>
+              </li>
+              <li>
+                <strong className="font-medium text-stone-800">Confirmar e redigir</strong>{" "}
+                — peça completa{" "}
+                <span className="text-amber-900">(debita 1 peça)</span>
+              </li>
+            </ol>
+          </div>
+
           <div className="flex flex-col items-end gap-2 pt-2">
             {bloqueadoTetoLeigo && (
               <p className="max-w-md text-right text-sm text-red-800">
@@ -2839,29 +3110,45 @@ export function JecForm({
               </p>
             )}
             <button
+              id="botao-analisar-peca"
               type="submit"
               disabled={
                 loading ||
                 !podeGerar ||
                 Boolean(cota?.esgotada) ||
-                bloqueadoTetoLeigo
+                bloqueadoTetoLeigo ||
+                Boolean(triagemPreview)
               }
               className="rounded-lg bg-stone-700 px-8 py-3.5 text-base font-semibold text-amber-50 shadow-sm transition hover:bg-stone-600 disabled:opacity-60"
             >
               {loading
-                ? LOADING_STAGES[loadingStage]
+                ? loadingStages[loadingStage]
                 : cota?.esgotada
                   ? cota.plano === "trial"
                     ? "Teste esgotado"
                     : "Cota esgotada"
                   : bloqueadoTetoLeigo
                     ? "Valor acima do teto (20 SM)"
-                    : "Gerar peça"}
+                    : triagemPreview
+                      ? "Revise o plano abaixo"
+                      : "Analisar e planejar peça"}
             </button>
           </div>
         </section>
         </div>
       </form>
+
+      {triagemPreview && !resultado && (
+        <div id="preview-triagem" className="scroll-mt-24 border-t border-slate-200 pt-8">
+          <PreviewTriagemPeca
+            triagem={triagemPreview}
+            confirmando={loading && faseGeracao === "redacao"}
+            onConfirmar={() => void confirmarRedacao()}
+            onVoltar={cancelarTriagem}
+            onReanalisar={reanalisarTriagem}
+          />
+        </div>
+      )}
 
       {resultado && (
         <div
@@ -2969,8 +3256,10 @@ export function JecForm({
                     }
                   : prev
               );
-              setAjustesFeitos((n) => n + 1);
             }}
+            onAjusteConcluido={() => setAjustesFeitos((n) => n + 1)}
+            tesesIds={tesesAtivas.map((t) => t.id)}
+            poloAdvocacia={poloAdvocacia}
           />
 
           <div className="mt-8">

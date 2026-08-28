@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { acessoAssinaturaLiberado } from "@/lib/acesso-assinatura";
+import { gestaoHabilitada } from "@/lib/gestao/gestao-flags";
 import {
   COOKIE_SESSAO,
-  criarIdSessao,
   opcoesCookieSessao,
 } from "@/lib/sessao-unica";
+import { registrarSessaoPecasAtiva } from "@/lib/sessao-pecas-server";
 
 function nomeDeMetadata(meta: Record<string, unknown> | undefined): string {
   const candidatos = [
@@ -35,9 +36,11 @@ export async function POST(request: Request) {
   }
 
   let intent: "trial" | "login" = "login";
+  let destinoGestao = false;
   try {
-    const body = (await request.json()) as { intent?: string };
+    const body = (await request.json()) as { intent?: string; destino?: string };
     if (body.intent === "trial") intent = "trial";
+    if (body.destino === "gestao") destinoGestao = true;
   } catch {
     /* sem body */
   }
@@ -94,16 +97,6 @@ export async function POST(request: Request) {
       .eq("id", user.id);
   }
 
-  const sessaoId = criarIdSessao();
-  const { error: sessaoErr } = await admin
-    .from("profiles")
-    .update({ sessao_ativa_id: sessaoId })
-    .eq("id", user.id);
-
-  if (sessaoErr) {
-    return NextResponse.json({ error: sessaoErr.message }, { status: 500 });
-  }
-
   const { data: perfil } = await admin
     .from("profiles")
     .select("trial_ate, trial_area_id, trial_pecas_usadas")
@@ -111,9 +104,12 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   const liberado = await acessoAssinaturaLiberado(email);
+  const loginGestao = destinoGestao && gestaoHabilitada();
 
   let redirect = "/dashboard";
-  if (liberado) {
+  if (loginGestao) {
+    redirect = "/gestao";
+  } else if (liberado) {
     redirect = "/dashboard";
   } else if (perfil?.trial_ate) {
     redirect = "/login?acesso=expirado";
@@ -122,6 +118,14 @@ export async function POST(request: Request) {
   }
 
   const response = NextResponse.json({ ok: true, redirect, intent });
-  response.cookies.set(COOKIE_SESSAO, sessaoId, opcoesCookieSessao());
+
+  if (!loginGestao) {
+    const reg = await registrarSessaoPecasAtiva(user.id);
+    if (!reg.ok) {
+      return NextResponse.json({ error: reg.erro }, { status: 500 });
+    }
+    response.cookies.set(COOKIE_SESSAO, reg.sessaoId, opcoesCookieSessao());
+  }
+
   return response;
 }

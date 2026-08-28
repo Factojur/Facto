@@ -6,12 +6,15 @@ import { createClient } from "@/lib/supabase/client";
 type Props = {
   /** trial = após OAuth vai para onboarding; login = dashboard se tiver acesso */
   intent?: "trial" | "login";
+  /** Após login, ir para gestão (só em dev / FACTO_GESTAO=1) */
+  destinoGestao?: boolean;
   className?: string;
   label?: string;
 };
 
 export function GoogleSignInButton({
   intent = "login",
+  destinoGestao = false,
   className = "",
   label = "Continuar com Google",
 }: Props) {
@@ -24,10 +27,13 @@ export function GoogleSignInButton({
     try {
       const supabase = createClient();
       const origin = window.location.origin;
+      const callback = new URL(`${origin}/auth/callback`);
+      callback.searchParams.set("intent", intent);
+      if (destinoGestao) callback.searchParams.set("destino", "gestao");
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${origin}/auth/callback?intent=${intent}`,
+          redirectTo: callback.toString(),
           queryParams: {
             access_type: "offline",
             prompt: "select_account",

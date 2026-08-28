@@ -11,7 +11,6 @@ import {
 } from "@/lib/base-conhecimento";
 import { substituirEnderecamentoDeterministico } from "@/lib/endereco-comarca";
 import {
-  montarSystemPromptAnaliseEstrategica,
   montarSystemPromptRedacaoTier1,
   type BlocoLeiMunicipal,
 } from "@/lib/ia/assistente-facto-prompt";
@@ -24,7 +23,6 @@ import {
   gerarTextoComGemini,
   geminiConfigurado,
   modelosRedacao,
-  MODELOS_TRIAGEM,
 } from "@/lib/ia/gemini-client";
 import { gerarTextoComAnthropic } from "@/lib/ia/anthropic-client";
 import { decidirRedatorSonnet } from "@/lib/ia/roteador-redator";
@@ -59,6 +57,7 @@ import {
 } from "@/lib/ia/skins-facto";
 import {
   inferirEspecieDaArea,
+  blocoEstruturaDaArea,
 } from "@/lib/peca-especie-area";
 import {
   normalizarPoloAdvocacia,
@@ -77,6 +76,28 @@ import {
   detectarTesesCanonicas,
 } from "@/lib/teses-canonicas";
 import { expandirQueryLastro } from "@/lib/expansao-query-lastro";
+import type { BriefingCasoLivre } from "@/lib/ia/briefing-caso-livre";
+import {
+  enriquecerEstrategiaComPlano,
+  extrairPlanoTopicos,
+} from "@/lib/ia/plano-topicos-peca";
+import { montarDossieCasoLivre } from "@/lib/ia/dossie-caso-livre";
+import {
+  blocoCoberturaTesesParaRedator,
+  auditarTopicosNaPeca,
+  type ItemCoberturaTese,
+} from "@/lib/ia/cobertura-teses-peca";
+import { buscarLastroPorTopicos } from "@/lib/ia/rag-por-topico";
+import {
+  executarTriagemCaso,
+  montarContextoTriagem,
+  parseEstrategiaJuridica,
+  type TriagemPrecalculada,
+  type AnaliseEstrategica,
+} from "@/lib/ia/triagem-caso-peca";
+
+export type { TriagemPrecalculada, AnaliseEstrategica };
+export { parseEstrategiaJuridica };
 
 function enriquecerQueryLastro(
   areaId: string,
@@ -141,23 +162,6 @@ export type InstrucoesDeterministicas = {
   } | null;
 };
 
-export type AnaliseEstrategica = {
-  tesePrincipal?: string;
-  naturezaRelacao?: string;
-  direitosViolados?: string[];
-  nomeAcao?: string;
-  tutelaUrgencia?: boolean;
-  justicaGratuita?: boolean;
-  principios?: string[];
-  sumulasConsolidadas?: string[];
-  artigosChave?: string[];
-  topicosPlanejados?: string[];
-  pedidosEssenciais?: string[];
-  riscosOuLacunas?: string[];
-  /** Texto integral da Etapa 1 (estratégia jurídica). */
-  bruto?: string;
-};
-
 export type ResultadoPecaIA =
   | {
       ok: true;
@@ -178,48 +182,6 @@ export type ResultadoPecaIA =
       ok: false;
       erro: string;
     };
-
-/** Extrai campos úteis do resumo textual do Paralegal (Etapa 1). */
-function parseEstrategiaJuridica(texto: string): AnaliseEstrategica {
-  const bruto = texto.trim();
-  const teseMatch = bruto.match(
-    /(?:tese\s+jur[ií]dica\s+principal|tese\s+principal)\s*[:\-–]?\s*([\s\S]*?)(?=\n\s*\d+\.|$)/i
-  );
-  const acaoMatch = bruto.match(
-    /(?:nome\s+t[eé]cnico\s+da\s+a[cç][aã]o|a[cç][aã]o\s+cab[ií]vel)[^\n]*[:\-–]?\s*([^\n]+)/i
-  );
-  const pedidosMatch = bruto.match(
-    /(?:pedidos\s+essenciais)[^\n]*[:\-–]?\s*([\s\S]*?)(?=\n\s*\d+\.|$)/i
-  );
-  const riscosMatch = bruto.match(
-    /(?:riscos?\s*(?:ou\s+lacunas?)?|lacunas?)\s*[:\-–]?\s*([\s\S]*?)(?=\n\s*\d+\.|$)/i
-  );
-  const artigosMatch = bruto.match(
-    /(?:s[uú]mulas?\/artigos|artigos?-chave|artigos?\s+chave)[^\n]*[:\-–]?\s*([\s\S]*?)(?=\n\s*\d+\.|$)/i
-  );
-
-  const lista = (bloco?: string) =>
-    bloco
-      ? bloco
-          .split(/\n|;|•|-/)
-          .map((p) => p.replace(/^\s*\d+[.)]\s*/, "").trim())
-          .filter((p) => p.length > 3)
-          .slice(0, 8)
-      : undefined;
-
-  const pedidosEssenciais = lista(pedidosMatch?.[1]);
-  const riscosOuLacunas = lista(riscosMatch?.[1]);
-  const artigosChave = lista(artigosMatch?.[1]);
-
-  return {
-    bruto,
-    tesePrincipal: teseMatch?.[1]?.trim().slice(0, 500) || bruto.slice(0, 280),
-    nomeAcao: acaoMatch?.[1]?.trim(),
-    pedidosEssenciais,
-    riscosOuLacunas,
-    artigosChave,
-  };
-}
 
 function linhaPoloUsuario(
   polo: PoloAdvocacia | null | undefined,
@@ -253,40 +215,8 @@ function provasDoInstrucoes(
   );
 }
 
-function montarUserPromptTriagem(params: {
-  tipoAcao: string;
-  fatos: string;
-  tutelaUrgencia?: boolean;
-  casoReal: boolean;
-  especiePeca?: string;
-  poloAdvocacia?: PoloAdvocacia | null;
-  areaId?: string;
-  vinculosPeca?: string | null;
-}): string {
-  return [
-    "Processe o relato abaixo e devolva APENAS o resumo estruturado pedido no system prompt.",
-    "",
-    `Indicação do formulário (pista): ${params.tipoAcao}`,
-    params.especiePeca
-      ? `Espécie da peça (formulário): ${params.especiePeca}`
-      : null,
-    params.vinculosPeca,
-    linhaPoloUsuario(params.poloAdvocacia, params.areaId ?? "jec"),
-    params.tutelaUrgencia != null
-      ? `Tutela marcada no formulário: ${params.tutelaUrgencia ? "Sim" : "Não"}`
-      : null,
-    "",
-    params.casoReal
-      ? "<RELATO_BRUTO_DO_USUARIO>"
-      : "<RELATO_BRUTO_DO_USUARIO> (TESTE fictício)",
-    params.fatos.trim(),
-    "</RELATO_BRUTO_DO_USUARIO>",
-  ]
-    .filter((p): p is string => p != null)
-    .join("\n");
-}
-
 function montarUserPromptRedacao(params: {
+  dossieBloco: string;
   tipoAcao: string;
   fatos: string;
   instrucoes?: InstrucoesDeterministicas;
@@ -300,6 +230,11 @@ function montarUserPromptRedacao(params: {
   const partes = [
     "TAREFA: redija a PEÇA COMPLETA seguindo o system prompt e o resumo estratégico abaixo.",
     "NÃO devolva o resumo — só a peça em Markdown limpo.",
+    "Se houver <PLANO_DE_TOPICOS_OBRIGATORIO>, use os títulos definidos na triagem.",
+    "",
+    params.casoReal
+      ? params.dossieBloco
+      : `${params.dossieBloco}\n(TESTE fictício — reescrever, nunca colar)`,
     "",
     "<ESTRATEGIA_JURIDICA>",
     params.estrategiaJuridica,
@@ -321,15 +256,9 @@ function montarUserPromptRedacao(params: {
         : null,
     params.instrucoes?.temMle === true
       ? "MLE: SIM — prever nos pedidos a expedição/utilização do Mandado de Levantamento Eletrônico, se cabível."
-      : params.instrucoes?.temMle === false
+      :     params.instrucoes?.temMle === false
         ? "MLE: NÃO — checkbox desligado; não pedir Mandado de Levantamento Eletrônico."
         : null,
-    "",
-    params.casoReal
-      ? "<RELATO_BRUTO_DO_USUARIO> (insumo complementar — reescrever, nunca colar):"
-      : "<RELATO_BRUTO_DO_USUARIO> (TESTE fictício — reescrever, nunca colar):",
-    params.fatos.trim(),
-    "</RELATO_BRUTO_DO_USUARIO>",
   ].filter((p): p is string => p != null);
 
   if (params.instrucoes?.enderecamento?.trim()) {
@@ -519,6 +448,11 @@ export async function gerarPecaComIA(params: {
     userId: string;
     plano: PlanoCota;
   };
+  /** Orientações do formulário — pistas, não barreiras. */
+  briefingFormulario?: BriefingCasoLivre | null;
+  dispositivoSentenca?: string | null;
+  /** Triagem já executada (preview) — pula nova chamada de triagem. */
+  triagemPrecalculada?: TriagemPrecalculada | null;
 }): Promise<ResultadoPecaIA> {
   if (!geminiConfigurado()) {
     return {
@@ -587,12 +521,7 @@ export async function gerarPecaComIA(params: {
       opcoesLastro
     ));
 
-  const contextoBase = [
-    montarContextoConhecimento(itens),
-    blocoPromptTesesCanonicas(teses),
-  ]
-    .filter(Boolean)
-    .join("\n\n");
+  const contextoBase = montarContextoTriagem(itens, teses);
   const leiMunicipal = params.leiMunicipal?.texto?.trim()
     ? {
         nome: params.leiMunicipal.nome || "Lei municipal anexada",
@@ -616,47 +545,56 @@ export async function gerarPecaComIA(params: {
   ).length;
 
   const provasDoCaso = provasDoInstrucoes(params.instrucoes);
+  const dossie = montarDossieCasoLivre({
+    fatos: params.fatos,
+    briefingFormulario: params.briefingFormulario,
+    dispositivoSentenca: params.dispositivoSentenca,
+    provas: provasDoCaso,
+  });
 
-  // —— Analista Facto + Estrategista (uma chamada LLM barata/triagem) ——
-  const triagemRes = await gerarTextoComGemini({
-    systemPrompt: montarSystemPromptAnaliseEstrategica(
+  let estrategiaJuridica: string;
+  let analiseEstrategica: AnaliseEstrategica;
+  let topicosExtraidos: ReturnType<typeof extrairPlanoTopicos>;
+  let coberturaItens: ItemCoberturaTese[];
+  let triagemModelo: string;
+
+  if (params.triagemPrecalculada) {
+    estrategiaJuridica = params.triagemPrecalculada.estrategiaJuridica;
+    analiseEstrategica = params.triagemPrecalculada.analiseEstrategica;
+    topicosExtraidos = params.triagemPrecalculada.topicos;
+    coberturaItens = params.triagemPrecalculada.cobertura;
+    triagemModelo = params.triagemPrecalculada.modelo;
+  } else {
+    const triagem = await executarTriagemCaso({
+      tipoAcao: params.tipoAcao,
+      fatos: params.fatos,
+      especiePeca: especieFinal,
+      areaId,
       contextoBase,
       leiMunicipal,
       jurisDoCaso,
-      especieFinal,
-      areaId,
-      opcoesPolo,
-      blocoVinculos,
-      provasDoCaso
-    ),
-    userPrompt: montarUserPromptTriagem({
-      tipoAcao: params.tipoAcao,
-      fatos: params.fatos,
-      tutelaUrgencia: params.instrucoes?.tutelaUrgencia,
+      instrucoes: params.instrucoes,
       casoReal,
-      especiePeca: especieFinal,
       poloAdvocacia: polo,
-      areaId,
-      vinculosPeca: blocoVinculos,
-    }),
-    modelos: MODELOS_TRIAGEM,
-    temperature: 0.25,
-    maxOutputTokens: 4096,
-  });
-
-  if (!triagemRes.ok) {
-    return { ok: false, erro: `Falha na triagem estratégica: ${triagemRes.erro}` };
+      teses,
+      briefingFormulario: params.briefingFormulario,
+      dispositivoSentenca: params.dispositivoSentenca,
+      blocoVinculos,
+      opcoesPolo,
+    });
+    if (!triagem.ok) {
+      return { ok: false, erro: triagem.erro };
+    }
+    estrategiaJuridica = triagem.estrategiaJuridica;
+    analiseEstrategica = triagem.analiseEstrategica;
+    topicosExtraidos = triagem.topicos;
+    coberturaItens = triagem.cobertura;
+    triagemModelo = triagem.modelo;
   }
 
-  const estrategiaJuridica = triagemRes.texto.trim();
-  if (!estrategiaJuridica || estrategiaJuridica.length < 40) {
-    return {
-      ok: false,
-      erro: "A triagem da IA retornou resumo insuficiente.",
-    };
-  }
-
-  const analiseEstrategica = parseEstrategiaJuridica(estrategiaJuridica);
+  const estruturaEspecie = blocoEstruturaDaArea(areaId, especieFinal);
+  const blocoCobertura = blocoCoberturaTesesParaRedator(coberturaItens, teses);
+  const nCoberturaOk = coberturaItens.filter((i) => i.noPlano).length;
 
   equipe.push({
     id: "analista",
@@ -668,12 +606,22 @@ export async function gerarPecaComIA(params: {
       vinculos.especie !== vinculos.cabivel
         ? "parcial"
         : "ok",
-    detalhe: detalheAnalista({
-      nomeAcao: analiseEstrategica.nomeAcao,
-      vinculos,
-      riscos: analiseEstrategica.riscosOuLacunas,
-    }),
-    modelo: triagemRes.modelo,
+    detalhe: [
+      detalheAnalista({
+        nomeAcao: analiseEstrategica.nomeAcao,
+        vinculos,
+        riscos: analiseEstrategica.riscosOuLacunas,
+      }),
+      topicosExtraidos.length
+        ? `${topicosExtraidos.length} tópico(s) planejado(s)`
+        : null,
+      coberturaItens.length
+        ? `cobertura ${nCoberturaOk}/${coberturaItens.length}`
+        : null,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    modelo: triagemModelo,
   });
 
   // Amplia RAG com tese / nome da ação (Pesquisa & súmulas)
@@ -708,6 +656,22 @@ export async function gerarPecaComIA(params: {
     itensFinais = itensFinais.slice(0, 12);
   }
 
+  if (topicosExtraidos.length > 0) {
+    itensFinais = await buscarLastroPorTopicos({
+      areaId,
+      fatos: dossie.relato,
+      topicos: topicosExtraidos,
+      base: itensFinais,
+      opcoesLastro: {
+        polo: polo ?? undefined,
+        especie: especieFinal,
+      },
+      enriquecerQuery: enriquecerQueryLastro,
+      maxPorConsulta: 3,
+      maxTotal: 16,
+    });
+  }
+
   const nSumulasF = itensFinais.filter((i) =>
     /s[uú]mula/i.test(i.categoria)
   ).length;
@@ -740,22 +704,29 @@ export async function gerarPecaComIA(params: {
       tesePrincipal: analiseEstrategica.tesePrincipal,
       nPedidos: nPedidosForm,
       nTeses: teses.length,
+      nTopicos: topicosExtraidos.length || undefined,
     }),
-    modelo: triagemRes.modelo,
+    modelo: triagemModelo,
   });
 
   const tesesPrompt = blocoPromptTesesCanonicas(teses);
   const contextoRedacao = [montarContextoConhecimento(itensFinais), tesesPrompt]
     .filter(Boolean)
     .join("\n\n");
-  const estrategiaParaRedator = reforcarEstrategiaParaRedator({
-    estrategia: estrategiaJuridica,
-    vinculos,
-    teses,
-    pedidosUsuario: params.instrucoes?.pedidosUsuario,
-    pedirJusticaGratuita: params.instrucoes?.pedirJusticaGratuita,
-    temMle: params.instrucoes?.temMle,
-    tutelaUrgencia: params.instrucoes?.tutelaUrgencia,
+  const estrategiaParaRedator = enriquecerEstrategiaComPlano({
+    estrategia: reforcarEstrategiaParaRedator({
+      estrategia: estrategiaJuridica,
+      vinculos,
+      teses,
+      pedidosUsuario: params.instrucoes?.pedidosUsuario,
+      pedirJusticaGratuita: params.instrucoes?.pedirJusticaGratuita,
+      temMle: params.instrucoes?.temMle,
+      tutelaUrgencia: params.instrucoes?.tutelaUrgencia,
+    }),
+    topicos: topicosExtraidos,
+    pedidosEssenciais: analiseEstrategica.pedidosEssenciais,
+    estruturaEspecie,
+    coberturaTeses: blocoCobertura,
   });
 
   // —— Redator forense (Flash padrão; Sonnet se roteador autorizar) ——
@@ -771,6 +742,7 @@ export async function gerarPecaComIA(params: {
     provasDoCaso
   );
   const userRedacao = montarUserPromptRedacao({
+    dossieBloco: dossie.bloco,
     tipoAcao: analiseEstrategica.nomeAcao || params.tipoAcao,
     fatos: params.fatos,
     instrucoes: params.instrucoes,
@@ -882,12 +854,13 @@ export async function gerarPecaComIA(params: {
     pedidosUsuario: params.instrucoes?.pedidosUsuario,
     citacoes,
     marcadoresNaoEncontrado: marcadores,
+    topicosPlanejados: topicosExtraidos,
   });
 
   return {
     ok: true,
     textoGerado: textoComLastro,
-    modelo: `${triagemRes.modelo} → ${redacaoModelo}`,
+    modelo: `${triagemModelo} → ${redacaoModelo}`,
     contextoUtilizado: itensFinais.map((item) => ({
       titulo: item.titulo,
       categoria: item.categoria,

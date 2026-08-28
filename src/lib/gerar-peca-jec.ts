@@ -51,6 +51,7 @@ import {
   formatarBlocoPartesJaQualificadas,
   pecaUsaPartesJaQualificadas,
 } from "@/lib/partes-ja-qualificadas";
+import { fraseValorSecao } from "@/lib/secao-valor-peca";
 import { normalizarTextoFatos } from "@/lib/peca-paragrafos";
 import { montarFundamentosDireitoJec } from "@/lib/peca-do-direito-jec";
 import {
@@ -162,7 +163,26 @@ export type GerarPecaJecOutput = {
     nomeAcao?: string;
     direitosViolados?: string[];
     topicosPlanejados?: string[];
+    pedidosEssenciais?: string[];
+    riscosOuLacunas?: string[];
   } | null;
+  /** Texto integral da triagem (para regenerar direito). */
+  estrategiaJuridicaBruta?: string | null;
+  /** Plano de tópicos estruturado. */
+  topicosPlanejadosDetalhe?: {
+    romano: string;
+    titulo: string;
+    subtitulos: string[];
+  }[];
+  /** Checklist teses/pedidos no plano. */
+  coberturaTeses?: {
+    id: string;
+    rotulo: string;
+    noPlano: boolean;
+    exigeSubtopico: boolean;
+  }[];
+  /** Conferência título-a-título na minuta. */
+  conferenciaTitulos?: { faltando: string[]; ok: number };
   /** Contexto da base usado no auditor — para ajuste pontual. */
   contextoVerificacao?: string;
   /** Conferência determinística do Auditor (após a minuta pronta). */
@@ -535,18 +555,22 @@ function extrairPedidos(
 }
 
 /**
- * Seção "DO VALOR DA CAUSA" — apenas o total (sem discriminativo).
+ * Seção de valor (causa, reconvenção ou pedido contraposto) — apenas o total.
  * O detalhamento fica no formulário; a peça encerra no fechamento forense.
  */
-export function montarSecaoValorCausa(resumo?: ResumoValorCausa): string[] {
+export function montarSecaoValorCausa(
+  resumo?: ResumoValorCausa,
+  tituloSecao = "DO VALOR DA CAUSA"
+): string[] {
   if (!resumo || resumo.totalCentavos <= 0) {
-    return [
-      "Dá-se à causa o valor de R$ [VALOR DA CAUSA] ([valor por extenso]), para fins de alçada e competência.",
-    ];
+    return [fraseValorSecao(tituloSecao)];
   }
-
   return [
-    `Dá-se à causa o valor de ${resumo.totalFormatado} (${resumo.totalPorExtenso}), para fins de alçada e competência.`,
+    fraseValorSecao(
+      tituloSecao,
+      resumo.totalFormatado,
+      resumo.totalPorExtenso
+    ),
   ];
 }
 
@@ -758,7 +782,7 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
         );
       }
     } else if (secao.chave === "valor") {
-      corpoSecoes.push(...montarSecaoValorCausa(valorCausaResumo));
+      corpoSecoes.push(...montarSecaoValorCausa(valorCausaResumo, secao.titulo));
     } else if (secao.chave === "pedidos") {
       corpoSecoes.push(
         "Ante o exposto, requer a Vossa Excelência:",

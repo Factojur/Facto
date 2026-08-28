@@ -353,6 +353,13 @@ export function tituloPecaConsumidor(
   }
 }
 
+export function esqueletoPorEspecieConsumidor(especie: string): Secao[] {
+  return (
+    ESQUELETOS[especie as EspeciePecaConsumidor] ??
+    ESQUELETOS["peticao-inicial"]
+  );
+}
+
 export function blocoEstruturaPromptConsumidor(
   especie: EspeciePecaConsumidor
 ): string {

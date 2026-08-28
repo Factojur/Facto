@@ -22,6 +22,7 @@
     "test:prazo-intimacao": "npx tsx scripts/testar-prazo-intimacao.ts",
     "test:smoke-areas-lastro": "npx tsx scripts/testar-smoke-areas-lastro.ts",
     "test:expansao-lastro": "npx tsx scripts/testar-expansao-query-lastro.ts",
+    "test:gestao-local": "npx tsx scripts/testar-gestao-local.ts",
     "test:pecas-diario": "npx tsx scripts/testar-pecas-diario.ts",
     "test:scaffolds-export": "npx tsx scripts/exportar-scaffolds-teste.ts",
     "test:auditoria-pecas": "npx tsx scripts/testar-auditoria-pecas.ts",

@@ -170,7 +170,18 @@ const ESQUELETOS: Record<EspeciePecaJecr, Secao[]> = {
     },
     { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
   ],
-  "composicao-civil": INICIAL,
+  "composicao-civil": [
+    { chave: "fatos", titulo: "DOS FATOS", obrigatoria: true },
+    { chave: "direito", titulo: "DO DIREITO", obrigatoria: true },
+    {
+      chave: "provas",
+      titulo: "DAS PROVAS E ANEXOS",
+      obrigatoria: false,
+      opcionalSistema: true,
+    },
+    { chave: "valor", titulo: "DO VALOR DA REPARAÇÃO", obrigatoria: true },
+    { chave: "pedidos", titulo: "DOS PEDIDOS", obrigatoria: true },
+  ],
   "transacao-penal": INICIAL,
   "suspensao-condicional": [
     { chave: "cabimento", titulo: "DO CABIMENTO (ART. 89)", obrigatoria: true },
@@ -286,6 +297,10 @@ export function tituloPecaJecr(
     default:
       return String(tipoSugerido ?? "").trim();
   }
+}
+
+export function esqueletoPorEspecieJecr(especie: string): Secao[] {
+  return ESQUELETOS[especie as EspeciePecaJecr] ?? INICIAL;
 }
 
 export function blocoEstruturaPromptJecr(especie: EspeciePecaJecr): string {

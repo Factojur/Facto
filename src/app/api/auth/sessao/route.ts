@@ -2,10 +2,13 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import {
   COOKIE_SESSAO,
-  criarIdSessao,
   obterCookieSessao,
   opcoesCookieSessao,
 } from "@/lib/sessao-unica";
+import {
+  registrarSessaoPecasAtiva,
+  validarSessaoPecasAtiva,
+} from "@/lib/sessao-pecas-server";
 
 async function obterPerfilSessao(userId: string) {
   const supabase = await createClient();
@@ -16,7 +19,7 @@ async function obterPerfilSessao(userId: string) {
     .maybeSingle();
 }
 
-/** Registra nova sessão ativa (login ou primeira visita). */
+/** Registra nova sessão ativa de PEÇAS (login dashboard). Gestão não usa esta rota. */
 export async function POST() {
   const supabase = await createClient();
   const {
@@ -27,22 +30,17 @@ export async function POST() {
     return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
   }
 
-  const sessaoId = criarIdSessao();
-  const { error } = await supabase
-    .from("profiles")
-    .update({ sessao_ativa_id: sessaoId })
-    .eq("id", user.id);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  const reg = await registrarSessaoPecasAtiva(user.id);
+  if (!reg.ok) {
+    return NextResponse.json({ error: reg.erro }, { status: 500 });
   }
 
   const response = NextResponse.json({ ok: true });
-  response.cookies.set(COOKIE_SESSAO, sessaoId, opcoesCookieSessao());
+  response.cookies.set(COOKIE_SESSAO, reg.sessaoId, opcoesCookieSessao());
   return response;
 }
 
-/** Valida se a sessão deste dispositivo ainda é a ativa. */
+/** Valida sessão de PEÇAS neste dispositivo. */
 export async function GET() {
   const supabase = await createClient();
   const {
@@ -64,8 +62,13 @@ export async function GET() {
     return NextResponse.json({ valida: true, pendente: true });
   }
 
-  if (!cookieSessao || cookieSessao !== profile.sessao_ativa_id) {
-    return NextResponse.json({ valida: false }, { status: 401 });
+  const validacao = await validarSessaoPecasAtiva(user.id);
+  if (!validacao.ok) {
+    return NextResponse.json({ valida: false }, { status: validacao.status });
+  }
+
+  if (!cookieSessao) {
+    return NextResponse.json({ valida: true, pendente: true });
   }
 
   return NextResponse.json({ valida: true });

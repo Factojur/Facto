@@ -4,6 +4,7 @@ import { limparFotoDeMetadata } from "@/lib/perfil-merge";
 import { acessoAssinaturaLiberado } from "@/lib/acesso-assinatura";
 import { isAdminEmail } from "@/lib/admin-auth";
 import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
+import { gestaoHabilitada, destinoLoginGestao } from "@/lib/gestao/gestao-flags";
 
 const COOKIE_SESSAO = "facto_sessao";
 /** Evita consultar assinaturas a cada clique no dashboard (5 min). */
@@ -53,6 +54,28 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
+  if (pathname.startsWith("/gestao") && !gestaoHabilitada()) {
+    const dashboardUrl = request.nextUrl.clone();
+    dashboardUrl.pathname = "/dashboard";
+    return NextResponse.redirect(dashboardUrl);
+  }
+
+  if (
+    !user &&
+    pathname.startsWith("/gestao") &&
+    !pathname.startsWith("/gestao/login")
+  ) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/gestao/login";
+    if (request.nextUrl.searchParams.get("convite")) {
+      loginUrl.searchParams.set(
+        "convite",
+        request.nextUrl.searchParams.get("convite")!
+      );
+    }
+    return NextResponse.redirect(loginUrl);
+  }
+
   const isAuthBridge =
     pathname.startsWith("/auth/") || pathname.startsWith("/onboarding/");
 
@@ -69,6 +92,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && pathname.startsWith("/dashboard")) {
+    // Sessão única só no módulo de PEÇAS — Gestão (/gestao) não usa facto_sessao.
     const sessaoCookie = request.cookies.get(COOKIE_SESSAO)?.value;
     const { data: profile } = await supabase
       .from("profiles")
@@ -174,8 +198,18 @@ export async function middleware(request: NextRequest) {
         (sessaoCookie != null && sessaoCookie === profile.sessao_ativa_id);
 
       if (sessaoOk) {
+        const destino = request.nextUrl.searchParams.get("destino");
+        const convite = request.nextUrl.searchParams.get("convite");
         const dashboardUrl = request.nextUrl.clone();
-        dashboardUrl.pathname = "/dashboard";
+        if (destinoLoginGestao(destino)) {
+          dashboardUrl.pathname = convite
+            ? "/gestao/entrar"
+            : "/gestao";
+          if (convite) dashboardUrl.searchParams.set("convite", convite);
+          dashboardUrl.searchParams.delete("destino");
+        } else {
+          dashboardUrl.pathname = "/dashboard";
+        }
         return NextResponse.redirect(dashboardUrl);
       }
     }

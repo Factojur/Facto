@@ -28,6 +28,8 @@ export function ValoresCausaSection({
   onExpandidoManualChange,
   valorInferido = null,
   onAplicarValorInferido,
+  tituloSecao = "Valores da Causa (opcional)",
+  textoAjuda,
 }: {
   value: ValoresPorCategoria;
   onChange: (v: ValoresPorCategoria) => void;
@@ -37,6 +39,8 @@ export function ValoresCausaSection({
   onExpandidoManualChange?: (v: boolean) => void;
   valorInferido?: ResumoValorCausa | null;
   onAplicarValorInferido?: () => void;
+  tituloSecao?: string;
+  textoAjuda?: string;
 }) {
   const resumo = calcularResumoValorCausa(value);
   const temItensManuais = resumo.totalCentavos > 0;
@@ -70,11 +74,11 @@ export function ValoresCausaSection({
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="mb-1 text-lg font-semibold text-slate-800">
-        Valores da Causa (opcional)
+        {tituloSecao}
       </h2>
       <p className="mb-4 text-sm text-slate-500">
-        Opcional. Se preencher manualmente, a soma entra na peça sem alteração.
-        Se deixar em branco, o sistema usa os valores citados nos fatos.
+        {textoAjuda ??
+          "Opcional. Se preencher manualmente, a soma entra na peça sem alteração. Se deixar em branco, o sistema usa os valores citados nos fatos."}
       </p>
 
       {valorInferido && !temItensManuais && (

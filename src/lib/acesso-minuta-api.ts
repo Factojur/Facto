@@ -9,6 +9,7 @@ import { areaAbertaParaCliente } from "@/lib/acesso-areas";
 import { resolverAcessoConta, type AcessoContaResolvido } from "@/lib/emails-acesso-livre";
 import { normalizarAreaIdMinuta, type AreaIdMinuta } from "@/lib/minuta-modulo";
 import { getPlanoAtivoServidor } from "@/lib/sessao-servidor";
+import { validarSessaoPecasAtiva } from "@/lib/sessao-pecas-server";
 import type { User } from "@supabase/supabase-js";
 
 export type AcessoMinutaOk = {
@@ -34,6 +35,20 @@ export async function exigirAcessoAreaMinuta(
     return {
       ok: false,
       response: NextResponse.json({ error: "Não autorizado" }, { status: 401 }),
+    };
+  }
+
+  const sessaoPecas = await validarSessaoPecasAtiva(user.id);
+  if (!sessaoPecas.ok) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          error: sessaoPecas.erro,
+          codigo: "SESSAO_PECAS_ENCERRADA",
+        },
+        { status: sessaoPecas.status }
+      ),
     };
   }
 

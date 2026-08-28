@@ -50,3 +50,6 @@ scripts/testes-pecas-diario.log
 # saídas locais de teste de peça (não commit)
 /tmp/
 
+# FACTO Gestão — dados locais de desenvolvimento (não publicar)
+.data/
+
