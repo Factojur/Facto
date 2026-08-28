@@ -13,6 +13,7 @@ import {
   lastroContrarioAoPolo,
   pistaQueryPolo,
 } from "@/lib/lastro-favoravel-polo";
+import { expandirQueryLastro } from "@/lib/expansao-query-lastro";
 import type { PoloAdvocacia } from "@/lib/polo-especies-por-area";
 
 export const CATEGORIAS_LASTRO = ["Súmula", "Jurisprudência"] as const;
@@ -194,16 +195,30 @@ function palavrasChave(
   textoExtra?: string,
   areaId?: string
 ): string[] {
+  const expansao = expandirQueryLastro(areaId, tipoAcao, textoExtra);
   const bruto = normalizar(
-    [tipoAcao, textoExtra ?? ""].filter(Boolean).join(" ")
+    [tipoAcao, textoExtra ?? "", expansao.blocoSemantico]
+      .filter(Boolean)
+      .join(" ")
   );
   const palavras = bruto
     .split(/[^a-z0-9]+/)
     .filter((p) => p.length > 3 && !STOPWORDS.has(p));
 
+  const termosExpansao = expansao.termos.flatMap((t) =>
+    normalizar(t)
+      .split(/\s+/)
+      .filter((p) => p.length > 3)
+  );
+
   return Array.from(
-    new Set([...palavras, ...ritoPalavrasArea(areaId)])
-  ).slice(0, 28);
+    new Set([
+      ...palavras,
+      ...termosExpansao,
+      ...expansao.bigramas,
+      ...ritoPalavrasArea(areaId),
+    ])
+  ).slice(0, 36);
 }
 
 // Tamanho máximo de um trecho individual — grande o bastante para caber um
@@ -542,7 +557,10 @@ export async function buscarConhecimentoRelacionado(
   const palavras = palavrasChave(tipoComPolo, textoExtra, areaId);
   if (palavras.length === 0) return [];
 
-  const consulta = [tipoComPolo, textoExtra ?? ""].filter(Boolean).join("\n");
+  const expansao = expandirQueryLastro(areaId, tipoComPolo, textoExtra);
+  const consulta = [tipoComPolo, textoExtra ?? "", expansao.blocoSemantico]
+    .filter(Boolean)
+    .join("\n");
   const limiteBusca = Math.max(limite * 3, 18);
 
   try {

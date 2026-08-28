@@ -3,6 +3,10 @@
  * para aquele caso específico (não os N primeiros da página).
  */
 
+import {
+  expandirQueryLastro,
+  extrairBigramasQuery,
+} from "@/lib/expansao-query-lastro";
 import type { JulgadoScrape } from "@/lib/scrapers/types";
 
 const STOPWORDS = new Set([
@@ -90,21 +94,20 @@ function normalizar(texto: string): string {
 }
 
 /** Extrai palavras-chave discriminantes do caso (fatos + tipo de ação). */
-export function extrairPalavrasChaveCaso(query: string): string[] {
-  const bruto = normalizar(query);
-  const palavras = bruto
+export function extrairPalavrasChaveCaso(
+  query: string,
+  areaId?: string
+): string[] {
+  const expansao = expandirQueryLastro(areaId, query);
+  const bruto = query;
+  const palavras = normalizar(bruto)
     .split(/[^a-z0-9]+/)
     .filter((p) => p.length >= 4 && !STOPWORDS.has(p));
 
-  // Bigramas leves (ex.: "dano moral") — aumentam afinidade temática
-  const bigramas: string[] = [];
-  for (let i = 0; i < palavras.length - 1; i++) {
-    const a = palavras[i]!;
-    const b = palavras[i + 1]!;
-    if (a.length >= 4 && b.length >= 4) {
-      bigramas.push(`${a} ${b}`);
-    }
-  }
+  const bigramas = extrairBigramasQuery(bruto, 8);
+  const termosExpansao = expansao.termos.flatMap((t) =>
+    normalizar(t).split(/\s+/).filter((p) => p.length >= 4)
+  );
 
   const freq = new Map<string, number>();
   for (const p of palavras) freq.set(p, (freq.get(p) ?? 0) + 1);
@@ -114,13 +117,19 @@ export function extrairPalavrasChaveCaso(query: string): string[] {
 
   const out: string[] = [];
   const vistos = new Set<string>();
-  for (const b of bigramas.slice(0, 8)) {
+  for (const b of [...bigramas, ...expansao.bigramas].slice(0, 10)) {
     if (vistos.has(b)) continue;
     vistos.add(b);
     out.push(b);
   }
+  for (const t of termosExpansao) {
+    if (out.length >= 32) break;
+    if (vistos.has(t)) continue;
+    vistos.add(t);
+    out.push(t);
+  }
   for (const p of unicos) {
-    if (out.length >= 28) break;
+    if (out.length >= 32) break;
     if (vistos.has(p)) continue;
     vistos.add(p);
     out.push(p);

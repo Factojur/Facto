@@ -76,9 +76,15 @@ import {
   blocoPromptTesesCanonicas,
   detectarTesesCanonicas,
 } from "@/lib/teses-canonicas";
+import { expandirQueryLastro } from "@/lib/expansao-query-lastro";
 
-function enriquecerQueryLastro(areaId: string, q: string): string {
+function enriquecerQueryLastro(
+  areaId: string,
+  q: string,
+  fatos?: string | null
+): string {
   const map: Record<string, string> = {
+    jec: "Juizado especial cível Lei 9.099 consumidor",
     civil: "Código Civil obrigações particulares",
     consumidor: "CDC consumidor fornecedor",
     tributario: "CTN execução fiscal CDA Lei 6.830",
@@ -100,7 +106,8 @@ function enriquecerQueryLastro(areaId: string, q: string): string {
     constitucional: "Constituição Federal remédios RE ADPF ADI",
   };
   const extra = map[areaId];
-  return extra ? `${q} ${extra}` : q;
+  const expansao = expandirQueryLastro(areaId, q, fatos ?? undefined);
+  return [q, extra, expansao.blocoSemantico].filter(Boolean).join(" ");
 }
 
 export type InstrucoesDeterministicas = {
@@ -682,7 +689,7 @@ export async function gerarPecaComIA(params: {
   let itensFinais = itens;
   if (queryExtra.trim()) {
     const reforco = await buscarConhecimentoRelacionado(
-      enriquecerQueryLastro(areaId, queryExtra),
+      enriquecerQueryLastro(areaId, queryExtra, params.fatos),
       8,
       params.fatos,
       areaId,
