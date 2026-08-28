@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { GestaoShell } from "@/components/gestao/gestao-shell";
-import { GestaoKpiCard, GestaoPainel, GESTAO_INPUT } from "@/components/gestao/gestao-ui";
+import { GestaoPainel, GESTAO_INPUT } from "@/components/gestao/gestao-ui";
 
 type Cliente = {
   id: string;
@@ -65,17 +65,9 @@ export default function GestaoClientesPage() {
   return (
     <GestaoShell
       titulo="Clientes"
-      subtitulo="Cadastro de clientes e partes representadas"
+      subtitulo={`${clientes.length} cadastrado${clientes.length === 1 ? "" : "s"}`}
       escritorioNome={escritorioNome}
     >
-      <div className="mb-6 grid gap-3 sm:grid-cols-2">
-        <GestaoKpiCard label="Clientes cadastrados" valor={clientes.length} />
-        <GestaoKpiCard
-          label="Com e-mail"
-          valor={clientes.filter((c) => c.email.trim()).length}
-        />
-      </div>
-
       <GestaoPainel titulo="Novo cliente">
         <form onSubmit={adicionar} className="grid gap-3 sm:grid-cols-2">
           <input

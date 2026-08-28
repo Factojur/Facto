@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { GestaoInstrucoesEquipe } from "@/components/gestao/gestao-instrucoes-equipe";
 
 export function CriarEscritorioForm() {
   const router = useRouter();
@@ -35,7 +36,8 @@ export function CriarEscritorioForm() {
     >
       <h2 className="text-lg font-medium text-white">Criar escritório</h2>
       <p className="mt-1 text-sm text-stone-400">
-        Você será o administrador. Convide sócios e colaboradores depois.
+        Você será o administrador. Convide sócios, colaboradores e estagiários
+        em Equipe depois.
       </p>
       <div className="mt-4 space-y-3">
         <div>
@@ -63,9 +65,7 @@ export function CriarEscritorioForm() {
           />
         </div>
       </div>
-      {erro ? (
-        <p className="mt-3 text-sm text-red-400">{erro}</p>
-      ) : null}
+      {erro ? <p className="mt-3 text-sm text-red-400">{erro}</p> : null}
       <button
         type="submit"
         disabled={loading}
@@ -79,71 +79,103 @@ export function CriarEscritorioForm() {
 
 export function EntrarConviteForm({ tokenInicial }: { tokenInicial?: string }) {
   const router = useRouter();
-  const [token, setToken] = useState(tokenInicial ?? "");
+  const tokenUrl = tokenInicial?.trim() ?? "";
+  const [token, setToken] = useState(tokenUrl);
   const [codigo, setCodigo] = useState("");
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const tentouAuto = useRef(false);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function aceitarConvite(
+    tokenValor: string,
+    codigoValor?: string
+  ): Promise<boolean> {
     setLoading(true);
     setErro(null);
     const res = await fetch("/api/gestao/convites", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ acao: "aceitar", token, codigo }),
+      body: JSON.stringify({
+        acao: "aceitar",
+        token: tokenValor,
+        codigo: codigoValor?.trim() || undefined,
+      }),
     });
     const data = (await res.json()) as { error?: string };
     if (!res.ok) {
       setErro(data.error ?? "Convite inválido.");
       setLoading(false);
-      return;
+      return false;
     }
     router.push("/gestao");
     router.refresh();
+    return true;
+  }
+
+  useEffect(() => {
+    if (!tokenUrl || tentouAuto.current) return;
+    tentouAuto.current = true;
+    void aceitarConvite(tokenUrl);
+  }, [tokenUrl]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    await aceitarConvite(token, codigo);
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="rounded-xl border border-stone-800 bg-stone-900/60 p-6"
-    >
-      <h2 className="text-lg font-medium text-white">Entrar por convite</h2>
-      <p className="mt-1 text-sm text-stone-400">
-        Cole o link ou o token que o administrador enviou. Código opcional.
-      </p>
-      <div className="mt-4 space-y-3">
-        <div>
-          <label className="mb-1 block text-sm text-stone-300">Token</label>
-          <input
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            required
-            className="w-full rounded-lg border border-stone-700 bg-stone-800 px-3 py-2 text-white outline-none focus:border-facto-gold"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm text-stone-300">
-            Código (se houver)
-          </label>
-          <input
-            value={codigo}
-            onChange={(e) => setCodigo(e.target.value)}
-            className="w-full rounded-lg border border-stone-700 bg-stone-800 px-3 py-2 text-white outline-none focus:border-facto-gold"
-            placeholder="ABC123"
-          />
-        </div>
-      </div>
-      {erro ? (
-        <p className="mt-3 text-sm text-red-400">{erro}</p>
-      ) : null}
-      <button
-        type="submit"
-        disabled={loading}
-        className="mt-4 rounded-lg border border-facto-gold/50 px-4 py-2 text-sm font-medium text-facto-gold hover:bg-facto-gold/10 disabled:opacity-50"
+    <div className="space-y-6">
+      <GestaoInstrucoesEquipe variante="convidado" />
+
+      <form
+        onSubmit={handleSubmit}
+        className="rounded-xl border border-stone-800 bg-stone-900/60 p-6"
       >
-        {loading ? "Entrando…" : "Aceitar convite"}
-      </button>
-    </form>
+        <h2 className="text-lg font-medium text-white">Aceitar convite</h2>
+        <p className="mt-1 text-sm text-stone-400">
+          {tokenUrl
+            ? "Entrando pelo link… se não concluir sozinho, confira o código abaixo."
+            : "Cole o token do link ou use o link completo enviado pelo administrador."}
+        </p>
+        <div className="mt-4 space-y-3">
+          <div>
+            <label className="mb-1 block text-sm text-stone-300">
+              Token do convite
+            </label>
+            <input
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              required
+              readOnly={Boolean(tokenUrl)}
+              className="w-full rounded-lg border border-stone-700 bg-stone-800 px-3 py-2 text-white outline-none focus:border-facto-gold read-only:opacity-80"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm text-stone-300">
+              Código de confirmação
+            </label>
+            <input
+              value={codigo}
+              onChange={(e) => setCodigo(e.target.value.toUpperCase())}
+              className="w-full rounded-lg border border-stone-700 bg-stone-800 px-3 py-2 uppercase tracking-widest text-white outline-none focus:border-facto-gold"
+              placeholder="ABC123"
+              maxLength={8}
+            />
+            <p className="mt-1 text-xs text-stone-500">
+              O administrador envia o código junto com o link. Só é obrigatório
+              se o aceite automático não funcionar.
+            </p>
+          </div>
+        </div>
+        {erro ? <p className="mt-3 text-sm text-red-400">{erro}</p> : null}
+        <button
+          type="submit"
+          disabled={loading}
+          className="mt-4 rounded-lg border border-facto-gold/50 px-4 py-2 text-sm font-medium text-facto-gold hover:bg-facto-gold/10 disabled:opacity-50"
+        >
+          {loading ? "Entrando…" : "Aceitar convite"}
+        </button>
+      </form>
+    </div>
   );
 }

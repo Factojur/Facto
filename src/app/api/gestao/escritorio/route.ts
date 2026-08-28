@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireGestaoAuth } from "@/lib/gestao/gestao-api-auth";
+import { podeVerHonorariosGestao } from "@/lib/gestao/gestao-permissoes";
 import {
   criarEscritorioGestao,
   listarConvitesAtivos,
@@ -27,7 +28,10 @@ export async function GET() {
       planoRotulo: rotuloPlanoGestao(escritorio.planoGestao),
       limiteMembros: limiteColaboradores(escritorio.planoGestao),
     },
-    membro,
+    membro: {
+      ...membro,
+      podeVerHonorarios: podeVerHonorariosGestao(membro.papel),
+    },
     membros,
     convitesPendentes: convites.length,
   });

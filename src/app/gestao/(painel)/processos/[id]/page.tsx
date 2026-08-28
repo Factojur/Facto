@@ -17,7 +17,7 @@ export default async function GestaoProcessoDetalhePage({
   return (
     <GestaoShell
       titulo="Pasta do processo"
-      subtitulo="Dados, honorários, prazos e anotações"
+      subtitulo="Dados, prazos e anotações da pasta"
       escritorioNome={escritorio?.nome}
     >
       <GestaoProcessoDetalhe processoId={id} />

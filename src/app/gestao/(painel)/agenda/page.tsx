@@ -150,10 +150,9 @@ export default function GestaoAgendaPage() {
       subtitulo="Audiências, perícias e reuniões"
       escritorioNome={escritorioNome}
     >
-      <div className="mb-6 grid gap-3 sm:grid-cols-3">
+      <div className="mb-6 grid gap-3 sm:grid-cols-2">
         <GestaoKpiCard label="Compromissos hoje" valor={stats.hoje} />
         <GestaoKpiCard label="Esta semana" valor={stats.semana} />
-        <GestaoKpiCard label="Total na agenda" valor={stats.total} />
       </div>
 
       <GestaoPainel titulo="Novo compromisso">

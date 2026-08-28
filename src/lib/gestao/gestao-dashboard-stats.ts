@@ -67,7 +67,9 @@ export function montarResumoGestaoDashboard(params: {
   prazos: PrazoGestao[];
   eventos: EventoAgendaGestao[];
   clientes?: ClienteGestao[];
+  incluirHonorarios?: boolean;
 }): ResumoGestaoDashboard {
+  const incluirHonorarios = params.incluirHonorarios ?? true;
   const hoje = isoHoje();
   const iniSem = inicioSemana();
   const fimSem = fimSemana();
@@ -186,7 +188,7 @@ export function montarResumoGestaoDashboard(params: {
       urgente: false,
     });
   }
-  if (processosSemHonorario > 0 && processosAtivos.length > 0) {
+  if (processosSemHonorario > 0 && processosAtivos.length > 0 && incluirHonorarios) {
     checklistDia.push({
       id: "sem-honorario",
       rotulo: `${processosSemHonorario} pasta(s) ativa(s) sem honorário definido`,

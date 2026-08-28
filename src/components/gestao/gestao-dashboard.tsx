@@ -4,6 +4,7 @@ import {
   urgenciaPrazo,
   type ResumoGestaoDashboard,
 } from "@/lib/gestao/gestao-dashboard-stats";
+import { GestaoDashboardHero } from "@/components/gestao/gestao-dashboard-hero";
 import {
   BadgeUrgenciaPrazo,
   GestaoBarChart,
@@ -11,13 +12,6 @@ import {
   GestaoPainel,
   GestaoPrazosChart,
 } from "@/components/gestao/gestao-ui";
-
-function saudacao(): string {
-  const h = new Date().getHours();
-  if (h < 12) return "Bom dia";
-  if (h < 18) return "Boa tarde";
-  return "Boa noite";
-}
 
 function formatarData(iso: string): string {
   return new Date(iso + "T12:00:00").toLocaleDateString("pt-BR", {
@@ -38,47 +32,21 @@ function formatarDataHora(iso: string): string {
 export function GestaoDashboard({
   resumo,
   nomeUsuario,
+  podeVerHonorarios = true,
 }: {
   resumo: ResumoGestaoDashboard;
   nomeUsuario?: string;
+  podeVerHonorarios?: boolean;
 }) {
-  const primeiroNome = nomeUsuario?.split(/\s+/)[0];
-
   return (
     <div className="space-y-8">
-      <div className="relative overflow-hidden rounded-2xl border border-facto-gold/20 bg-gradient-to-br from-stone-900 via-stone-950 to-stone-900 px-6 py-8">
-        <div
-          className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-facto-gold/10 blur-3xl"
-          aria-hidden
-        />
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-facto-gold">
-          FACTO Gestão
-        </p>
-        <h2 className="mt-2 text-2xl font-semibold text-white sm:text-3xl">
-          {saudacao()}
-          {primeiroNome ? `, ${primeiroNome}` : ""}
-        </h2>
-        <p className="mt-2 max-w-xl text-sm text-stone-400">
-          Visão do dia: prazos, audiências e pastas que precisam de atenção antes
-          de abrir as minutas no FACTO.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Link
-            href="/dashboard"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-lg border border-stone-700 bg-stone-900/80 px-3 py-1.5 text-xs font-medium text-stone-300 hover:border-facto-gold/40 hover:text-facto-gold"
-          >
-            Abrir minutas FACTO ↗
-          </Link>
-          <Link
-            href="/gestao/prazos"
-            className="rounded-lg bg-facto-gold/15 px-3 py-1.5 text-xs font-medium text-facto-gold hover:bg-facto-gold/25"
-          >
-            Ver todos os prazos
-          </Link>
-        </div>
-      </div>
+      <GestaoDashboardHero
+        nomeUsuario={nomeUsuario}
+        processosAtivos={resumo.processosAtivos}
+        prazosVencidos={resumo.prazosVencidos}
+        prazosHoje={resumo.prazosHoje}
+        compromissosHoje={resumo.compromissosHoje}
+      />
 
       {resumo.checklistDia.length > 0 && (
         <GestaoPainel titulo="O que observar hoje">
@@ -132,28 +100,25 @@ export function GestaoDashboard({
         />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <GestaoKpiCard
-          label="Honorários contratados"
-          valor={formatarMoeda(resumo.honorariosContratadosCentavos)}
-          href="/gestao/honorarios"
-          destaque="ok"
-          sub={
-            resumo.processosSemHonorario > 0
-              ? `${resumo.processosSemHonorario} pasta(s) sem definir`
-              : "Carteira ativa"
-          }
-        />
+      <div className={`grid gap-4 sm:grid-cols-2 ${podeVerHonorarios ? "lg:grid-cols-3" : ""}`}>
+        {podeVerHonorarios ? (
+          <GestaoKpiCard
+            label="Honorários contratados"
+            valor={formatarMoeda(resumo.honorariosContratadosCentavos)}
+            href="/gestao/honorarios"
+            destaque="ok"
+            sub={
+              resumo.processosSemHonorario > 0
+                ? `${resumo.processosSemHonorario} pasta(s) sem definir`
+                : "Carteira ativa"
+            }
+          />
+        ) : null}
         <GestaoKpiCard
           label="Vencem hoje"
           valor={resumo.prazosHoje}
           href="/gestao/prazos"
           destaque={resumo.prazosHoje > 0 ? "danger" : undefined}
-        />
-        <GestaoKpiCard
-          label="Pastas arquivadas"
-          valor={resumo.processosArquivados}
-          href="/gestao/processos"
         />
       </div>
 
@@ -239,11 +204,11 @@ export function GestaoDashboard({
         </GestaoPainel>
       </div>
 
-      <section className="rounded-xl border border-amber-900/40 bg-amber-950/20 p-4 text-sm text-amber-100/90">
-        <strong className="text-amber-200">MVP local.</strong> Dados em{" "}
-        <code className="text-amber-300">.data/gestao/</code>. Minutas FACTO
-        continuam no módulo de peças — aqui: clientes, pastas, prazos, agenda e
-        honorários (sem financeiro).
+      <section className="rounded-xl border border-stone-800 bg-stone-900/30 p-4 text-sm text-stone-400">
+        <strong className="text-stone-300">Operação do escritório.</strong>{" "}
+        Clientes, pastas, prazos, agenda e honorários de referência — separado
+        das minutas FACTO. Dados do escritório ficam vinculados à sua conta
+        administradora.
       </section>
     </div>
   );

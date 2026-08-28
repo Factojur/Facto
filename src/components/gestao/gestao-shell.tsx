@@ -3,14 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FactoLogo } from "@/components/brand/facto-logo";
+import { useGestaoPainel } from "@/components/gestao/gestao-painel-context";
+import { rotuloPapelGestao } from "@/lib/gestao/gestao-permissoes";
 
-const NAV = [
+const NAV_BASE = [
   { href: "/gestao", label: "Início", exact: true },
   { href: "/gestao/processos", label: "Processos" },
   { href: "/gestao/clientes", label: "Clientes" },
   { href: "/gestao/prazos", label: "Prazos" },
   { href: "/gestao/agenda", label: "Agenda" },
-  { href: "/gestao/honorarios", label: "Honorários" },
+  { href: "/gestao/honorarios", label: "Honorários", requerHonorarios: true },
   { href: "/gestao/equipe", label: "Equipe" },
 ] as const;
 
@@ -30,6 +32,11 @@ export function GestaoShell({
   papel?: string;
 }) {
   const pathname = usePathname();
+  const { podeVerHonorarios, papel: papelCtx } = useGestaoPainel();
+  const papelEfetivo = papel ?? papelCtx;
+  const nav = NAV_BASE.filter(
+    (item) => !("requerHonorarios" in item && item.requerHonorarios) || podeVerHonorarios
+  );
 
   return (
     <div className="min-h-screen bg-stone-950 text-stone-100">
@@ -48,7 +55,7 @@ export function GestaoShell({
           </Link>
 
           <nav className="flex flex-wrap gap-1 rounded-xl border border-stone-800/80 bg-stone-900/50 p-1">
-            {NAV.map((item) => {
+            {nav.map((item) => {
               const ativo =
                 "exact" in item && item.exact
                   ? pathname === item.href
@@ -73,7 +80,9 @@ export function GestaoShell({
             {nomeUsuario ? (
               <span className="hidden text-xs text-stone-500 sm:inline">
                 {nomeUsuario}
-                {papel === "admin" ? " · admin" : ""}
+                {papelEfetivo
+                  ? ` · ${rotuloPapelGestao(papelEfetivo)}`
+                  : ""}
               </span>
             ) : null}
             <Link
@@ -101,7 +110,7 @@ export function GestaoShell({
       </main>
 
       <footer className="border-t border-stone-800 py-6 text-center text-xs text-stone-600">
-        FACTO Gestão · operação do escritório · MVP local
+        FACTO Gestão · operação do escritório
       </footer>
     </div>
   );

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { baseUrlGestao } from "@/lib/gestao/gestao-base-url";
 import { requireGestaoAuth } from "@/lib/gestao/gestao-api-auth";
 import {
   aceitarConviteGestao,
@@ -47,6 +48,7 @@ export async function POST(request: Request) {
   const resultado = await criarConviteGestao({
     userId: auth.user.id,
     email: auth.email,
+    baseUrl: baseUrlGestao(request),
   });
   if (!resultado.ok) {
     return NextResponse.json({ error: resultado.erro }, { status: 400 });

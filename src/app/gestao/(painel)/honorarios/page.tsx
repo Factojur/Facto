@@ -1,7 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useGestaoPainel } from "@/components/gestao/gestao-painel-context";
 import { GestaoShell } from "@/components/gestao/gestao-shell";
 import { GestaoKpiCard, GestaoPainel } from "@/components/gestao/gestao-ui";
 import { formatarMoeda } from "@/lib/gestao/gestao-format";
@@ -18,6 +20,8 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default function GestaoHonorariosPage() {
+  const router = useRouter();
+  const { podeVerHonorarios } = useGestaoPainel();
   const [escritorioNome, setEscritorioNome] = useState("");
   const [processos, setProcessos] = useState<ProcessoGestao[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,9 +29,19 @@ export default function GestaoHonorariosPage() {
     "todos"
   );
 
+  useEffect(() => {
+    if (!podeVerHonorarios && !loading) {
+      router.replace("/gestao");
+    }
+  }, [podeVerHonorarios, loading, router]);
+
   const carregar = useCallback(async () => {
     const ctx = await fetch("/api/gestao/escritorio").then((r) => r.json());
     if (ctx.escritorio?.nome) setEscritorioNome(ctx.escritorio.nome);
+    if (ctx.membro && !ctx.membro.podeVerHonorarios) {
+      setLoading(false);
+      return;
+    }
     const res = await fetch("/api/gestao/processos");
     const data = (await res.json()) as { processos?: ProcessoGestao[] };
     setProcessos((data.processos ?? []).filter((p) => p.status === "ativo"));
@@ -70,15 +84,19 @@ export default function GestaoHonorariosPage() {
     return processos;
   }, [processos, filtro]);
 
+  if (!podeVerHonorarios && !loading) {
+    return null;
+  }
+
   return (
     <GestaoShell
       titulo="Honorários"
-      subtitulo="Referência e contratos — sem fluxo de caixa"
+      subtitulo="Referência e contratos — titular e sócios"
       escritorioNome={escritorioNome}
     >
       <p className="mb-6 text-sm text-stone-500">
-        Acompanhe propostas e valores contratados por pasta. Não há controle de
-        recebimentos neste MVP — apenas o que foi acordado com o cliente.
+        Visível apenas para o titular e sócios. Colaboradores e estagiários não
+        acessam valores contratados.
       </p>
 
       <div className="mb-6 grid gap-3 sm:grid-cols-3">

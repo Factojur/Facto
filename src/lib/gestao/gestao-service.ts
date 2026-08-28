@@ -5,6 +5,7 @@ import {
   novoId,
   tokenConvite,
 } from "@/lib/gestao/gestao-local-store";
+import { getSiteUrl } from "@/lib/site-url";
 import { limiteColaboradores } from "@/lib/gestao/limites-colaboradores";
 import type {
   AtividadeGestao,
@@ -92,54 +93,58 @@ export async function criarEscritorioGestao(opcoes: {
 export async function criarConviteGestao(opcoes: {
   userId: string;
   email: string;
+  baseUrl?: string;
 }): Promise<
   | { ok: true; convite: ConviteGestao; link: string }
   | { ok: false; erro: string }
 > {
-  const { membro, escritorio } = await obterContextoGestao(opcoes.userId);
-  if (!membro || !escritorio) {
-    return { ok: false, erro: "Escritório não encontrado." };
-  }
-  if (membro.papel !== "admin") {
-    return { ok: false, erro: "Somente o administrador pode convidar." };
-  }
+  const resultado = await alterarGestaoStore((store) => {
+    const membro = store.membros.find((m) => m.userId === opcoes.userId);
+    if (!membro) {
+      return { ok: false as const, erro: "Escritório não encontrado." };
+    }
+    const escritorio = store.escritorios.find((e) => e.id === membro.escritorioId);
+    if (!escritorio) {
+      return { ok: false as const, erro: "Escritório não encontrado." };
+    }
+    if (membro.papel !== "admin") {
+      return { ok: false as const, erro: "Somente o administrador pode convidar." };
+    }
 
-  const store = await lerGestaoStore();
-  const colaboradores = store.membros.filter(
-    (m) => m.escritorioId === escritorio.id
-  ).length;
-  const limite = limiteColaboradores(escritorio.planoGestao);
-  if (colaboradores >= limite) {
-    return {
-      ok: false,
-      erro: `Limite de ${limite} membros atingido no plano atual.`,
+    const colaboradores = store.membros.filter(
+      (m) => m.escritorioId === escritorio.id
+    ).length;
+    const limite = limiteColaboradores(escritorio.planoGestao);
+    if (colaboradores >= limite) {
+      return {
+        ok: false as const,
+        erro: `Limite de ${limite} membros atingido no plano atual.`,
+      };
+    }
+
+    const convite: ConviteGestao = {
+      id: novoId(),
+      escritorioId: escritorio.id,
+      token: tokenConvite(),
+      codigo: codigoConvite(),
+      criadoPorUserId: opcoes.userId,
+      criadoEm: new Date().toISOString(),
+      expiraEm: new Date(
+        Date.now() + DIAS_CONVITE * 24 * 60 * 60 * 1000
+      ).toISOString(),
+      usadoEm: null,
+      usadoPorUserId: null,
     };
-  }
-
-  const convite: ConviteGestao = {
-    id: novoId(),
-    escritorioId: escritorio.id,
-    token: tokenConvite(),
-    codigo: codigoConvite(),
-    criadoPorUserId: opcoes.userId,
-    criadoEm: new Date().toISOString(),
-    expiraEm: new Date(
-      Date.now() + DIAS_CONVITE * 24 * 60 * 60 * 1000
-    ).toISOString(),
-    usadoEm: null,
-    usadoPorUserId: null,
-  };
-
-  await alterarGestaoStore((store) => {
     store.convites.push(convite);
+    return { ok: true as const, convite };
   });
 
-  const base =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
-    "http://localhost:3000";
-  const link = `${base}/gestao/entrar?convite=${convite.token}`;
+  if (!resultado.ok) return resultado;
 
-  return { ok: true, convite, link };
+  const base = (opcoes.baseUrl ?? getSiteUrl()).replace(/\/$/, "");
+  const link = `${base}/gestao/entrar?convite=${resultado.convite.token}`;
+
+  return { ok: true, convite: resultado.convite, link };
 }
 
 export async function aceitarConviteGestao(opcoes: {
@@ -164,8 +169,10 @@ export async function aceitarConviteGestao(opcoes: {
   if (new Date(convite.expiraEm).getTime() < Date.now()) {
     return { ok: false, erro: "Convite expirado." };
   }
-  if (convite.codigo && opcoes.codigo?.toUpperCase() !== convite.codigo) {
-    return { ok: false, erro: "Código do convite incorreto." };
+  if (convite.codigo && opcoes.codigo) {
+    if (opcoes.codigo.toUpperCase() !== convite.codigo) {
+      return { ok: false, erro: "Código do convite incorreto." };
+    }
   }
 
   const escritorio = store.escritorios.find((e) => e.id === convite.escritorioId);
@@ -213,6 +220,35 @@ export async function listarConvitesAtivos(escritorioId: string) {
       !c.usadoEm &&
       new Date(c.expiraEm).getTime() > agora
   );
+}
+
+export async function atualizarPapelMembroGestao(opcoes: {
+  adminUserId: string;
+  alvoUserId: string;
+  papel: "socio" | "colaborador";
+}): Promise<{ ok: true } | { ok: false; erro: string }> {
+  const resultado = await alterarGestaoStore((store) => {
+    const admin = store.membros.find((m) => m.userId === opcoes.adminUserId);
+    if (!admin || admin.papel !== "admin") {
+      return { ok: false as const, erro: "Somente o titular pode alterar papéis." };
+    }
+    if (opcoes.alvoUserId === opcoes.adminUserId) {
+      return { ok: false as const, erro: "O titular não pode alterar o próprio papel." };
+    }
+    const alvo = store.membros.find(
+      (m) =>
+        m.userId === opcoes.alvoUserId && m.escritorioId === admin.escritorioId
+    );
+    if (!alvo) {
+      return { ok: false as const, erro: "Membro não encontrado." };
+    }
+    if (alvo.papel === "admin") {
+      return { ok: false as const, erro: "Não é possível alterar o titular." };
+    }
+    alvo.papel = opcoes.papel;
+    return { ok: true as const };
+  });
+  return resultado;
 }
 
 export async function criarClienteGestao(

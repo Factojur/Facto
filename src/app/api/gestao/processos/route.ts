@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireGestaoAuth } from "@/lib/gestao/gestao-api-auth";
+import { podeVerHonorariosGestao, sanitizarProcessoHonorarios } from "@/lib/gestao/gestao-permissoes";
 import {
   atualizarProcessoGestao,
   criarProcessoGestao,
@@ -17,10 +18,12 @@ export async function GET(request: Request) {
   const auth = await requireGestaoAuth();
   if ("error" in auth && auth.error) return auth.error;
 
-  const { escritorio } = await obterContextoGestao(auth.user.id);
+  const { escritorio, membro } = await obterContextoGestao(auth.user.id);
   if (!escritorio) {
     return NextResponse.json({ error: "Sem escritório." }, { status: 400 });
   }
+
+  const podeVerHonorarios = podeVerHonorariosGestao(membro?.papel);
 
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
@@ -29,11 +32,19 @@ export async function GET(request: Request) {
     if (!processo) {
       return NextResponse.json({ error: "Processo não encontrado." }, { status: 404 });
     }
-    return NextResponse.json({ processo });
+    return NextResponse.json({
+      processo: sanitizarProcessoHonorarios(processo, podeVerHonorarios),
+      podeVerHonorarios,
+    });
   }
 
   const processos = await listarProcessosGestao(escritorio.id);
-  return NextResponse.json({ processos });
+  return NextResponse.json({
+    processos: processos.map((p) =>
+      sanitizarProcessoHonorarios(p, podeVerHonorarios)
+    ),
+    podeVerHonorarios,
+  });
 }
 
 export async function POST(request: Request) {
@@ -77,7 +88,7 @@ export async function PATCH(request: Request) {
   const auth = await requireGestaoAuth();
   if ("error" in auth && auth.error) return auth.error;
 
-  const { escritorio } = await obterContextoGestao(auth.user.id);
+  const { escritorio, membro } = await obterContextoGestao(auth.user.id);
   if (!escritorio) {
     return NextResponse.json({ error: "Sem escritório." }, { status: 400 });
   }
@@ -107,11 +118,29 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "ID obrigatório." }, { status: 400 });
   }
 
+  const podeVerHonorarios = podeVerHonorariosGestao(membro?.papel);
   const { id: _id, ...patch } = body;
+
+  if (
+    !podeVerHonorarios &&
+    ("honorarioTipo" in patch ||
+      "honorarioValorCentavos" in patch ||
+      "honorarioPercentual" in patch ||
+      "honorarioStatus" in patch ||
+      "honorarioObservacao" in patch)
+  ) {
+    return NextResponse.json(
+      { error: "Honorários visíveis apenas para titular e sócios." },
+      { status: 403 }
+    );
+  }
+
   const processo = await atualizarProcessoGestao(escritorio.id, id, patch);
   if (!processo) {
     return NextResponse.json({ error: "Processo não encontrado." }, { status: 404 });
   }
 
-  return NextResponse.json({ processo });
+  return NextResponse.json({
+    processo: sanitizarProcessoHonorarios(processo, podeVerHonorarios),
+  });
 }

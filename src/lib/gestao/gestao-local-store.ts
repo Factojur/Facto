@@ -1,10 +1,24 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
+import os from "os";
 import path from "path";
 import type { GestaoStore } from "@/lib/gestao/gestao-types";
 import { processoGestaoPadrao } from "@/lib/gestao/gestao-types";
 
-const STORE_DIR = path.join(process.cwd(), ".data", "gestao");
-const STORE_FILE = path.join(STORE_DIR, "store.json");
+function resolveStoreFile(): string {
+  if (process.env.GESTAO_STORE_DIR?.trim()) {
+    return path.join(process.env.GESTAO_STORE_DIR.trim(), "store.json");
+  }
+  if (process.env.VERCEL) {
+    return path.join(os.tmpdir(), "facto-gestao", "store.json");
+  }
+  return path.join(process.cwd(), ".data", "gestao", "store.json");
+}
+
+const STORE_FILE = resolveStoreFile();
+const STORE_DIR = path.dirname(STORE_FILE);
+
+let cacheStore: GestaoStore | null = null;
+let writeQueue: Promise<unknown> = Promise.resolve();
 
 function storeVazio(): GestaoStore {
   return {
@@ -47,7 +61,7 @@ function normalizarGestaoStore(raw: GestaoStore): GestaoStore {
   };
 }
 
-export async function lerGestaoStore(): Promise<GestaoStore> {
+async function lerStoreDoDisco(): Promise<GestaoStore> {
   try {
     const raw = await readFile(STORE_FILE, "utf8");
     const parsed = JSON.parse(raw) as GestaoStore;
@@ -57,18 +71,33 @@ export async function lerGestaoStore(): Promise<GestaoStore> {
   }
 }
 
+export async function lerGestaoStore(): Promise<GestaoStore> {
+  if (cacheStore) return normalizarGestaoStore(cacheStore);
+  cacheStore = await lerStoreDoDisco();
+  return cacheStore;
+}
+
 export async function salvarGestaoStore(store: GestaoStore): Promise<void> {
   await mkdir(STORE_DIR, { recursive: true });
   await writeFile(STORE_FILE, JSON.stringify(store, null, 2), "utf8");
+  cacheStore = store;
 }
 
 export async function alterarGestaoStore<T>(
   fn: (store: GestaoStore) => T
 ): Promise<T> {
-  const store = await lerGestaoStore();
-  const result = fn(store);
-  await salvarGestaoStore(store);
-  return result;
+  const run = async (): Promise<T> => {
+    const store = await lerStoreDoDisco();
+    const result = fn(store);
+    await salvarGestaoStore(store);
+    return result;
+  };
+  const next = writeQueue.then(run, run);
+  writeQueue = next.then(
+    () => undefined,
+    () => undefined
+  );
+  return next;
 }
 
 export function novoId(): string {

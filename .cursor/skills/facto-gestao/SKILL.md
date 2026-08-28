@@ -9,12 +9,13 @@ description: >-
 
 # FACTO Gestão (MVP local)
 
-Módulo separado das minutas. **Não publicar** em deploy geral até pedido explícito do usuário.
+Módulo separado das minutas.
 
 ## Flags
 
 - `gestaoHabilitada()`: `NODE_ENV === "development"` ou `NEXT_PUBLIC_FACTO_GESTAO=1`.
-- Produção sem flag: rotas `/gestao` → `/dashboard`; botão some no login.
+- Produção: ativo com `NEXT_PUBLIC_FACTO_GESTAO=1` na Vercel (Non-sensitive, Production + Preview).
+- Sem flag: rotas `/gestao` → `/dashboard`; botão some no login.
 
 ## Acesso
 

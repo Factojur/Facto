@@ -6,6 +6,7 @@ import {
   EntrarConviteForm,
 } from "@/components/gestao/gestao-onboarding";
 import { montarResumoGestaoDashboard } from "@/lib/gestao/gestao-dashboard-stats";
+import { podeVerHonorariosGestao } from "@/lib/gestao/gestao-permissoes";
 import {
   listarAgendaGestao,
   listarClientesGestao,
@@ -69,6 +70,7 @@ export default async function GestaoHomePage() {
     prazos,
     eventos,
     clientes,
+    incluirHonorarios: podeVerHonorariosGestao(membro.papel),
   });
 
   return (
@@ -79,7 +81,11 @@ export default async function GestaoHomePage() {
       nomeUsuario={nomeUsuario}
       papel={membro.papel}
     >
-      <GestaoDashboard resumo={resumo} nomeUsuario={nomeUsuario} />
+      <GestaoDashboard
+        resumo={resumo}
+        nomeUsuario={nomeUsuario}
+        podeVerHonorarios={podeVerHonorariosGestao(membro.papel)}
+      />
     </GestaoShell>
   );
 }

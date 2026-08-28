@@ -19,6 +19,7 @@ import type {
   TipoHonorarioGestao,
 } from "@/lib/gestao/gestao-types";
 import { urgenciaPrazo } from "@/lib/gestao/gestao-dashboard-stats";
+import { useGestaoPainel } from "@/components/gestao/gestao-painel-context";
 
 type Prazo = {
   id: string;
@@ -44,6 +45,7 @@ type Atividade = {
 };
 
 export function GestaoProcessoDetalhe({ processoId }: { processoId: string }) {
+  const { podeVerHonorarios } = useGestaoPainel();
   const [processo, setProcesso] = useState<ProcessoGestao | null>(null);
   const [prazos, setPrazos] = useState<Prazo[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
@@ -257,6 +259,7 @@ export function GestaoProcessoDetalhe({ processoId }: { processoId: string }) {
           </div>
         </GestaoPainel>
 
+        {podeVerHonorarios ? (
         <GestaoPainel titulo="Honorários (sem financeiro)">
           <p className="mb-3 text-xs text-stone-500">
             Valores de referência e contrato — sem controle de recebimentos.
@@ -373,6 +376,7 @@ export function GestaoProcessoDetalhe({ processoId }: { processoId: string }) {
             </label>
           </div>
         </GestaoPainel>
+        ) : null}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

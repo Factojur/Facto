@@ -1,6 +1,6 @@
 export type PlanoGestaoId = "basico" | "intermediario" | "ilimitado";
 
-export type PapelGestao = "admin" | "colaborador";
+export type PapelGestao = "admin" | "socio" | "colaborador";
 
 export type EscritorioGestao = {
   id: string;

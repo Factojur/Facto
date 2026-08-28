@@ -1,6 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { GestaoInstrucoesEquipe } from "@/components/gestao/gestao-instrucoes-equipe";
+import { rotuloPapelGestao } from "@/lib/gestao/gestao-permissoes";
+import type { PapelGestao } from "@/lib/gestao/gestao-types";
 import { GestaoShell } from "@/components/gestao/gestao-shell";
 import { GestaoKpiCard, GestaoPainel } from "@/components/gestao/gestao-ui";
 
@@ -21,7 +24,7 @@ export default function GestaoEquipePage() {
   const [loading, setLoading] = useState(true);
   const [gerando, setGerando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
-  const [copiado, setCopiado] = useState(false);
+  const [copiado, setCopiado] = useState<"link" | "tudo" | null>(null);
 
   const carregar = useCallback(async () => {
     const res = await fetch("/api/gestao/escritorio");
@@ -44,47 +47,85 @@ export default function GestaoEquipePage() {
   async function gerarConvite() {
     setGerando(true);
     setErro(null);
-    const res = await fetch("/api/gestao/convites", { method: "POST" });
-    const data = (await res.json()) as {
-      link?: string;
-      convite?: { codigo: string };
-      error?: string;
-    };
-    if (!res.ok) {
-      setErro(data.error ?? "Não foi possível gerar o convite.");
+    setLinkConvite(null);
+    setCodigoConvite(null);
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 20_000);
+
+    try {
+      const res = await fetch("/api/gestao/convites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+        signal: controller.signal,
+      });
+      const data = (await res.json()) as {
+        link?: string;
+        convite?: { codigo: string };
+        error?: string;
+      };
+      if (!res.ok) {
+        setErro(data.error ?? "Não foi possível gerar o convite.");
+        return;
+      }
+      setLinkConvite(data.link ?? null);
+      setCodigoConvite(data.convite?.codigo ?? null);
+    } catch (e) {
+      const abortado = e instanceof DOMException && e.name === "AbortError";
+      setErro(
+        abortado
+          ? "A geração demorou demais. Atualize a página e tente de novo."
+          : "Falha de rede ao gerar o convite."
+      );
+    } finally {
+      window.clearTimeout(timeout);
       setGerando(false);
+    }
+  }
+
+  async function copiar(
+    modo: "link" | "tudo"
+  ) {
+    if (!linkConvite) return;
+    const texto =
+      modo === "tudo" && codigoConvite
+        ? `Convite FACTO Gestão\n\nLink: ${linkConvite}\nCódigo: ${codigoConvite}\n\nAbra o link, faça login na sua conta e aceite o convite. O código é solicitado na tela de entrada. Válido por 14 dias.`
+        : linkConvite;
+    try {
+      await navigator.clipboard.writeText(texto);
+      setCopiado(modo);
+      window.setTimeout(() => setCopiado(null), 2000);
+    } catch {
+      setErro("Não foi possível copiar. Selecione o texto manualmente.");
+    }
+  }
+
+  async function alterarPapel(userId: string, papel: PapelGestao) {
+    if (papel === "admin") return;
+    const res = await fetch("/api/gestao/membros", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, papel }),
+    });
+    if (!res.ok) {
+      const data = (await res.json()) as { error?: string };
+      setErro(data.error ?? "Não foi possível alterar o papel.");
       return;
     }
-    setLinkConvite(data.link ?? null);
-    setCodigoConvite(data.convite?.codigo ?? null);
-    setGerando(false);
+    void carregar();
   }
 
-  async function copiarLink() {
-    if (!linkConvite) return;
-    try {
-      await navigator.clipboard.writeText(linkConvite);
-      setCopiado(true);
-      setTimeout(() => setCopiado(false), 2000);
-    } catch {
-      setErro("Não foi possível copiar. Selecione o link manualmente.");
-    }
-  }
-
-  const admins = membros.filter((m) => m.papel === "admin").length;
-  const colaboradores = membros.length - admins;
   const vagas = Math.max(0, limite - membros.length);
 
   return (
     <GestaoShell
       titulo="Equipe"
-      subtitulo={`Membros do escritório · limite ${limite}`}
+      subtitulo={`${membros.length} de ${limite} vagas usadas`}
       escritorioNome={escritorioNome}
     >
-      <div className="mb-6 grid gap-3 sm:grid-cols-4">
-        <GestaoKpiCard label="Membros" valor={membros.length} />
-        <GestaoKpiCard label="Administradores" valor={admins} />
-        <GestaoKpiCard label="Colaboradores" valor={colaboradores} />
+      <div className="mb-6 grid gap-3 sm:grid-cols-2">
+        <GestaoKpiCard label="Membros ativos" valor={membros.length} />
         <GestaoKpiCard
           label="Vagas disponíveis"
           valor={vagas}
@@ -92,11 +133,15 @@ export default function GestaoEquipePage() {
         />
       </div>
 
+      <div className="mb-6">
+        <GestaoInstrucoesEquipe variante="admin" />
+      </div>
+
       {ehAdmin ? (
-        <GestaoPainel titulo="Convidar membro">
+        <GestaoPainel titulo="Gerar convite">
           <p className="text-sm text-stone-400">
-            Colaboradores acessam só o FACTO Gestão — não precisam de plano de
-            minutas. O link expira em 14 dias.
+            Colaboradores, sócios e estagiários acessam só o FACTO Gestão — não
+            precisam de plano de minutas. Envie <strong className="text-stone-300">link + código</strong> juntos.
           </p>
           <button
             type="button"
@@ -104,7 +149,7 @@ export default function GestaoEquipePage() {
             disabled={gerando || vagas === 0}
             className="mt-3 rounded-lg bg-facto-gold px-4 py-2 text-sm font-semibold text-facto-dark disabled:opacity-50"
           >
-            {gerando ? "Gerando…" : "Gerar link de convite"}
+            {gerando ? "Gerando link…" : "Gerar link de convite"}
           </button>
           {vagas === 0 ? (
             <p className="mt-2 text-sm text-amber-400/90">
@@ -114,25 +159,41 @@ export default function GestaoEquipePage() {
           ) : null}
           {erro ? <p className="mt-2 text-sm text-red-400">{erro}</p> : null}
           {linkConvite ? (
-            <div className="mt-4 space-y-2 rounded-lg border border-stone-800 bg-stone-950/80 p-3 text-sm">
+            <div className="mt-4 space-y-3 rounded-lg border border-facto-gold/20 bg-stone-950/80 p-4 text-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-stone-400">Link de convite</p>
-                <button
-                  type="button"
-                  onClick={() => void copiarLink()}
-                  className="rounded-md border border-stone-700 px-2 py-1 text-xs text-stone-300 hover:border-facto-gold/40"
-                >
-                  {copiado ? "Copiado!" : "Copiar"}
-                </button>
+                <p className="font-medium text-facto-gold">Convite pronto</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void copiar("link")}
+                    className="rounded-md border border-stone-700 px-2 py-1 text-xs text-stone-300 hover:border-facto-gold/40"
+                  >
+                    {copiado === "link" ? "Copiado!" : "Copiar link"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void copiar("tudo")}
+                    className="rounded-md border border-facto-gold/40 bg-facto-gold/10 px-2 py-1 text-xs text-facto-gold"
+                  >
+                    {copiado === "tudo" ? "Copiado!" : "Copiar link + código"}
+                  </button>
+                </div>
               </div>
-              <p className="break-all font-mono text-xs text-facto-gold">
+              <p className="break-all font-mono text-xs text-stone-300">
                 {linkConvite}
               </p>
               {codigoConvite ? (
                 <p className="text-stone-300">
-                  Código: <strong className="text-white">{codigoConvite}</strong>
+                  Código de confirmação:{" "}
+                  <strong className="text-lg tracking-widest text-white">
+                    {codigoConvite}
+                  </strong>
                 </p>
               ) : null}
+              <p className="text-xs text-stone-500">
+                Válido por 14 dias · uso único · a pessoa deve entrar com a
+                própria conta FACTO
+              </p>
             </div>
           ) : null}
         </GestaoPainel>
@@ -140,7 +201,7 @@ export default function GestaoEquipePage() {
         <GestaoPainel titulo="Seu acesso">
           <p className="text-sm text-stone-400">
             Você entrou como colaborador. Apenas o administrador do escritório
-            pode gerar convites e alterar limites.
+            pode gerar convites.
           </p>
         </GestaoPainel>
       )}
@@ -158,15 +219,36 @@ export default function GestaoEquipePage() {
                 <p className="font-medium text-white">{m.nome}</p>
                 <p className="text-stone-500">{m.email}</p>
               </div>
-              <span
-                className={`rounded-full border px-2 py-0.5 text-xs ${
-                  m.papel === "admin"
-                    ? "border-facto-gold/30 bg-facto-gold/10 text-facto-gold"
-                    : "border-stone-700 bg-stone-800 text-stone-300"
-                }`}
-              >
-                {m.papel === "admin" ? "Administrador" : "Colaborador"}
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                {ehAdmin && m.papel !== "admin" ? (
+                  <select
+                    value={m.papel}
+                    onChange={(e) =>
+                      void alterarPapel(
+                        m.userId,
+                        e.target.value as PapelGestao
+                      )
+                    }
+                    className="rounded-md border border-stone-700 bg-stone-900 px-2 py-1 text-xs text-stone-300"
+                    aria-label={`Papel de ${m.nome}`}
+                  >
+                    <option value="socio">Sócio</option>
+                    <option value="colaborador">Colaborador</option>
+                  </select>
+                ) : (
+                  <span
+                    className={`rounded-full border px-2 py-0.5 text-xs ${
+                      m.papel === "admin"
+                        ? "border-facto-gold/30 bg-facto-gold/10 text-facto-gold"
+                        : m.papel === "socio"
+                          ? "border-sky-800/50 bg-sky-950/40 text-sky-300"
+                          : "border-stone-700 bg-stone-800 text-stone-300"
+                    }`}
+                  >
+                    {rotuloPapelGestao(m.papel)}
+                  </span>
+                )}
+              </div>
             </li>
           ))}
         </ul>

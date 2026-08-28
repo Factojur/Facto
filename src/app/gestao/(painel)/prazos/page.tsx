@@ -13,6 +13,7 @@ import {
   urgenciaPrazo,
   type UrgenciaPrazo,
 } from "@/lib/gestao/gestao-dashboard-stats";
+import { ehUrgenciaPrazoDestaque } from "@/lib/gestao/gestao-permissoes";
 
 type Prazo = {
   id: string;
@@ -75,6 +76,14 @@ export default function GestaoPrazosPage() {
     };
   }, [prazos]);
 
+  const prazosUrgentes = useMemo(() => {
+    return prazos
+      .filter((p) => !p.concluido)
+      .filter((p) => ehUrgenciaPrazoDestaque(urgenciaPrazo(p)))
+      .slice()
+      .sort((a, b) => a.vencimento.localeCompare(b.vencimento));
+  }, [prazos]);
+
   const prazosFiltrados = useMemo(() => {
     const lista =
       filtro === "todos"
@@ -121,6 +130,51 @@ export default function GestaoPrazosPage() {
       subtitulo="Vencimentos e tarefas do escritório"
       escritorioNome={escritorioNome}
     >
+      {prazosUrgentes.length > 0 ? (
+        <section className="mb-8 overflow-hidden rounded-2xl border-2 border-red-900/60 bg-gradient-to-br from-red-950/40 via-stone-950 to-stone-950 shadow-lg shadow-red-950/20">
+          <div className="border-b border-red-900/40 bg-red-950/30 px-5 py-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-red-300">
+              Atenção imediata
+            </p>
+            <h2 className="mt-1 text-lg font-semibold text-white">
+              {prazosUrgentes.length} prazo
+              {prazosUrgentes.length === 1 ? "" : "s"} urgente
+              {prazosUrgentes.length === 1 ? "" : "s"}
+            </h2>
+            <p className="mt-1 text-sm text-red-200/80">
+              Vencidos, para hoje ou nos próximos 7 dias — priorize antes de
+              qualquer outra tarefa.
+            </p>
+          </div>
+          <ul className="divide-y divide-red-900/30">
+            {prazosUrgentes.map((p) => {
+              const urg = urgenciaPrazo(p);
+              return (
+                <li
+                  key={p.id}
+                  className="flex flex-wrap items-center gap-3 px-5 py-4 text-sm"
+                >
+                  <button
+                    type="button"
+                    onClick={() => void toggleConcluido(p)}
+                    disabled={salvando === p.id}
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-red-800/60 bg-red-950/30 transition hover:border-facto-gold/50"
+                    aria-label="Marcar como concluído"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-white">{p.titulo}</p>
+                    <p className="mt-0.5 text-xs text-red-200/70">
+                      {formatarData(p.vencimento)}
+                    </p>
+                  </div>
+                  <BadgeUrgenciaPrazo urgencia={urg} />
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
+
       <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <GestaoKpiCard
           label="Em aberto"
