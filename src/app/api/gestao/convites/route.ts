@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { baseUrlGestao } from "@/lib/gestao/gestao-base-url";
-import { requireGestaoAuth } from "@/lib/gestao/gestao-api-auth";
+import { requireGestaoAuth, requireGestaoAuthMutation } from "@/lib/gestao/gestao-api-auth";
 import {
   aceitarConviteGestao,
   criarConviteGestao,
@@ -22,7 +22,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireGestaoAuth();
+  const auth = await requireGestaoAuthMutation(request, "convites-post", 30);
   if ("error" in auth && auth.error) return auth.error;
 
   const body = (await request.json().catch(() => ({}))) as {

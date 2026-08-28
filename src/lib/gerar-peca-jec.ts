@@ -229,6 +229,18 @@ function areaEhJecLike(areaId: string): boolean {
   return areaId === "jec" || areaId === "jecr";
 }
 
+/** Ementas de JEC não entram no scaffold de outras áreas (evita Lei 9.099 indevida). */
+function lastroParaArea(
+  areaId: string,
+  itens: TrechoConhecimento[]
+): TrechoConhecimento[] {
+  if (areaEhJecLike(areaId)) return itens;
+  return itens.filter(
+    (item) =>
+      !/Lei\s*n[ºo°]?\s*9\.?099/i.test(`${item.titulo} ${item.texto}`)
+  );
+}
+
 function textoSucumbencia(areaId: string): string {
   if (areaEhJecLike(areaId)) {
     return "na forma da Lei nº 9.099/95, se cabível";
@@ -599,7 +611,10 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
   const areaIdPeca = input.areaId ?? "jec";
   const fundamentoLegal = fundamentosLegaisBase(areaIdPeca, tutelaUrgencia);
 
-  const itensConhecimento = input.baseConhecimento ?? [];
+  const itensConhecimento = lastroParaArea(
+    areaIdPeca,
+    input.baseConhecimento ?? []
+  );
   itensConhecimento.forEach((item) => {
     fundamentoLegal.push(`${item.categoria} — ${item.titulo} (base de conhecimento)`);
   });

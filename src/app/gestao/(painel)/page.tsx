@@ -4,7 +4,6 @@ import { GestaoDashboard } from "@/components/gestao/gestao-dashboard";
 import { CriarEscritorioForm } from "@/components/gestao/gestao-onboarding";
 import { GestaoOnboardingGate } from "@/components/gestao/gestao-onboarding-gate";
 import { montarResumoGestaoDashboard } from "@/lib/gestao/gestao-dashboard-stats";
-import { podeVerHonorariosGestao } from "@/lib/gestao/gestao-permissoes";
 import {
   listarAgendaGestao,
   listarClientesGestao,
@@ -39,8 +38,8 @@ export default async function GestaoHomePage() {
               Configure o escritório
             </h1>
             <p className="mt-2 max-w-md text-sm text-stone-400">
-              Primeiro acesso do titular. Depois de criado, acesse pelo login
-              em /gestao/login.
+              Primeiro acesso gratuito. Depois de criado, acesse em{" "}
+              <strong className="text-stone-300">/gestao/login</strong>.
             </p>
           </div>
           <div className="mt-10">
@@ -69,7 +68,6 @@ export default async function GestaoHomePage() {
     prazos,
     eventos,
     clientes,
-    incluirHonorarios: podeVerHonorariosGestao(membro.papel),
   });
 
   return (
@@ -80,11 +78,7 @@ export default async function GestaoHomePage() {
       nomeUsuario={nomeUsuario}
       papel={membro.papel}
     >
-      <GestaoDashboard
-        resumo={resumo}
-        nomeUsuario={nomeUsuario}
-        podeVerHonorarios={podeVerHonorariosGestao(membro.papel)}
-      />
+      <GestaoDashboard resumo={resumo} nomeUsuario={nomeUsuario} />
     </GestaoShell>
   );
 }

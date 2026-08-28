@@ -1,22 +1,12 @@
 import type { PlanoGestaoId } from "@/lib/gestao/gestao-types";
 
-const LIMITES: Record<PlanoGestaoId, number> = {
-  basico: 3,
-  intermediario: 10,
-  ilimitado: 999,
-};
+/** Titular + até 9 convidados (10 pessoas no escritório). */
+export const LIMITE_MEMBROS_ESCRITORIO_GRATUITO = 10;
 
-export function limiteColaboradores(plano: PlanoGestaoId): number {
-  return LIMITES[plano];
+export function limiteColaboradores(_plano?: PlanoGestaoId): number {
+  return LIMITE_MEMBROS_ESCRITORIO_GRATUITO;
 }
 
-export function rotuloPlanoGestao(plano: PlanoGestaoId): string {
-  switch (plano) {
-    case "basico":
-      return "Básico (até 3 colaboradores)";
-    case "intermediario":
-      return "Intermediário (até 10 colaboradores)";
-    case "ilimitado":
-      return "Ilimitado";
-  }
+export function rotuloPlanoGestao(_plano?: PlanoGestaoId): string {
+  return `Gratuito (até ${LIMITE_MEMBROS_ESCRITORIO_GRATUITO} pessoas)`;
 }

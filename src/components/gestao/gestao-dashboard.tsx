@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { formatarMoeda } from "@/lib/gestao/gestao-format";
 import {
   urgenciaPrazo,
   type ResumoGestaoDashboard,
@@ -32,11 +31,9 @@ function formatarDataHora(iso: string): string {
 export function GestaoDashboard({
   resumo,
   nomeUsuario,
-  podeVerHonorarios = true,
 }: {
   resumo: ResumoGestaoDashboard;
   nomeUsuario?: string;
-  podeVerHonorarios?: boolean;
 }) {
   return (
     <div className="space-y-8">
@@ -100,25 +97,17 @@ export function GestaoDashboard({
         />
       </div>
 
-      <div className={`grid gap-4 sm:grid-cols-2 ${podeVerHonorarios ? "lg:grid-cols-3" : ""}`}>
-        {podeVerHonorarios ? (
-          <GestaoKpiCard
-            label="Honorários contratados"
-            valor={formatarMoeda(resumo.honorariosContratadosCentavos)}
-            href="/gestao/honorarios"
-            destaque="ok"
-            sub={
-              resumo.processosSemHonorario > 0
-                ? `${resumo.processosSemHonorario} pasta(s) sem definir`
-                : "Carteira ativa"
-            }
-          />
-        ) : null}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
         <GestaoKpiCard
           label="Vencem hoje"
           valor={resumo.prazosHoje}
           href="/gestao/prazos"
           destaque={resumo.prazosHoje > 0 ? "danger" : undefined}
+        />
+        <GestaoKpiCard
+          label="Arquivados"
+          valor={resumo.processosArquivados}
+          href="/gestao/processos"
         />
       </div>
 

@@ -6,10 +6,11 @@ import { createClient } from "@/lib/supabase/client";
 type Props = {
   /** trial = após OAuth vai para onboarding; login = dashboard se tiver acesso */
   intent?: "trial" | "login";
-  /** Após login, ir para gestão (só em dev / FACTO_GESTAO=1) */
+  /** Após login, ir para gestão */
   destinoGestao?: boolean;
   className?: string;
   label?: string;
+  disabled?: boolean;
 };
 
 export function GoogleSignInButton({
@@ -17,6 +18,7 @@ export function GoogleSignInButton({
   destinoGestao = false,
   className = "",
   label = "Continuar com Google",
+  disabled = false,
 }: Props) {
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -57,7 +59,7 @@ export function GoogleSignInButton({
       <button
         type="button"
         onClick={() => void onClick()}
-        disabled={loading}
+        disabled={loading || disabled}
         className="flex w-full items-center justify-center gap-3 rounded-lg border border-facto-gold/45 bg-gradient-to-b from-[#2a2920] to-facto-dark px-4 py-3 text-sm font-semibold text-facto-gold shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:border-facto-gold hover:from-[#353428] hover:text-[#c4b98a] disabled:opacity-60"
       >
         <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" aria-hidden>

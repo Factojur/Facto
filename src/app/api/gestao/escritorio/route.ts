@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireGestaoAuth } from "@/lib/gestao/gestao-api-auth";
-import { podeVerHonorariosGestao } from "@/lib/gestao/gestao-permissoes";
+import { requireGestaoAuth, requireGestaoAuthMutation } from "@/lib/gestao/gestao-api-auth";
 import {
   criarEscritorioGestao,
   listarConvitesAtivos,
@@ -30,7 +29,7 @@ export async function GET() {
     },
     membro: {
       ...membro,
-      podeVerHonorarios: podeVerHonorariosGestao(membro.papel),
+      ehAdmin: membro.papel === "admin",
     },
     membros,
     convitesPendentes: convites.length,
@@ -38,7 +37,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireGestaoAuth();
+  const auth = await requireGestaoAuthMutation(request, "escritorio-post", 10);
   if ("error" in auth && auth.error) return auth.error;
 
   const body = (await request.json()) as {

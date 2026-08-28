@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { GestaoInstrucoesEquipe } from "@/components/gestao/gestao-instrucoes-equipe";
 import { rotuloPapelGestao } from "@/lib/gestao/gestao-permissoes";
-import type { PapelGestao } from "@/lib/gestao/gestao-types";
 import { GestaoShell } from "@/components/gestao/gestao-shell";
 import { GestaoKpiCard, GestaoPainel } from "@/components/gestao/gestao-ui";
 
@@ -101,21 +100,6 @@ export default function GestaoEquipePage() {
     }
   }
 
-  async function alterarPapel(userId: string, papel: PapelGestao) {
-    if (papel === "admin") return;
-    const res = await fetch("/api/gestao/membros", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, papel }),
-    });
-    if (!res.ok) {
-      const data = (await res.json()) as { error?: string };
-      setErro(data.error ?? "Não foi possível alterar o papel.");
-      return;
-    }
-    void carregar();
-  }
-
   const vagas = Math.max(0, limite - membros.length);
 
   return (
@@ -140,8 +124,8 @@ export default function GestaoEquipePage() {
       {ehAdmin ? (
         <GestaoPainel titulo="Gerar convite">
           <p className="text-sm text-stone-400">
-            Colaboradores, sócios e estagiários acessam só o FACTO Gestão — não
-            precisam de plano de minutas. Envie <strong className="text-stone-300">link + código</strong> juntos.
+            Convide até {limite - 1} pessoas para o escritório. Todos veem as
+            mesmas telas (processos, prazos, agenda). Só o titular gera convites.
           </p>
           <button
             type="button"
@@ -153,8 +137,7 @@ export default function GestaoEquipePage() {
           </button>
           {vagas === 0 ? (
             <p className="mt-2 text-sm text-amber-400/90">
-              Limite de membros atingido. Ajuste o plano de gestão para convidar
-              mais pessoas.
+              Limite de 10 pessoas por escritório atingido (titular + 9 convidados).
             </p>
           ) : null}
           {erro ? <p className="mt-2 text-sm text-red-400">{erro}</p> : null}
@@ -201,8 +184,8 @@ export default function GestaoEquipePage() {
       ) : (
         <GestaoPainel titulo="Seu acesso">
           <p className="text-sm text-stone-400">
-            Você entrou como colaborador. Apenas o administrador do escritório
-            pode gerar convites.
+            Você faz parte do escritório com acesso completo. Apenas o titular
+            pode gerar novos convites.
           </p>
         </GestaoPainel>
       )}
@@ -221,34 +204,15 @@ export default function GestaoEquipePage() {
                 <p className="text-stone-500">{m.email}</p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                {ehAdmin && m.papel !== "admin" ? (
-                  <select
-                    value={m.papel}
-                    onChange={(e) =>
-                      void alterarPapel(
-                        m.userId,
-                        e.target.value as PapelGestao
-                      )
-                    }
-                    className="rounded-md border border-stone-700 bg-stone-900 px-2 py-1 text-xs text-stone-300"
-                    aria-label={`Papel de ${m.nome}`}
-                  >
-                    <option value="socio">Sócio</option>
-                    <option value="colaborador">Colaborador</option>
-                  </select>
-                ) : (
-                  <span
-                    className={`rounded-full border px-2 py-0.5 text-xs ${
-                      m.papel === "admin"
-                        ? "border-facto-gold/30 bg-facto-gold/10 text-facto-gold"
-                        : m.papel === "socio"
-                          ? "border-sky-800/50 bg-sky-950/40 text-sky-300"
-                          : "border-stone-700 bg-stone-800 text-stone-300"
-                    }`}
-                  >
-                    {rotuloPapelGestao(m.papel)}
-                  </span>
-                )}
+                <span
+                  className={`rounded-full border px-2 py-0.5 text-xs ${
+                    m.papel === "admin"
+                      ? "border-facto-gold/30 bg-facto-gold/10 text-facto-gold"
+                      : "border-stone-700 bg-stone-800 text-stone-300"
+                  }`}
+                >
+                  {rotuloPapelGestao(m.papel)}
+                </span>
               </div>
             </li>
           ))}

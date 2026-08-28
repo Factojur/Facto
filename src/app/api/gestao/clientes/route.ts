@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireGestaoAuth } from "@/lib/gestao/gestao-api-auth";
+import { requireGestaoAuth, requireGestaoAuthMutation, respostaErroGestao } from "@/lib/gestao/gestao-api-auth";
 import {
   atualizarClienteGestao,
   criarClienteGestao,
@@ -21,7 +21,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireGestaoAuth();
+  const auth = await requireGestaoAuthMutation(request, "clientes-post", 40);
   if ("error" in auth && auth.error) return auth.error;
 
   const { escritorio } = await obterContextoGestao(auth.user.id);
@@ -42,15 +42,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Nome obrigatório." }, { status: 400 });
   }
 
-  const cliente = await criarClienteGestao(escritorio.id, {
-    nome,
-    email: String(body.email ?? ""),
-    telefone: String(body.telefone ?? ""),
-    documento: String(body.documento ?? ""),
-    notas: String(body.notas ?? ""),
-  });
-
-  return NextResponse.json({ cliente });
+  try {
+    const cliente = await criarClienteGestao(escritorio.id, {
+      nome,
+      email: String(body.email ?? ""),
+      telefone: String(body.telefone ?? ""),
+      documento: String(body.documento ?? ""),
+      notas: String(body.notas ?? ""),
+    });
+    return NextResponse.json({ cliente });
+  } catch (e) {
+    const resposta = respostaErroGestao(e);
+    if (resposta) return resposta;
+    throw e;
+  }
 }
 
 export async function PATCH(request: Request) {

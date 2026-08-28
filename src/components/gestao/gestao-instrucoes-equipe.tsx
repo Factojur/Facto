@@ -50,13 +50,11 @@ export function GestaoInstrucoesEquipe({ variante = "admin" }: Props) {
 
         <section>
           <h3 className="font-medium text-white">
-            Sócio, advogado associado ou estagiário
+            Quem pode entrar
           </h3>
           <p className="mt-1 text-stone-400">
-            No FACTO Gestão o convidado entra como{" "}
-            <em>colaborador</em>. O titular pode promover a{" "}
-            <strong className="text-stone-300">sócio</strong> em Equipe — sócios
-            veem honorários contratados; colaboradores e estagiários não.
+            Advogados, estagiários e equipe administrativa — com ou sem OAB. Não
+            é necessário plano de minutas FACTO para usar a gestão.
           </p>
           <ol className="mt-3 list-decimal space-y-2 pl-5 text-stone-400">
             <li>
@@ -84,14 +82,12 @@ export function GestaoInstrucoesEquipe({ variante = "admin" }: Props) {
           <h3 className="font-medium text-white">Boas práticas</h3>
           <ul className="mt-1 list-inside list-disc space-y-1 text-stone-400">
             <li>
-              <strong className="text-stone-300">Estagiário:</strong> convide o
-              e-mail pessoal ou institucional do estagiário — nunca compartilhe
-              login.
+              <strong className="text-stone-300">Estagiário ou assistente:</strong>{" "}
+              convide o e-mail pessoal — nunca compartilhe login.
             </li>
             <li>
-              <strong className="text-stone-300">Sócio:</strong> use o e-mail
-              profissional dele; se precisar de minutas, ele assina o plano
-              FACTO de peças à parte.
+              Quem quiser gerar peças depois pode assinar o FACTO Minutas com o
+              mesmo e-mail e senha.
             </li>
             <li>
               Cada convite vale <strong className="text-stone-300">14 dias</strong>{" "}

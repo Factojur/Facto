@@ -12,7 +12,6 @@ import {
   atualizarProcessoGestao,
 } from "../src/lib/gestao/gestao-service";
 import { salvarGestaoStore } from "../src/lib/gestao/gestao-local-store";
-import { calcularHonorarioContratado } from "../src/lib/gestao/gestao-honorarios";
 
 async function main() {
   await salvarGestaoStore({
@@ -56,16 +55,14 @@ async function main() {
   });
 
   await atualizarProcessoGestao(criado.escritorio.id, processo.id, {
-    honorarioTipo: "percentual",
-    honorarioPercentual: 15,
-    honorarioStatus: "contratado",
+    notas: "Smoke test gestão",
   });
 
   const atualizado = await obterContextoGestao(adminId);
+  if (!atualizado.escritorio) throw new Error("Admin sem escritório");
   const proc = (await listarProcessosGestao(criado.escritorio.id))[0];
-  const honorario = calcularHonorarioContratado(proc);
-  if (honorario !== 7_500_00) {
-    throw new Error(`Honorário esperado 7500, got ${honorario}`);
+  if (!proc || proc.notas !== "Smoke test gestão") {
+    throw new Error("Processo não atualizado");
   }
 
   const convite = await criarConviteGestao({
@@ -86,7 +83,7 @@ async function main() {
   const ctx = await obterContextoGestao(colabId);
   if (!ctx.escritorio) throw new Error("Colaborador sem escritório");
 
-  console.log("OK: escritório, cliente, processo, honorário, convite");
+  console.log("OK: escritório, cliente, processo, convite");
   console.log("OK: link", convite.link);
   console.log("OK: processos", (await listarProcessosGestao(ctx.escritorio.id)).length);
 }

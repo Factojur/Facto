@@ -4,7 +4,6 @@ import type {
   PrazoGestao,
   ProcessoGestao,
 } from "@/lib/gestao/gestao-types";
-import { calcularHonorarioContratado } from "@/lib/gestao/gestao-honorarios";
 
 export type UrgenciaPrazo = "vencido" | "hoje" | "semana" | "futuro" | "concluido";
 
@@ -18,8 +17,6 @@ export type ResumoGestaoDashboard = {
   compromissosHoje: number;
   compromissosSemana: number;
   clientesAtivos: number;
-  honorariosContratadosCentavos: number;
-  processosSemHonorario: number;
   processosPorArea: { area: string; total: number }[];
   prazosPorUrgencia: { urgencia: UrgenciaPrazo; total: number }[];
   proximosPrazos: PrazoGestao[];
@@ -67,9 +64,7 @@ export function montarResumoGestaoDashboard(params: {
   prazos: PrazoGestao[];
   eventos: EventoAgendaGestao[];
   clientes?: ClienteGestao[];
-  incluirHonorarios?: boolean;
 }): ResumoGestaoDashboard {
-  const incluirHonorarios = params.incluirHonorarios ?? true;
   const hoje = isoHoje();
   const iniSem = inicioSemana();
   const fimSem = fimSemana();
@@ -78,20 +73,6 @@ export function montarResumoGestaoDashboard(params: {
   const processosArquivados = params.processos.filter(
     (p) => p.status === "arquivado"
   );
-
-  let honorariosContratadosCentavos = 0;
-  let processosSemHonorario = 0;
-  for (const p of processosAtivos) {
-    if (p.honorarioStatus === "contratado" || p.honorarioTipo === "fixo" || p.honorarioTipo === "mensal" || p.honorarioTipo === "percentual") {
-      const v = calcularHonorarioContratado(p);
-      if (v != null && p.honorarioStatus === "contratado") {
-        honorariosContratadosCentavos += v;
-      }
-    }
-    if (p.honorarioTipo === "a_definir" || p.honorarioStatus === "a_definir") {
-      processosSemHonorario++;
-    }
-  }
 
   const clientesAtivos = params.clientes?.length ?? 0;
 
@@ -188,18 +169,10 @@ export function montarResumoGestaoDashboard(params: {
       urgente: false,
     });
   }
-  if (processosSemHonorario > 0 && processosAtivos.length > 0 && incluirHonorarios) {
-    checklistDia.push({
-      id: "sem-honorario",
-      rotulo: `${processosSemHonorario} pasta(s) ativa(s) sem honorário definido`,
-      href: "/gestao/honorarios",
-      urgente: false,
-    });
-  }
   if (clientesAtivos === 0 && processosAtivos.length > 0) {
     checklistDia.push({
       id: "sem-clientes-cadastro",
-      rotulo: "Cadastre clientes para organizar pastas e honorários",
+      rotulo: "Cadastre clientes para organizar as pastas",
       href: "/gestao/clientes",
       urgente: false,
     });
@@ -223,8 +196,6 @@ export function montarResumoGestaoDashboard(params: {
     compromissosHoje,
     compromissosSemana,
     clientesAtivos,
-    honorariosContratadosCentavos,
-    processosSemHonorario,
     processosPorArea,
     prazosPorUrgencia,
     proximosPrazos,

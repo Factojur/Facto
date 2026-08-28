@@ -7,7 +7,7 @@ create table if not exists public.gestao_escritorios (
   admin_user_id uuid not null references auth.users (id) on delete cascade,
   admin_email text not null default '',
   oab_responsavel text not null default '',
-  plano_gestao text not null default 'intermediario'
+  plano_gestao text not null default 'basico'
     check (plano_gestao in ('basico', 'intermediario', 'ilimitado')),
   store_json jsonb not null default jsonb_build_object(
     'clientes', '[]'::jsonb,

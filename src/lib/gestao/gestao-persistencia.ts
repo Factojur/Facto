@@ -1,3 +1,4 @@
+import { compactarStoreGestao } from "@/lib/gestao/gestao-limites-dados";
 import {
   alterarGestaoStore as alterarGestaoStoreLocal,
   lerGestaoStore as lerGestaoStoreLocal,
@@ -63,6 +64,23 @@ async function supabaseGestaoAtivo(): Promise<boolean> {
     supabaseGestaoDisponivel = false;
   }
   return supabaseGestaoDisponivel;
+}
+
+/** Em produção (Vercel), exige tabelas Gestão no Supabase — /tmp não persiste. */
+export async function gestaoPersistenciaPronta(): Promise<
+  { ok: true; modo: "supabase" | "local" } | { ok: false; mensagem: string }
+> {
+  if (await supabaseGestaoAtivo()) {
+    return { ok: true, modo: "supabase" };
+  }
+  if (process.env.VERCEL) {
+    return {
+      ok: false,
+      mensagem:
+        "Gestão em manutenção: rode supabase/migration-gestao-mvp.sql no Supabase.",
+    };
+  }
+  return { ok: true, modo: "local" };
 }
 
 function rowParaEscritorio(row: EscritorioRow): EscritorioGestao {
@@ -200,6 +218,7 @@ export async function alterarGestaoStorePersistido<T>(
       carregado.payload
     );
     const result = fn(store);
+    compactarStoreGestao(store);
 
     const admin = createAdminClient();
     await admin
@@ -349,7 +368,10 @@ export async function buscarConvitePorToken(token: string): Promise<{
 } | null> {
   if (await supabaseGestaoAtivo()) {
     const admin = createAdminClient();
-    const { data: rows } = await admin.from("gestao_escritorios").select("*");
+    const { data: rows } = await admin
+      .from("gestao_escritorios")
+      .select("id, nome, admin_user_id, admin_email, oab_responsavel, plano_gestao, store_json, criado_em");
+
     for (const row of rows ?? []) {
       const payload = {
         ...PAYLOAD_VAZIO,
@@ -375,4 +397,77 @@ export async function buscarConvitePorToken(token: string): Promise<{
     store.escritorios.find((e) => e.id === convite.escritorioId) ?? null;
   if (!escritorio) return null;
   return { escritorio, convite };
+}
+
+export type GestaoEscritorioAdmin = {
+  id: string;
+  nome: string;
+  adminEmail: string;
+  oabResponsavel: string;
+  criadoEm: string;
+  membros: number;
+  processos: number;
+  clientes: number;
+};
+
+export async function listarPainelAdminGestao(): Promise<{
+  escritorios: GestaoEscritorioAdmin[];
+  totalMembros: number;
+  totalEscritorios: number;
+}> {
+  if (await supabaseGestaoAtivo()) {
+    const admin = createAdminClient();
+    const { data: rows } = await admin
+      .from("gestao_escritorios")
+      .select("*")
+      .order("criado_em", { ascending: false });
+    const { data: membrosRows } = await admin.from("gestao_membros").select("*");
+
+    const contagemMembros = new Map<string, number>();
+    for (const m of membrosRows ?? []) {
+      const id = m.escritorio_id as string;
+      contagemMembros.set(id, (contagemMembros.get(id) ?? 0) + 1);
+    }
+
+    const escritorios: GestaoEscritorioAdmin[] = (rows ?? []).map((row) => {
+      const payload = {
+        ...PAYLOAD_VAZIO,
+        ...(row.store_json as GestaoPayload),
+      };
+      return {
+        id: row.id as string,
+        nome: row.nome as string,
+        adminEmail: row.admin_email as string,
+        oabResponsavel: (row.oab_responsavel as string) || "—",
+        criadoEm: row.criado_em as string,
+        membros: contagemMembros.get(row.id as string) ?? 0,
+        processos: payload.processos.length,
+        clientes: payload.clientes.length,
+      };
+    });
+
+    return {
+      escritorios,
+      totalEscritorios: escritorios.length,
+      totalMembros: membrosRows?.length ?? 0,
+    };
+  }
+
+  const store = await lerGestaoStoreLocal();
+  const escritorios: GestaoEscritorioAdmin[] = store.escritorios.map((e) => ({
+    id: e.id,
+    nome: e.nome,
+    adminEmail: e.adminEmail,
+    oabResponsavel: e.oabResponsavel || "—",
+    criadoEm: e.criadoEm,
+    membros: store.membros.filter((m) => m.escritorioId === e.id).length,
+    processos: store.processos.filter((p) => p.escritorioId === e.id).length,
+    clientes: store.clientes.filter((c) => c.escritorioId === e.id).length,
+  }));
+
+  return {
+    escritorios,
+    totalEscritorios: escritorios.length,
+    totalMembros: store.membros.length,
+  };
 }

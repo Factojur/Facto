@@ -14,6 +14,12 @@ import {
   atualizarPapelMembroPersistido,
 } from "@/lib/gestao/gestao-persistencia";
 import { getSiteUrl } from "@/lib/site-url";
+import {
+  contagemEscritorio,
+  GestaoLimiteError,
+  LIMITES_GESTAO_GRATUITO,
+  limiteGestaoExcedido,
+} from "@/lib/gestao/gestao-limites-dados";
 import { limiteColaboradores } from "@/lib/gestao/limites-colaboradores";
 import type {
   AtividadeGestao,
@@ -33,6 +39,35 @@ import type {
 import { processoGestaoPadrao } from "@/lib/gestao/gestao-types";
 
 const DIAS_CONVITE = 14;
+
+async function assertPodeCriar(
+  escritorioId: string,
+  tipo: keyof Pick<
+    typeof LIMITES_GESTAO_GRATUITO,
+    "clientes" | "processos" | "prazos" | "agenda" | "atividades"
+  >
+): Promise<void> {
+  const store = await lerGestaoEscritorio(escritorioId);
+  const counts = contagemEscritorio(
+    store ?? {
+      escritorios: [],
+      membros: [],
+      convites: [],
+      clientes: [],
+      processos: [],
+      prazos: [],
+      agenda: [],
+      atividades: [],
+    },
+    escritorioId
+  );
+  const atual = counts[tipo];
+  if (limiteGestaoExcedido(tipo, atual)) {
+    throw new GestaoLimiteError(
+      `Limite gratuito de ${LIMITES_GESTAO_GRATUITO[tipo]} ${tipo} atingido.`
+    );
+  }
+}
 
 async function alterarEscritorio<T>(
   escritorioId: string,
@@ -80,7 +115,7 @@ export async function criarEscritorioGestao(opcoes: {
     adminUserId: opcoes.userId,
     adminEmail: opcoes.email,
     oabResponsavel: opcoes.oabResponsavel.trim(),
-    planoGestao: opcoes.planoGestao ?? "intermediario",
+    planoGestao: opcoes.planoGestao ?? "basico",
     criadoEm: new Date().toISOString(),
   };
 
@@ -127,7 +162,7 @@ export async function criarConviteGestao(opcoes: {
     if (colaboradores >= limite) {
       return {
         ok: false as const,
-        erro: `Limite de ${limite} membros atingido no plano atual.`,
+        erro: `Limite de ${limite} pessoas no escritório gratuito.`,
       };
     }
 
@@ -259,6 +294,7 @@ export async function criarClienteGestao(
   escritorioId: string,
   dados: Pick<ClienteGestao, "nome" | "email" | "telefone" | "documento" | "notas">
 ): Promise<ClienteGestao> {
+  await assertPodeCriar(escritorioId, "clientes");
   const agora = new Date().toISOString();
   const cliente: ClienteGestao = {
     id: novoId(),
@@ -334,6 +370,7 @@ export async function criarProcessoGestao(
     responsavelUserId: string | null;
   }
 ): Promise<ProcessoGestao> {
+  await assertPodeCriar(escritorioId, "processos");
   const agora = new Date().toISOString();
   let clienteNome = dados.cliente.trim();
   let clienteId = dados.clienteId ?? null;
@@ -463,6 +500,7 @@ export async function criarPrazoGestao(
   escritorioId: string,
   dados: Pick<PrazoGestao, "titulo" | "vencimento" | "processoId" | "responsavelUserId">
 ): Promise<PrazoGestao> {
+  await assertPodeCriar(escritorioId, "prazos");
   const prazo: PrazoGestao = {
     id: novoId(),
     escritorioId,
@@ -511,6 +549,7 @@ export async function criarEventoAgendaGestao(
     "titulo" | "inicio" | "fim" | "local" | "processoId" | "responsavelUserId"
   >
 ): Promise<EventoAgendaGestao> {
+  await assertPodeCriar(escritorioId, "agenda");
   const evento: EventoAgendaGestao = {
     id: novoId(),
     escritorioId,
@@ -543,6 +582,7 @@ export async function criarAtividadeGestao(
     "processoId" | "clienteId" | "titulo" | "conteudo" | "criadoPorUserId"
   >
 ): Promise<AtividadeGestao> {
+  await assertPodeCriar(escritorioId, "atividades");
   const atividade: AtividadeGestao = {
     id: novoId(),
     escritorioId,

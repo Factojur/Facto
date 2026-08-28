@@ -11,6 +11,7 @@ import {
 import { DashboardTopBar } from "@/components/dashboard/dashboard-topbar";
 import { WhatsAppFloat } from "@/components/whatsapp-float";
 import { AceiteTermosModal } from "@/components/dashboard/aceite-termos-modal";
+import { AvisoMemoriaLocal } from "@/components/dashboard/aviso-memoria-local";
 import type { PerfilResumo } from "@/lib/perfil-types";
 import type { PlanoId } from "@/lib/planos-facto";
 
@@ -55,6 +56,7 @@ export function DashboardLayoutClient({
     return (
       <div className="flex min-h-screen flex-col bg-facto-dark">
         <DashboardTopBar perfil={perfil} plano={plano} />
+        <AvisoMemoriaLocal />
         <main className="flex-1 overflow-x-clip">{children}</main>
         <WhatsAppFloat />
         <AceiteTermosModal aberto={precisaAceiteTermos} />
@@ -66,6 +68,7 @@ export function DashboardLayoutClient({
     return (
       <div className="flex min-h-screen flex-col bg-facto-dark">
         <DashboardTopBar perfil={perfil} plano={plano} />
+        <AvisoMemoriaLocal />
         <main className="flex-1 overflow-y-auto overflow-x-clip px-4 py-8 sm:px-6 md:px-10">
           <div className="mx-auto max-w-5xl">{children}</div>
         </main>
@@ -84,6 +87,7 @@ export function DashboardLayoutClient({
         menuMobileAberto={menuMobileAberto}
         onToggleMenuMobile={() => setMenuMobileAberto((v) => !v)}
       />
+      <AvisoMemoriaLocal />
       {mostraSidebar && (
         <DashboardSidebarMobile
           aberto={menuMobileAberto}

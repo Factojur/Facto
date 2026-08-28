@@ -46,7 +46,7 @@ export function CriarEscritorioForm() {
       <h2 className="text-lg font-medium text-white">Criar escritório</h2>
       <p className="mt-1 text-sm text-stone-400">
         Primeiro acesso do titular. Você será o administrador e poderá convidar
-        sócios, colaboradores e estagiários em Equipe depois.
+        até 9 pessoas em Equipe depois.
       </p>
       <div className="mt-4 space-y-3">
         <div>
@@ -63,12 +63,11 @@ export function CriarEscritorioForm() {
         </div>
         <div>
           <label className="mb-1 block text-sm text-stone-300">
-            OAB do responsável
+            OAB do responsável <span className="text-stone-500">(opcional)</span>
           </label>
           <input
             value={oab}
             onChange={(e) => setOab(e.target.value)}
-            required
             className="w-full rounded-lg border border-stone-700 bg-stone-800 px-3 py-2 text-white outline-none focus:border-facto-gold"
             placeholder="SP 123456"
           />

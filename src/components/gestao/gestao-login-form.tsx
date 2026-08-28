@@ -21,6 +21,7 @@ export function GestaoLoginForm({ convite }: { convite?: string | null }) {
   const [checkingSession, setCheckingSession] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const oauthErro = searchParams.get("oauth");
+  const cadastroOk = searchParams.get("cadastro") === "ok";
 
   useEffect(() => {
     async function preparar() {
@@ -72,8 +73,14 @@ export function GestaoLoginForm({ convite }: { convite?: string | null }) {
     >
       <h2 className="text-lg font-semibold text-white">Entrar</h2>
       <p className="mt-1 text-sm text-stone-400">
-        Acesso exclusivo ao painel de gestão (ambiente de desenvolvimento).
+        Gestão gratuita de processos, prazos e agenda. Sem plano de minutas.
       </p>
+
+      {cadastroOk ? (
+        <div className="mt-4 rounded-lg border border-emerald-800/60 bg-emerald-950/40 px-4 py-3 text-sm text-emerald-200">
+          Conta criada. Entre com seu e-mail e senha.
+        </div>
+      ) : null}
 
       {oauthErro ? (
         <div className="mt-4 rounded-lg border border-red-800 bg-red-950/50 px-4 py-3 text-sm text-red-300">
@@ -152,6 +159,13 @@ export function GestaoLoginForm({ convite }: { convite?: string | null }) {
       >
         {loading ? "Entrando…" : "Entrar na gestão"}
       </button>
+
+      <p className="mt-4 text-center text-xs text-stone-500">
+        Não tem conta?{" "}
+        <Link href="/gestao/cadastro" className="text-facto-gold hover:underline">
+          Criar conta grátis
+        </Link>
+      </p>
     </form>
   );
 }

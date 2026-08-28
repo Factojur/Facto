@@ -12,7 +12,6 @@ const NAV_BASE = [
   { href: "/gestao/clientes", label: "Clientes" },
   { href: "/gestao/prazos", label: "Prazos" },
   { href: "/gestao/agenda", label: "Agenda" },
-  { href: "/gestao/honorarios", label: "Honorários", requerHonorarios: true },
   { href: "/gestao/equipe", label: "Equipe" },
 ] as const;
 
@@ -32,11 +31,9 @@ export function GestaoShell({
   papel?: string;
 }) {
   const pathname = usePathname();
-  const { podeVerHonorarios, papel: papelCtx } = useGestaoPainel();
+  const { papel: papelCtx } = useGestaoPainel();
   const papelEfetivo = papel ?? papelCtx;
-  const nav = NAV_BASE.filter(
-    (item) => !("requerHonorarios" in item && item.requerHonorarios) || podeVerHonorarios
-  );
+  const nav = NAV_BASE;
 
   return (
     <div className="min-h-screen bg-stone-950 text-stone-100">

@@ -63,7 +63,8 @@ export async function middleware(request: NextRequest) {
   if (
     !user &&
     pathname.startsWith("/gestao") &&
-    !pathname.startsWith("/gestao/login")
+    !pathname.startsWith("/gestao/login") &&
+    !pathname.startsWith("/gestao/cadastro")
   ) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/gestao/login";

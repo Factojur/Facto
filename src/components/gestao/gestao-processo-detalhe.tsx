@@ -1,25 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   BadgeUrgenciaPrazo,
   GestaoPainel,
   GESTAO_INPUT,
   GESTAO_SELECT,
 } from "@/components/gestao/gestao-ui";
-import { formatarMoeda, parseMoedaParaCentavos } from "@/lib/gestao/gestao-format";
-import {
-  calcularHonorarioContratado,
-  sugerirHonorario,
-} from "@/lib/gestao/gestao-honorarios";
-import type {
-  ProcessoGestao,
-  StatusHonorarioGestao,
-  TipoHonorarioGestao,
-} from "@/lib/gestao/gestao-types";
+import type { ProcessoGestao } from "@/lib/gestao/gestao-types";
 import { urgenciaPrazo } from "@/lib/gestao/gestao-dashboard-stats";
-import { useGestaoPainel } from "@/components/gestao/gestao-painel-context";
+import { parseMoedaParaCentavos } from "@/lib/gestao/gestao-format";
 
 type Prazo = {
   id: string;
@@ -45,7 +36,6 @@ type Atividade = {
 };
 
 export function GestaoProcessoDetalhe({ processoId }: { processoId: string }) {
-  const { podeVerHonorarios } = useGestaoPainel();
   const [processo, setProcesso] = useState<ProcessoGestao | null>(null);
   const [prazos, setPrazos] = useState<Prazo[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
@@ -83,19 +73,6 @@ export function GestaoProcessoDetalhe({ processoId }: { processoId: string }) {
   useEffect(() => {
     void carregar();
   }, [carregar]);
-
-  const sugestao = useMemo(() => {
-    if (!processo) return null;
-    return sugerirHonorario({
-      area: processo.area,
-      valorCausaCentavos: processo.valorCausaCentavos,
-    });
-  }, [processo]);
-
-  const honorarioCalculado = useMemo(() => {
-    if (!processo) return null;
-    return calcularHonorarioContratado(processo);
-  }, [processo]);
 
   async function salvarPatch(patch: Record<string, unknown>) {
     if (!processo) return;
@@ -258,125 +235,6 @@ export function GestaoProcessoDetalhe({ processoId }: { processoId: string }) {
             </label>
           </div>
         </GestaoPainel>
-
-        {podeVerHonorarios ? (
-        <GestaoPainel titulo="Honorários (sem financeiro)">
-          <p className="mb-3 text-xs text-stone-500">
-            Valores de referência e contrato — sem controle de recebimentos.
-          </p>
-          {sugestao ? (
-            <div className="mb-4 rounded-lg border border-facto-gold/20 bg-facto-gold/5 p-3 text-xs text-stone-300">
-              <p className="font-medium text-facto-gold">Sugestão de mercado</p>
-              <p className="mt-1">
-                {formatarMoeda(sugestao.minimoCentavos)} —{" "}
-                <strong>{formatarMoeda(sugestao.sugeridoCentavos)}</strong> —{" "}
-                {formatarMoeda(sugestao.maximoCentavos)}
-              </p>
-              <p className="mt-1 text-stone-500">{sugestao.nota}</p>
-            </div>
-          ) : null}
-          <div className="grid gap-3 text-sm">
-            <label className="grid gap-1">
-              <span className="text-xs text-stone-500">Tipo</span>
-              <select
-                className={GESTAO_SELECT}
-                value={processo.honorarioTipo}
-                onChange={(e) =>
-                  void salvarPatch({
-                    honorarioTipo: e.target.value as TipoHonorarioGestao,
-                  })
-                }
-              >
-                <option value="a_definir">A definir</option>
-                <option value="fixo">Valor fixo</option>
-                <option value="percentual">Percentual sobre a causa</option>
-                <option value="mensal">Mensal (retainer)</option>
-                <option value="pro_bono">Pro bono</option>
-              </select>
-            </label>
-            {(processo.honorarioTipo === "fixo" ||
-              processo.honorarioTipo === "mensal") && (
-              <label className="grid gap-1">
-                <span className="text-xs text-stone-500">Valor (R$)</span>
-                <input
-                  className={GESTAO_INPUT}
-                  defaultValue={
-                    processo.honorarioValorCentavos != null
-                      ? (processo.honorarioValorCentavos / 100).toLocaleString(
-                          "pt-BR",
-                          { minimumFractionDigits: 2 }
-                        )
-                      : ""
-                  }
-                  onBlur={(e) => {
-                    void salvarPatch({
-                      honorarioValorCentavos: parseMoedaParaCentavos(
-                        e.target.value
-                      ),
-                    });
-                  }}
-                />
-              </label>
-            )}
-            {processo.honorarioTipo === "percentual" && (
-              <label className="grid gap-1">
-                <span className="text-xs text-stone-500">Percentual (%)</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  step={0.5}
-                  className={GESTAO_INPUT}
-                  defaultValue={processo.honorarioPercentual ?? ""}
-                  onBlur={(e) => {
-                    void salvarPatch({
-                      honorarioPercentual: e.target.value
-                        ? Number(e.target.value)
-                        : null,
-                    });
-                  }}
-                />
-              </label>
-            )}
-            <label className="grid gap-1">
-              <span className="text-xs text-stone-500">Status da negociação</span>
-              <select
-                className={GESTAO_SELECT}
-                value={processo.honorarioStatus}
-                onChange={(e) =>
-                  void salvarPatch({
-                    honorarioStatus: e.target.value as StatusHonorarioGestao,
-                  })
-                }
-              >
-                <option value="a_definir">A definir</option>
-                <option value="proposta">Proposta enviada</option>
-                <option value="contratado">Contratado</option>
-              </select>
-            </label>
-            {honorarioCalculado != null && (
-              <p className="text-sm text-stone-300">
-                Valor de referência:{" "}
-                <strong className="text-facto-gold">
-                  {formatarMoeda(honorarioCalculado)}
-                </strong>
-              </p>
-            )}
-            <label className="grid gap-1">
-              <span className="text-xs text-stone-500">Observações</span>
-              <textarea
-                className={`${GESTAO_INPUT} min-h-[72px]`}
-                defaultValue={processo.honorarioObservacao}
-                onBlur={(e) => {
-                  if (e.target.value !== processo.honorarioObservacao) {
-                    void salvarPatch({ honorarioObservacao: e.target.value });
-                  }
-                }}
-              />
-            </label>
-          </div>
-        </GestaoPainel>
-        ) : null}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

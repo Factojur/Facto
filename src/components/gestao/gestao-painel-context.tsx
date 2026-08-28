@@ -2,17 +2,17 @@
 
 import { createContext, useContext } from "react";
 import type { PapelGestao } from "@/lib/gestao/gestao-types";
-import { podeVerHonorariosGestao } from "@/lib/gestao/gestao-permissoes";
+import { ehAdminGestao } from "@/lib/gestao/gestao-permissoes";
 
 type GestaoPainelContextValue = {
   papel: PapelGestao | null;
-  podeVerHonorarios: boolean;
+  ehAdmin: boolean;
   escritorioNome: string | null;
 };
 
 const GestaoPainelContext = createContext<GestaoPainelContextValue>({
   papel: null,
-  podeVerHonorarios: false,
+  ehAdmin: false,
   escritorioNome: null,
 });
 
@@ -29,7 +29,7 @@ export function GestaoPainelProvider({
     <GestaoPainelContext.Provider
       value={{
         papel,
-        podeVerHonorarios: podeVerHonorariosGestao(papel),
+        ehAdmin: ehAdminGestao(papel),
         escritorioNome,
       }}
     >

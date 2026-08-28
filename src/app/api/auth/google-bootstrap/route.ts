@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { acessoAssinaturaLiberado } from "@/lib/acesso-assinatura";
+import { ACEITE_TERMOS_VERSAO, temAceiteTermos } from "@/lib/aceite-termos";
 import { gestaoHabilitada } from "@/lib/gestao/gestao-flags";
 import {
   COOKIE_SESSAO,
@@ -105,6 +106,17 @@ export async function POST(request: Request) {
 
   const liberado = await acessoAssinaturaLiberado(email);
   const loginGestao = destinoGestao && gestaoHabilitada();
+
+  if (loginGestao && !temAceiteTermos(user.user_metadata as Record<string, unknown>)) {
+    const aceitoEm = new Date().toISOString();
+    await supabase.auth.updateUser({
+      data: {
+        aceite_termos_em: aceitoEm,
+        aceite_termos_versao: ACEITE_TERMOS_VERSAO,
+        origem_cadastro: "gestao-google",
+      },
+    });
+  }
 
   let redirect = "/dashboard";
   if (loginGestao) {
