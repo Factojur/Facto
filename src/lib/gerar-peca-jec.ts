@@ -241,6 +241,17 @@ function lastroParaArea(
   );
 }
 
+function fundamentoLeiQualificacao(areaId: string): string {
+  if (areaEhJecLike(areaId)) return "na Lei nº 9.099/95";
+  if (areaId === "trabalhista") {
+    return "na CLT e na legislação trabalhista pertinente";
+  }
+  if (areaId === "criminal") {
+    return "no Código de Processo Penal e na legislação pertinente";
+  }
+  return "no Código de Processo Civil e na legislação pertinente";
+}
+
 function textoSucumbencia(areaId: string): string {
   if (areaEhJecLike(areaId)) {
     return "na forma da Lei nº 9.099/95, se cabível";
@@ -748,6 +759,7 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
         advogadoNome: autor,
         oabQualificacao,
         enderecoAdvogado,
+        fundamentoLei: fundamentoLeiQualificacao(areaIdPeca),
       });
 
   const fatosNormalizados = normalizarTextoFatos(input.fatos);
