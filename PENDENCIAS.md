@@ -55,6 +55,7 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] **Tipografia/juris** — `EXCELENTENTÍSSIMO`, `VARADO`, `[[/JURIS]]`; `injetarQualificacaoReus` mais agressivo
 - [x] **Testes** — `testar-chat-minuta` 67 ok; `testar-alerta-fatos-pedidos` 8 ok; `tsc --noEmit` ok
 - [x] **HC/Penal preview** — `pecaUsaEmFaceDeReu` (sem “em face de” no paciente); dedup autor=réu; inferência criminal > família (“família na cidade”)
+- [x] **Deploy produção (31/08 tarde)** — `dpl_GPC9nW1TCvsvR3LeU1Lc3eP8AqjE` · commit `7b3908b` · tutela HC, 503 sem cota, typo endereçamento
 - [x] **Deploy produção (31/08 manhã)** — `dpl_Am7KfYQoJYPxz5p6vzm6ZWyaSxiC` · commit `2c0a1d4` · HC + inferência criminal + chat minuta completo
 - [x] **E2E 31/08** — 5 peças IA exportadas (`npx tsx scripts/exportar-e2e-31-08.ts --ia`); checklists preenchidos; browser Penal: preview+triagem ok; Prev manual: preenchimento+triagem ok; Redigir em prod falhou (Gemini)
 - [x] **Fixes pós-E2E (31/08 tarde)** — `EXCELCELENTÍSSIMO` normalizado; HC/MS sem flag tutela CPC (`especieUsaTutelaUrgenciaCpc`); alerta tutela ignorado em HC; `/api/gerar-peca` retorna **503 sem debitar cota** em falha transitória Gemini
