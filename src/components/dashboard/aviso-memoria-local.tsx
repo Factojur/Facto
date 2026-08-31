@@ -24,7 +24,7 @@ export function AvisoMemoriaLocal() {
       className="border-b border-amber-900/40 bg-amber-950/50 px-4 py-2.5 text-center text-xs text-amber-100/90 sm:px-6"
     >
       <span>
-        Rascunhos, histórico JEC e memória de cliente ficam{" "}
+        Rascunhos, histórico JEC, conversas do assistente e memória de cliente ficam{" "}
         <strong className="font-medium">só neste navegador</strong> — não
         sincronizam com a nuvem. Limpar dados do site apaga esse conteúdo.{" "}
         <Link href="/privacidade" className="underline hover:text-white">

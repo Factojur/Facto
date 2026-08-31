@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState } from "react";
 import type { EscritorioConfig } from "@/lib/escritorio-types";
 import { gerarPecaDocxBlob } from "@/lib/exportar-peca-docx";
@@ -8,27 +9,31 @@ import {
   abrirBlobEmNovaAba,
   abrirPreviewHtmlEmNovaAba,
 } from "@/lib/abrir-documento-nova-aba";
+import { ExportacaoTrialUpsell } from "@/components/dashboard/exportacao-trial-upsell";
 
 export function PecaDocumentoView({
   peca,
   pecaHtml,
   escritorio,
   onCopiarTexto,
+  exportacaoBloqueada = false,
 }: {
   peca: string;
   pecaHtml: string;
   escritorio?: EscritorioConfig;
   onCopiarTexto: () => void;
+  /** Trial: bloqueia Word/PDF; preview e copiar texto permanecem. */
+  exportacaoBloqueada?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [baixando, setBaixando] = useState<"docx" | "pdf" | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
   async function handleBaixarDocx() {
+    if (exportacaoBloqueada) return;
     setErro(null);
     setBaixando("docx");
     try {
-      // Abre a nova aba de imediato (evita bloqueio de popup após await)
       const previewOk = abrirPreviewHtmlEmNovaAba(
         pecaHtml,
         "Peça FACTO — Word / visualização"
@@ -37,7 +42,6 @@ export function PecaDocumentoView({
         peca,
         escritorio?.usarTimbre ? escritorio : undefined
       );
-      // Download do .docx também em fluxo de nova aba (target=_blank no fallback)
       const a = document.createElement("a");
       const url = URL.createObjectURL(blob);
       a.href = url;
@@ -61,9 +65,9 @@ export function PecaDocumentoView({
   }
 
   async function handleBaixarPdf() {
+    if (exportacaoBloqueada) return;
     setErro(null);
     setBaixando("pdf");
-    // Abre aba placeholder síncrona para não perder o gesto do clique (anti-popup)
     const abaPdf = window.open("about:blank", "_blank");
     try {
       if (abaPdf) {
@@ -109,10 +113,13 @@ export function PecaDocumentoView({
         dangerouslySetInnerHTML={{ __html: pecaHtml }}
       />
 
-      <p className="mt-3 text-xs text-slate-500">
-        Abrem em nova aba. Word pode incluir timbre; PDF e cópia usam texto
-        limpo.
-      </p>
+      {exportacaoBloqueada ? (
+        <ExportacaoTrialUpsell className="mt-3" />
+      ) : (
+        <p className="mt-3 text-xs text-slate-500">
+          Abrem em nova aba. Word pode incluir timbre; PDF e cópia usam texto limpo.
+        </p>
+      )}
 
       <div className="mt-4 flex flex-wrap gap-2">
         <button
@@ -122,24 +129,43 @@ export function PecaDocumentoView({
         >
           Copiar texto
         </button>
-        <button
-          type="button"
-          onClick={handleBaixarDocx}
-          disabled={baixando !== null}
-          className="rounded-lg border border-stone-600 px-4 py-2 text-sm font-medium text-stone-800 hover:bg-stone-50 disabled:opacity-50"
-        >
-          {baixando === "docx"
-            ? "Gerando Word..."
-            : "Baixar Word"}
-        </button>
-        <button
-          type="button"
-          onClick={handleBaixarPdf}
-          disabled={baixando !== null}
-          className="rounded-lg bg-stone-700 px-4 py-2 text-sm font-medium text-amber-50 hover:bg-stone-600 disabled:opacity-50"
-        >
-          {baixando === "pdf" ? "Gerando PDF..." : "Visualizar PDF"}
-        </button>
+        {exportacaoBloqueada ? (
+          <>
+            <Link
+              href="/dashboard/planos"
+              className="rounded-lg border border-stone-300 bg-stone-100 px-4 py-2 text-sm font-medium text-stone-600"
+              title="Exportação Word nos planos pagos"
+            >
+              Word · assinar
+            </Link>
+            <Link
+              href="/dashboard/planos"
+              className="rounded-lg border border-stone-400 bg-stone-200 px-4 py-2 text-sm font-medium text-stone-700"
+              title="Exportação PDF nos planos pagos"
+            >
+              PDF · assinar
+            </Link>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => void handleBaixarDocx()}
+              disabled={baixando !== null}
+              className="rounded-lg border border-stone-600 px-4 py-2 text-sm font-medium text-stone-800 hover:bg-stone-50 disabled:opacity-50"
+            >
+              {baixando === "docx" ? "Gerando Word..." : "Baixar Word"}
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleBaixarPdf()}
+              disabled={baixando !== null}
+              className="rounded-lg bg-stone-700 px-4 py-2 text-sm font-medium text-amber-50 hover:bg-stone-600 disabled:opacity-50"
+            >
+              {baixando === "pdf" ? "Gerando PDF..." : "Visualizar PDF"}
+            </button>
+          </>
+        )}
       </div>
 
       {erro && <p className="mt-3 text-sm text-red-600">{erro}</p>}

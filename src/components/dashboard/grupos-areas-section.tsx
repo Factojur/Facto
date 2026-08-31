@@ -15,6 +15,7 @@ type Props = {
   previewInterno?: boolean;
   liberada: (areaId: string) => boolean;
   rotuloBloqueio: string;
+  preferirFormulario?: boolean;
 };
 
 function GrupoCard({
@@ -59,6 +60,7 @@ export function GruposAreasSection({
   previewInterno = false,
   liberada,
   rotuloBloqueio,
+  preferirFormulario = false,
 }: Props) {
   const [grupoAberto, setGrupoAberto] = useState<string | null>(null);
 
@@ -105,6 +107,7 @@ export function GruposAreasSection({
                     previewInterno={previewInterno}
                     liberadaNoPlano={liberada(id)}
                     rotuloBloqueio={rotuloBloqueio}
+                    preferirFormulario={preferirFormulario}
                   />
                 );
               })}

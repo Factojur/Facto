@@ -19,6 +19,7 @@ import {
 import {
   aplicarItalicoTermosEstrangeiros,
   normalizarBlocosJuris,
+  pareceEmentaOuSumulaLiteral,
 } from "@/lib/tipografia-peca";
 import { normalizarParagrafosDoDireito } from "@/lib/ia/mesclar-peca-hibrida";
 
@@ -35,7 +36,69 @@ function corrigirOrtografiaForense(texto: string): string {
     .replace(/\baplicaju[cć]i-se\b/gi, "aplica-se")
     .replace(/\bpatagar\b/gi, "patamar")
     .replace(/\binsubistente\b/gi, "não informado")
+    .replace(/\bVALORDA\b/g, "VALOR DA")
+    .replace(/\bDO VALORDA\b/gi, "DO VALOR DA")
+    .replace(/\bINDENIZÁVELE\b/gi, "INDENIZÁVEL E")
+    .replace(/\bPROVASE\b/gi, "PROVAS E")
+    .replace(/\bEXCELENTENT[IÍ]SSIM[OA]\b/gi, "EXCELENTÍSSIMO")
+    .replace(/\bVARADO\b/gi, "VARA DO")
+    .replace(/\[\[\/?JURIS\]\]/gi, "")
     .replace(/\[Inserir[^\]]*\]/gi, "…");
+}
+
+/** art. 22 do CPC trocado pela IA em tema de continuidade/fornecimento → CDC. */
+function corrigirArt22Continuidade(texto: string): string {
+  return texto.replace(
+    /\b(Art\.\s*22\s+do\s+)CPC\b/gi,
+    (match, prefix, offset, full) => {
+      const ctx = full
+        .slice(Math.max(0, offset - 150), offset + 150)
+        .toLowerCase();
+      if (
+        /continuidade|fornecimento|consumidor|servi[cç]o essencial|cdc|concession/.test(
+          ctx
+        )
+      ) {
+        return `${prefix}CDC`;
+      }
+      return match;
+    }
+  );
+}
+
+/**
+ * Envolve ementas/súmulas coladas sem [[JURIS]] para tipografia de citação.
+ * Interpretação narrativa (sem prefixo Jurisprudência/Súmula + tribunal) permanece parágrafo.
+ */
+function envolverCitacoesSoltas(texto: string): string {
+  const linhas = texto.split("\n");
+  const out: string[] = [];
+  for (const bruta of linhas) {
+    const t = bruta.trim();
+    if (!t) {
+      out.push(bruta);
+      continue;
+    }
+    if (/^\[\[JURIS\]\]/i.test(t) || /\[\[\/JURIS\]\]/i.test(t)) {
+      out.push(bruta);
+      continue;
+    }
+    const pareceCitacao =
+      (/^S[uú]mula(?:\s+Vinculante)?\s*(?:n[oº°.]?\s*)?\d+/i.test(t) &&
+        t.length >= 40) ||
+      (/\b(EMENTA|CASO EM EXAME|QUESTÃO EM DISCUSSÃO)\b/i.test(t) &&
+        /\b(STJ|STF|TJ[A-Z]{2}|TRF|TST|TSE)\b/.test(t) &&
+        t.length >= 120) ||
+      (pareceEmentaOuSumulaLiteral(t) &&
+        t.length >= 80 &&
+        !/^A\s+jurisprud[eê]ncia\b/i.test(t));
+    if (pareceCitacao) {
+      out.push(`[[JURIS]]${t}[[/JURIS]]`);
+    } else {
+      out.push(bruta);
+    }
+  }
+  return out.join("\n");
 }
 
 /** `"In casu"*` / `In casu*` → padrão *"in casu"*. */
@@ -70,6 +133,54 @@ function ehMarcadorEspaco(t: string): boolean {
 
 function ehTopicoPrincipal(t: string): boolean {
   return /^([IVXLCDM]+)\s*[-—–.]\s+\S/i.test(t.trim());
+}
+
+const ORDEM_ROMANOS = [
+  "I",
+  "II",
+  "III",
+  "IV",
+  "V",
+  "VI",
+  "VII",
+  "VIII",
+  "IX",
+  "X",
+] as const;
+
+/** Renumera tópicos romanos quando a IA repete o mesmo algarismo (ex.: dois III). */
+function renumerarTopicosRomanosDuplicados(texto: string): string {
+  const linhas = texto.split("\n");
+  const indices: number[] = [];
+  const romanos: string[] = [];
+
+  for (let i = 0; i < linhas.length; i++) {
+    const m = /^([IVXLCDM]+)\s*[-—–.]\s+\S/i.exec(linhas[i]!.trim());
+    if (!m) continue;
+    indices.push(i);
+    romanos.push(m[1]!.toUpperCase());
+  }
+
+  if (indices.length < 2) return texto;
+
+  const vistos = new Set<string>();
+  let temDuplicata = false;
+  for (const r of romanos) {
+    if (vistos.has(r)) {
+      temDuplicata = true;
+      break;
+    }
+    vistos.add(r);
+  }
+  if (!temDuplicata) return texto;
+
+  for (let j = 0; j < indices.length; j++) {
+    const i = indices[j]!;
+    const novo = ORDEM_ROMANOS[j] ?? String(j + 1);
+    linhas[i] = linhas[i]!.replace(/^(\s*)([IVXLCDM]+)(\s*[-—–.])/i, `$1${novo}$3`);
+  }
+
+  return linhas.join("\n");
 }
 
 function ehSubtopico(t: string): boolean {
@@ -755,15 +866,18 @@ function negritarSubtitulosDireito(texto: string): string {
 /** Pipeline completo aplicado à saída da IA antes de HTML/PDF/Word. */
 export function normalizarPecaGerada(texto: string): string {
   let t = corrigirOrtografiaForense(texto);
+  t = corrigirArt22Continuidade(t);
   t = limparDigitosEmoji(t);
   t = consertarLatinMarkdownOrfao(t);
   t = removerSeparadoresMarkdown(t);
   t = forcarCaixaEnderecamento(t);
+  t = envolverCitacoesSoltas(t);
   t = normalizarBlocosJuris(t);
   t = juntarQuebrasDeLinhaSuaves(t);
   t = separarTitulosESubtopicos(t);
   t = limparPrefixoPeticaoInicialNoNome(t);
   t = aplicarEspacamentoRigido(t);
+  t = renumerarTopicosRomanosDuplicados(t);
   t = removerTituloAcaoAposEnderecamento(t);
   t = deduplicarLinhasConsecutivas(t);
   t = inserirEspacoAposEnderecamento(t);

@@ -516,11 +516,74 @@ export function substituirEnderecamentoDeterministico(
 ): string {
   const alvo = enderecamento.trim();
   if (!alvo) return peca;
-  const linhas = peca.split("\n");
-  const i = linhas.findIndex((l) =>
-    /excelent[ií]ssim/i.test(l.trim())
-  );
+  const linhas = peca.replace(/\r\n/g, "\n").split("\n");
+  const i = linhas.findIndex((l) => /excelent[ií]ssim/i.test(l.trim()));
   if (i < 0) return `${alvo}\n${peca}`;
-  linhas[i] = alvo;
+
+  let j = i + 1;
+  while (j < linhas.length) {
+    const t = linhas[j]!.trim();
+    if (!t) {
+      j++;
+      continue;
+    }
+    if (/excelent[ií]ssim/i.test(t)) {
+      j++;
+      continue;
+    }
+    if (
+      /^(?:DA COMARCA|DO FORO|DA VARA|VARA|JU[IÍ]ZO|COMARCA|FORO|JUIZADO|TURMA)/i.test(
+        t
+      )
+    ) {
+      j++;
+      continue;
+    }
+    break;
+  }
+
+  return [...linhas.slice(0, i), alvo, ...linhas.slice(j)].join("\n");
+}
+
+/** Força o nome da ação determinístico (espécie/rito da área) após redação IA. */
+export function substituirNomePecaDeterministico(
+  peca: string,
+  nomePeca: string
+): string {
+  const alvo = nomePeca.trim().toUpperCase();
+  if (!alvo) return peca;
+  const linhas = peca.replace(/\r\n/g, "\n").split("\n");
+  let substituiu = false;
+
+  for (let i = 0; i < linhas.length; i++) {
+    const t = linhas[i]!.trim();
+    if (!t) continue;
+    if (
+      /^(?:A[CÇ][AÃ]O|PETI[CÇ][AÃ]O|MANDADO|RECURSO|EMBARGOS|CONTESTA[CÇ][AÃ]O|APELA[CÇ][AÃ]O|RECLAMA[CÇ][AÃ]O)\b/i.test(
+        t
+      ) &&
+      t.toUpperCase() !== alvo
+    ) {
+      linhas[i] = alvo;
+      substituiu = true;
+      break;
+    }
+  }
+
+  if (substituiu) return linhas.join("\n");
+
+  for (let i = 0; i < linhas.length; i++) {
+    if (!/\bpropor a presente\b/i.test(linhas[i] ?? "")) continue;
+    for (let j = i + 1; j < Math.min(i + 8, linhas.length); j++) {
+      const t = linhas[j]!.trim();
+      if (!t || /^\[\[ESPACO/i.test(t)) continue;
+      if (t.toUpperCase() !== alvo) {
+        linhas[j] = alvo;
+      }
+      break;
+    }
+    break;
+  }
+
   return linhas.join("\n");
 }

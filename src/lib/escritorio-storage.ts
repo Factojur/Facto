@@ -35,6 +35,17 @@ export function salvarEscritorioConfig(config: EscritorioConfig): void {
   localStorage.setItem(ESCRITORIO_STORAGE_KEY, JSON.stringify(config));
 }
 
+/** Há imagem ou texto de escritório salvo (pode timbrar). */
+export function escritorioTemConteudoTimbre(config: EscritorioConfig): boolean {
+  return Boolean(
+    config.cabecalhoBase64?.trim() ||
+      config.rodapeBase64?.trim() ||
+      config.marcaDaguaBase64?.trim() ||
+      config.nomeEscritorio?.trim() ||
+      config.endereco?.trim()
+  );
+}
+
 export async function imagemParaBase64(file: File): Promise<string> {
   const maxBytes = 500 * 1024;
   if (file.size > maxBytes) {

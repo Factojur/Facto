@@ -65,9 +65,20 @@ function preferReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-/** Chip de processador com trilhas/neurônios — presença de IA no hero. */
-export function AssistenteFactoDestaque({ leigo = false }: { leigo?: boolean }) {
+export type AssistenteChipTamanho = "completo" | "barra" | "canto";
+
+/** Chip de processador com trilhas/neurônios — presença de IA no hero/barra. */
+export function AssistenteFactoDestaque({
+  leigo = false,
+  tamanho = "completo",
+}: {
+  leigo?: boolean;
+  /** completo = hero; barra = cabeçalho do workspace; canto = cabeçalho recolhido. */
+  tamanho?: AssistenteChipTamanho;
+}) {
   void leigo;
+  const canto = tamanho === "canto";
+  const compacto = canto;
   const modal = useAssistenteInovacoesModal();
   const rootRef = useRef<HTMLButtonElement>(null);
   const haloRef = useRef<HTMLSpanElement>(null);
@@ -193,26 +204,47 @@ export function AssistenteFactoDestaque({ leigo = false }: { leigo?: boolean }) 
     };
   }, []);
 
+  const rootPad = canto
+    ? "px-2 py-1"
+    : compacto
+      ? "px-1.5 py-0.5"
+      : "px-5 py-4";
+  const trailCls = canto
+    ? "h-9 w-6"
+    : compacto
+      ? "h-8 w-6"
+      : "h-[7.5rem] w-14";
+  const bodyCls = canto
+    ? "min-w-0 px-2 py-1.5"
+    : compacto
+      ? "min-w-0 px-2 py-1"
+      : "min-w-[12rem] px-4 py-3";
+  const pinSide = canto ? 2 : 4;
+  /** Pinos cima/baixo: hero e barra aberta. Recolhido não usa. */
+  const pinsVerticais = !canto;
+
   return (
     <>
       <button
         ref={rootRef}
         type="button"
         onClick={modal.abrir}
-        className="assistente-chip-root group relative inline-flex max-w-full cursor-pointer select-none px-5 py-4 text-left transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-facto-gold/60"
+        className={`assistente-chip-root group relative inline-flex max-w-full cursor-pointer select-none text-left transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-facto-gold/60 ${rootPad}`}
         aria-label="Abrir inovações do Assistente Facto IA"
         aria-haspopup="dialog"
         aria-expanded={modal.aberto}
       >
         <span
           ref={haloRef}
-          className="assistente-chip-halo pointer-events-none absolute left-1/2 top-1/2 h-[72%] w-[78%] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-facto-gold/25 blur-2xl"
+          className={`assistente-chip-halo pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-xl bg-facto-gold/25 blur-2xl ${
+            canto ? "h-[70%] w-[70%]" : "h-[72%] w-[78%]"
+          }`}
           style={{ willChange: "transform, opacity" }}
           aria-hidden
         />
 
         <svg
-          className="pointer-events-none absolute left-0 top-1/2 h-[7.5rem] w-14 -translate-y-1/2 overflow-visible text-facto-gold"
+          className={`pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 overflow-visible text-facto-gold ${trailCls}`}
           viewBox="0 0 56 120"
           fill="none"
           aria-hidden
@@ -258,7 +290,7 @@ export function AssistenteFactoDestaque({ leigo = false }: { leigo?: boolean }) 
         </svg>
 
         <svg
-          className="pointer-events-none absolute right-0 top-1/2 h-[7.5rem] w-14 -translate-y-1/2 overflow-visible text-facto-gold"
+          className={`pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 overflow-visible text-facto-gold ${trailCls}`}
           viewBox="0 0 56 120"
           fill="none"
           aria-hidden
@@ -303,6 +335,8 @@ export function AssistenteFactoDestaque({ leigo = false }: { leigo?: boolean }) 
           ))}
         </svg>
 
+        {pinsVerticais && (
+          <>
         <div
           className="pointer-events-none absolute left-1/2 top-1 flex -translate-x-1/2 gap-3"
           aria-hidden
@@ -347,25 +381,29 @@ export function AssistenteFactoDestaque({ leigo = false }: { leigo?: boolean }) 
             </span>
           ))}
         </div>
+          </>
+        )}
 
         <div className="relative z-10 flex items-stretch">
           <div
-            className="mr-0.5 flex flex-col justify-center gap-1.5 py-2"
+            className={`mr-0.5 flex flex-col justify-center ${canto ? "gap-1 py-0.5" : "gap-1.5 py-2"}`}
             aria-hidden
           >
-            {[0, 1, 2, 3].map((i) => (
+            {Array.from({ length: pinSide }).map((_, i) => (
               <span
                 key={`pin-l-${i}`}
                 data-chip-pin
                 data-phase={String(i * 0.18)}
-                className="assistente-chip-pin h-1 w-2.5 rounded-l-sm bg-facto-gold/70"
+                className={`assistente-chip-pin rounded-l-sm bg-facto-gold/70 ${
+                  canto ? "h-0.5 w-1.5" : "h-1 w-2.5"
+                }`}
               />
             ))}
           </div>
 
           <div
             ref={bodyRef}
-            className="assistente-chip-body relative min-w-[12rem] overflow-hidden rounded-md border border-facto-gold/60 bg-gradient-to-br from-[#2a281f] via-[#1c1c16] to-[#12120e] px-4 py-3"
+            className={`assistente-chip-body relative overflow-hidden rounded-md border border-facto-gold/60 bg-gradient-to-br from-[#2a281f] via-[#1c1c16] to-[#12120e] ${bodyCls}`}
             style={{ willChange: "box-shadow, border-color" }}
           >
             <span
@@ -386,29 +424,43 @@ export function AssistenteFactoDestaque({ leigo = false }: { leigo?: boolean }) 
             />
 
             <div className="relative text-center">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-facto-gold/85">
-                Assinatura FACTO
-              </p>
-              <p className="mt-0.5 text-sm font-semibold leading-tight text-white">
+              {!compacto && (
+                <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-facto-gold/85">
+                  Assinatura FACTO
+                </p>
+              )}
+              <p
+                className={`font-semibold leading-none text-white ${
+                  canto
+                    ? "text-[10px]"
+                    : compacto
+                      ? "text-[11px]"
+                      : "mt-0.5 text-sm"
+                }`}
+              >
                 Assistente Facto{" "}
                 <span className="assistente-ia-shimmer">IA</span>
               </p>
-              <p className="mt-0.5 text-[11px] text-stone-400">
-                acelera seu processo
-              </p>
+              {!compacto && (
+                <p className="mt-0.5 text-[11px] text-stone-400">
+                  acelera seu processo
+                </p>
+              )}
             </div>
           </div>
 
           <div
-            className="ml-0.5 flex flex-col justify-center gap-1.5 py-2"
+            className={`ml-0.5 flex flex-col justify-center ${compacto ? "gap-0.5 py-0.5" : "gap-1.5 py-2"}`}
             aria-hidden
           >
-            {[0, 1, 2, 3].map((i) => (
+            {Array.from({ length: pinSide }).map((_, i) => (
               <span
                 key={`pin-r-${i}`}
                 data-chip-pin
                 data-phase={String(0.1 + i * 0.18)}
-                className="assistente-chip-pin h-1 w-2.5 rounded-r-sm bg-facto-gold/70"
+                className={`assistente-chip-pin rounded-r-sm bg-facto-gold/70 ${
+                  canto ? "h-0.5 w-1.5" : "h-1 w-2.5"
+                }`}
               />
             ))}
           </div>

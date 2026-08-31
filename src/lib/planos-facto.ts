@@ -6,11 +6,16 @@
  * Valores legados continuam reconhecidos em planoPorValor (assinantes antigos).
  *
  * Unidade comercial: peças (não créditos / minutas).
- * Entrada do caso não consome cota — só “Gerar peça” = 1 peça.
+ * Preview forense ao vivo no assistente (antes de gerar) — não consome peça.
+ * Só a redação confirmada (“Redigir”) = 1 peça.
  * custoPorPecaAprox = preço do ciclo ÷ peças do ciclo (anuais: preço/ano ÷ 12×cota).
  */
 
 import { ESCRITORIO_VENDA_ATIVA } from "@/lib/feature-flags";
+
+/** Headline de benefício — experiência primeiro; cota fica nos detalhes do plano. */
+export const BENEFICIO_ASSISTENTE_PREVIEW =
+  "Assistente + preview forense ao vivo (antes de gerar)";
 
 export const PLANO_JEC = {
   id: "jec" as const,
@@ -26,7 +31,7 @@ export const PLANO_JEC = {
   beneficios: [
     "Para a própria parte no Juizado — sem OAB",
     "40 peças/mês — ≈ R$ 2,00 por peça na cota",
-    "Entrada do caso ilimitada (não consome peça)",
+    BENEFICIO_ASSISTENTE_PREVIEW,
     "Equipe FACTO: análise, súmulas da base curada e redação",
     "Timbre e dados do seu perfil na peça",
     "Pacotes extras se a cota do mês acabar",
@@ -47,7 +52,7 @@ export const PLANO_MENSAL = {
   beneficios: [
     "Para advogados (OAB) · todas as áreas no FACTO",
     "100 peças/mês — ≈ R$ 1,40 por peça na cota",
-    "Entrada do caso ilimitada (não consome peça)",
+    BENEFICIO_ASSISTENTE_PREVIEW,
     "Equipe completa: Analista, Pesquisa & súmulas, Redator e Auditor",
     "Base curada de leis e súmulas + fundamentos do seu caso",
     "Formatação forense (PDF/Word); revise antes de protocolar",
@@ -69,7 +74,7 @@ export const PLANO_PRO = {
   beneficios: [
     "Para advogados (OAB) · tudo do Plano Completo",
     "200 peças/mês — ≈ R$ 1,40 por peça na cota",
-    "Entrada do caso ilimitada (não consome peça)",
+    BENEFICIO_ASSISTENTE_PREVIEW,
     "Prioridade na fila de geração e pesquisa reforçada",
     "Mesma base curada e equipe FACTO, com mais capacidade",
     "Pacotes extras se ainda precisar de mais peças",
@@ -97,7 +102,7 @@ export const PLANO_ANUAL = {
   beneficios: [
     "Para advogados (OAB) · tudo do Completo mensal, no anual",
     "100 peças/mês — mesma cota do mensal · ≈ R$ 1,17 por peça",
-    "Entrada do caso ilimitada (não consome peça)",
+    BENEFICIO_ASSISTENTE_PREVIEW,
     "Equivalente a R$ 116,58/mês — economia de R$ 279,80/ano",
     "Equipe FACTO + base curada de leis e súmulas",
     "Pacotes extras quando a cota mensal acabar",
@@ -124,7 +129,7 @@ export const PLANO_PRO_ANUAL = {
   beneficios: [
     "Para advogados (OAB) · tudo do Pro mensal, no anual",
     "200 peças/mês — mesma cota do mensal · ≈ R$ 1,17 por peça",
-    "Entrada do caso ilimitada (não consome peça)",
+    BENEFICIO_ASSISTENTE_PREVIEW,
     "Equivalente a R$ 233,25/mês — economia de R$ 559,80/ano",
     "Prioridade na fila e pesquisa reforçada o ano todo",
     "Pacotes extras se ainda precisar de mais peças",
@@ -214,7 +219,7 @@ export type PlanoId =
   | "escritorio_s_anual"
   | "escritorio_m_anual";
 
-/** Teste grátis: 1 área · 2 peças · 7 dias · watermark. */
+/** Teste grátis: 1 área · 2 peças · 7 dias · preview completo; export Word/PDF nos planos. */
 export const PLANO_TRIAL = {
   id: "trial" as const,
   preco: 0,
@@ -227,8 +232,10 @@ export const PLANO_TRIAL = {
   custoPorPecaAprox: "—",
   beneficios: [
     "1 área à sua escolha · 2 peças · 7 dias",
+    BENEFICIO_ASSISTENTE_PREVIEW,
+    "Visualize a peça completa no assistente (preview ao vivo)",
+    "Exportação Word/PDF protocolável nos planos pagos",
     "Sem OAB no início — informe só ao assinar",
-    "Preview completo; export com marca d’água de teste",
     "Sem compromisso — cancele não renovando",
   ],
 };
@@ -247,7 +254,7 @@ export const PLANO_ESCRITORIO_S = {
   beneficios: [
     "5 assentos simultâneos (sócios, estagiários, equipe)",
     "450 peças/mês em pool do escritório",
-    "Entrada do caso ilimitada (não consome peça)",
+    BENEFICIO_ASSISTENTE_PREVIEW,
     "OAB do administrador ampara a conta; membros sem OAB",
     "Estilo de redação por assento",
     "Todas as áreas (responsável com OAB)",
@@ -268,7 +275,7 @@ export const PLANO_ESCRITORIO_M = {
   beneficios: [
     "10 assentos simultâneos",
     "900 peças/mês em pool do escritório",
-    "Entrada do caso ilimitada (não consome peça)",
+    BENEFICIO_ASSISTENTE_PREVIEW,
     "OAB do administrador · membros/estagiários sem OAB",
     "Estilo por assento + prioridade na fila",
     "Todas as áreas liberadas ao responsável OAB",

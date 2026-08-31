@@ -237,32 +237,68 @@ export function aplicarItalicoTermosEstrangeiros(texto: string): string {
 }
 
 export function limparMarcadorJuris(texto: string): string {
+  return limparPrefixoRotuloCitacao(
+    texto
+      .replace(/^\[\[JURIS\]\]\s*/i, "")
+      .replace(/\s*\[\[\/JURIS\]\]\s*$/i, "")
+      .trim()
+  );
+}
+
+/** Ementa/súmula literal — não rótulo administrativo nem paráfrase do advogado. */
+export function pareceEmentaOuSumulaLiteral(texto: string): boolean {
+  const t = texto.trim();
+  if (!t) return false;
+  if (/^A\s+jurisprud[eê]ncia\b/i.test(t) && !/\b(REsp|RE\s|AgRg|HC|ADI|ADPF)\s*n?[ºo°.]?\s*\d/i.test(t)) {
+    return false;
+  }
+  return (
+    /^S[uú]mula(?:\s+Vinculante)?\s*(?:n[oº°.]?\s*)?\d+/i.test(t) ||
+    /\b(STJ|STF|TJ[A-Z]{2}|TRF\s*\d*|TST|TSE)\b/.test(t) ||
+    /\b(REsp|AgRg|AgInt|ARE|RE|HC|MS|ADI|ADPF|AgR|EDcl)\s*n?[ºo°.]?\s*\d/i.test(t) ||
+    /\b\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}\b/.test(t) ||
+    /\b(EMENTA|Acórd[aã]o|Relator|Rel\.)\b/i.test(t)
+  );
+}
+
+/** Remove rótulos que não fazem parte do estrito teor (STJ, REsp, ementa…). */
+export function limparPrefixoRotuloCitacao(texto: string): string {
   return texto
-    .replace(/^\[\[JURIS\]\]\s*/i, "")
-    .replace(/\s*\[\[\/JURIS\]\]\s*$/i, "")
+    .replace(/^Jurisprud[eê]ncia\s*[—–:-]\s*/i, "")
+    .replace(/^Ac[oó]rd[aã]o\s*[—–:-]\s*/i, "")
     .trim();
 }
 
 export function ehCitacaoJurisprudencia(linha: string): boolean {
   const t = linha.trim();
   if (RE_JURIS_MARCA.test(t) || /^\[\[JURIS\]\]/i.test(t)) return true;
-  if (t.length < 140) return false;
-
-  const temTribunal = /\b(STJ|STF|TJ[A-Z]{2}|TRF\s*\d*|TST|TSE)\b/.test(t);
-  const temClasse =
-    /\b(REsp|AgRg|AgInt|ARE|RE|HC|MS|ADI|ADPF|AgR|EDcl|processo\s+n)/i.test(t);
-  const temEmenta = /\b(EMENTA|Acórd[aã]o|Relator|Rel\.|julgado em|DJe)\b/i.test(
-    t
-  );
-  return (temTribunal && temClasse) || (temEmenta && temTribunal);
+  if (t.length < 40) return false;
+  return pareceEmentaOuSumulaLiteral(t);
 }
 
-/** Colapsa blocos [[JURIS]]…[[/JURIS]] em uma linha cada. */
+/** Colapsa blocos [[JURIS]]…[[/JURIS]]; tira rótulo “Jurisprudência”; separa paráfrase da ementa. */
 export function normalizarBlocosJuris(texto: string): string {
   return texto.replace(
     /\[\[JURIS\]\]\s*([\s\S]*?)\s*\[\[\/JURIS\]\]/gi,
-    (_m, corpo: string) =>
-      `[[JURIS]]${String(corpo).replace(/\s+/g, " ").trim()}[[/JURIS]]`
+    (_m, corpo: string) => {
+      let c = limparPrefixoRotuloCitacao(
+        String(corpo).replace(/\s+/g, " ").trim()
+      );
+      if (!c) return "";
+
+      if (!pareceEmentaOuSumulaLiteral(c)) {
+        return c;
+      }
+
+      const split = /^(.{24,220}?[.!]\s+)((?:S[uú]mula|STJ|STF|TJ[A-Z]{2}|TRF|TST|TSE|REsp|RE\s|AgRg|HC|ADI|ADPF|EMENTA|Acórdão).+)$/i.exec(
+        c
+      );
+      if (split && !pareceEmentaOuSumulaLiteral(split[1]!)) {
+        return `${split[1]!.trim()}\n\n[[JURIS]]${split[2]!.trim()}[[/JURIS]]`;
+      }
+
+      return `[[JURIS]]${c}[[/JURIS]]`;
+    }
   );
 }
 

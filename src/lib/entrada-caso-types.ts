@@ -50,3 +50,17 @@ export type ConferenciaEntrada = {
   vazios: string[];
   resumo: string;
 };
+
+/** Mapa de teses da contestação para réplica (heurística local). */
+export type ReplicaContestacaoResumo = {
+  detectada: boolean;
+  confianca: "alta" | "media" | "baixa";
+  teses: {
+    id: string;
+    tipo: "preliminar" | "merito" | "pedido" | "outro";
+    rotulo: string;
+    trecho: string;
+  }[];
+  briefing: string;
+  sugereEspecieReplica: boolean;
+};

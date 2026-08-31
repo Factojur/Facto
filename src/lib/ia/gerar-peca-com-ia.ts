@@ -9,7 +9,7 @@ import {
   montarContextoConhecimento,
   type TrechoConhecimento,
 } from "@/lib/base-conhecimento";
-import { substituirEnderecamentoDeterministico } from "@/lib/endereco-comarca";
+import { substituirEnderecamentoDeterministico, substituirNomePecaDeterministico } from "@/lib/endereco-comarca";
 import {
   montarSystemPromptRedacaoTier1,
   type BlocoLeiMunicipal,
@@ -231,6 +231,7 @@ function montarUserPromptRedacao(params: {
     "TAREFA: redija a PEÇA COMPLETA seguindo o system prompt e o resumo estratégico abaixo.",
     "NÃO devolva o resumo — só a peça em Markdown limpo.",
     "Se houver <PLANO_DE_TOPICOS_OBRIGATORIO>, use os títulos definidos na triagem.",
+    "QUALIDADE: memorial de advogado sênior — argumente o caso concreto (expor, encaixar tese nos fatos, valorizar o polo, requerer). Não entregue só citações de lei/jurisprudência.",
     "",
     params.casoReal
       ? params.dossieBloco
@@ -450,6 +451,8 @@ export async function gerarPecaComIA(params: {
   };
   /** Orientações do formulário — pistas, não barreiras. */
   briefingFormulario?: BriefingCasoLivre | null;
+  /** Mapa ponto a ponto da contestação (réplica). */
+  briefingReplica?: string | null;
   dispositivoSentenca?: string | null;
   /** Triagem já executada (preview) — pula nova chamada de triagem. */
   triagemPrecalculada?: TriagemPrecalculada | null;
@@ -548,6 +551,7 @@ export async function gerarPecaComIA(params: {
   const dossie = montarDossieCasoLivre({
     fatos: params.fatos,
     briefingFormulario: params.briefingFormulario,
+    briefingReplica: params.briefingReplica,
     dispositivoSentenca: params.dispositivoSentenca,
     provas: provasDoCaso,
   });
@@ -804,6 +808,12 @@ export async function gerarPecaComIA(params: {
     textoGerado = substituirEnderecamentoDeterministico(
       textoGerado,
       params.instrucoes.enderecamento
+    );
+  }
+  if (params.instrucoes?.nomePeca?.trim()) {
+    textoGerado = substituirNomePecaDeterministico(
+      textoGerado,
+      params.instrucoes.nomePeca
     );
   }
   if (!textoGerado || textoGerado.length < 200) {

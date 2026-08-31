@@ -29,6 +29,7 @@ import {
   TAMANHO_MAXIMO_ARQUIVO_BYTES,
   TIPOS_ARQUIVO_ACEITOS,
 } from "@/lib/base-conhecimento";
+import { opcoesLastroFromPayload } from "@/lib/chat-minuta";
 import { gerarPecaComIA } from "@/lib/ia/gerar-peca-com-ia";
 import { montarBriefingCasoLivre } from "@/lib/ia/briefing-caso-livre";
 import type { TriagemPrecalculada } from "@/lib/ia/triagem-caso-peca";
@@ -87,6 +88,8 @@ import {
   type JurisCasoPayload,
   type TipoFonteJurisCaso,
 } from "@/lib/juris-caso-types";
+import type { ReplicaContestacaoResumo } from "@/lib/entrada-caso-types";
+import { resolverBriefingReplicaParaGeracao } from "@/lib/replica-contestacao";
 
 /**
  * Workflow agentic: 2 chamadas Gemini (triagem Flash-Lite + redação Flash).
@@ -121,6 +124,7 @@ type GerarPecaBody = GerarPecaJecInput & {
     modelo: string;
     analiseEstrategica?: TriagemPrecalculada["analiseEstrategica"];
   } | null;
+  replicaContestacao?: ReplicaContestacaoResumo | null;
 };
 
 const LIMITE_TEXTO_LEI_MUNICIPAL = 40_000;
@@ -437,7 +441,6 @@ async function postGerarPeca(request: Request) {
   } = {};
   let estiloEscritorio: string | null = null;
   let trialAreaId: string | null = null;
-  let watermarkTrial = false;
   try {
     const { data: profile } = await supabase
       .from("profiles")
@@ -456,7 +459,6 @@ async function postGerarPeca(request: Request) {
       new Date(profile.trial_ate).getTime() > Date.now()
     ) {
       trialAreaId = profile.trial_area_id ?? null;
-      if (saldo.cota.plano === "trial") watermarkTrial = true;
     }
   } catch {
     /* metadata */
@@ -565,13 +567,25 @@ async function postGerarPeca(request: Request) {
     resolverPoloGeracao(areaId, especieRag, body.poloAdvocacia) ??
     resolverPoloClienteQualificacao(areaId, especieRag, body.poloAdvocacia);
 
+  const opcoesLastro = opcoesLastroFromPayload({
+    areaId,
+    tipoAcao: body.tipoAcao,
+    fatos: body.fatos,
+    especiePeca: especieRag,
+    poloAdvocacia: poloRag,
+    tribunaisPreferidos: (
+      body as { tribunaisPreferidos?: string[] }
+    ).tribunaisPreferidos,
+    comarca: body.comarca,
+  });
+
   // RAG: fatos do caso + julgados favoráveis ao polo da peça.
   const baseConhecimento = await buscarConhecimentoRelacionado(
     body.tipoAcao,
     8,
     body.fatos,
     areaId,
-    { polo: poloRag, especie: especieRag }
+    opcoesLastro
   );
 
   const oabBruta = user.user_metadata?.oab_numero as string | undefined;
@@ -681,8 +695,7 @@ async function postGerarPeca(request: Request) {
     );
     const { pecaHtml } = gerarDocumentoTimbrado(
       peca,
-      body.escritorio?.usarTimbre ? body.escritorio : undefined,
-      { watermarkTrial }
+      body.escritorio?.usarTimbre ? body.escritorio : undefined
     );
     const semIa: GerarPecaJecOutput = {
       ...scaffold,
@@ -751,6 +764,12 @@ async function postGerarPeca(request: Request) {
       ? body.tesesIds.map((id) => String(id)).filter(Boolean)
       : []
   );
+  const briefingReplica = resolverBriefingReplicaParaGeracao({
+    fatos: body.fatos,
+    especiePeca: especieResolvida,
+    replicaContestacao: body.replicaContestacao,
+  });
+
   const briefingFormulario = montarBriefingCasoLivre({
     areaId,
     tipoAcao: tipoResolvido,
@@ -782,6 +801,7 @@ async function postGerarPeca(request: Request) {
     resumoEntrada: body.resumoEntrada,
     leituraRelato: body.leituraRelato,
     tesesRotulos: tesesDetectadas.map((t) => t.rotulo),
+    briefingReplica,
   });
 
   const ia = await gerarPecaComIA({
@@ -804,6 +824,7 @@ async function postGerarPeca(request: Request) {
       plano: saldo.cota.plano,
     },
     briefingFormulario,
+    briefingReplica,
     dispositivoSentenca: body.dispositivoSentenca,
     triagemPrecalculada: body.triagemPrecalculada
       ? {
@@ -890,8 +911,7 @@ async function postGerarPeca(request: Request) {
     );
     const { pecaHtml } = gerarDocumentoTimbrado(
       fallbackNorm,
-      body.escritorio?.usarTimbre ? body.escritorio : undefined,
-      { watermarkTrial }
+      body.escritorio?.usarTimbre ? body.escritorio : undefined
     );
     const fallback: GerarPecaJecOutput = {
       ...scaffold,
@@ -944,8 +964,7 @@ async function postGerarPeca(request: Request) {
       : peca;
     const { pecaHtml } = gerarDocumentoTimbrado(
       pecaAnotada,
-      body.escritorio?.usarTimbre ? body.escritorio : undefined,
-      { watermarkTrial }
+      body.escritorio?.usarTimbre ? body.escritorio : undefined
     );
     return debitarEResponder(
       anexarAuditoria(
@@ -995,8 +1014,7 @@ async function postGerarPeca(request: Request) {
   );
   const { pecaHtml } = gerarDocumentoTimbrado(
     peca,
-    body.escritorio?.usarTimbre ? body.escritorio : undefined,
-    { watermarkTrial }
+    body.escritorio?.usarTimbre ? body.escritorio : undefined
   );
 
   const resultado: GerarPecaJecOutput = {

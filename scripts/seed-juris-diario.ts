@@ -10,11 +10,11 @@
 import { spawnSync } from "child_process";
 import { readFileSync, writeFileSync } from "fs";
 import { resolve } from "path";
-import { config } from "dotenv";
 import { tokensDoPool } from "../src/lib/juris-provedores/jurisprudencia-service";
 import { LOTE_MAX } from "./seed-juris-termos";
+import { exigirGeminiApenasSeed } from "./lib/gemini-env-seed";
 
-config({ path: resolve(process.cwd(), ".env.local") });
+exigirGeminiApenasSeed("seed-juris-diario");
 
 const estadoPath = resolve(process.cwd(), "scripts/seed-juris-estado.json");
 

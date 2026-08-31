@@ -274,9 +274,15 @@ export function injetarQualificacaoReus(
   );
   if (comPlaceholder !== texto) return comPlaceholder;
 
-  // Sem flag `s`: casa até linha em branco ou início de "I - DOS FATOS".
-  return texto.replace(
-    /em face de\s+[\s\S]+?(?=\n\s*\n|\nI\s*[-—–.]\s*DOS FATOS)/i,
+  // Sem flag `s`: casa até linha em branco, qualificação do advogado ou DOS FATOS.
+  const substituido = texto.replace(
+    /em face de\s+[\s\S]+?(?=\n\s*\n|\n(?:vem|VEM)\b|\nI\s*[-—–.]\s*DOS FATOS)/i,
     `${substituto}\n`
+  );
+  if (substituido !== texto) return substituido;
+
+  return texto.replace(
+    /em face de\s+[^\n]+(?:\n[^\n]+){0,4}(?=\n)/i,
+    substituto
   );
 }

@@ -1,7 +1,12 @@
 /**
  * Estimativa de prazo a partir de data no relato + espécie da peça.
- * Dias úteis: seg–sex (feriados locais não entram — conferir no tribunal).
+ * Dias úteis: seg–sex + feriados nacionais (e estaduais quando UF informada).
+ * Contagem especial do tribunal não entra — conferir no processo.
  */
+
+import {
+  somarDiasUteisComFeriados,
+} from "@/lib/feriados-br";
 
 const DATA_BR = /\b(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})\b/g;
 
@@ -47,16 +52,6 @@ function formatarDataBr(d: Date): string {
   return `${dd}/${mm}/${d.getFullYear()}`;
 }
 
-function somarDiasUteis(inicio: Date, dias: number): Date {
-  const cur = new Date(inicio.getTime());
-  let restantes = dias;
-  while (restantes > 0) {
-    cur.setDate(cur.getDate() + 1);
-    const dow = cur.getDay();
-    if (dow !== 0 && dow !== 6) restantes -= 1;
-  }
-  return cur;
-}
 
 /** Última data próxima de gatilho de prazo no texto. */
 export function extrairDataReferenciaPrazo(texto: string): Date | null {
@@ -82,19 +77,34 @@ export type DicaPrazo = {
   aviso: string;
 };
 
+/** Extrai UF de texto tipo "Campinas/SP" ou "Comarca de São Paulo - SP". */
+export function extrairUfDoTexto(texto: string): string | undefined {
+  const m = texto.match(/\b([A-Za-z]{2})\s*$/i) ?? texto.match(/[-–/]\s*([A-Za-z]{2})\b/i);
+  const uf = m?.[1]?.trim().toUpperCase();
+  if (!uf || !/^[A-Z]{2}$/.test(uf)) return undefined;
+  return uf;
+}
+
 export function sugerirPrazoDaPeca(params: {
   fatos: string;
   especiePeca: string;
+  foro?: string;
+  uf?: string;
 }): DicaPrazo | null {
   const dias = PRAZO_DIAS_UTEIS[params.especiePeca];
   if (!dias) return null;
   const ref = extrairDataReferenciaPrazo(params.fatos);
   if (!ref) return null;
-  const limite = somarDiasUteis(ref, dias);
+  const uf =
+    params.uf?.trim().toUpperCase() ||
+    extrairUfDoTexto(params.foro ?? "") ||
+    extrairUfDoTexto(params.fatos);
+  const limite = somarDiasUteisComFeriados(ref, dias, uf);
+  const ufTxt = uf ? ` (feriados nacionais + ${uf})` : " (feriados nacionais)";
   return {
     dataReferencia: formatarDataBr(ref),
     dataLimite: formatarDataBr(limite),
     diasUteis: dias,
-    aviso: `Com base em ${formatarDataBr(ref)} no relato: prazo estimado até ${formatarDataBr(limite)} (${dias} dias úteis). Feriados e contagem especial não entram — confira no processo.`,
+    aviso: `Com base em ${formatarDataBr(ref)} no relato: prazo estimado até ${formatarDataBr(limite)} (${dias} dias úteis${ufTxt}). Contagem especial do tribunal não entra — confira no processo.`,
   };
 }

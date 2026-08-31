@@ -2,13 +2,12 @@
  * Smoke: 1 consulta de lastro curado por área aberta (+ scaffold sem Gemini).
  * Uso: npx tsx scripts/testar-smoke-areas-lastro.ts
  *
- * Não consome cota de peça. Usa embedding (GEMINI) + Supabase.
+ * Não consome cota de peça. Usa embedding (GEMINI_API_KEY_SEED) + Supabase.
  * Falhas de lastro fraco = aviso (exit 0 se só avisos); exit 1 se erro duro.
  */
-import { config } from "dotenv";
-import { resolve } from "path";
+import { exigirGeminiApenasSeed } from "./lib/gemini-env-seed";
 
-config({ path: resolve(process.cwd(), ".env.local") });
+exigirGeminiApenasSeed("smoke-lastro");
 
 async function main() {
   const { AREAS_ATUACAO } = await import("../src/lib/areas-atuacao");

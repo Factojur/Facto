@@ -9,8 +9,11 @@ import {
 type Props = {
   onTranscrito: (texto: string) => void;
   onErro?: (msg: string) => void;
+  /** Chamado ao iniciar nova gravação (ex.: limpar aviso anterior no pai). */
+  onIniciarGravacao?: () => void;
   disabled?: boolean;
   areaId?: string;
+  className?: string;
 };
 
 type Fase = "idle" | "gravando" | "enviando";
@@ -63,6 +66,31 @@ function IconeParar({ className }: { className?: string }) {
   );
 }
 
+function IconeCarregando({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      className={`animate-spin ${className ?? ""}`}
+      aria-hidden
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="3"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+      />
+    </svg>
+  );
+}
+
 /** Garante que o último chunk do MediaRecorder entre antes de montar o Blob. */
 function blobAoParar(rec: MediaRecorder, mimeFallback: string): Promise<Blob> {
   return new Promise((resolve) => {
@@ -91,10 +119,16 @@ function blobAoParar(rec: MediaRecorder, mimeFallback: string): Promise<Blob> {
   });
 }
 
-export function BotaoFalarCampo({ onTranscrito, onErro, disabled, areaId }: Props) {
+export function BotaoFalarCampo({
+  onTranscrito,
+  onErro,
+  onIniciarGravacao,
+  disabled,
+  areaId,
+  className,
+}: Props) {
   const [fase, setFase] = useState<Fase>("idle");
   const [segundos, setSegundos] = useState(0);
-  const [aviso, setAviso] = useState<string | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<number | null>(null);
@@ -135,7 +169,6 @@ export function BotaoFalarCampo({ onTranscrito, onErro, disabled, areaId }: Prop
   }, []);
 
   function emitirErro(msg: string) {
-    setAviso(msg);
     onErro?.(msg);
   }
 
@@ -174,7 +207,6 @@ export function BotaoFalarCampo({ onTranscrito, onErro, disabled, areaId }: Prop
         emitirErro(data.error ?? "Não foi possível transcrever.");
         return;
       }
-      setAviso(null);
       onTranscrito(data.texto.trim());
     } catch {
       emitirErro("Falha de rede ao transcrever.");
@@ -229,7 +261,7 @@ export function BotaoFalarCampo({ onTranscrito, onErro, disabled, areaId }: Prop
   }
 
   async function iniciarGravacao() {
-    setAviso(null);
+    onIniciarGravacao?.();
     parandoRef.current = false;
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
       emitirErro("Este navegador não permite microfone. Digite o relato.");
@@ -277,63 +309,54 @@ export function BotaoFalarCampo({ onTranscrito, onErro, disabled, areaId }: Prop
     }
   }
 
-  const labelParado = "Falar — transcrever áudio";
+  const labelParado =
+    "Falar: dicte o caso no microfone. O FACTO transcreve para o campo de texto (não grava o áudio, não consome peça). Confira nomes e números antes de Enviar.";
   const labelGravando = `Parar gravação · ${formatarSegundos(segundos)}`;
+  const labelGravandoDetalhe = `Até ${Math.floor(DURACAO_MAX_AUDIO_SEGUNDOS / 60)} min · mín. ${DURACAO_MIN_AUDIO_SEGUNDOS}s. O áudio não é gravado — só o texto.`;
+
+  const estiloBase =
+    "inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg border transition disabled:cursor-not-allowed disabled:opacity-60";
+  const estiloFase =
+    fase === "gravando"
+      ? "border-red-300 bg-red-50 text-red-800 hover:bg-red-100"
+      : fase === "enviando"
+        ? "border-slate-200 bg-slate-50 text-slate-600"
+        : "border-stone-600 bg-white hover:bg-stone-50";
 
   return (
-    <div className="flex flex-col gap-1">
-      <button
-        type="button"
-        onClick={() => {
-          if (fase === "gravando") {
-            void pararGravacao();
-            return;
-          }
-          if (fase === "idle") void iniciarGravacao();
-        }}
-        disabled={disabled || fase === "enviando"}
-        aria-label={
-          fase === "enviando"
-            ? "Transcrevendo áudio"
-            : fase === "gravando"
-              ? labelGravando
-              : labelParado
+    <button
+      type="button"
+      onClick={() => {
+        if (fase === "gravando") {
+          void pararGravacao();
+          return;
         }
-        title={
-          fase === "enviando"
-            ? "Transcrevendo…"
-            : fase === "gravando"
-              ? labelGravando
-              : labelParado
-        }
-        className={`inline-flex items-center justify-center gap-2 rounded-lg transition disabled:cursor-not-allowed disabled:opacity-60 ${
-          fase === "gravando"
-            ? "border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-red-800 hover:bg-red-100"
-            : fase === "enviando"
-              ? "border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600"
-              : "border border-stone-600 bg-white p-2.5 text-stone-800 hover:bg-stone-50"
-        }`}
-      >
-        {fase === "enviando" ? (
-          <span className="text-sm">Transcrevendo…</span>
-        ) : fase === "gravando" ? (
-          <>
-            <IconeParar className="h-4 w-4 shrink-0" />
-            <span className="text-sm font-medium tabular-nums">
-              {formatarSegundos(segundos)}
-            </span>
-          </>
-        ) : (
-          <IconeMicrofone className="h-5 w-5 shrink-0" />
-        )}
-      </button>
-      {fase === "gravando" ? (
-        <span className="text-[11px] text-slate-500">
-          Até {Math.floor(DURACAO_MAX_AUDIO_SEGUNDOS / 60)} min · mín.{" "}
-          {DURACAO_MIN_AUDIO_SEGUNDOS}s. O áudio não é gravado — só o texto.
-        </span>
-      ) : null}
-      {aviso ? <span className="text-xs text-red-700">{aviso}</span> : null}
-    </div>
+        if (fase === "idle") void iniciarGravacao();
+      }}
+      disabled={disabled || fase === "enviando"}
+      aria-label={
+        fase === "enviando"
+          ? "Transcrevendo áudio"
+          : fase === "gravando"
+            ? labelGravando
+            : labelParado
+      }
+      title={
+        fase === "enviando"
+          ? "Transcrevendo…"
+          : fase === "gravando"
+            ? `${labelGravando}\n${labelGravandoDetalhe}`
+            : labelParado
+      }
+      className={`${estiloBase} ${estiloFase} ${className ?? ""}`}
+    >
+      {fase === "enviando" ? (
+        <IconeCarregando className="h-4 w-4 shrink-0" />
+      ) : fase === "gravando" ? (
+        <IconeParar className="h-4 w-4 shrink-0" />
+      ) : (
+        <IconeMicrofone className="h-4 w-4 shrink-0 text-[#8a8466]" />
+      )}
+    </button>
   );
 }

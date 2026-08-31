@@ -617,54 +617,83 @@ export function blocoEstruturaPrompt(especie: EspeciePecaJec): string {
   ].join("\n");
 }
 
+function areaUsaRito9099(areaId?: string): boolean {
+  return areaId === "jec" || areaId === "jecr";
+}
+
 /** Textos curtos de reserva para seções que não são “fatos crus”. */
 export function paragrafoReservaSecao(
   chave: ChaveSecaoJec,
-  fatos: string
+  fatos: string,
+  areaId = "jec"
 ): string[] {
   const trecho =
     fatos.trim().slice(0, 400) ||
     "[Descrever conforme os autos e os fatos informados.]";
+  const jec = areaUsaRito9099(areaId);
 
   switch (chave) {
     case "preliminares":
-      return [
-        "O(A) contestante impugna, em preliminar, tão somente as matérias efetivamente cabíveis à luz dos autos e da Lei nº 9.099/95, sem criar óbices artificiais.",
-        "Caso não haja preliminar relevante nos fatos narrados, passa-se diretamente ao mérito — a análise concreta deve ater-se ao caso.",
-      ];
+      return jec
+        ? [
+            "O(A) contestante impugna, em preliminar, tão somente as matérias efetivamente cabíveis à luz dos autos e da Lei nº 9.099/95, sem criar óbices artificiais.",
+            "Caso não haja preliminar relevante nos fatos narrados, passa-se diretamente ao mérito — a análise concreta deve ater-se ao caso.",
+          ]
+        : [
+            "O(A) contestante impugna, em preliminar, tão somente as matérias efetivamente cabíveis à luz dos autos e da legislação processual pertinente, sem criar óbices artificiais.",
+            "Caso não haja preliminar relevante nos fatos narrados, passa-se diretamente ao mérito — a análise concreta deve ater-se ao caso.",
+          ];
     case "tempestividade":
-      return [
-        "A presente manifestação é tempestiva e cabível na forma da Lei nº 9.099/95 e da legislação processual pertinente, observando-se o prazo legal a partir da intimação/ciência nos autos.",
-        "Requer-se o conhecimento da peça para, ao final, o provimento do pedido.",
-      ];
+      return jec
+        ? [
+            "A presente manifestação é tempestiva e cabível na forma da Lei nº 9.099/95 e da legislação processual pertinente, observando-se o prazo legal a partir da intimação/ciência nos autos.",
+            "Requer-se o conhecimento da peça para, ao final, o provimento do pedido.",
+          ]
+        : [
+            "A presente manifestação é tempestiva e cabível na forma da legislação processual pertinente, observando-se o prazo legal a partir da intimação/ciência nos autos.",
+            "Requer-se o conhecimento da peça para, ao final, o provimento do pedido.",
+          ];
     case "historico":
       return [
         "Em síntese do histórico processual relevante:",
         trecho,
       ];
     case "titulo":
-      return [
-        "O título executivo que embasa a presente cobrança encontra-se caracterizado nos autos, com os requisitos de certeza, liquidez e exigibilidade, na forma da legislação aplicável ao Juizado Especial Cível.",
-      ];
+      return jec
+        ? [
+            "O título executivo que embasa a presente cobrança encontra-se caracterizado nos autos, com os requisitos de certeza, liquidez e exigibilidade, na forma da legislação aplicável ao Juizado Especial Cível.",
+          ]
+        : [
+            "O título executivo que embasa a presente cobrança encontra-se caracterizado nos autos, com os requisitos de certeza, liquidez e exigibilidade, na forma da legislação processual pertinente.",
+          ];
     case "debito":
       return [
         "O débito exequendo corresponde ao quantum descrito nos fatos e documentos, devidamente atualizado, sem prejuízo de planilha complementar a ser juntada quando necessária.",
         trecho,
       ];
     case "medidas":
-      return [
-        "Requer-se a adoção das medidas executivas cabíveis no rito do Juizado Especial Cível, inclusive intimação para pagamento e, frustrado o adimplemento espontâneo, as constrições patrimoniais pertinentes.",
-      ];
+      return jec
+        ? [
+            "Requer-se a adoção das medidas executivas cabíveis no rito do Juizado Especial Cível, inclusive intimação para pagamento e, frustrado o adimplemento espontâneo, as constrições patrimoniais pertinentes.",
+          ]
+        : [
+            "Requer-se a adoção das medidas executivas cabíveis no rito competente, inclusive intimação para pagamento e, frustrado o adimplemento espontâneo, as constrições patrimoniais pertinentes.",
+          ];
     case "impugnacao":
       return [
         "Impugna-se, de forma específica, a contestação apresentada, rebatendo as alegações que divergem da narrativa e dos documentos da inicial:",
         trecho,
       ];
     case "contraposto":
-      return [
-        "Na forma do art. 31 da Lei nº 9.099/95, o(a) réu(ré) formula pedido em seu favor, fundado nos mesmos fatos que constituem objeto da demanda — sem reconvenção autônoma do CPC:",
-        trecho,
-      ];
+      return jec
+        ? [
+            "Na forma do art. 31 da Lei nº 9.099/95, o(a) réu(ré) formula pedido em seu favor, fundado nos mesmos fatos que constituem objeto da demanda — sem reconvenção autônoma do CPC:",
+            trecho,
+          ]
+        : [
+            "O(a) réu(ré) formula pedido em seu favor, fundado nos mesmos fatos que constituem objeto da demanda, na forma do art. 343 do CPC, se cabível:",
+            trecho,
+          ];
     default:
       return [];
   }

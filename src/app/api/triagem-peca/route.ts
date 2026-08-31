@@ -24,6 +24,7 @@ import {
   montarContextoTriagem,
 } from "@/lib/ia/triagem-caso-peca";
 import { mensagemErroIaParaCliente } from "@/lib/erro-ia-cliente";
+import { opcoesLastroFromPayload } from "@/lib/chat-minuta";
 import type { GerarPecaJecInput } from "@/lib/gerar-peca-jec";
 import type { JurisCasoPayload } from "@/lib/juris-caso-types";
 import {
@@ -33,6 +34,8 @@ import {
   type TipoFonteJurisCaso,
 } from "@/lib/juris-caso-types";
 import { extrairCidadeUfDoForo } from "@/lib/endereco-comarca";
+import type { ReplicaContestacaoResumo } from "@/lib/entrada-caso-types";
+import { resolverBriefingReplicaParaGeracao } from "@/lib/replica-contestacao";
 
 export const maxDuration = 45;
 
@@ -50,6 +53,8 @@ type TriagemBody = GerarPecaJecInput & {
     texto?: string;
   } | null;
   jurisDoCaso?: JurisCasoPayload[] | null;
+  replicaContestacao?: ReplicaContestacaoResumo | null;
+  tribunaisPreferidos?: string[];
 };
 
 const LIMITE_TEXTO_LEI = 40_000;
@@ -195,6 +200,12 @@ export async function POST(request: Request) {
       body.comarca?.cidade?.trim() || extraidoForo.cidade || undefined;
     const uf = body.comarca?.uf?.trim() || extraidoForo.uf || undefined;
 
+    const briefingReplica = resolverBriefingReplicaParaGeracao({
+      fatos: body.fatos,
+      especiePeca: especie,
+      replicaContestacao: body.replicaContestacao,
+    });
+
     const briefingFormulario = montarBriefingCasoLivre({
       areaId,
       tipoAcao: body.tipoAcao,
@@ -223,6 +234,7 @@ export async function POST(request: Request) {
       resumoEntrada: body.resumoEntrada,
       leituraRelato: body.leituraRelato,
       tesesRotulos: teses.map((t) => t.rotulo),
+      briefingReplica,
     });
 
     let leiMunicipal: { nome: string; texto: string } | null = null;
@@ -242,12 +254,22 @@ export async function POST(request: Request) {
       );
     }
 
+    const opcoesLastro = opcoesLastroFromPayload({
+      areaId,
+      tipoAcao: body.tipoAcao,
+      fatos: body.fatos,
+      especiePeca: especie,
+      poloAdvocacia: polo ?? undefined,
+      tribunaisPreferidos: body.tribunaisPreferidos,
+      comarca: body.comarca,
+    });
+
     const baseConhecimento = await buscarConhecimentoRelacionado(
       body.tipoAcao,
       8,
       body.fatos,
       areaId,
-      { polo: polo ?? undefined, especie }
+      opcoesLastro
     );
     const contextoBase = montarContextoTriagem(baseConhecimento, teses);
     const vinculos = resolverVinculosPeca({
@@ -275,6 +297,7 @@ export async function POST(request: Request) {
       poloAdvocacia: polo,
       teses,
       briefingFormulario,
+      briefingReplica,
       dispositivoSentenca: body.dispositivoSentenca,
       blocoVinculos,
       opcoesPolo:

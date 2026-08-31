@@ -18,6 +18,10 @@ import {
   extrairMetadadosAutos,
   janelaRelatoParaTriagem,
 } from "@/lib/peca-cabivel-autos";
+import {
+  extrairPartesDoRelato,
+  mesclarPartesExtraidas,
+} from "@/lib/extrair-partes-relato";
 
 function extrairJsonObjeto(texto: string): Record<string, unknown> | null {
   const limpo = texto
@@ -196,12 +200,18 @@ export async function preencherEntradaCaso(params: {
       ? tituloPecaDaArea(params.areaId, especieFinal, str(json.tipoAcao))
       : null) || str(json.tipoAcao);
 
+  const partesIa = {
+    autoresNomes: strList(json.autoresNomes),
+    reusNomes: strList(json.reusNomes),
+  };
+  const partes = mesclarPartesExtraidas(partesIa, extrairPartesDoRelato(relato));
+
   return {
     especiePeca: especieFinal,
     tipoAcao,
     fatos: str(json.fatos),
-    autoresNomes: strList(json.autoresNomes),
-    reusNomes: strList(json.reusNomes),
+    autoresNomes: partes.autoresNomes,
+    reusNomes: partes.reusNomes,
     numeroProcesso: str(json.numeroProcesso) || metaAutos.numeroProcesso,
     foro: str(json.foro) || metaAutos.foro,
     cidade: str(json.cidade) || metaAutos.cidade,

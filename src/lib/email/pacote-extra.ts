@@ -114,7 +114,9 @@ function htmlConfirmacaoCliente(opcoes: {
             <tr>
               <td style="padding:20px 40px 0;text-align:center;">
                 <p style="margin:0;color:#78716c;font-size:13px;line-height:1.6;">
-                  Acompanhe o uso em <strong style="color:#a8a29e;">Perfil → Gerenciamento de assinatura</strong>.
+                  Use as peças no <strong style="color:#a8a29e;">assistente</strong>
+                  (dashboard → Assistente). Acompanhe a cota em
+                  <strong style="color:#a8a29e;"> Perfil → Gerenciamento de assinatura</strong>.
                   Os créditos extras não acumulam para o próximo mês.
                 </p>
               </td>

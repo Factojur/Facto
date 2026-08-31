@@ -7,8 +7,8 @@
  */
 import { readFileSync, writeFileSync } from "fs";
 import { resolve } from "path";
-import { config } from "dotenv";
 import { spawnSync } from "child_process";
+import { exigirGeminiApenasSeed } from "./lib/gemini-env-seed";
 import {
   ESTADO_SUMULAS_INICIAL,
   FILA_SUMULAS_DIARIO,
@@ -31,7 +31,7 @@ import {
   type ItemSumulaSeed,
 } from "./seed-sumulas-diario-handlers";
 
-config({ path: resolve(process.cwd(), ".env.local") });
+exigirGeminiApenasSeed("seed-sumulas-diario");
 
 const estadoPath = resolve(process.cwd(), "scripts/seed-sumulas-estado.json");
 

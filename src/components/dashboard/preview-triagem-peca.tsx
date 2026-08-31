@@ -21,6 +21,7 @@ export function PreviewTriagemPeca({
   onConfirmar,
   onVoltar,
   onReanalisar,
+  rotuloVoltar = "Voltar ao formulário",
 }: {
   triagem: PreviewTriagemData;
   confirmando?: boolean;
@@ -28,6 +29,7 @@ export function PreviewTriagemPeca({
   onVoltar: () => void;
   /** Nova triagem após editar o formulário (não consome cota). */
   onReanalisar?: () => void;
+  rotuloVoltar?: string;
 }) {
   const { analiseEstrategica: a } = triagem;
   const nOk = triagem.cobertura.filter((c) => c.noPlano).length;
@@ -196,7 +198,7 @@ export function PreviewTriagemPeca({
           disabled={confirmando}
           className="rounded-lg border border-stone-200 px-4 py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50 disabled:opacity-60"
         >
-          Voltar ao formulário
+          {rotuloVoltar}
         </button>
         {onReanalisar && (
           <button

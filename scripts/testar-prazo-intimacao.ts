@@ -3,6 +3,7 @@ import {
   extrairDataReferenciaPrazo,
   sugerirPrazoDaPeca,
 } from "../src/lib/prazo-intimacao";
+import { somarDiasUteisComFeriados } from "../src/lib/feriados-br";
 
 function main() {
   const { assert, stats } = createSuite();
@@ -22,6 +23,10 @@ function main() {
   });
   assert(dica !== null, "contestação gera dica");
   assert(dica!.diasUteis === 15, "contestação = 15 dias úteis");
+
+  const carnaval = new Date(2026, 1, 16, 12, 0, 0);
+  const limiteSp = somarDiasUteisComFeriados(carnaval, 5, "SP");
+  assert(limiteSp.getMonth() === 1, "pula fim de semana/feriado em fev/2026");
 
   const { oks, falhas } = stats();
   console.log(`\n${oks} ok, ${falhas} falhas`);

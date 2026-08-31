@@ -1,0 +1,16 @@
+---
+description: Manter PENDENCIAS.md atualizado a cada alteração fechada no produto
+alwaysApply: true
+---
+
+# Sincronizar PENDENCIAS.md
+
+Sempre que você **concluir** uma alteração pedida pelo Jefferson (código, copy, migration, seed/ops com impacto em produto, decisão comercial fechada):
+
+1. **Atualize `PENDENCIAS.md` no mesmo turno** — não espere pedido explícito.
+2. Marque itens **feitos** (`[x]`) ou ajuste tabelas **P1/P0** com status e próximo passo.
+3. Se for rodada do dia, acrescente ou atualize a seção **Feito nesta rodada (DD/MM)** com bullets curtos.
+4. Se abrir item novo ou adiar algo, registre na fila com motivo.
+5. **Seed/juris:** após lote ou dia de cota, atualize **Lacunas da base** quando houver falha (0 insert, tribunal errado).
+
+Não duplicar o arquivo inteiro — editar só as seções relevantes. `MELHORIAS.md` só se o escopo pedir fila MinutaIA.

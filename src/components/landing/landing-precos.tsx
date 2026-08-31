@@ -141,9 +141,9 @@ export function LandingPrecos() {
             Escolha o ritmo da sua bancada
           </h2>
           <p className="mt-4 text-stone-400">
-            Cotas claras de peças. Equipe FACTO e base curada em todos os planos.
-            Entrada do caso não consome cota. Cancele quando quiser — sem
-            fidelidade.
+            Peças com cotas claras. Assistente com preview forense ao vivo antes
+            de gerar — a redação completa consome a cota do plano. Cancele quando
+            quiser — sem fidelidade.
           </p>
         </div>
 
@@ -190,8 +190,8 @@ export function LandingPrecos() {
                 {PLANO_TRIAL.rotulo}
               </h3>
               <p className="mt-1 text-sm text-stone-500">
-                1 área · {PLANO_TRIAL.pecasPorMes} peças · 7 dias · marca
-                d’água no export.
+                1 área · {PLANO_TRIAL.pecasPorMes} peças no assistente · 7 dias ·
+                export limpo.
               </p>
               <div className="mt-6 flex items-baseline gap-1">
                 <span className="text-4xl font-bold text-white">
@@ -225,8 +225,8 @@ export function LandingPrecos() {
                 {PLANO_JEC.rotulo}
               </h3>
               <p className="mt-1 text-sm text-stone-500">
-                Para a própria parte no Juizado — sem OAB: 40 peças/mês com
-                lastro e padrão forense.
+                Para a própria parte no Juizado — sem OAB: assistente + 40
+                peças/mês com lastro e padrão forense.
               </p>
               <div className="mt-6 flex items-baseline gap-1">
                 <span className="text-4xl font-bold text-white">

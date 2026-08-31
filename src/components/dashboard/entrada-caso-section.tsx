@@ -10,6 +10,7 @@ import {
   LIMITE_UPLOAD_ANALISE_BYTES,
   type LeituraRelato,
   type PreenchimentoEntradaCaso,
+  type ReplicaContestacaoResumo,
 } from "@/lib/entrada-caso-types";
 import { juntarTranscricao } from "@/lib/transcrever-audio";
 import { BotaoFalarCampo } from "@/components/dashboard/botao-falar-campo";
@@ -23,6 +24,7 @@ type Props = {
     preenchimento: PreenchimentoEntradaCaso;
     teses: { id: string; rotulo: string; artigos: string }[];
     leituraRelato?: LeituraRelato;
+    replicaContestacao?: ReplicaContestacaoResumo | null;
   }) => void;
   onErro: (msg: string) => void;
   /** Mesma transcrição da Entrada, sem segunda chamada Gemini. */
@@ -103,6 +105,7 @@ export function EntradaCasoSection({
         preenchimento?: PreenchimentoEntradaCaso;
         teses?: { id: string; rotulo: string; artigos: string }[];
         leituraRelato?: LeituraRelato;
+        replicaContestacao?: ReplicaContestacaoResumo | null;
       };
       if (!res.ok || !data.preenchimento) {
         onErro(data.error ?? `Falha ao preencher (HTTP ${res.status}).`);
@@ -113,6 +116,7 @@ export function EntradaCasoSection({
         preenchimento: data.preenchimento,
         teses: data.teses ?? [],
         leituraRelato: data.leituraRelato,
+        replicaContestacao: data.replicaContestacao ?? null,
       });
     } catch (erro) {
       onErro(
@@ -159,6 +163,7 @@ export function EntradaCasoSection({
         <BotaoFalarCampo
           disabled={enviando}
           areaId={areaId}
+          onErro={onErro}
           onTranscrito={(texto) => {
             setRelato((atual) => juntarTranscricao(atual, texto));
             onRelatoTranscrito?.(texto);

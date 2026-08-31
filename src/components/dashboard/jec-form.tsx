@@ -29,7 +29,10 @@ import {
 } from "@/lib/jec-rascunho-storage";
 import { montarChecklistJec, podeGerarPeca } from "@/lib/jec-checklist";
 import { placeholderFatosPorArea } from "@/lib/placeholders-por-area";
-import { docsConferenciaDaArea } from "@/lib/docs-conferencia-protocolo";
+import {
+  cabecalhoConferenciaTribunal,
+  docsConferenciaComTribunal,
+} from "@/lib/docs-conferencia-protocolo";
 import {
   ESPECIES_PECA_JEC,
   inferirEspeciePeca,
@@ -72,6 +75,10 @@ import {
   type AreaIdMinuta,
   type GuiaMinuta,
 } from "@/lib/minuta-modulo";
+import {
+  chatMinutaAreaHabilitada,
+  hrefChatMinuta,
+} from "@/lib/chat-minuta";
 import {
   PreviewTriagemPeca,
   type PreviewTriagemData,
@@ -145,8 +152,18 @@ import { TrialEsgotadoBanner } from "@/components/dashboard/trial-esgotado-banne
 import { EntradaCasoSection } from "@/components/dashboard/entrada-caso-section";
 import { BotaoFalarCampo } from "@/components/dashboard/botao-falar-campo";
 import { juntarTranscricao } from "@/lib/transcrever-audio";
-import type { ConferenciaEntrada, PreenchimentoEntradaCaso } from "@/lib/entrada-caso-types";
+import type {
+  ConferenciaEntrada,
+  PreenchimentoEntradaCaso,
+  ReplicaContestacaoResumo,
+} from "@/lib/entrada-caso-types";
 import { montarConferenciaEntrada } from "@/lib/conferencia-entrada";
+import { detectarAlertasFatosPedidos } from "@/lib/alerta-fatos-pedidos";
+import { aplicarQualificacaoExtraidaRelato } from "@/lib/extrair-qualificacao-relato";
+import { AlertaFatosPedidosChips } from "@/components/dashboard/alerta-fatos-pedidos-chips";
+import { CitacoesRastreaveisPanel } from "@/components/dashboard/citacoes-rastreaveis-panel";
+import { ExportacaoTrialUpsell } from "@/components/dashboard/exportacao-trial-upsell";
+import { ReplicaContestacaoPainel } from "@/components/dashboard/replica-contestacao-painel";
 import { paginaDoTrechoNoTexto, rotuloCitacaoAnexo } from "@/lib/pagina-anexo-pdf";
 import { detectarTesesCanonicas } from "@/lib/teses-canonicas";
 import { extrairMetadadosAutos } from "@/lib/peca-cabivel-autos";
@@ -154,9 +171,9 @@ import { sugerirPrazoDaPeca } from "@/lib/prazo-intimacao";
 import {
   buscarPerfilCliente,
   nomeClientePrincipal,
-  salvarPerfilCliente,
   type PerfilClienteSalvo,
 } from "@/lib/memoria-cliente-local";
+import { salvarPerfilClienteComSync } from "@/lib/memoria-cliente-sync";
 import { AJUSTES_POR_GERACAO } from "@/lib/ia/ajustar-trecho-peca";
 import { auditarTopicosNaPeca } from "@/lib/ia/cobertura-teses-peca";
 
@@ -204,7 +221,22 @@ function FileField({
   );
 }
 
-function ProtocoloDocsChecklist({ areaId }: { areaId: AreaIdMinuta }) {
+function ProtocoloDocsChecklist({
+  areaId,
+  foro,
+  numeroProcesso,
+}: {
+  areaId: AreaIdMinuta;
+  foro?: string;
+  numeroProcesso?: string;
+}) {
+  const conferencia = docsConferenciaComTribunal({
+    areaId,
+    foro,
+    numeroProcesso,
+  });
+  const cabecalho = cabecalhoConferenciaTribunal(conferencia.tribunalId);
+
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="text-lg font-semibold text-slate-800">
@@ -215,13 +247,21 @@ function ProtocoloDocsChecklist({ areaId }: { areaId: AreaIdMinuta }) {
         O FACTO não envia esses arquivos ao juízo e a lista não entra na
         redação da peça.
       </p>
+      <p className="mt-2 text-xs font-medium text-stone-700">
+        Tribunal inferido: {conferencia.tribunalRotulo}
+      </p>
+      {cabecalho ? (
+        <p className="mt-2 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs leading-relaxed text-sky-950">
+          {cabecalho}
+        </p>
+      ) : null}
       <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-950">
         Cada caso pode precisar de documentos próprios. Confira sempre o que a
         peça alega e o que a unidade judiciária exige.
       </p>
 
       <ul className="mt-4 list-disc space-y-2.5 pl-5">
-        {docsConferenciaDaArea(areaId).map((doc) => (
+        {conferencia.itens.map((doc) => (
           <li key={doc.id} className="text-sm text-slate-800">
             {doc.label}
             {doc.nota ? (
@@ -241,11 +281,13 @@ function StickyExportBar({
   pecaHtml,
   escritorio,
   onVoltarFormulario,
+  exportacaoBloqueada = false,
 }: {
   peca: string;
   pecaHtml: string;
   escritorio: EscritorioConfig;
   onVoltarFormulario: () => void;
+  exportacaoBloqueada?: boolean;
 }) {
   const [baixando, setBaixando] = useState<"docx" | "pdf" | null>(null);
 
@@ -304,7 +346,9 @@ function StickyExportBar({
     <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
       <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-center gap-2 sm:justify-between">
         <p className="hidden text-xs text-slate-500 sm:block">
-          Word com timbre · PDF e cópia em texto limpo
+          {exportacaoBloqueada
+            ? "Teste: copie o texto · Word/PDF nos planos pagos"
+            : "Word com timbre · PDF e cópia em texto limpo"}
         </p>
         <div className="flex flex-wrap gap-2">
           <button
@@ -314,22 +358,41 @@ function StickyExportBar({
           >
             Copiar texto
           </button>
-          <button
-            type="button"
-            onClick={() => void handleWord()}
-            disabled={baixando !== null}
-            className="rounded-lg border border-stone-600 px-3 py-2 text-sm font-medium text-stone-800 hover:bg-stone-50 disabled:opacity-50"
-          >
-            {baixando === "docx" ? "Word…" : "Word"}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handlePdf()}
-            disabled={baixando !== null}
-            className="rounded-lg bg-stone-700 px-3 py-2 text-sm font-medium text-amber-50 hover:bg-stone-600 disabled:opacity-50"
-          >
-            {baixando === "pdf" ? "PDF…" : "PDF"}
-          </button>
+          {exportacaoBloqueada ? (
+            <>
+              <Link
+                href="/dashboard/planos"
+                className="rounded-lg border border-stone-300 bg-stone-100 px-3 py-2 text-sm font-medium text-stone-600"
+              >
+                Word · assinar
+              </Link>
+              <Link
+                href="/dashboard/planos"
+                className="rounded-lg border border-stone-400 bg-stone-200 px-3 py-2 text-sm font-medium text-stone-700"
+              >
+                PDF · assinar
+              </Link>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => void handleWord()}
+                disabled={baixando !== null}
+                className="rounded-lg border border-stone-600 px-3 py-2 text-sm font-medium text-stone-800 hover:bg-stone-50 disabled:opacity-50"
+              >
+                {baixando === "docx" ? "Word…" : "Word"}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handlePdf()}
+                disabled={baixando !== null}
+                className="rounded-lg bg-stone-700 px-3 py-2 text-sm font-medium text-amber-50 hover:bg-stone-600 disabled:opacity-50"
+              >
+                {baixando === "pdf" ? "PDF…" : "PDF"}
+              </button>
+            </>
+          )}
           <button
             type="button"
             onClick={onVoltarFormulario}
@@ -357,6 +420,7 @@ function PecasResultado({
   tesesIds = [],
   poloAdvocacia,
   onAjusteConcluido,
+  exportacaoBloqueada = false,
 }: {
   resultado: GerarPecaJecOutput;
   escritorio?: EscritorioConfig;
@@ -388,6 +452,7 @@ function PecasResultado({
   onSelecionarVersao?: (id: string) => void;
   tesesIds?: string[];
   poloAdvocacia?: PoloAdvocacia;
+  exportacaoBloqueada?: boolean;
 }) {
   async function copiar(texto: string) {
     await navigator.clipboard.writeText(texto);
@@ -519,9 +584,6 @@ function PecasResultado({
   const citacoes = resultado.citacoes ?? [];
   const jurisSemLastro = citacoes.filter(
     (c) => c.tipo === "jurisprudencia" && !c.verificada
-  );
-  const jurisVerificada = citacoes.filter(
-    (c) => c.tipo === "jurisprudencia" && c.verificada
   );
   const fontes = resultado.baseConhecimentoUtilizada ?? [];
   const faltouNaBase =
@@ -765,108 +827,20 @@ function PecasResultado({
         </section>
       )}
 
-      {(fontes.length > 0 ||
-        faltouNaBase ||
-        resultado.leiMunicipalUtilizada ||
-        (resultado.jurisDoCasoUtilizada &&
-          resultado.jurisDoCasoUtilizada.length > 0) ||
-        jurisVerificada.length > 0) && (
-        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <h3 className="font-semibold text-slate-800">Fontes e verificação</h3>
+      <CitacoesRastreaveisPanel
+        fontes={fontes}
+        citacoes={citacoes}
+        jurisCaso={jurisCaso}
+        marcadoresNaoEncontrado={resultado.marcadoresNaoEncontrado ?? 0}
+        leiMunicipal={resultado.leiMunicipalUtilizada ?? null}
+        jurisDoCasoUtilizada={resultado.jurisDoCasoUtilizada ?? undefined}
+      />
 
-          {resultado.leiMunicipalUtilizada && (
-            <p className="mt-2 text-sm text-slate-600">
-              <strong>Lei municipal anexada:</strong>{" "}
-              {resultado.leiMunicipalUtilizada.nome}
-            </p>
-          )}
-
-          {resultado.jurisDoCasoUtilizada &&
-            resultado.jurisDoCasoUtilizada.length > 0 && (
-              <p className="mt-2 text-sm text-slate-600">
-                <strong>Jurisprudência/súmulas do caso:</strong>{" "}
-                {resultado.jurisDoCasoUtilizada.map((j) => j.titulo).join("; ")}
-              </p>
-            )}
-
-          <div className="mt-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Base de conhecimento usada ({fontes.length})
-            </p>
-            {fontes.length === 0 ? (
-              <p className="mt-1 text-sm text-amber-800">
-                Nenhum trecho do acervo FACTO foi recuperado para este tema.
-                Evite citar súmulas ou acórdãos sem lastro — anexe a ementa do
-                caso na aba Fatos/juris ou gere de novo com mais detalhes.
-              </p>
-            ) : (
-              <ul className="mt-1 space-y-1 text-sm text-slate-700">
-                {fontes.map((item, i) => (
-                  <li key={`${item.titulo}-${i}`}>
-                    <span className="font-medium text-stone-700">
-                      {item.categoria}
-                    </span>{" "}
-                    — {item.titulo}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          {(resultado.marcadoresNaoEncontrado ?? 0) > 0 && (
-            <p className="mt-3 text-sm text-amber-800">
-              A IA sinalizou {resultado.marcadoresNaoEncontrado}{" "}
-              {resultado.marcadoresNaoEncontrado === 1 ? "trecho" : "trechos"}{" "}
-              sem lastro no acervo FACTO (sem citação verificada).
-              Confira ou substitua antes de protocolar.
-            </p>
-          )}
-
-          {jurisVerificada.length > 0 && (
-            <div className="mt-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-                Jurisprudência verificada na base
-              </p>
-              <ul className="mt-1 list-inside list-disc text-sm text-emerald-800">
-                {jurisVerificada.map((c) => {
-                  const anexo = jurisCaso.find((j) =>
-                    j.texto
-                      .toLowerCase()
-                      .includes(c.trecho.toLowerCase().slice(0, 40))
-                  );
-                  const pagina = anexo
-                    ? paginaDoTrechoNoTexto(anexo.texto, c.trecho)
-                    : null;
-                  return (
-                    <li
-                      key={c.trecho}
-                      title={
-                        anexo
-                          ? rotuloCitacaoAnexo({
-                              titulo: anexo.titulo || "juris do caso",
-                              pagina,
-                            })
-                          : "Consta na base FACTO ou no anexo do caso"
-                      }
-                    >
-                      {c.trecho}
-                      {anexo ? (
-                        <span className="ml-1 text-xs text-slate-500">
-                          (
-                          {rotuloCitacaoAnexo({
-                            titulo: anexo.titulo || "juris do caso",
-                            pagina,
-                          })}
-                          )
-                        </span>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
-        </section>
+      {faltouNaBase && fontes.length === 0 && (
+        <p className="text-sm text-amber-800">
+          Nenhum trecho do acervo FACTO foi recuperado — anexe jurisprudência na
+          aba Fatos ou detalhe mais os fatos antes de protocolar.
+        </p>
       )}
 
       {resultado.decisaoAssistente && (
@@ -928,6 +902,7 @@ function PecasResultado({
           peca={resultado.peca}
           pecaHtml={resultado.pecaHtml}
           escritorio={escritorio}
+          exportacaoBloqueada={exportacaoBloqueada}
           onCopiarTexto={() => copiar(resultado.peca)}
         />
         <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50/80 p-4">
@@ -969,9 +944,18 @@ function PecasResultado({
           ) : null}
         </div>
         <p className="mt-3 text-xs text-slate-500">
-          <strong>Word</strong> pode incluir cabeçalho/rodapé do timbre configurado
-          no Perfil. <strong>PDF</strong> e <strong>copiar texto</strong> exportam
-          apenas o conteúdo limpo da peça.
+          {exportacaoBloqueada ? (
+            <>
+              <strong>Teste grátis:</strong> copie o texto para conferência. Word/PDF
+              nos planos pagos.
+            </>
+          ) : (
+            <>
+              <strong>Word</strong> pode incluir cabeçalho/rodapé do timbre configurado
+              no Perfil. <strong>PDF</strong> e <strong>copiar texto</strong> exportam
+              apenas o conteúdo limpo da peça.
+            </>
+          )}
         </p>
       </section>
 
@@ -1060,6 +1044,8 @@ export function JecForm({
   const [avisoEntrada, setAvisoEntrada] = useState<string | null>(null);
   const [conferenciaEntrada, setConferenciaEntrada] =
     useState<ConferenciaEntrada | null>(null);
+  const [replicaContestacao, setReplicaContestacao] =
+    useState<ReplicaContestacaoResumo | null>(null);
   const [tesesOff, setTesesOff] = useState<string[]>([]);
   const [tesesIdsEntrada, setTesesIdsEntrada] = useState<string[]>([]);
   const [ajustesFeitos, setAjustesFeitos] = useState(0);
@@ -1156,6 +1142,28 @@ export function JecForm({
     () => calcularResumoValorCausa(valoresCausa),
     [valoresCausa]
   );
+
+  const alertasFatosPedidos = useMemo(
+    () =>
+      detectarAlertasFatosPedidos({
+        fatos,
+        pedidos: pedidos.map((p) => p.descricao.trim()).filter(Boolean),
+        tutelaUrgencia,
+        pedirJusticaGratuita,
+        totalValorCentavos: resumoValores.totalCentavos,
+        especiePeca,
+      }),
+    [
+      fatos,
+      pedidos,
+      tutelaUrgencia,
+      pedirJusticaGratuita,
+      resumoValores.totalCentavos,
+      especiePeca,
+    ]
+  );
+
+  const exportacaoTrial = cota?.plano === "trial";
 
   useEffect(() => {
     if (!formularioValoresEstaVazio(valoresCausa)) {
@@ -1268,7 +1276,11 @@ export function JecForm({
     fatos,
     autorOk: autorOkParaChecklist(autores, jaQualificadas),
     reusOk: reuOkParaChecklist(reus, jaQualificadas),
-    comarcaForo: comarca.foro ?? "",
+    comarcaForo:
+      [comarca.foro, comarca.cidade, comarca.uf]
+        .map((s) => s?.trim())
+        .filter(Boolean)
+        .join(" — ") || "",
     temValor:
       resumoValores.totalCentavos > 0 ||
       (valorInferido?.totalCentavos ?? 0) > 0,
@@ -1297,6 +1309,10 @@ export function JecForm({
 
   const podeGerar =
     podeGerarPeca(checklistComPolo) && !bloqueadoTetoLeigo;
+
+  const itensChecklistPendentes = checklistComPolo.filter(
+    (i) => i.bloqueante && !i.ok
+  );
 
   const itemOk = (id: string) =>
     Boolean(checklistComPolo.find((i) => i.id === id)?.ok);
@@ -1461,11 +1477,21 @@ export function JecForm({
         }
       }
     }
-    if (preenchimento.autoresNomes.length) {
-      setAutores(autoresAPartirDosNomes(preenchimento.autoresNomes.join("; ")));
-    }
-    if (preenchimento.reusNomes.length) {
-      setReus(reusAPartirDosNomes(preenchimento.reusNomes.join("; ")));
+    if (preenchimento.autoresNomes.length || preenchimento.reusNomes.length) {
+      let aut = preenchimento.autoresNomes.length
+        ? autoresAPartirDosNomes(preenchimento.autoresNomes.join("; "))
+        : [];
+      let rev = preenchimento.reusNomes.length
+        ? reusAPartirDosNomes(preenchimento.reusNomes.join("; "))
+        : [];
+      const relatoQual = [preenchimento.fatos, fatos].filter(Boolean).join("\n");
+      if (relatoQual.trim().length >= 20) {
+        const qual = aplicarQualificacaoExtraidaRelato(aut, rev, relatoQual);
+        aut = qual.autores;
+        rev = qual.reus;
+      }
+      if (aut.length) setAutores(aut);
+      if (rev.length) setReus(rev);
     }
     if (preenchimento.foro || preenchimento.numeroProcesso || preenchimento.cidade) {
       setComarca((c) => ({
@@ -1726,7 +1752,7 @@ export function JecForm({
       setRascunhos(listarRascunhosJec());
       setMsgRascunho("Salvo neste dispositivo.");
       if (comPoloAdvocacia) {
-        salvarPerfilCliente({
+        salvarPerfilClienteComSync({
           autores,
           reus,
           polo: poloAdvocacia,
@@ -1911,6 +1937,7 @@ export function JecForm({
       leiMunicipal,
       tesesIds: tesesAtivas.map((t) => t.id),
       resumoEntrada: avisoEntrada?.trim() || undefined,
+      replicaContestacao,
     };
 
     try {
@@ -2034,7 +2061,7 @@ export function JecForm({
       setAjustesFeitos(0);
       setMsgCaso(null);
       if (comPoloAdvocacia) {
-        salvarPerfilCliente({
+        salvarPerfilClienteComSync({
           autores,
           reus,
           polo: poloAdvocacia,
@@ -2089,13 +2116,23 @@ export function JecForm({
             >
               ← Voltar ao início
             </Link>
-            <button
-              type="button"
-              onClick={handleNovoCaso}
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
-            >
-              Novo caso
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              {chatMinutaAreaHabilitada(areaId) ? (
+                <Link
+                  href={hrefChatMinuta(areaId, { nova: true })}
+                  className="rounded-lg border border-facto-gold/40 bg-amber-50/80 px-3 py-1.5 text-sm font-medium text-stone-800 transition hover:border-facto-gold hover:bg-amber-50"
+                >
+                  Continuar no assistente
+                </Link>
+              ) : null}
+              <button
+                type="button"
+                onClick={handleNovoCaso}
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+              >
+                Novo caso
+              </button>
+            </div>
           </div>
           <h1 className="text-2xl font-semibold text-slate-800">
             {moduloUi.tituloDashboard}
@@ -2204,8 +2241,9 @@ export function JecForm({
         <div className={guiaAtiva === "identificacao" ? "space-y-6" : "hidden"}>
         <EntradaCasoSection
           areaId={areaId}
-          onPreenchido={({ preenchimento, teses }) => {
+          onPreenchido={({ preenchimento, teses, replicaContestacao: replica }) => {
             aplicarEntradaCaso(preenchimento);
+            setReplicaContestacao(replica ?? null);
             setConferenciaEntrada(
               montarConferenciaEntrada(areaId, preenchimento, teses)
             );
@@ -2244,6 +2282,24 @@ export function JecForm({
               </>
             ) : null}
           </div>
+        ) : null}
+        {replicaContestacao?.detectada ? (
+          <ReplicaContestacaoPainel
+            analise={replicaContestacao}
+            onAplicarEspecie={
+              replicaContestacao.sugereEspecieReplica
+                ? () => {
+                    aplicarEspecieInferida("replica");
+                    setEspecieManual(true);
+                    setTipoAcaoTexto(
+                      tituloPecaDaArea(areaId, "replica", tipoAcaoTexto) ??
+                        "Réplica à contestação"
+                    );
+                    setModoAcao("livre");
+                  }
+                : undefined
+            }
+          />
         ) : null}
         <section
           id="secao-acao"
@@ -2692,6 +2748,8 @@ export function JecForm({
               <BotaoFalarCampo
                 disabled={analisandoAssistente}
                 areaId={areaId}
+                onErro={setError}
+                onIniciarGravacao={() => setError(null)}
                 onTranscrito={(texto) =>
                   setFatos((atual) => juntarTranscricao(atual, texto))
                 }
@@ -3076,7 +3134,18 @@ export function JecForm({
             </ol>
           </div>
 
+          <AlertaFatosPedidosChips alertas={alertasFatosPedidos} />
+
           <div className="flex flex-col items-end gap-2 pt-2">
+            {!podeGerar &&
+              !loading &&
+              !triagemPreview &&
+              itensChecklistPendentes.length > 0 && (
+                <p className="max-w-md text-right text-sm text-red-800">
+                  Complete antes de analisar:{" "}
+                  {itensChecklistPendentes.map((i) => i.label).join(" · ")}
+                </p>
+              )}
             {bloqueadoTetoLeigo && (
               <p className="max-w-md text-right text-sm text-red-800">
                 {mensagemBloqueioTetoLeigo(resumoValores.totalCentavos)}
@@ -3260,10 +3329,15 @@ export function JecForm({
             onAjusteConcluido={() => setAjustesFeitos((n) => n + 1)}
             tesesIds={tesesAtivas.map((t) => t.id)}
             poloAdvocacia={poloAdvocacia}
+            exportacaoBloqueada={exportacaoTrial}
           />
 
           <div className="mt-8">
-            <ProtocoloDocsChecklist areaId={areaId} />
+            <ProtocoloDocsChecklist
+              areaId={areaId}
+              foro={comarca.foro}
+              numeroProcesso={comarca.numeroProcesso}
+            />
           </div>
         </div>
       )}
@@ -3273,6 +3347,7 @@ export function JecForm({
           peca={resultado.peca}
           pecaHtml={resultado.pecaHtml}
           escritorio={escritorio}
+          exportacaoBloqueada={exportacaoTrial}
           onVoltarFormulario={() =>
             window.scrollTo({ top: 0, behavior: "smooth" })
           }

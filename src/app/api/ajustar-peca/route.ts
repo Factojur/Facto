@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   AJUSTES_POR_GERACAO,
   ajustarTrechoPeca,
+  limiteAjustesPorPlano,
 } from "@/lib/ia/ajustar-trecho-peca";
 import { gerarDocumentoTimbrado } from "@/lib/formatacao-juridica";
 import { anotarJurisprudenciasSemLastro, verificarCitacoes } from "@/lib/ia/verificacao-citacoes";
@@ -13,7 +14,7 @@ import { mensagemErroIaParaCliente } from "@/lib/erro-ia-cliente";
 export const maxDuration = 45;
 
 /**
- * POST /api/ajustar-peca — até 2 ajustes por geração (controle no cliente).
+ * POST /api/ajustar-peca — ajustes por geração conforme plano (controle no cliente).
  * Não consome cota de peça.
  */
 export async function POST(request: Request) {
@@ -42,10 +43,14 @@ export async function POST(request: Request) {
     if (!gate.ok) return gate.response;
 
     const feitos = Math.max(0, Number(body?.ajustesJaFeitos) || 0);
-    if (feitos >= AJUSTES_POR_GERACAO) {
+    const limite = limiteAjustesPorPlano(
+      gate.acesso.plano,
+      gate.acesso.leigo
+    );
+    if (feitos >= limite) {
       return NextResponse.json(
         {
-          error: `Limite de ${AJUSTES_POR_GERACAO} ajustes nesta minuta. Gere de novo se precisar de mais.`,
+          error: `Limite de ${limite} ajustes nesta minuta. Gere de novo se precisar de mais.`,
           codigo: "LIMITE_AJUSTES",
         },
         { status: 429 }

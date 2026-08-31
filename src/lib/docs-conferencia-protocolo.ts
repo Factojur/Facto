@@ -1,13 +1,31 @@
 /**
  * Conferência orientativa para protocolar (todas as áreas).
  * Lista de leitura — não valida protocolo e não entra na redação.
- * Notas de rito (ex.: parte sozinha no JEC) ficam no overlay da área.
+ * Camada por tribunal/comarca enriquece notas (e-SAJ, PJe, JF…).
  */
+
+import { extrairCidadeUfDoForo } from "@/lib/endereco-comarca";
 
 export type DocConferenciaItem = {
   id: string;
   label: string;
   nota?: string;
+};
+
+export type TribunalProtocoloId =
+  | "tjsp"
+  | "trt2"
+  | "trt15"
+  | "jfsp"
+  | "stf"
+  | "tst"
+  | "tre"
+  | "generico";
+
+export type ContextoConferenciaProtocolo = {
+  areaId: string;
+  foro?: string;
+  numeroProcesso?: string;
 };
 
 export const DOCS_CONFERENCIA_PROTOCOLO_BASE: DocConferenciaItem[] = [
@@ -115,4 +133,142 @@ export function docsConferenciaDaArea(areaId: string): DocConferenciaItem[] {
     });
   }
   return itens;
+}
+
+const NOTAS_TRIBUNAL: Record<
+  TribunalProtocoloId,
+  Partial<Record<string, string>> & { _cabecalho?: string }
+> = {
+  tjsp: {
+    _cabecalho:
+      "TJSP — costuma usar e-SAJ (Peticionamento Eletrônico). PDF legível; peça principal separada dos anexos.",
+    peca: "Petição em PDF; evite scan ilegível — algumas unidades rejeitam.",
+    provas: "Anexos em PDF separados; vínculo claro com o fato alegado.",
+    procuracao: "Procuração com poderes específicos se houver acordo ou MLE.",
+    docs_citados: "Junte só o que a peça cita — o e-SAJ lista por tipo de documento.",
+  },
+  trt2: {
+    _cabecalho:
+      "TRT-2 (SP) — PJe-JT. Verifique planilha/cálculos em anexo quando pedir diferenças.",
+    titulo_calculo: "Liquidação trabalhista: planilha ou laudo contábil.",
+    provas: "CTPS, holerites, TRCT, comunicações — em PDF legível.",
+  },
+  trt15: {
+    _cabecalho: "TRT-15 (Campinas interior) — PJe-JT; mesmas boas práticas do TRT-2.",
+  },
+  jfsp: {
+    _cabecalho:
+      "Justiça Federal (JFSP) — PJe ou e-Proc conforme a seção. CNIS/INSS em previdenciário.",
+    provas: "Processo administrativo INSS, CNIS atualizado e laudos em PDF.",
+  },
+  stf: {
+    _cabecalho:
+      "STF — peticionamento eletrônico próprio; remédios constitucionais exigem prova pré-constituída ou paradigma.",
+    provas: "MS: prova pré-constituída; ADI/ADPF: lei ou ato impugnado.",
+    decisao_recorrida: "Peça recorrida / decisão impugnada conforme o rito.",
+  },
+  tst: {
+    _cabecalho: "TST — recurso de revista e afins via PJe; atenção a preparo e cópias.",
+  },
+  tre: {
+    _cabecalho:
+      "Justiça Eleitoral — prazos fatais; confira cartório/zona (PJe Eleitoral quando disponível).",
+  },
+  generico: {
+    _cabecalho:
+      "Confira o portal do tribunal da comarca (e-SAJ, PJe, Projudi ou presencial).",
+  },
+};
+
+/** Infere tribunal de protocolo a partir de área, foro e CNJ (quando houver). */
+export function inferirTribunalProtocolo(
+  ctx: ContextoConferenciaProtocolo
+): TribunalProtocoloId {
+  const { areaId, foro = "", numeroProcesso = "" } = ctx;
+  const cnj = numeroProcesso.replace(/\D/g, "");
+  if (cnj.length >= 20) {
+    const j = cnj.charAt(13);
+    const tr = cnj.substring(14, 16);
+    if (j === "5") {
+      if (tr === "02") return "trt2";
+      if (tr === "15") return "trt15";
+      return "tst";
+    }
+    if (j === "4") return "jfsp";
+    if (j === "8" && tr === "26") return "tjsp";
+  }
+
+  const { uf } = extrairCidadeUfDoForo(foro);
+  const foroL = foro.toLowerCase();
+
+  if (areaId === "constitucional") return "stf";
+  if (areaId === "trabalhista") {
+    if (uf === "SP" || /trt\s*-?\s*2|campinas|são paulo|sao paulo/i.test(foro)) {
+      return "trt2";
+    }
+    return "tst";
+  }
+  if (areaId === "previdenciario" || areaId === "tributario") {
+    return "jfsp";
+  }
+  if (areaId === "eleitoral") return "tre";
+  if (
+    uf === "SP" ||
+    /tjsp|e-saj|esaj|comarca de.*sp\b/i.test(foroL) ||
+    ["jec", "civil", "consumidor", "familia", "imobiliario", "medico", "digital"].includes(
+      areaId
+    )
+  ) {
+    return "tjsp";
+  }
+  return "generico";
+}
+
+export function rotuloTribunalProtocolo(id: TribunalProtocoloId): string {
+  switch (id) {
+    case "tjsp":
+      return "TJSP (e-SAJ)";
+    case "trt2":
+      return "TRT-2";
+    case "trt15":
+      return "TRT-15";
+    case "jfsp":
+      return "JFSP";
+    case "stf":
+      return "STF";
+    case "tst":
+      return "TST";
+    case "tre":
+      return "TRE";
+    default:
+      return "Tribunal (genérico)";
+  }
+}
+
+export function cabecalhoConferenciaTribunal(
+  tribunalId: TribunalProtocoloId
+): string | undefined {
+  return NOTAS_TRIBUNAL[tribunalId]?._cabecalho ?? NOTAS_TRIBUNAL.generico._cabecalho;
+}
+
+export function docsConferenciaComTribunal(
+  ctx: ContextoConferenciaProtocolo
+): {
+  tribunalId: TribunalProtocoloId;
+  tribunalRotulo: string;
+  itens: DocConferenciaItem[];
+} {
+  const tribunalId = inferirTribunalProtocolo(ctx);
+  const base = docsConferenciaDaArea(ctx.areaId);
+  const camada = NOTAS_TRIBUNAL[tribunalId] ?? NOTAS_TRIBUNAL.generico;
+  const notas: Record<string, string> = {};
+  for (const [id, nota] of Object.entries(camada)) {
+    if (id === "_cabecalho" || !nota) continue;
+    notas[id] = nota;
+  }
+  return {
+    tribunalId,
+    tribunalRotulo: rotuloTribunalProtocolo(tribunalId),
+    itens: mesclarNotasConferencia(base, notas),
+  };
 }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FactoLogo } from "@/components/brand/facto-logo";
 import { CadastroForm } from "@/components/cadastro/cadastro-form";
 import { validarConvite } from "@/lib/convites";
+import { PLANO_TRIAL } from "@/lib/planos-facto";
 
 export default async function CadastroPage({
   searchParams,
@@ -26,7 +27,8 @@ export default async function CadastroPage({
           <p className="mt-4 text-stone-400">
             Quer experimentar antes? Inicie o{" "}
             <strong className="text-stone-200">teste grátis</strong> (e-mail ou
-            Google) — 1 área, 2 peças, 7 dias.
+            Google) — 1 área, {PLANO_TRIAL.pecasPorMes} peças no assistente, 7
+            dias.
           </p>
           <p className="mt-3 text-stone-400">
             Já comprou um plano e ainda não tem conta? Use o link do e-mail de

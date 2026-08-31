@@ -37,6 +37,8 @@ export function montarBriefingCasoLivre(params: {
   resumoEntrada?: string | null;
   leituraRelato?: string | null;
   tesesRotulos?: string[];
+  /** Mapa ponto a ponto da contestação (réplica). */
+  briefingReplica?: string | null;
 }): BriefingCasoLivre | null {
   const linhas: string[] = [CABECALHO];
 
@@ -99,6 +101,10 @@ export function montarBriefingCasoLivre(params: {
   if (params.leituraRelato?.trim()) {
     linhas.push("", "Trecho lido na Entrada (OCR/PDF — não é a peça):");
     linhas.push(params.leituraRelato.trim().slice(0, 3000));
+  }
+
+  if (params.briefingReplica?.trim()) {
+    linhas.push("", params.briefingReplica.trim().slice(0, 10_000));
   }
 
   if (linhas.length <= CABECALHO.split("\n").length + 1) return null;

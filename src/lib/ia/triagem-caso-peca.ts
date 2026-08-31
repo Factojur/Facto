@@ -191,6 +191,7 @@ export async function executarTriagemCaso(params: {
   poloAdvocacia?: PoloAdvocacia | null;
   teses: TeseCanonica[];
   briefingFormulario?: BriefingCasoLivre | null;
+  briefingReplica?: string | null;
   dispositivoSentenca?: string | null;
   blocoVinculos?: string | null;
   opcoesPolo?: { polo: PoloAdvocacia; atuarLeigo: boolean };
@@ -200,6 +201,7 @@ export async function executarTriagemCaso(params: {
   const dossie = montarDossieCasoLivre({
     fatos: params.fatos,
     briefingFormulario: params.briefingFormulario,
+    briefingReplica: params.briefingReplica,
     dispositivoSentenca: params.dispositivoSentenca,
     provas: provasDoCaso,
   });

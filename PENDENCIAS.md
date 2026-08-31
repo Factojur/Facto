@@ -2,9 +2,170 @@
 
 Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou só parcialmente feitos.
 
+**Regra do agente (29/08):** a cada alteração fechada no produto/código/ops, **atualizar esta lista no mesmo turno** (feito, em andamento, próximo passo). Regra Cursor: `.cursor/rules/pendencias-sync.mdc`.
+
 Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed/ops): [`MELHORIAS.md`](./MELHORIAS.md).
 
 **Juris / seed:** depois de cada lote ou dia de cota, atualizar a seção **Lacunas da base (áreas falhas)** abaixo — tribunal errado, 0 insert, ou API sem aquele tribunal. Não deixar falha só no chat.
+
+## Retomar quando voltar (30/08)
+
+### Feito nesta rodada (30/08)
+
+- [x] **Boost tribunal no retrieve** — `bonusAfinidadeUfComarca` + `bonusAfinidadeTribunais` em `buscarConhecimentoRelacionado`; superiores nunca excluídos
+- [x] **Chat — tribunais (máx. 3)** — estado `tribunaisPreferidos`; TJ+STJ auto quando comarca tem UF; picker quando UF ausente; thread em preview/triagem/gerar
+- [x] **Qualificação no preview (0 tokens)** — `extrair-qualificacao-relato.ts` (CPF, CEP, endereço do relato) no scaffold sem cota
+- [x] **Chat conversacional** — complementos integrados ao preview; ajustes pós-redação pela conversa (`ajuste_peca`); meta lei/juris/ajuda local
+- [x] **Seed juris 684–788** — lotes focados em const/prev/trab/trib/eleitoral/digital/internacional/conselhos/marítimo + volume 10 TJs · `ate` **788** (560/788 em curso)
+- [x] **Endereço no preview (refino)** — padrões ricos (residente/domiciliado, nº, apto, bairro, CEP, cidade/UF) + ViaCEP gratuito p/ completar lacunas; UF do endereço vira comarca/TJ quando faltava
+- [x] **Regra custo/escopo** — `.cursor/rules/custo-e-escopo.mdc` (implementar o grátis; pontuar o que gera custo; Gestão só sob pedido)
+- [x] **Título Chat FACTO** — entre Diferencial e workspace; centralizado; wordmark oficial do logo; brilho + neurônios fracos convergindo; card glass no assistente
+- [x] **Workspace unificado** — `/dashboard` = portal com assistente embutido; `/dashboard/chat` redireciona; preview idle; abas mobile; formulário/guia no rodapé do portal
+- [x] **Sessões antigas** — `normalizarEstadoCasoChat` / sanitizar no load (tribunaisPreferidos etc.) — evita crash `length` de undefined
+- [x] **Reiniciar chat / Novo caso** — botões no preview e no chat; gravam a sessão atual antes de limpar (Conversas / Meus casos)
+- [x] **Chip Assistente FACTO** — no hero da home (layout portal); chip compacto `canto`/`barra` mantidos no componente para outros contextos
+- [x] **Cabeçalho workspace** — topbar enxuta (logo, Meus casos, plano, avatar); cumprimento no hero; início em Área a definir
+- [x] **Botão microfone (chat)** — tamanho fixo 34×34; erro vai para o banner do composer (sem expandir a barra branca)
+- [x] **Como funciona (home)** — copy alinhada ao chat, prévia automática e redação com lastro
+- [x] **Fixar assistente (home)** — ícone de pin no header; tela cheia via portal; Esc para sair
+- [x] **CTA estilo (home)** — visível até upload do perfil; modal Ocultar (desta visita / não mostrar mais) + instruções no perfil
+- [x] **Scroll home** — ao atualizar: topo se chat ocioso; ancora no `#assistente-workspace` se houver conversa ativa
+- [x] **Ícone fixar** — contorno pushpin espelhado à direita, paleta + brilho, sem caixa
+- [x] **Tooltips do assistente** — title/instruções no hover dos botões do header, composer e documento
+- [x] **Remover Papel no workspace** — toggle de tema só fora da home; na home o visual glass + folha com peça basta
+- [x] **Como funciona (copy)** — “Relate… Revise… Protocole.” + lastro sem sugerir acervo de lei municipal
+- [x] **Fila IA documentada** — “Melhorar sem gastar mais” + “Melhorar com custo” + scorecard 30/08
+- [ ] **Gemini paygo + Anthropic Sonnet (esta semana)** — paygo **ok 30/08** (R$ 60 Prepay + auto-reload, `factoassessoria`) · falta `ANTHROPIC_API_KEY` + 3–5 peças reais de teste
+- [x] **Scaffold fora do JEC** — não cola mais placeholder interno nem ementa crua (“Com apoio no acervo FACTO…”) na peça de reserva
+- [x] **Citações compartilhadas** — sem prefixo “Jurisprudência” no bloco; paráfrase fora do recuo de citação (`tipografia-peca`, `normalizar-peca-gerada`, prompt)
+- [x] **Deploy produção 30/08** — `dpl_5dwS1uHrVMa3NjfkbudmTvfxnMJi` · [factoia.com.br](https://factoia.com.br) · paygo + citações no ar
+- [x] **“Preencha manualmente” → formulário** — `preferirFormulario` no portal/home; chat no rodapé do card
+- [x] **Checklist formulário JEC** — itens pendentes visíveis com botão Gerar desabilitado; tutela (corte/energia/menor) não bloqueia
+- [x] **Inferência área BPC/INSS** — previdenciário > família; palavras com fronteira (`loas`, `der`, `indefer`)
+- [x] **Partes/qualificação local** — `Sou João…`, INSS réu, réu ≠ CPF do autor; estado civil/profissão; INSS como PJ
+- [x] **Preview scaffold (0 tokens)** — fatos/direito forenses em vez de eco do relato (`preview-fatos-scaffold`, `modoPreview`)
+- [x] **Pós-IA determinístico** — `substituirNomePecaDeterministico` (JEC vs ordinária); art. 22 CDC perto de continuidade/fornecimento
+- [x] **Romanos duplicados** — `renumerarTopicosRomanosDuplicados` em `normalizar-peca-gerada`
+- [x] **Deploy produção (31/08 madrugada)** — `dpl_ANALA7Xt2jc2Yckd8tu1F71WRnSx` · Enel PJ, BPC autor, endereçamento, form qual, seeds SEED-only, catálogo manual
+- [x] **Seeds só Gemini free** — `exigirGeminiApenasSeed()` obrigatório em `seed-juris-diario`, `seed-sumulas-diario`, `reindex-embeddings`, `testar-smoke-areas-lastro`; aborta sem `GEMINI_API_KEY_SEED` (nunca paygo)
+- [x] **Qualificação Enel/concessionária** — `parecePessoaJuridica` (Enel, Sabesp…); split polo em “cortou”; réu PJ não herda CPF do autor
+- [x] **BPC/LOAS autor** — beneficiário (filho) como autor único; INSS réu
+- [x] **Endereçamento pós-IA** — `substituirEnderecamentoDeterministico` remove linhas extras (Vara Cível fantasma)
+- [x] **Formulário manual** — `aplicarQualificacaoExtraidaRelato` ao aplicar entrada-caso; catálogo de áreas aberto por padrão; workspace chat `min(72dvh,720px)` para ver áreas abaixo
+- [x] **Tipografia/juris** — `EXCELENTENTÍSSIMO`, `VARADO`, `[[/JURIS]]`; `injetarQualificacaoReus` mais agressivo
+- [x] **Testes** — `testar-chat-minuta` 63 ok; `testar-alerta-fatos-pedidos` 7 ok; `tsc --noEmit` ok
+- [x] **HC/Penal preview** — `pecaUsaEmFaceDeReu` (sem “em face de” no paciente); dedup autor=réu; inferência criminal > família (“família na cidade”)
+- [x] **Deploy produção (31/08 manhã)** — `dpl_Cey6Dejo3NiTomsJDqMcT3vh3o4F` · HC em face de + partes
+- [ ] **E2E 5 peças (31/08)** — matriz Penal chat + Prev/Trab/Cons/Civil manual; exports em `testes-e2e-31-08/` (scaffold ok; IA pendente)
+
+### Feito nesta rodada (31/08)
+
+| Run | Área | Canal | Resultado resumido |
+|-----|------|-------|-------------------|
+| 1A | JEC | Chat | ❌ Vara Cível + Ação Ordinária; réu Enel com CPF/endereço da autora; placeholders; valor `[VALOR DA CAUSA]` |
+| 1B | JEC | Manual | ⚠️ Endereçamento/nome JEC ok; art. 22 CDC; R$ 8.000; qualificação toda placeholder |
+| 2A | Prev | Chat | ⚠️ JEF ok; partes invertidas (Lucas autor c/ CPF João); `[[/JURIS]]`; erro na UI mas PDF gerado |
+| 2B | Prev | Manual | ⚠️ Federal ok; placeholders; Lucas+João coautores; estrutura I Tempestividade |
+
+**Próximo passo testes:** repetir matriz 1A–2B em [factoia.com.br](https://factoia.com.br) (deploy `dpl_ANALA7Xt2jc2Yckd8tu1F71WRnSx`).
+
+**Custo observado (paygo peças):** ~R$ 0,56 em 5 peças (R$ 60 → R$ 59,44) — seeds/reindex/smoke **não** devem usar essa conta.
+
+### P0 aberto pós-PDF (corrigido em código local — aguarda deploy)
+
+- [x] **Deploy** com lote Enel/BPC/endereçamento/form/manual — `dpl_ANALA7Xt2jc2Yckd8tu1F71WRnSx` · [factoia.com.br](https://factoia.com.br) · 31/08 ~05h
+- [ ] **Caso 2 “Erro ao redigir”** — reproduzir com log `[gerar-peca]` em prod após deploy
+- [ ] **Valor da causa no chat** — conferir `garantirSecaoValorCausa` após redeploy (R$ 8.000 Caso 1A)
+
+### Melhorar sem gastar mais (IA / qualidade — implementar quando fizer sentido)
+
+Ordem sugerida: lastro/prompts → autos/último ato → auditor→ajuste → paginação (após testes).
+
+| # | Item | Benefício | Status |
+|---|------|-----------|--------|
+| G1 | **Lastro + seed** até meta / lacunas (TRE/TSE etc. em paralelo) | Fundamentação sentida; menos peça genérica | Em curso (560/788) |
+| G2 | **Prompts por área** — rito, endereçamento, pedidos típicos mais duros | Qualidade sem +tokens | Pendente |
+| G3 | **Último ato / espécie em autos longos** — extração CNJ e ato decisivo | Menos espécie errada | Pendente |
+| G4 | **Qualificação local** — regex/ViaCEP/partes (refino contínuo) | Menos buraco sem token | Parcial (30/08 noite: Enel PJ, BPC autor, split “cortou”; deploy pendente) |
+| G5 | **Auditor → ajuste pontual** — amarrar achados a 1 reescrita focada | Menos lacuna na minuta | Pendente |
+| G6 | **Paginação do preview** (folha a folha) — após testes de UX | Melhor conferência humana | Aguardando testes |
+| G7 | **Copy / tooltips / home** — clareza do fluxo (sem confundir base × anexo) | Menos erro de uso | Feito 30/08 (manter alinhado) |
+
+### Melhorar com custo (só implementar com ok explícito)
+
+| # | Melhoria | Custo | Benefício | Pri | Status |
+|---|----------|-------|-----------|-----|--------|
+| C1 | OCR Gemini em PDF de RG/comprovante só para endereço | Flash-Lite ~1–3k tokens/doc (fora da cota de peça, **API Gemini**) | Qualificação completa sem digitar | P2 | Aguardando ok |
+| C2 | Claude Sonnet no Redator para mais áreas (hoje Completo/Pro c/ gatilho) | Anthropic + % teto plano | Peça mais densa em áreas complexas | P1 | **Esta semana** — chave + testes manuais; ampliar áreas só após ok |
+| C3 | 2ª API juris (TRE/TSE, TRF1/2/5/6) | Assinatura nova (R$ a cotar) | Lastro eleitoral/federal fora do Juris.ai | P1 pós-788 | Aguardando ok |
+| C4 | Auto-crítica pós-redação (1 pass leve Flash) | +tokens por peça | Menos erro de coerência | P2 | Aguardando ok |
+
+### Feito nesta rodada (29/08)
+
+- [x] **Preview automático no chat** — dispara sozinho após organizar o caso (debounce 500 ms); balão “Analista organizando…” / “Montando pré-visualização…”; botões “Atualizar preview” removidos
+- [x] **Equipe viva no chat** — balão progressivo Maestro/Analista/Estrategista/Redator/Auditor; meta lei/juris responde local (sem reprocessar entrada-caso); timeout 55s no intake
+- [x] **Partes no preview** — fallback `extrairPartesDoRelato` (0 tokens) quando IA não preenche autor/réu; preview scaffold já mostra nome na qualificação
+- [x] **Organização instantânea no chat** — `organizarCasoLocal` aplica preview na hora; IA refina em segundo plano; sem tela vermelha de timeout
+- [x] **Copy comercial** — benefício unificado `Assistente + preview forense ao vivo (antes de gerar)` (`BENEFICIO_ASSISTENTE_PREVIEW` em `planos-facto.ts`); landing, trial, e-mails, dashboard
+- [x] **Trial export** — preview/copiar texto liberados; Word/PDF bloqueados (`exportacaoBloqueada` trial) · copy landing/trial/planos
+- [x] **Sync nuvem LGPD** — migration `migration-sync-nuvem-lgpd.sql` **rodada** (Jefferson) · APIs opt-in + minutas + memória · painel Nuvem no assistente · `/privacidade#sync-nuvem`
+- [x] **Checklist protocolo por tribunal** — camada TJSP/TRT/JF/STF… em `docs-conferencia-protocolo.ts` + UI pós-geração
+- [x] **Prazos com feriados BR** — `feriados-br.ts` + `sugerirPrazoDaPeca` com UF
+- [x] **Testes automatizados chat/prazo** — `test:chat-minuta`, `test:chat-areas`, `test:prazo-intimacao` ok
+- [x] **Alerta fatos × pedidos** — form + chat · `npm run test:alerta-fatos-pedidos`
+- [x] **Citações rastreáveis** — `CitacoesRastreaveisPanel` form + chat
+- [x] **Meus casos + sync sessões** — `/dashboard/meus-casos` · API `/api/chat/sessoes`
+- [x] **Smoke scaffold 9.099** — offline 20/20
+
+### Em andamento (Jefferson)
+
+- [ ] **Compra real MP** — testando ponta a ponta
+- [ ] **Seed juris** — lote **560** / **788** · meta **100k+** · lotes **684+** lacunas fracas até vencimento 13/09
+- [ ] **Gemini paygo + `ANTHROPIC_API_KEY`** — paygo **ok 30/08** · testar 3–5 peças reais (JEC + 1–2 áreas densas) · opcional `ANTHROPIC_MODELO_REDACAO`
+- [ ] **Testar gestão** em produção (`factoia.com.br/gestao`)
+- [x] **Smoke lastro (embedding)** — 29/08: **20 ok · 0 fraco · 0 falhas** (Gemini 429 com retry; ok)
+- [x] **Restaurar sessão nuvem** — GET `/api/chat/sessoes?sessaoId=` · Meus casos → Continuar · `?sessaoNuvem=` importa snapshot local
+- [x] **Prazos no assistente** — dica determinística (`sugerirPrazoDaPeca` + feriados/UF) no chat
+- [x] **Chat nova conversa** — CTA homepage/`hrefChatMinuta(..., { nova: true })` inicia caso limpo; sidebar Assistente retoma a sessão ativa; Conversas/Meus casos abrem a antiga
+- [x] **Chat UX** — contraste do input; scroll (`h-dvh`); rótulo **Área a definir**; Anexar visível; Provas/lei e juris; citação súmula/juris estrito teor no prompt + wrap [[JURIS]]; alerta tutela reconhece corte/saúde; chip “sem lei/juris”
+- [ ] **Peças reais** Const + Prev (manual) — **destravar com paygo** esta semana
+- [ ] **Testar sync nuvem** — opt-in + 1 peça + sessão · rodar `migration-chat-sessoes-nuvem.sql`
+
+**Checklist quando as chaves entrarem (Vercel Production + Preview):**
+1. Gemini: billing paygo ativo (sem 429 de cota free em peça).
+2. `ANTHROPIC_API_KEY` (+ opcional `ANTHROPIC_MODELO_REDACAO=claude-sonnet-4-5`).
+3. Amostra manual: 1 JEC (Flash) · 1 Completo/Pro com gatilho Sonnet · 1 área densa (Const/Prev/Trab).
+4. Conferir: lastro na peça, endereçamento, Auditor, export Word/PDF.
+5. Anotar custo ~R$/peça no chat (estimativa atual ~R$ 2 Flash; Sonnet bem mais).
+
+### Scorecard FACTO vs MinutaIA (30/08 — pós-testes PDF)
+
+Atualizado após testes espelhados chat/manual (Caso 1 JEC + Caso 2 Prev) e correções locais.
+
+| Critério | MinutaIA | FACTO 29/08 | FACTO 30/08 (manhã) | FACTO 30/08 (noite testes) | Δ vs Minuta |
+|----------|----------|-------------|---------------------|----------------------------|-------------|
+| Iteração (chat, versões) | 9,0 | 7,0 | **7,8** | **7,5** | −1,5 |
+| Lastro / fundamentação | 7,0 | 5,0 | **5,2** | **5,2** | −1,8 |
+| Formato forense e rito | 6,0 | 9,5 | **9,5** | **7,8** | +1,8 |
+| Preço / custo por peça | 5,0 | 8,0 | **8,0** | **8,0** | +3,0 |
+| Gestão + continuidade | 7,0 | 7,0 | **7,2** | **7,2** | +0,2 |
+
+**Por quê caiu Formato (noite):** chat JEC ainda saiu Vara Cível/Ordinária e réu=autor nos PDFs; manual com placeholders; prev com partes invertidas — corrigido em código, **não deployado** nesta sessão.
+
+**Por quê Iteração −0,3:** erro “redigir peça” Caso 2 + navegação manual ainda confusa (catálogo fechado + chat tela cheia).
+
+**Generalista (pesos iguais):** FACTO **≈ 7,34** vs MinutaIA **≈ 6,80** — ainda na frente no agregado; gap de **formato forense** é o risco principal antes de vender em escala.
+
+**Regra seeds (30/08):** `GEMINI_API_KEY` = paygo (peças prod) · `GEMINI_API_KEY_SEED` = free (seed/reindex/smoke). Scripts abortam sem SEED.
+
+**Próximo salto de score:**
+1. Lastro → 100k / fechar 788 (+0,8–1,0 lastro) — G1  
+2. **Peças reais com Gemini paygo + Sonnet** (esta semana) — mede qualidade de verdade (+iteração/lastro sentido)  
+3. Prompts por área + último ato (G2/G3) (+0,3–0,5)  
+4. Sonnet seletivo ampliado (C2) só após amostra — c/ ok  
+5. Compra MP estável (receita)
+
+Canvas (se existir): `canvases/facto-vs-minutaia-scorecard.canvas.tsx`.
 
 ## Retomar quando voltar (28/08)
 
@@ -17,11 +178,13 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] **Smoke scaffold** — corrigido vazamento Lei 9.099 fora do JEC (`221239a`: qualificação CPC/CLT + placeholder + filtro lastro)
 - [x] **Tarefa smoke diária** — `FACTO-smoke-lastro-06h` (06:00) · log `scripts/smoke-areas-lastro.log` · instalar: `scripts\instalar-tarefa-smoke-lastro.ps1`
 - [x] **Reindex único** 28/08 — +811 embeddings (17 falhas cota Gemini 429)
+- [x] **Réplica à contestação** — `replica-contestacao.ts` + painel Entrada + briefing triagem/redação
+- [x] **Chat FACTO (MVP beta)** — `/dashboard/chat` · `POST /api/preview-scaffold` (0 cota) · intake → triagem → redação → ajuste · inferência de área · sidebar **Assistente**
 
 ### Em andamento (Jefferson)
 
 - [ ] **Compra real MP** — testando ponta a ponta
-- [ ] **Seed juris** — lote **488** / **683** (aguardar cota; depois cobrir lacunas)
+- [ ] **Seed juris** — lote **488** / **683** · meta comercial **100k+** julgados na `base_conhecimento` para abertura de vendas (crescimento contínuo via APIs contratadas: Juris.ai seed + 2ª API pós-683)
 - [ ] **Testar gestão** em produção (`factoia.com.br/gestao`)
 - [ ] **Smoke** — revalidar após fix (`npm run test:smoke-areas-lastro` ou aguardar 06:00 de 29/08)
 - [ ] **Peças reais** Const + Prev (manual, depois do lastro)
@@ -30,20 +193,59 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 
 | Item | O que é | Próximo passo |
 |------|---------|---------------|
-| **Histórico minutas na nuvem** | Salvar peças no Supabase por usuário (todas as áreas) | Migration + API + UI “Meus casos”. **Supabase Pro** não é só isso — Free aguenta MVP pequeno; **Pro** antes de escalar (disco, uptime, sem pausa por inatividade). |
-| **Réplica à contestação** | Anexar contestação → FACTO detecta argumentos do réu e pré-monta réplica | **Implementar** (padrões forenses; espécie réplica + blocos contra-argumento). |
-| **Alerta fatos × pedidos** | Antes de Gerar, avisar contradição (valor, obrigação, parte) | **Implementar** detector + chips na conferência; você **confere** antes de protocolar. |
-| **Checklist protocolo por tribunal** | Lista de docs para juntar no e-SAJ/PJe | **Já existe** pós-geração (`ProtocoloDocsChecklist` na preview, **não** é aba do formulário). Falta: **camada por tribunal** (TJSP, TRT-2, JF…) usando comarca/tribunal escolhido — enriquecer `docs-conferencia-protocolo.ts`. |
-| **Sync memória cliente nuvem** | Opt-in LGPD | Depois do histórico; termo antes de subir. |
+| **Histórico minutas na nuvem** | Salvar peças no Supabase por usuário (todas as áreas) | **Feito** 29/08 — migration + API + opt-in + painel Nuvem + **Meus casos** global |
+| **Réplica à contestação** | Anexar contestação → FACTO detecta argumentos do réu e pré-monta réplica | **Feito** 28/08 — `replica-contestacao.ts` + painel na Entrada + briefing no Redator. |
+| **Chat FACTO** | 1 chat + N ritos (`areaId`); preview ao vivo; redação = 1 cota | **MVP beta** 28/08 · 20 áreas · copy preview 29/08 · trial export + alerta + citações 29/08 |
+| **Alerta fatos × pedidos** | Antes de Gerar, avisar contradição (valor, obrigação, parte) | **Feito** 29/08 — detector + chips form + chat |
+| **Checklist protocolo por tribunal** | Lista de docs para juntar no e-SAJ/PJe | **Feito** 29/08 — `docsConferenciaComTribunal` |
+| **Sync memória cliente nuvem** | Opt-in LGPD | **Feito** 29/08 — API + sync após redação |
+
+## Chat FACTO — próximos passos de implementação (28/08)
+
+**Arquitetura fechada:** 1 chat · router infere `areaId` · mesmo motor das dashboards (`JecForm` / APIs) · preview scaffold **antes** da cota · ajuste só de trecho (Flash).
+
+### Fase 2 — polish (código imediato)
+
+| # | Item | Arquivo / nota |
+|---|------|----------------|
+| 1 | **Smoke helpers chat** — roteamento, payload, polo, ajustes | **Feito** 28/08 — `scripts/testar-chat-minuta.ts` · `npm run test:chat-minuta` |
+| 2 | **CTA dashboard home** — “Nova peça no assistente” → `/dashboard/chat` | **Feito** 28/08 — hero, leigo, cards, wizard, fluxo |
+| 3 | **Réplica no chat** — painel quando contestação detectada | **Feito** 28/08 — `replica-contestacao-painel.tsx` |
+| 4 | **Paridade payload** — provas, juris, valores, lei municipal, link nuvem | **Feito** 28/08 — `montarPayloadGeracaoChat` + drawer Complementos |
+| 5 | **Timbre** — toggle no header (já lê `escritorio-storage`) | **Feito** 28/08 — `chat-minuta-page.tsx` |
+| 6 | **Ajustes por plano** — JEC 3 · Completo/Pro 5 | **Feito** 28/08 — `ajustar-trecho-peca.ts` |
+| 7 | **Copy triagem** — “Voltar ao chat” (prop em `PreviewTriagemPeca`) | **Feito** 28/08 — `preview-triagem-peca.tsx` |
+| 8 | **Polo obrigatório** — chip quando espécie ambígua (`ambos`) | **Feito** 28/08 — espelha matriz `polo-especies-por-area` |
+
+### Fase 3 — rollout áreas — **feito** 28/08
+
+- [x] Todas as 20 áreas abertas no chat (`CHAT_MINUTA_AREAS_FASE1`)
+- [x] Smoke Criminal / Const / JECR / Eleitoral — `npm run test:chat-areas`
+- [x] Link **“Continuar no assistente”** no formulário clássico
+- [x] Inferência de área ampliada (criminal, const, jecr, eleitoral)
+- `CHAT_MINUTA_TODAS_AREAS=1` — override dev (redundante com lista completa)
+
+### Fase 4 — persistência local — **feito** 28/08
+
+- [x] Sessões chat (`chat-minuta-storage.ts`) — auto-save, retomar, excluir
+- [x] Painel **Conversas** + histórico de peças por sessão
+- [x] Opt-in LGPD sync nuvem (preferência local + modal + API)
+- [x] **Sync Supabase** — migration rodada 29/08 · APIs minutas/memória/sessões + painel Nuvem + `/dashboard/meus-casos`
+
+### O que **não** fazer no chat
+
+- Reprocessar PDF inteiro a cada mensagem (custo 3–10×)
+- Sonnet no router (só na redação)
+- Backpage sempre visível (drawer basta)
 
 ### Sequência P0 atualizada (28/08)
 
 1. **Compra real MP** — em teste (Jefferson)
 2. ~~Vercel `MERCADOPAGO_WEBHOOK_SECRET` + `CRON_SECRET`~~ — ok · `ANTHROPIC_API_KEY` quando quiser Sonnet
-3. **Seed** — **488→683** · diário 01h · lacunas depois
-4. **Smoke** — código corrigido; tarefa **06:00** · última execução manual: 2/20 ok (antes do fix)
-5. **P1 código** — réplica contestação → alerta fatos×pedidos → checklist por tribunal → histórico nuvem (com Pro)
-6. ~~LGPD aviso memória local~~ — feito · sync nuvem pendente
+3. **Seed** — **527→683** · diário 01h · lacunas depois
+4. **Smoke** — 29/08 **19/20** · const lastro 9.099 pendente curadoria
+5. **P1 código** — ~~histórico nuvem~~ ~~checklist tribunal~~ ~~alerta fatos×pedidos~~ ~~citação rastreável UI~~ ~~Meus casos~~
+6. ~~LGPD sync nuvem~~ — feito 29/08 (migration + termo)
 7. **Gestão** — no ar; Jefferson testando
 
 ## Retomar quando voltar (24/08)
@@ -56,7 +258,7 @@ Ordem fechada 24/08: **receita + lastro + confiança na peça** antes de marketi
 2. **Vercel** — `ANTHROPIC_API_KEY` + Gemini **paygo**; conferir `MERCADOPAGO_WEBHOOK_SECRET` e `CRON_SECRET`.
 3. **Seed** — `proximoLote` **488** / `ate` **683** (atualizado 28/08; era 329 em 24/08). `npm run seed:juris-diario` na próxima cota; **sem lotes novos** até 683; TRE/TSE = 2ª API depois.
 4. **Smoke live** — `npm run test:smoke-areas-lastro` (tarefa `FACTO-smoke-lastro-06h`) + 1 peça real Constitucional e 1 Previdenciário com “Buscar na base FACTO”.
-5. **Diferenciação P1 (próximas features de código):** (a) histórico de minutas na nuvem (todas as áreas); (b) réplica a partir da contestação anexada; (c) alerta fatos × pedidos; (d) checklist de protocolo por tribunal.
+5. **Diferenciação P1 (próximas features de código):** (a) histórico de minutas na nuvem (todas as áreas); (b) ~~réplica a partir da contestação~~ **feito**; (c) alerta fatos × pedidos; (d) checklist de protocolo por tribunal; (e) **polish do Chat FACTO** (MVP no ar).
 6. **LGPD** — aviso memória local **feito** (28/08); termo antes de sync nuvem (cliente / histórico) **pendente**.
 7. **Escritório / Asaas** — só depois de seats + gateway; até lá = fale conosco.
 
@@ -170,7 +372,7 @@ Titular: PF Jefferson · GRU 389 · especificação SaaS/TI. Comprovante FACTO: 
 
 Ordem realista: **receita e lastro primeiro**; diferenciação visível em seguida; **Manus e Obsidian adiados** (não competem com MinutaIA agora).
 
-**Como ganhar do MinutaIA no nosso molde (não clonando chat/skills/web):** peça protocolável + lastro curado + polo/rito corretos + histórico que não some + réplica inteligente + conferência (fatos×pedidos / protocolo). Evitar: gerar por chat, modo curto, busca web na minuta, 2.000 skills.
+**Como ganhar do MinutaIA no nosso molde (não clonando skills/web):** peça protocolável + lastro curado + polo/rito corretos + histórico que não some + réplica inteligente + conferência (fatos×pedidos / protocolo) + **chat com preview forense sem cota** (não reprocessar PDF inteiro a cada turno). Evitar: modo curto genérico, busca web na minuta, 2.000 skills, chat que inventa fato sem conferência.
 
 ### P0 — Bloqueio comercial e confiança (fazer antes de escalar marketing)
 
@@ -178,7 +380,7 @@ Ordem realista: **receita e lastro primeiro**; diferenciação visível em segui
 |---|------|--------|---------|
 | 1 | **Compra real MP ponta a ponta** — webhook + e-mail + convite + cadastro + cancelamento CDC | Parcial | Único bloqueio comercial crítico |
 | 2 | **Confirmar na Vercel** `MERCADOPAGO_WEBHOOK_SECRET` e `CRON_SECRET` | **Ok 28/08** (`ANTHROPIC_API_KEY` opcional) | Segurança já no código |
-| 3 | **Seed / lastro** lotes **488–683** + lacunas vitrine + mapa `tribunal`/`area_tags` | Em curso (488; retomar na cota) | “Buscar na base FACTO” fraco = peça fraca |
+| 3 | **Seed / lastro** lotes **488–683** + meta **100k+** juris na abertura + lacunas vitrine + mapa `tribunal`/`area_tags` | Em curso (488; retomar na cota) | “Buscar na base FACTO” fraco = peça fraca |
 | 4 | **Testes reais Constitucional + Previdenciário** após lastro | Pendente | Áreas abertas sem validação de usuário |
 | 5 | **LGPD — memória de cliente** | Parcial (aviso local 28/08) | Sync nuvem + termo opt-in pendente |
 | 6 | **Rodar migrations trial / tribunal / escritório no Supabase** | Pendente (ops) | Código já no repo |
@@ -190,14 +392,15 @@ Ordem realista: **receita e lastro primeiro**; diferenciação visível em segui
 | 1 | **Perfil FACTO na nuvem** — tom + 2–3 peças modelo → resumo de estilo no prompt | Parcial (MVP em Perfil) | Interpreta estilo, não cola texto |
 | 2 | **Memória de cliente na nuvem** (Supabase, opt-in) | Pendente | Mesmo cliente em outro PC; hoje só `localStorage` |
 | 3 | **Histórico de minutas na nuvem** — todas as áreas, não só JEC local | Parcial (JEC local + versões sessão) | Não perder trabalho ao trocar máquina |
-| 4 | **Réplica a partir da contestação anexada** — detectar argumentos do réu e pré-montar contra-argumentos | Pendente | Automatização forte; MinutaIA não faz bem |
-| 5 | **Checklist de protocolo por tribunal** (TJSP, TRT, etc.) pós-geração | Parcial (lista genérica por área na preview) | Falta recorte por tribunal/comarca em `docs-conferencia-protocolo.ts` |
+| 4 | **Réplica a partir da contestação anexada** — detectar argumentos do réu e pré-montar contra-argumentos | **Feito** 28/08 (`replica-contestacao.ts`, painel Entrada, briefing triagem/redação) | Automatização forte; MinutaIA não faz bem |
+| 4b | **Chat FACTO** — intake + preview scaffold + triagem/redação | **MVP beta** 28/08 (`/dashboard/chat`, `preview-scaffold`, `chat-minuta.ts`) | Iteração controlada; preview grátis diferencia do MinutaIA |
+| 5 | **Checklist de protocolo por tribunal** (TJSP, TRT, etc.) pós-geração | **Feito** 29/08 | `docsConferenciaComTribunal` |
 | 6 | **Alerta contradição fatos × pedidos** (valor, obrigação, parte) | Pendente | Conferência antes de gerar |
 | 7 | **Citação rastreável** — distinguir base FACTO vs anexo no auditor | Parcial (página no anexo ok) | Credibilidade forense |
-| 8 | **Prazo com feriados** (calendário BR por comarca/tribunal) | Pendente | Hoje só dias úteis seg–sex |
+| 8 | **Prazo com feriados** (calendário BR por comarca/tribunal) | **Feito** 29/08 | `feriados-br.ts` · UF opcional |
 | 9 | **Polo enxuto** — radios só em “Ambos os polos” + inferência | Feito (`9daa804`) | Dashboard mais limpa |
 | 10 | **Polo obrigatório** antes de Gerar quando espécie é ambígua | Feito | Evita recurso do réu sair como autor |
-| 11 | **Trial grátis** — 1 área · 2 peças · 7 dias · watermark | Feito (MVP 20/08) | Conversão sem cartão |
+| 11 | **Trial grátis** — 1 área · 2 peças · 7 dias · **export limpo** | Feito (atualizado 29/08) | Experiência completa protocolável |
 | 12 | **Escritório S/M** — seats + pool + OAB admin | Parcial (catálogo + schema; checkout MP depois) | Multi-assento |
 
 ### P2 — Automação e polish (depois do P1)
@@ -220,7 +423,7 @@ Ordem realista: **receita e lastro primeiro**; diferenciação visível em segui
 | 1 | **Export “vault FACTO”** — pasta Markdown compatível com Obsidian | **Adiado 24/08.** Só quando curadoria doer; spec em `docs/obsidian-sync-spec.md` |
 | 2 | **Plugin Obsidian** / sync `aprovado` → `base_conhecimento` | **Adiado 24/08.** Nunca misturar rascunho do vault com seed da API |
 | 3 | **Manus (ops)** — playbook: termos de lote / briefing 2ª API | **Adiado 24/08.** Fora do app; sem insert de juris; sem peça de cliente |
-| 4 | **Extensão PJe / e-SAJ** | Custo de suporte alto |
+| 4 | **Extensão PJe / e-SAJ** | **P2 positivo** — diferencial de captura (nº processo, andamentos, anexos) e pré-preenchimento; custo de manutenção alto (cada tribunal muda layout). Entrar **depois** de histórico nuvem + checklist protocolo; MVP = bookmarklet ou leitura de CNJ, não extensão full no P0. |
 | 5 | **Segunda API juris** — TRE/TSE, TRF1/2/5/6, TNU | Depois do seed atual (Datajud) |
 | 6 | **Biblioteca de normas** (canal separado de juris) | Decisão 15/08: não misturar com peça |
 | 7 | **Recursos STJ/STF/ TST** — espécies superiores além do kit atual | Ver seção recursos superiores abaixo |
@@ -478,11 +681,22 @@ Prazos: o FACTO **não conta prazo processual sozinho** hoje. Abrir área implic
     - **Manus:** também adiado — ops (termos/lote) no máximo; nunca insert de juris nem peça
     - [ ] Implementar sync v1 (dry-run + `--write`)
     - [ ] (Opcional) export fila `juris_verificacao` → Markdown
-14. **[P3] Depois do núcleo da minuta** — _não neste deploy (16/08)_
-   - **Chat multi-turno:** **sim, beneficia** o advogado (iterar tese sem recomeçar). **Não aplicar agora:** custa token, aumenta risco de inventar fato, e as áreas recém-abertas ainda vão ser testadas. Fica para depois do núcleo estável.
+14. **[P1] Chat FACTO** — _MVP beta 28/08; polish em curso_
+   - [x] `POST /api/preview-scaffold` — scaffold forense (`gerarPecaJec`), **0 cota** redação
+   - [x] `/dashboard/chat` — UI split chat + preview; sidebar **Assistente**
+   - [x] Fluxo: `entrada-caso` → preview loop → `triagem-peca` → `gerar-peca` → `ajustar-peca`
+   - [x] Inferência `areaId` + chip “Trocar área” (Fase 1: JEC, Consumidor, Civil, Família, Trabalhista, Imobiliário)
+   - [x] Drawer “Ver o que entendi” + aba **Complementos** (provas, juris, valores, lei municipal)
+   - [x] **Fase 2 — polish** (completa 28/08)
+   - [x] **Fase 3 — rollout** — 20 áreas · smoke · link formulário
+   - [x] **Fase 4 — local** — sessões, histórico peças, opt-in nuvem, markdown
+   - [ ] **Fase 4b — Supabase:** sync conversas/minutas (P1 histórico + termo)
+   - **Regra de custo:** intake + preview = grátis; 1 peça na redação; ajuste = Flash por trecho (não reprocessar PDF a cada mensagem)
+15. **[P3] Depois do núcleo da minuta** — _Add-in Word e contratos_
+   - ~~**Chat multi-turno:**~~ **MVP beta** — ver item 14 acima; polish P1, não P3.
    - **Add-in Word:** melhoria de canal. Não implementar nesta fase.
    - **Contratos (minutas, não petição):** teaser na home (“Contratos — em breve”). **Decidir depois** quais modelos (poucos, de uso real: prestação de serviços, NDA, locação, distrato — não 40 templates genéricos). Canal apartado das áreas; Completo/Pro + OAB. Litígio de contrato permanece no Civil. Não implementar a biblioteca agora.
-15. **[P1] PLANO X** — _código 14/08_ — B 10/30/50 + saldo; E +10 análises R$ 29,90; G Completo Anual **R$ 1.890** (mantido) + H cotas 100/180; I copy JEC leigo; J 15 juris externa; **N botão só base curada**. SQL: `supabase/migration-extras-analises.sql`. A (Supabase Pro) só ao começar a vender.
+16. **[P1] PLANO X** — _código 14/08_ — B 10/30/50 + saldo; E +10 análises R$ 29,90; G Completo Anual **R$ 1.890** (mantido) + H cotas 100/180; I copy JEC leigo; J 15 juris externa; **N botão só base curada**. SQL: `supabase/migration-extras-analises.sql`. A (Supabase Pro) só ao começar a vender.
 
 ---
 
@@ -747,7 +961,7 @@ Critério de “falha”: lote com **0** insert, ou &lt;10 insert em tema que de
 - [x] Lotes **84–115** (17/08 madrugada) — seed diário 01h; cota 429 no **116**; `reindex` **+1607**.
 - [x] Lotes **116–148** (18/08 01h) — diário até o 149; cota 429 no meio do **149** (TJRS imobiliário). Retoma o **149**.
 - [x] Lotes **149–328** — avançados nas madrugadas 19–23/08 (ver log); **329** parou por cota **23/08**.
-- [ ] Lotes **488–683** — retomar diário / `npx tsx scripts/seed-juris-ai-faixa.ts 488 683`. **Estado 28/08:** `proximoLote` **488**. `LOTE_MAX` **683**.
+- [ ] Lotes **560–788** — retomar diário / `npx tsx scripts/seed-juris-ai-faixa.ts 560 788`. **Estado 30/08:** `proximoLote` **560**. `LOTE_MAX` **788** (684+ lacunas fracas).
 - [x] Após seed diário 17/08: `reindex:embeddings` (+1607).
 - [ ] Conferir reindex após cada madrugada (diário já chama no fim).
 - [ ] Segunda API (pós-683 ou lacunas): priorizar **eleitoral (TRE/TSE)** e TRF1/2/5/6 / TNU. **Não** criar lotes Juris.ai extras só por volume até esgotar 683.
@@ -769,7 +983,7 @@ Critério de “falha”: lote com **0** insert, ou &lt;10 insert em tema que de
 - [x] UI sem nome do provedor externo (só “busca externa” / cota).
 - [x] Janela temporal de julgados no scraper TJSP: **manter 4 anos** (decisão alinhada).
 - [x] Embeddings / leitura de autos MVP (falta teste PDF).
-- [ ] Citação passage-level · chat multi-turno · Word · contratos.
+- [ ] Citação passage-level · ~~chat multi-turno~~ **chat MVP beta** (polish P1) · Word · contratos.
 - [x] Spec Obsidian sync (sem código de sync): `docs/obsidian-sync-spec.md`.
 - [x] Contagem admin: PostgREST cortava em **1000**; agora pagina + mostra total real no banco (~1663 em 11/08; +41 juris em 12/08).
 - [x] Seeds juris: **não sobrescrevem** título já existente; limpeza de lixo só com `SEED_JURIS_LIMPAR_LIXO=1`.

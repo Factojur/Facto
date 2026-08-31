@@ -5,9 +5,9 @@ import { useEffect, useRef } from "react";
 const PASSOS = [
   {
     passo: "01",
-    titulo: "Escolha a área",
+    titulo: "Conte o caso no chat",
     texto:
-      "Entre no módulo da sua especialidade ou favorite para acessar com um clique.",
+      "Relato, voz ou PDF/Word na home. A área e a espécie saem da conversa — ou escolha manual, se preferir.",
     icone: (
       <svg
         viewBox="0 0 24 24"
@@ -17,16 +17,19 @@ const PASSOS = [
         strokeWidth="1.8"
         aria-hidden
       >
-        <path d="M4 10l8-6 8 6v10H4V10z" strokeLinejoin="round" />
-        <path d="M9 20v-6h6v6" strokeLinejoin="round" />
+        <path
+          d="M4 5.5A2.5 2.5 0 016.5 3h11A2.5 2.5 0 0120 5.5v9A2.5 2.5 0 0117.5 17H9l-5 4v-4H6.5A2.5 2.5 0 014 14.5v-9z"
+          strokeLinejoin="round"
+        />
+        <path d="M8 8.5h8M8 12h5" strokeLinecap="round" />
       </svg>
     ),
   },
   {
     passo: "02",
-    titulo: "Informe o caso",
+    titulo: "Confira a pré-visualização",
     texto:
-      "Identificação, fatos e pedidos em três etapas — sem começar do zero.",
+      "O assistente qualifica partes, fatos e pedidos. Revise o entendimento antes de redigir — sem consumir peça.",
     icone: (
       <svg
         viewBox="0 0 24 24"
@@ -36,16 +39,17 @@ const PASSOS = [
         strokeWidth="1.8"
         aria-hidden
       >
-        <path d="M8 4h8l2 4v14H6V4h2z" strokeLinejoin="round" />
-        <path d="M8 8h8M8 12h8M8 16h5" strokeLinecap="round" />
+        <path d="M4 6h16v12H4V6z" strokeLinejoin="round" />
+        <path d="M8 10h8M8 14h5" strokeLinecap="round" />
+        <circle cx="16" cy="14" r="1.2" fill="currentColor" stroke="none" />
       </svg>
     ),
   },
   {
     passo: "03",
-    titulo: "Assistente Facto IA",
+    titulo: "Redija com lastro",
     texto:
-      "A equipe FACTO estrutura fundamentos e a redação forense — você revisa antes de protocolar.",
+      "Triagem estratégica e peça no padrão forense — lastro da base FACTO e da jurisprudência que você anexar ao caso.",
     destaque: true,
     icone: (
       <svg
@@ -65,9 +69,9 @@ const PASSOS = [
   },
   {
     passo: "04",
-    titulo: "Exporte e revise",
+    titulo: "Exporte e protocolo",
     texto:
-      "Documento timbrado em Word ou PDF; confira formatação e conteúdo antes do protocolo.",
+      "Word ou PDF timbrado; ajustes pontuais de trecho e checklist final antes de protocolar fora do FACTO.",
     icone: (
       <svg
         viewBox="0 0 24 24"
@@ -121,12 +125,12 @@ export function FluxoFactoSection({ leigo = false }: { leigo?: boolean }) {
           Como funciona
         </p>
         <h2 className="mt-2 text-xl font-semibold text-white md:text-2xl">
-          Do caso à minuta em 3 etapas, depois o protocolo
+          Relate o caso no chat. Revise a minuta. Protocole.
         </h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-500 md:text-base">
           {leigo
-            ? "Fluxo pensado para o Juizado: identifique as partes, narre os fatos e feche os pedidos — o FACTO redige a minuta."
-            : "Fluxo pensado para a bancada do advogado e para quem atua no Juizado: identifique, fundamente e peça — o FACTO redige."}
+            ? "Chat interativo, pré-visualização automática e redação com lastro — você revisa e protocola no Juizado."
+            : "Chat interativo, pré-visualização automática e redação com lastro."}
         </p>
 
         {/* Trilho conectando as etapas (desktop) */}

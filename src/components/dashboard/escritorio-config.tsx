@@ -111,7 +111,10 @@ export function EscritorioConfigPanel({ value, onChange }: Props) {
   }
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <section
+      id="timbre-escritorio"
+      className="scroll-mt-24 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+    >
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-slate-800">
@@ -143,7 +146,9 @@ export function EscritorioConfigPanel({ value, onChange }: Props) {
                 titulo={titulo}
                 descricao={descricao}
                 valorAtual={value[campo]}
-                onDefinir={(base64) => atualizar({ [campo]: base64 })}
+                onDefinir={(base64) =>
+                  atualizar({ [campo]: base64, usarTimbre: true })
+                }
                 onRemover={() => atualizar({ [campo]: "" })}
               />
             ))}

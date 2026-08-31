@@ -17,6 +17,11 @@ import {
   resumoLeituraRelato,
   trechoLeituraRelato,
 } from "@/lib/peca-cabivel-autos";
+import { listaEspeciesDaArea, tituloPecaDaArea } from "@/lib/peca-especie-area";
+import {
+  analisarReplicaContestacao,
+  serializarReplicaContestacao,
+} from "@/lib/replica-contestacao";
 
 export const maxDuration = 60;
 
@@ -109,6 +114,32 @@ export async function POST(request: Request) {
     );
     preenchimento.tesesIds = teses.map((t) => t.id);
 
+    const analiseReplica = analisarReplicaContestacao({
+      texto: relato,
+      especiePeca: preenchimento.especiePeca,
+    });
+    if (
+      analiseReplica?.sugereEspecieReplica &&
+      !preenchimento.especiePeca &&
+      (listaEspeciesDaArea(areaId) ?? []).some((e) => e.id === "replica")
+    ) {
+      preenchimento.especiePeca = "replica";
+      preenchimento.tipoAcao =
+        tituloPecaDaArea(areaId, "replica", preenchimento.tipoAcao) ??
+        "Réplica à contestação";
+      const incertos = new Set(preenchimento.camposIncertos);
+      incertos.delete("especiePeca");
+      preenchimento.camposIncertos = [...incertos];
+      preenchimento.resumoConferencia = [
+        preenchimento.resumoConferencia,
+        `Contestação detectada — ${analiseReplica.teses.length} tese(s) mapeada(s) para réplica.`,
+      ]
+        .filter(Boolean)
+        .join(" ");
+    }
+
+    const replicaContestacao = serializarReplicaContestacao(analiseReplica);
+
     const janela = analisarJanelaRelato(relato);
     const fonte: FonteLeituraRelato = usouOcr
       ? usouTextoArquivo || Boolean(relatoDigitado)
@@ -139,6 +170,7 @@ export async function POST(request: Request) {
         artigos: t.artigos,
       })),
       leituraRelato,
+      replicaContestacao,
     });
   } catch (erro) {
     console.error("[entrada-caso]", erro);

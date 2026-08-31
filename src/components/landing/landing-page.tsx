@@ -47,7 +47,7 @@ const BENEFICIOS = [
     icone: IconeRelogio,
     titulo: "Economize horas de trabalho",
     texto:
-      "O que levaria horas de redação, o FACTO estrutura em minutos — fundamentos, pedidos e narrativa dos fatos prontos para revisão.",
+      "Conte o caso no assistente — o FACTO estrutura fundamentos, pedidos e narrativa em minutos, prontos para revisão.",
   },
   {
     icone: IconeBalanca,
@@ -72,15 +72,15 @@ const BENEFICIOS = [
 const PASSOS = [
   {
     passo: "01",
-    titulo: "Descreva o caso em minutos",
+    titulo: "Conte o caso no assistente",
     texto:
-      "Descreva o caso, use a Entrada do caso (texto ou PDF) ou deixe o Assistente indicar a peça. Partes, fatos e pedidos no formulário guiado — sem minuta em branco.",
+      "Linguagem natural, PDF ou Word. O FACTO organiza fatos, partes e rito — e mostra a pré-visualização forense sem consumir cota.",
   },
   {
     passo: "02",
     titulo: "A equipe FACTO redige com lastro",
     texto:
-      "Analista, Pesquisa e Redator estruturam a peça: fundamentos cruzam súmulas da base curada e a minuta sai em padrão forense — pronta para a sua revisão.",
+      "Você confirma a redação (1 peça). Analista, Pesquisa e Redator estruturam a minuta com súmulas da base curada — pronta para revisão.",
   },
   {
     passo: "03",
@@ -145,9 +145,9 @@ export function LandingPage() {
               <span className="text-facto-gold">redige suas peças jurídicas</span>
             </h1>
             <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-stone-400">
-              O FACTO economiza horas da sua rotina, fundamenta com súmulas da
-              base curada e entrega peças em padrão forense (Word ou PDF) —
-              minuta para você revisar e protocolar.
+              Conte o caso no assistente FACTO — preview forense ao vivo antes de
+              gerar, redação com lastro da base curada e peça em Word ou PDF para
+              revisar e protocolar.
             </p>
 
             <div className="mt-10 flex flex-col items-center gap-3">
@@ -166,9 +166,8 @@ export function LandingPage() {
                 </a>
               </div>
               <p className="max-w-md text-center text-xs leading-relaxed text-stone-500">
-                Teste: 1 área e {PLANO_TRIAL.pecasPorMes} peças com marca
-                d’água. Planos pagos liberam a conta pelo e-mail após o
-                pagamento.
+                Teste: 1 área e {PLANO_TRIAL.pecasPorMes} peças · preview completo.
+                Export Word/PDF nos planos pagos.
               </p>
             </div>
           </div>
@@ -213,11 +212,11 @@ export function LandingPage() {
                 Como funciona
               </p>
               <h2 className="mt-3 text-3xl font-bold text-white md:text-4xl">
-                Do caso à minuta — rápido, lastreado e sob o seu controle
+                Do relato à minuta — com assistente e lastro
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-stone-500 md:text-base">
-                Três passos pensados para a bancada: menos tempo na estrutura,
-                mais segurança na fundamentação, você na revisão.
+                Assistente primeiro: você narra o caso; o FACTO organiza, mostra
+                a forma forense e só consome cota na redação completa.
               </p>
             </div>
 

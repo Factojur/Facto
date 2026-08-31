@@ -214,6 +214,21 @@ export function metaEspecieDaArea(areaId: string, especie: string) {
   return metaEspecie(especie as EspeciePecaJec);
 }
 
+export function pecaUsaEmFaceDeReu(
+  conectivoPartes: string | null | undefined
+): boolean {
+  const c = String(conectivoPartes ?? "").trim();
+  if (!c) return true;
+  if (
+    /^(impetrando|interpondo|oferecendo|apresentando|opondo|requerendo)\b/i.test(
+      c
+    )
+  ) {
+    return false;
+  }
+  return true;
+}
+
 export function tituloPecaDaArea(
   areaId: string,
   especie: string,

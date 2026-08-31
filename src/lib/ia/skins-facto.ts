@@ -143,6 +143,7 @@ export function reforcarEstrategiaParaRedator(params: {
     pedidos.length
       ? `Pedidos do formulário (reproduzir o conteúdo, sem omitir):\n- ${pedidos.join("\n- ")}`
       : null,
+    "Qualidade: redija como memorial de advogado sênior — argumentar o caso concreto (expor, encaixar tese, valorizar pontos do polo, requerer). Proibido só apontar artigos/ementas sem subsunção persuasiva aos fatos.",
     `</VINCULOS_FACTO>`,
   ].filter((l): l is string => Boolean(l));
 

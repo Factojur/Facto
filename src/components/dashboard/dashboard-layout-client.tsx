@@ -31,7 +31,8 @@ export function DashboardLayoutClient({
   const isPerfil = pathname === "/dashboard/perfil";
   const isSuporte = pathname.startsWith("/dashboard/suporte");
   const isPlanos = pathname === "/dashboard/planos";
-  const mostraSidebar = !isHome && !isPerfil && !isSuporte && !isPlanos;
+  const isPecaTela = pathname.startsWith("/dashboard/peca-tela");
+  const mostraSidebar = !isHome && !isPerfil && !isSuporte && !isPlanos && !isPecaTela;
   const [menuMobileAberto, setMenuMobileAberto] = useState(false);
   const [sidebarRecolhida, setSidebarRecolhida] = useState(false);
 
@@ -52,12 +53,25 @@ export function DashboardLayoutClient({
     });
   }
 
+  if (isPecaTela) {
+    return (
+      <div className="min-h-dvh bg-facto-dark">
+        {children}
+      </div>
+    );
+  }
+
   if (isHome) {
     return (
-      <div className="flex min-h-screen flex-col bg-facto-dark">
+      <div className="flex min-h-dvh flex-col bg-facto-dark">
         <DashboardTopBar perfil={perfil} plano={plano} />
         <AvisoMemoriaLocal />
-        <main className="flex-1 overflow-x-clip">{children}</main>
+        <main
+          id="dashboard-home-scroll"
+          className="flex-1 overflow-y-auto overflow-x-clip"
+        >
+          {children}
+        </main>
         <WhatsAppFloat />
         <AceiteTermosModal aberto={precisaAceiteTermos} />
       </div>
@@ -94,14 +108,14 @@ export function DashboardLayoutClient({
           onFechar={() => setMenuMobileAberto(false)}
         />
       )}
-      <div className="flex min-w-0 flex-1 overflow-hidden">
+      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
         {mostraSidebar && (
           <DashboardSidebar
             recolhida={sidebarRecolhida}
             onToggleRecolhida={toggleSidebarRecolhida}
           />
         )}
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <main className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-50 p-4 sm:p-6 md:p-8">
             <div
               className={`mx-auto min-w-0 text-slate-800 ${

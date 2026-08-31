@@ -91,7 +91,8 @@ export default function OnboardingTrialPage() {
         <p className="mt-3 text-sm leading-relaxed text-stone-400">
           Conta Google conectada
           {email ? ` (${email})` : ""}. Selecione a área do teste e aceite os
-          termos para liberar {PLANO_TRIAL.pecasPorMes} peças por 7 dias.
+          termos para liberar {PLANO_TRIAL.pecasPorMes} peças no assistente por
+          7 dias.
         </p>
 
         <form onSubmit={onSubmit} className="mt-8 space-y-5">

@@ -16,6 +16,8 @@ export type DossieCasoLivre = {
 export function montarDossieCasoLivre(params: {
   fatos: string;
   briefingFormulario?: BriefingCasoLivre | null;
+  /** Impugnação estruturada da contestação (espécie réplica). */
+  briefingReplica?: string | null;
   dispositivoSentenca?: string | null;
   provas?: ProvaTextoCaso[];
 }): DossieCasoLivre {
@@ -32,6 +34,15 @@ export function montarDossieCasoLivre(params: {
       "<ORIENTACOES_FORMULARIO>",
       params.briefingFormulario.texto.trim(),
       "</ORIENTACOES_FORMULARIO>",
+      ""
+    );
+  }
+
+  if (params.briefingReplica?.trim()) {
+    partes.push(
+      "<CONTESTACAO_PARA_IMPUGNAR>",
+      params.briefingReplica.trim().slice(0, 12_000),
+      "</CONTESTACAO_PARA_IMPUGNAR>",
       ""
     );
   }
@@ -66,6 +77,7 @@ export function montarDossieCasoLivre(params: {
 
   const relatoExtra = [
     params.briefingFormulario?.texto ?? "",
+    params.briefingReplica ?? "",
     params.dispositivoSentenca ?? "",
     ...provas.map((p) => p.sintese ?? p.texto ?? ""),
     fatos,

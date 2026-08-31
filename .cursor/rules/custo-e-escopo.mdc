@@ -1,0 +1,24 @@
+---
+description: Política de custo e escopo — implementar o grátis; pontuar o que gera custo; Gestão só sob pedido.
+alwaysApply: true
+---
+
+# Custo e escopo do produto principal
+
+## Implementar sem pedir (custo zero ou já coberto)
+
+Tudo que **não gera custo acima do que já temos** (Gemini/Anthropic/cota de peça, APIs pagas novas) e melhora o projeto ou o usuário: **implementar quando fizer sentido**, depois ajustamos.
+
+Exemplos: regex/extração local, ViaCEP, UI, retrieve/ranking no acervo próprio, seeds com cota já contratada, copy, testes.
+
+## O que gera custo — pontuar, não implementar sozinho
+
+Se a melhoria **gasta tokens, cota de peça, ou API paga nova**, **não implementar** sem o Jefferson. Listar com:
+
+1. Benefício esperado
+2. Custo explícito (modelo, tokens, cota, R$ se souber)
+3. Prioridade sugerida (P0/P1/P2)
+
+## FACTO Gestão
+
+**Não tocar** em `/gestao`, `gestao-*`, skill Gestão, nem mencionar/priorizar Gestão, **salvo pedido explícito** do Jefferson neste chat.

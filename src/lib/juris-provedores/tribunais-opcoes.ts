@@ -203,3 +203,40 @@ export function bonusAfinidadeTribunais(opcoes: {
   if (ids.includes(slug)) return 12;
   return -8;
 }
+
+/**
+ * Boost suave pelo TJ da UF da comarca — superiores nunca são penalizados.
+ * Usado quando o usuário ainda não escolheu tribunais manualmente.
+ */
+export function bonusAfinidadeUfComarca(opcoes: {
+  titulo: string;
+  categoria?: string;
+  texto?: string;
+  ufComarca: string;
+}): number {
+  const tj = tjPorUf(opcoes.ufComarca);
+  if (!tj) return 0;
+  const cat = blobTribunal([opcoes.categoria]);
+  const slug = inferirSlugTribunalDoTexto(
+    opcoes.titulo,
+    opcoes.categoria,
+    opcoes.texto
+  );
+  if (cat.includes("sumula")) {
+    if (slug && slug === tj.id) return 6;
+    if (slug && IDS_SUPERIORES.has(slug)) return 4;
+    return 2;
+  }
+  if (!slug) return 0;
+  if (IDS_SUPERIORES.has(slug)) return 3;
+  if (slug === tj.id) return 10;
+  if (slug.startsWith("tj")) return -3;
+  return 0;
+}
+
+/** Defaults quando a comarca traz UF: TJ local + STJ (máx. 3). */
+export function tribunaisPadraoPorUf(uf: string | null | undefined): string[] {
+  const tj = tjPorUf(uf);
+  if (!tj) return [];
+  return [tj.id, "stj"];
+}

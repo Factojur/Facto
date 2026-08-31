@@ -135,6 +135,42 @@ body {
   animation: assistente-ia-shimmer 2.4s ease-in-out infinite;
 }
 
+@keyframes facto-titulo-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 6px rgba(144, 139, 106, 0.45))
+      drop-shadow(0 0 14px rgba(240, 235, 208, 0.22));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(196, 191, 154, 0.7))
+      drop-shadow(0 0 28px rgba(240, 235, 208, 0.4));
+  }
+}
+
+/** Wordmark oficial do logo — brilho suave (sem shimmer de texto). */
+.facto-titulo-wordmark {
+  animation: facto-titulo-glow 3.4s ease-in-out infinite;
+}
+
+.facto-titulo-shimmer {
+  background-image: linear-gradient(
+    105deg,
+    #7a7560 0%,
+    #908b6a 28%,
+    #fff8d6 46%,
+    #f0ebd0 54%,
+    #908b6a 72%,
+    #7a7560 100%
+  );
+  background-size: 260% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation:
+    assistente-ia-shimmer 3.2s ease-in-out infinite,
+    facto-titulo-glow 3.2s ease-in-out infinite;
+}
+
 @keyframes assistente-chip-scan {
   0% {
     transform: translateX(-130%);
@@ -428,6 +464,18 @@ body {
     background-image: none;
     -webkit-background-clip: unset;
     background-clip: unset;
+  }
+  .facto-titulo-shimmer {
+    animation: none !important;
+    color: #908b6a;
+    background-image: none;
+    -webkit-background-clip: unset;
+    background-clip: unset;
+    filter: none;
+  }
+  .facto-titulo-wordmark {
+    animation: none !important;
+    filter: drop-shadow(0 0 8px rgba(144, 139, 106, 0.35));
   }
   .plano-card-glow-orb {
     opacity: 0.65;

@@ -106,7 +106,7 @@ function ofertasParaPlano(
     return {
       titulo: "Escolha seu plano",
       subtitulo:
-        "Contrate na mesma conta — o acesso libera após a confirmação do Mercado Pago.",
+        "Assistente com preview ao vivo em todos os planos — a redação completa entra na cota do plano. O acesso libera após a confirmação do Mercado Pago.",
       ofertas: [jec, completo, pro],
     };
   }
@@ -115,7 +115,7 @@ function ofertasParaPlano(
     return {
       titulo: "Faça upgrade",
       subtitulo:
-        "Você está no Plano JEC. Suba para Completo ou Pro e libere todas as áreas.",
+        "Você está no Plano JEC. Suba para Completo ou Pro e use o assistente em todas as áreas.",
       ofertas: [completo, pro],
     };
   }
@@ -124,7 +124,7 @@ function ofertasParaPlano(
     return {
       titulo: "Upgrade para Pro",
       subtitulo:
-        "Mais peças, prioridade Redator avançado e teto maior no ciclo.",
+        "Mais peças no mês, prioridade na fila e teto maior — mesmo assistente e preview grátis.",
       ofertas: [pro],
     };
   }
@@ -133,14 +133,15 @@ function ofertasParaPlano(
     return {
       titulo: "Você está no Pro",
       subtitulo:
-        "Plano máximo individual. Se precisar de mais peças neste mês, use um pacote extra.",
+        "Plano máximo individual. Precisa de mais peças neste mês? Use um pacote extra — o assistente continua o mesmo.",
       ofertas: [],
     };
   }
 
   return {
     titulo: "Planos FACTO",
-    subtitulo: "Gerencie sua assinatura ou fale com o suporte para Escritório.",
+    subtitulo:
+      "Gerencie a assinatura ou fale com o suporte para Escritório. O caminho principal da peça é o assistente.",
     ofertas: [completo, pro],
   };
 }

@@ -150,29 +150,15 @@ function gerarMarcaDaguaHtml(escritorio: EscritorioConfig): string {
   return `<img src="${escritorio.marcaDaguaBase64}" alt="" class="timbre-marca-dagua" aria-hidden="true" />`;
 }
 
-export type OpcoesDocumentoTimbrado = {
-  /** Trial: marca d’água diagonal + aviso de não protocolar. */
-  watermarkTrial?: boolean;
-};
-
 export function gerarDocumentoTimbrado(
   pecaTexto: string,
-  escritorio?: EscritorioConfig,
-  opcoes?: OpcoesDocumentoTimbrado
+  escritorio?: EscritorioConfig
 ): { pecaHtml: string; cssImpressao: string } {
   const corpoHtml = blocoParaHtml(pecaTexto);
   const cabecalho = escritorio?.usarTimbre ? gerarCabecalhoHtml(escritorio) : "";
   const rodape = escritorio?.usarTimbre ? gerarRodapeHtml(escritorio) : "";
-  const marcaDaguaEscritorio = escritorio?.usarTimbre
-    ? gerarMarcaDaguaHtml(escritorio)
-    : "";
-  const marcaDaguaTrial = opcoes?.watermarkTrial
-    ? `<div class="timbre-marca-dagua-trial" aria-hidden="true">TESTE FACTO — NÃO PROTOCOLAR</div>`
-    : "";
-  const marcaDagua = `${marcaDaguaTrial}${marcaDaguaEscritorio}`;
-  const avisoTopo = opcoes?.watermarkTrial
-    ? `<p class="minuta-aviso minuta-aviso-trial">Teste FACTO — peça com marca d’água · não protocolar</p>`
-    : `<p class="minuta-aviso">Minuta FACTO — revise antes de protocolar</p>`;
+  const marcaDagua = escritorio?.usarTimbre ? gerarMarcaDaguaHtml(escritorio) : "";
+  const avisoTopo = `<p class="minuta-aviso">Minuta FACTO — revise antes de protocolar</p>`;
 
   const cssImpressao = `
     @page {
@@ -366,28 +352,6 @@ export function gerarDocumentoTimbrado(
       background: #fffbeb;
       padding: 0.35rem 0.5rem;
       margin: 0 0 1rem;
-    }
-    .documento-juridico .minuta-aviso-trial {
-      color: #7f1d1d;
-      border-color: #ef4444;
-      background: #fef2f2;
-    }
-    .documento-juridico .timbre-marca-dagua-trial {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      pointer-events: none;
-      z-index: 0;
-      font-family: "${FORMATACAO_FORENSE.fonte}", Times, serif;
-      font-size: 28pt;
-      font-weight: bold;
-      letter-spacing: 0.08em;
-      color: rgba(185, 28, 28, 0.12);
-      transform: rotate(-32deg);
-      white-space: nowrap;
-      user-select: none;
     }
     .documento-juridico .documento-conteudo {
       position: relative;

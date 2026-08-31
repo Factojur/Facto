@@ -1,7 +1,7 @@
 /**
  * Cota mensal de peças FACTO (plano + extras do ciclo).
- * Análises / Entrada do caso não consomem cota — campos de análise ficam
- * zerados por compatibilidade de API.
+ * Assistente (intake/preview), Entrada do caso e análises auxiliares não
+ * consomem cota — só a redação confirmada = 1 peça.
  */
 
 import {

@@ -126,7 +126,7 @@ function LoginForm() {
           <FactoLogo variant="stacked" size="md" />
           <h1 className="mt-6 text-3xl font-bold text-white">Entrar</h1>
           <p className="mt-2 text-sm text-stone-400">
-            Acesse sua conta para gerar peças jurídicas
+            Acesse o assistente e gere peças no padrão forense
           </p>
         </div>
 
@@ -144,8 +144,9 @@ function LoginForm() {
 
           {trialOk && (
             <div className="mb-4 rounded-lg border border-emerald-800/60 bg-emerald-950/40 px-4 py-3 text-sm text-emerald-200">
-              Conta de teste criada. Entre com o e-mail e a senha para usar suas{" "}
-              {PLANO_TRIAL.pecasPorMes} peças na área escolhida.
+              Conta de teste criada. Entre com o e-mail e a senha — no dashboard,
+              abra o assistente e use suas {PLANO_TRIAL.pecasPorMes} peças na
+              área escolhida.
             </div>
           )}
 

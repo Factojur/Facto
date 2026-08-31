@@ -1,5 +1,5 @@
 /**
- * Teste grátis: 1 área · 2 peças · 7 dias · watermark no export.
+ * Teste grátis: 1 área · 2 peças · 7 dias · export limpo (protocolável).
  */
 
 import { PLANO_TRIAL } from "@/lib/planos-facto";

@@ -5,14 +5,14 @@ import { useEffect, useId, useState } from "react";
 
 const INOVACOES = [
   {
-    titulo: "Assistente Facto IA",
+    titulo: "Assistente de minuta",
     texto:
-      "Orienta a minuta na área em que você está: espécie, polo, fundamentos e ritmo forense.",
+      "Conte o caso em linguagem natural: o FACTO organiza área, espécie, polo e dados — caminho principal da peça.",
   },
   {
-    titulo: "Entrada do caso",
+    titulo: "Preview forense grátis",
     texto:
-      "Relato, PDF ou áudio preenchem as três abas. Gerar peça só consome cota no final.",
+      "Veja a peça na forma do tribunal antes de redigir. A redação completa só começa quando você confirmar.",
   },
   {
     titulo: "Lastro jurisprudencial",
@@ -98,7 +98,7 @@ export function AssistenteFactoInovacoesModal({
               <span className="assistente-ia-shimmer">IA</span>
             </h2>
             <p className="mt-1 text-xs text-stone-500">
-              O que a inteligência FACTO faz na sua minuta.
+              O que o assistente FACTO faz na sua peça.
             </p>
           </div>
           <button

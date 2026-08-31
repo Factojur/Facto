@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { getAreaById, hrefModuloArea } from "@/lib/areas-atuacao";
 import { sugerirAreaPorWizard } from "@/lib/grupos-areas-dashboard";
+import {
+  chatMinutaAreaHabilitada,
+  hrefChatMinuta,
+} from "@/lib/chat-minuta";
 import { AreaIllustration } from "@/components/dashboard/area-illustration";
 import { areaEstaLiberada } from "@/lib/acesso-areas";
 import type { PlanoId } from "@/lib/planos-facto";
@@ -12,6 +16,10 @@ type Props = {
   leigo?: boolean;
   plano?: PlanoId | null;
   previewAreas?: boolean;
+  /** No painel da home: já vem aberto, sem toggle. */
+  sempreAberto?: boolean;
+  /** Catálogo manual: formulário como ação principal. */
+  preferirFormulario?: boolean;
 };
 
 function IconeGuia({ className }: { className?: string }) {
@@ -37,8 +45,10 @@ export function AssistenteEscolhaArea({
   leigo = false,
   plano = null,
   previewAreas = false,
+  sempreAberto = false,
+  preferirFormulario = false,
 }: Props) {
-  const [aberto, setAberto] = useState(false);
+  const [aberto, setAberto] = useState(sempreAberto);
   const [assunto, setAssunto] = useState("");
   const [juizado, setJuizado] = useState<"sim" | "nao" | "nao_sei">("nao_sei");
 
@@ -48,12 +58,16 @@ export function AssistenteEscolhaArea({
   }, [assunto, juizado]);
 
   const area = sugestao ? getAreaById(sugestao.areaId) : null;
-  const href =
+  const hrefModulo =
     area && hrefModuloArea(area, previewAreas)
       ? hrefModuloArea(area, previewAreas)
       : null;
+  const hrefChat =
+    area && chatMinutaAreaHabilitada(area.id)
+      ? hrefChatMinuta(area.id, { nova: true })
+      : null;
   const liberada =
-    area && href
+    area && (hrefModulo || hrefChat)
       ? areaEstaLiberada(area.id, {
           plano,
           tipoUsuario: leigo ? "leigo" : "advogado",
@@ -65,11 +79,12 @@ export function AssistenteEscolhaArea({
   return (
     <section
       className={`rounded-lg border transition ${
-        aberto
+        aberto || sempreAberto
           ? "border-white/15 bg-white/[0.05]"
           : "border-transparent bg-transparent hover:border-white/10 hover:bg-white/[0.03]"
       }`}
     >
+      {!sempreAberto && (
       <button
         type="button"
         onClick={() => setAberto((v) => !v)}
@@ -85,7 +100,7 @@ export function AssistenteEscolhaArea({
             Em dúvida sobre a área?
           </span>
           <span className="mt-0.5 block text-xs text-stone-500">
-            Duas perguntas e o FACTO sugere o módulo.
+            Duas perguntas — o FACTO sugere a área e abre o assistente.
           </span>
         </span>
 
@@ -103,9 +118,24 @@ export function AssistenteEscolhaArea({
           </svg>
         </span>
       </button>
+      )}
 
-      {aberto ? (
-        <div className="space-y-4 border-t border-white/10 px-3 pb-3.5 pt-3">
+      {aberto || sempreAberto ? (
+        <div
+          className={`space-y-4 px-3 pb-3.5 pt-3 ${
+            sempreAberto ? "" : "border-t border-white/10"
+          }`}
+        >
+          {sempreAberto && (
+            <div className="mb-1">
+              <p className="text-sm font-medium text-stone-200">
+                Em dúvida sobre a área?
+              </p>
+              <p className="mt-0.5 text-xs text-stone-500">
+                Responda e abra no assistente (ou no formulário).
+              </p>
+            </div>
+          )}
           <div>
             <label
               htmlFor="wizard-assunto"
@@ -185,13 +215,46 @@ export function AssistenteEscolhaArea({
                   </p>
                 </div>
               </div>
-              {href && liberada ? (
-                <Link
-                  href={href}
-                  className="mt-3 inline-flex rounded-lg bg-facto-gold px-4 py-2 text-sm font-semibold text-facto-dark hover:bg-[#a39a78]"
-                >
-                  Entrar neste módulo →
-                </Link>
+              {liberada && (hrefChat || hrefModulo) ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {preferirFormulario && hrefModulo ? (
+                    <Link
+                      href={hrefModulo}
+                      className="inline-flex rounded-lg bg-facto-gold px-4 py-2 text-sm font-semibold text-facto-dark hover:bg-[#a39a78]"
+                    >
+                      Abrir formulário →
+                    </Link>
+                  ) : hrefChat ? (
+                    <Link
+                      href={hrefChat}
+                      className="inline-flex rounded-lg bg-facto-gold px-4 py-2 text-sm font-semibold text-facto-dark hover:bg-[#a39a78]"
+                    >
+                      Começar no assistente →
+                    </Link>
+                  ) : hrefModulo ? (
+                    <Link
+                      href={hrefModulo}
+                      className="inline-flex rounded-lg bg-facto-gold px-4 py-2 text-sm font-semibold text-facto-dark hover:bg-[#a39a78]"
+                    >
+                      Entrar neste módulo →
+                    </Link>
+                  ) : null}
+                  {preferirFormulario && hrefChat ? (
+                    <Link
+                      href={hrefChat}
+                      className="inline-flex rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-stone-200 hover:bg-white/5"
+                    >
+                      Assistente →
+                    </Link>
+                  ) : hrefModulo && hrefChat ? (
+                    <Link
+                      href={hrefModulo}
+                      className="inline-flex rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-stone-200 hover:bg-white/5"
+                    >
+                      Formulário completo →
+                    </Link>
+                  ) : null}
+                </div>
               ) : (
                 <p className="mt-3 text-xs text-amber-200/90">
                   Este módulo exige plano ou OAB compatível com seu cadastro.

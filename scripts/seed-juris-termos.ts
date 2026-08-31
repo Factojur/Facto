@@ -8,6 +8,7 @@
  * Lotes 81–96: TJs rasos + reforço TJSP + CARF — seed-juris-termos-lotes-81-96.ts.
  * Lotes 97–200: 10 TJs × áreas de volume + TST/TRF/CARF/STJ/STF.
  * Lotes 201+: lacunas (constitucional, prev, TST, CARF, retomas) + volume TJs.
+ * Lotes 684+: reforço áreas fracas até vencimento da assinatura.
  */
 
 import { LOTES_7_A_30, ROTULO_LOTE as ROTULO_7_30 } from "./seed-juris-termos-lotes-7-30";
@@ -34,8 +35,13 @@ import {
 import {
   LOTES_201_A_640,
   ROTULO_LOTE_201_640,
-  LOTE_MAX_EXPANDIDO,
+  LOTE_MAX_EXPANDIDO as LOTE_MAX_201_640,
 } from "./seed-juris-termos-lotes-201-640";
+import {
+  LOTES_684_PLUS,
+  ROTULO_LOTE_684,
+  LOTE_MAX_FASE3,
+} from "./seed-juris-termos-lotes-684-plus";
 
 export type TermoSeed = {
   q: string;
@@ -434,7 +440,10 @@ export const TERMOS_MULTIAREA_LOTE_6: TermoSeed[] = [
 ];
 
 export function termosDoLote(lote: number): TermoSeed[] {
-  if (lote >= 201 && lote <= LOTE_MAX_EXPANDIDO) {
+  if (lote >= 684 && lote <= LOTE_MAX_FASE3) {
+    return LOTES_684_PLUS[lote] ?? [];
+  }
+  if (lote >= 201 && lote <= LOTE_MAX_201_640) {
     return LOTES_201_A_640[lote] ?? [];
   }
   if (lote >= 97 && lote <= 200) {
@@ -471,6 +480,7 @@ export const ROTULO_LOTE: Record<number, string> = {
   ...ROTULO_LOTE_81_96,
   ...ROTULO_LOTE_97_200,
   ...ROTULO_LOTE_201_640,
+  ...ROTULO_LOTE_684,
 };
 
 export { LOTES_7_A_30 } from "./seed-juris-termos-lotes-7-30";
@@ -480,5 +490,6 @@ export { LOTES_65_A_80 } from "./seed-juris-termos-lotes-65-80";
 export { LOTES_81_A_96 } from "./seed-juris-termos-lotes-81-96";
 export { LOTES_97_A_200 } from "./seed-juris-termos-lotes-97-200";
 export { LOTES_201_A_640 } from "./seed-juris-termos-lotes-201-640";
+export { LOTES_684_PLUS } from "./seed-juris-termos-lotes-684-plus";
 
-export const LOTE_MAX = LOTE_MAX_EXPANDIDO;
+export const LOTE_MAX = Math.max(LOTE_MAX_201_640, LOTE_MAX_FASE3);

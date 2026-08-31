@@ -61,9 +61,16 @@ function SidebarNav({
   }[] = [
     {
       href: "/dashboard",
-      label: "Início",
-      icon: "home",
-      match: (path: string) => path === "/dashboard",
+      label: "Assistente",
+      icon: "spark",
+      match: (path: string) =>
+        path === "/dashboard" || path.startsWith("/dashboard/chat"),
+    },
+    {
+      href: "/dashboard/meus-casos",
+      label: "Meus casos",
+      icon: "file",
+      match: (path: string) => path.startsWith("/dashboard/meus-casos"),
     },
     {
       href: modulo.href,

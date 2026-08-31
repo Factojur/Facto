@@ -71,6 +71,14 @@ export function listarPerfisRecentes(limit = 5): PerfilClienteSalvo[] {
     .slice(0, limit);
 }
 
+/** Mescla perfil remoto se for mais recente que o local. */
+export function mesclarPerfilLocal(remoto: PerfilClienteSalvo): void {
+  const local = buscarPerfilCliente(remoto.rotulo);
+  if (local && local.atualizadoEm >= remoto.atualizadoEm) return;
+  const resto = ler().filter((p) => p.chave !== remoto.chave);
+  gravar([remoto, ...resto]);
+}
+
 export function salvarPerfilCliente(params: {
   autores: AutorValue[];
   reus: ReuValue[];

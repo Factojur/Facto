@@ -11,7 +11,7 @@ export default function PrivacidadePage() {
   return (
     <LegalShell
       titulo="Política de Privacidade"
-      atualizacao="24 de agosto de 2026"
+      atualizacao="29 de agosto de 2026"
     >
       <p>
         Esta Política de Privacidade (&quot;Política&quot;) descreve como o{" "}
@@ -248,8 +248,9 @@ export default function PrivacidadePage() {
             Por desenho de produto, a peça gerada e os dados das partes{" "}
             <strong>não são mantidos como arquivo permanente consultável
             na conta do cliente</strong>, salvo recursos expressamente
-            indicados na interface (ex.: rascunhos no navegador ou módulos de
-            casos quando habilitados).
+            indicados na interface (ex.: rascunhos no navegador, opt-in de
+            sincronização na nuvem — seção 5.1 — ou módulos de casos quando
+            habilitados).
           </li>
           <li>
             Ainda assim, durante e após o processamento, podem existir
@@ -269,6 +270,50 @@ export default function PrivacidadePage() {
             do Usuário.
           </li>
         </ul>
+      </section>
+
+      <section id="sync-nuvem">
+        <h2 className="mb-2 text-lg font-semibold text-stone-900">
+          5.1. Sincronização opcional na nuvem (LGPD)
+        </h2>
+        <p>
+          Por padrão, conversas do assistente, minutas e memória de clientes
+          ficam apenas no navegador (localStorage). Se você{" "}
+          <strong>ativar explicitamente</strong> a sincronização na interface
+          (aba Complementos do assistente ou equivalente), o FACTO poderá
+          armazenar na sua conta, em infraestrutura Supabase:
+        </p>
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          <li>
+            Metadados e texto das minutas geradas, relatos e qualificação de
+            partes reutilizável (memória de cliente).
+          </li>
+          <li>
+            Identificadores de sessão do assistente e área/rito da peça.
+          </li>
+        </ul>
+        <p className="mt-2">
+          <strong>Base legal:</strong> consentimento (art. 7º, I, LGPD), revogável
+          a qualquer momento desmarcando o opt-in — novos dados deixam de subir;
+          dados já salvos permanecem até exclusão pelo titular ou encerramento da
+          conta, conforme solicitação em{" "}
+          <a
+            href="mailto:privacidade@factoia.com.br"
+            className="font-medium text-stone-900 underline-offset-2 hover:underline"
+          >
+            privacidade@factoia.com.br
+          </a>
+          .
+        </p>
+        <p className="mt-2">
+          <strong>Finalidade:</strong> permitir retomar trabalho em outro
+          dispositivo logado na mesma conta. Não utilizamos esses dados para
+          treinar modelos abertos ao público.
+        </p>
+        <p className="mt-2 text-sm text-stone-600">
+          Versão do consentimento de sync registrada no perfil:{" "}
+          <strong>2026-08-29</strong>.
+        </p>
       </section>
 
       <section>

@@ -408,6 +408,7 @@ export function areaIdFromPathname(pathname: string): AreaIdMinuta {
   const i = partes.indexOf("dashboard");
   if (i < 0) return "jec";
   const prox = partes[i + 1];
+  if (prox === "chat") return "jec";
   if (prox === "preview") return normalizarAreaIdMinuta(partes[i + 2]);
   return normalizarAreaIdMinuta(prox);
 }

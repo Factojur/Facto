@@ -2,13 +2,13 @@
  * Reindexa embeddings da base_conhecimento.
  * Uso: npx tsx scripts/reindex-embeddings.ts
  *      npx tsx scripts/reindex-embeddings.ts --forcar
- * Requer GEMINI_API_KEY e SUPABASE_* no .env.local + migration pgvector.
+ * Requer GEMINI_API_KEY_SEED (free) + SUPABASE_* no .env.local.
+ * Seeds/reindex/smokes NÃO usam GEMINI_API_KEY paygo.
  */
 
-import { config } from "dotenv";
-import { resolve } from "path";
+import { exigirGeminiApenasSeed } from "./lib/gemini-env-seed";
 
-config({ path: resolve(process.cwd(), ".env.local") });
+exigirGeminiApenasSeed("reindex");
 
 async function main() {
   const { reindexarBaseConhecimento } = await import(

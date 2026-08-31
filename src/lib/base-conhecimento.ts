@@ -14,6 +14,10 @@ import {
   pistaQueryPolo,
 } from "@/lib/lastro-favoravel-polo";
 import { expandirQueryLastro } from "@/lib/expansao-query-lastro";
+import {
+  bonusAfinidadeTribunais,
+  bonusAfinidadeUfComarca,
+} from "@/lib/juris-provedores/tribunais-opcoes";
 import type { PoloAdvocacia } from "@/lib/polo-especies-por-area";
 
 export const CATEGORIAS_LASTRO = ["Súmula", "Jurisprudência"] as const;
@@ -539,7 +543,38 @@ function descartarLastroPorArea(
 export type OpcoesBuscaConhecimento = {
   polo?: PoloAdvocacia | null;
   especie?: string | null;
+  /** Até 3 tribunais escolhidos pelo usuário (prioridade sobre ufComarca). */
+  tribunais?: string[];
+  /** UF da comarca — boost suave no TJ local; superiores mantidos. */
+  ufComarca?: string | null;
 };
+
+function bonusScoreTribunal(
+  documento: { titulo: string; categoria: string; texto: string },
+  opcoes?: OpcoesBuscaConhecimento
+): number {
+  const tribunais = (opcoes?.tribunais ?? [])
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  if (tribunais.length) {
+    return bonusAfinidadeTribunais({
+      titulo: documento.titulo,
+      categoria: documento.categoria,
+      texto: documento.texto,
+      tribunais,
+    });
+  }
+  const uf = (opcoes?.ufComarca ?? "").trim();
+  if (uf) {
+    return bonusAfinidadeUfComarca({
+      titulo: documento.titulo,
+      categoria: documento.categoria,
+      texto: documento.texto,
+      ufComarca: uf,
+    });
+  }
+  return 0;
+}
 
 export async function buscarConhecimentoRelacionado(
   tipoAcao: string,
@@ -638,11 +673,20 @@ export async function buscarConhecimentoRelacionado(
           documento.categoria,
           polo
         );
+        const scoreTribunal = bonusScoreTribunal(
+          {
+            titulo: documento.titulo,
+            categoria: documento.categoria,
+            texto: trecho,
+          },
+          opcoes
+        );
         const score =
           scoreKw +
           bonusCategoria(documento.categoria) +
           boostSemantico +
-          scorePolo;
+          scorePolo +
+          scoreTribunal;
         if (score > 0 || boostSemantico >= 4) {
           candidatos.push({
             titulo: documento.titulo,
@@ -658,13 +702,22 @@ export async function buscarConhecimentoRelacionado(
 
     for (const curado of CONHECIMENTO_CURADO) {
       if (!ehCategoriaLastro(curado.categoria)) continue;
+      const scoreTribunal = bonusScoreTribunal(
+        {
+          titulo: curado.titulo,
+          categoria: curado.categoria,
+          texto: curado.texto,
+        },
+        opcoes
+      );
       const score =
         pontuarItemCurado(curado, palavras) +
         bonusLastroPolo(
           `${curado.titulo}\n${curado.texto}`,
           curado.categoria,
           polo
-        );
+        ) +
+        scoreTribunal;
       if (score > 0) {
         candidatos.push({ ...curado, score });
       }

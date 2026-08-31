@@ -39,10 +39,12 @@ Trava permanente: minuta para revisar e protocolar fora; rito/endereçamento/esp
 
 ## 3. Pré-lançamento — histórico e conferência (ideia MinutaIA, molde FACTO)
 
-8. **Histórico de minutas** — JEC local: reabrir/exportar/gerar de novo. Ainda não estende a outras áreas nem nuvem para o cliente.
+8. ~~**Histórico de minutas**~~ — JEC local + **nuvem opt-in** + **Meus casos** global (29/08).
 9. ~~**Ajuste pontual na preview**~~ — trecho + pedido.
-10. **Citação rastreável ao PDF do caso** — página se o anexo tiver `--- página N ---` (extração no navegador). Sem URL. Distinguir base vs anexo no auditor fica para depois.
+10. ~~**Citação rastreável**~~ — chips pós-redação (base/anexo/lei municipal) · form + chat (29/08).
+10b. ~~**Alerta fatos × pedidos**~~ — detector + chips antes de Gerar/Redigir (29/08).
 11. **Compra real ponta a ponta** — webhook + e-mail + convite + cadastro + cancelamento CDC. Único bloqueio comercial; está em `PENDENCIAS.md`.
+12. ~~**Restaurar sessão chat da nuvem**~~ — GET snapshot + Meus casos → Continuar (29/08).
 
 ## 4. Depois do lastro e da receita — crescimento, sem clone
 

@@ -63,9 +63,10 @@ export function TrialEsgotadoBanner({
         </h3>
         <p className="mt-1.5 max-w-2xl text-sm text-slate-600">
           {usoLabel ? `${usoLabel}. ` : ""}
-          Contrate na mesma conta — o acesso libera após a confirmação do
-          Mercado Pago (pode pagar com outro cartão/e-mail; o vínculo é desta
-          conta). Sem e-mail de convite.
+          Assine na mesma conta e continue no assistente — preview forense ao
+          vivo antes de gerar. O acesso libera após a
+          confirmação do Mercado Pago (pode pagar com outro cartão/e-mail; o
+          vínculo é desta conta). Sem e-mail de convite.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
           <button

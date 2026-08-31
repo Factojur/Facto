@@ -9,7 +9,28 @@ import {
   MODELOS_TRIAGEM,
 } from "@/lib/ia/gemini-client";
 
-export const AJUSTES_POR_GERACAO = 2;
+import type { PlanoId } from "@/lib/planos-facto";
+
+/** Fallback quando o plano não veio na requisição. */
+export const AJUSTES_POR_GERACAO = 3;
+
+export function limiteAjustesPorPlano(
+  plano: PlanoId | null | undefined,
+  leigo = false
+): number {
+  if (leigo) return 3;
+  if (
+    plano === "pro" ||
+    plano === "pro_anual" ||
+    plano === "escritorio_s" ||
+    plano === "escritorio_m" ||
+    plano === "escritorio_s_anual" ||
+    plano === "escritorio_m_anual"
+  ) {
+    return 5;
+  }
+  return 3;
+}
 
 export async function ajustarTrechoPeca(params: {
   peca: string;

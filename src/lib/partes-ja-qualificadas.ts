@@ -99,10 +99,20 @@ export function autoresAPartirDosNomes(texto: string): AutorValue[] {
 }
 
 function parecePessoaJuridica(nome: string): boolean {
-  return /\b(ltda|s\/?a|s\.a\.|me\b|epp\b|eireli|ss\b|educacional|faculdade|universidade|banco|seguradora|associa[cç][aã]o|instituto)\b/i.test(
-    nome
+  const n = String(nome ?? "").trim();
+  if (!n) return false;
+  return (
+    /\b(ltda|s\/?a|s\.a\.|me\b|epp\b|eireli|ss\b|educacional|faculdade|universidade|banco|seguradora|associa[cç][aã]o|instituto|inss\b|autarquia|uni[aã]o|holding|comercio|comércio|servi[cç]os)\b/i.test(
+      n
+    ) ||
+    /\b(enel|cpfl|cemig|light|equatorial|neoenergia|eletropaulo|aes\s+eletropaulo|sabesp|copasa|sanepar|celesc|celg|energisa|amazonas\s+energia)\b/i.test(
+      n
+    ) ||
+    /\bconcession[aá]ri[ao]\b/i.test(n)
   );
 }
+
+export { parecePessoaJuridica };
 
 export function reusAPartirDosNomes(texto: string): ReuValue[] {
   return partirNomesPartes(texto).map((nome) => {

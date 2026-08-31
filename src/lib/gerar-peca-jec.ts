@@ -55,19 +55,29 @@ import { fraseValorSecao } from "@/lib/secao-valor-peca";
 import { normalizarTextoFatos } from "@/lib/peca-paragrafos";
 import { montarFundamentosDireitoJec } from "@/lib/peca-do-direito-jec";
 import {
-  ehPeticaoInicialPorEspecie,
-  inferirEspeciePeca,
-  metaEspecie,
   paragrafoReservaSecao,
-  secoesNumeradas,
   tituloRomano,
+  type ChaveSecaoJec,
   type EspeciePecaJec,
 } from "@/lib/jec-especie-peca";
-import { aplicarFlagReconvencao, tituloPecaDaArea } from "@/lib/peca-especie-area";
+import {
+  aplicarFlagReconvencao,
+  especieParaScaffoldJec,
+  esqueletosDaEspecie,
+  idsPeticaoInicialDaArea,
+  inferirEspecieDaArea,
+  metaEspecieDaArea,
+  pecaUsaEmFaceDeReu,
+  tituloPecaDaArea,
+} from "@/lib/peca-especie-area";
 import {
   formatarEnderecoAdvogado,
   linhasEpigrafePeca,
 } from "@/lib/peca-cabivel-autos";
+import {
+  montarDireitoPreviewScaffold,
+  montarFatosPreviewScaffold,
+} from "@/lib/preview-fatos-scaffold";
 
 export type GerarPecaJecInput = {
   tipoAcao: string;
@@ -121,6 +131,10 @@ export type GerarPecaJecInput = {
   /** Causa própria (JEC leigo) — ajusta prompt partidário. */
   atuarLeigo?: boolean;
   areaId?: string;
+  /** Pré-visualização chat/form — esqueleto forense sem colar relato cru. */
+  modoPreview?: boolean;
+  /** Pedidos extraídos do relato (chat) — usados no preview. */
+  pedidosUsuario?: string[];
 };
 
 export type GerarPecaJecOutput = {
@@ -229,6 +243,10 @@ function areaEhJecLike(areaId: string): boolean {
   return areaId === "jec" || areaId === "jecr";
 }
 
+function mencionaLei9099(texto: string): boolean {
+  return /Lei\s*n[ºo°.]?\s*9[\.\s]?099|9\.?099\/9?5/i.test(texto);
+}
+
 /** Ementas de JEC não entram no scaffold de outras áreas (evita Lei 9.099 indevida). */
 function lastroParaArea(
   areaId: string,
@@ -236,10 +254,22 @@ function lastroParaArea(
 ): TrechoConhecimento[] {
   if (areaEhJecLike(areaId)) return itens;
   return itens.filter(
-    (item) =>
-      !/Lei\s*n[ºo°]?\s*9\.?099/i.test(`${item.titulo} ${item.texto}`)
+    (item) => !mencionaLei9099(`${item.titulo} ${item.texto}`)
   );
 }
+
+const ROMANOS_SECAO = [
+  "I",
+  "II",
+  "III",
+  "IV",
+  "V",
+  "VI",
+  "VII",
+  "VIII",
+  "IX",
+  "X",
+] as const;
 
 function fundamentoLeiQualificacao(areaId: string): string {
   if (areaEhJecLike(areaId)) return "na Lei nº 9.099/95";
@@ -334,10 +364,14 @@ function extrairPedidos(
   }
 
   if (especie === "pedido-contraposto") {
+    const fundamentoContraposto =
+      areaId === "jec"
+        ? "A procedência do pedido contraposto formulado pelo(a) réu(ré), na forma do art. 31 da Lei nº 9.099/95;"
+        : "A procedência do pedido contraposto formulado pelo(a) réu(ré), na forma do art. 343 do CPC, se cabível;";
     const itens = [
       "O acolhimento das preliminares eventualmente arguidas, com a extinção do processo sem resolução do mérito, se for o caso;",
       "No mérito, a total improcedência dos pedidos formulados na inicial;",
-      "A procedência do pedido contraposto formulado pelo(a) réu(ré), na forma do art. 31 da Lei nº 9.099/95;",
+      fundamentoContraposto,
       `A condenação da parte autora ao pagamento das custas e honorários, ${suc}.`,
     ];
     if (pedirJG) {
@@ -642,11 +676,21 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
 
   const especie = aplicarFlagReconvencao(
     areaIdPeca,
-    inferirEspeciePeca(tipoAcao, input.fatos, input.especiePeca),
+    inferirEspecieDaArea(
+      areaIdPeca,
+      tipoAcao,
+      input.fatos,
+      input.especiePeca
+    ),
     input.comReconvencao
+  );
+  const metaEsp = metaEspecieDaArea(areaIdPeca, especie);
+  const idsInicial = idsPeticaoInicialDaArea(areaIdPeca);
+  const ehInicial = idsInicial.includes(especie);
+  const especieScaffold = especieParaScaffoldJec(
+    areaIdPeca,
+    especie
   ) as EspeciePecaJec;
-  const metaEsp = metaEspecie(especie);
-  const ehInicial = ehPeticaoInicialPorEspecie(especie);
 
   const pedirJusticaGratuita =
     Boolean(input.pedirJusticaGratuita) ||
@@ -741,7 +785,7 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
   const enderecoAdvogado = formatarEnderecoAdvogado({
     escritorio: input.escritorio,
   });
-  const jaQualificadas = pecaUsaPartesJaQualificadas(especie);
+  const jaQualificadas = pecaUsaPartesJaQualificadas(especie, idsInicial);
   const blocoPartes = jaQualificadas
     ? formatarBlocoPartesJaQualificadas({
         autores: input.autores ?? (input.autor ? [input.autor] : []),
@@ -765,7 +809,10 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
   const fatosNormalizados = normalizarTextoFatos(input.fatos);
   const fatosLinhas = fatosNormalizados.split("\n").filter(Boolean);
 
-  const secoes = secoesNumeradas(especie, { incluirProvas: false });
+  const secoes = esqueletosDaEspecie(areaIdPeca, especie).map((secao, i) => ({
+    romano: ROMANOS_SECAO[i] ?? String(i + 1),
+    secao,
+  }));
   const corpoSecoes: string[] = [];
 
   for (const { romano, secao } of secoes) {
@@ -773,7 +820,31 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     corpoSecoes.push(titulo);
 
     if (secao.chave === "fatos" || secao.chave === "historico") {
-      corpoSecoes.push(...(fatosLinhas.length ? fatosLinhas : ["[Narrar os fatos.]"]));
+      if (input.modoPreview) {
+        const autoresNomes = (input.autores ?? [])
+          .map((a) => a.nomeCompleto?.trim())
+          .filter(Boolean) as string[];
+        const reusNomes = (input.reus ?? [])
+          .map((r) =>
+            r.tipo === "pj"
+              ? r.razaoSocial?.trim() || r.nomeFantasia?.trim()
+              : r.nomeCompleto?.trim()
+          )
+          .filter(Boolean) as string[];
+        corpoSecoes.push(
+          ...montarFatosPreviewScaffold({
+            fatos: input.fatos,
+            tipoAcao,
+            autoresNomes,
+            reusNomes,
+            areaId: areaIdPeca,
+          })
+        );
+      } else {
+        corpoSecoes.push(
+          ...(fatosLinhas.length ? fatosLinhas : ["[Narrar os fatos.]"])
+        );
+      }
     } else if (
       secao.chave === "direito" ||
       secao.chave === "merito" ||
@@ -794,34 +865,55 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
           tituloSecao: titulo,
         });
         corpoSecoes.push(...fundamentos.slice(1));
-      } else {
+      } else if (input.modoPreview) {
         corpoSecoes.push(
-          "[Desenvolver a fundamentação jurídica conforme o rito desta área — sem norma do Juizado Cível fora do JEC.]",
-          "",
-          ...(itensConhecimento.length
-            ? itensConhecimento.slice(0, 4).map(
-                (item) =>
-                  `Com apoio no acervo FACTO (${item.categoria} — ${item.titulo}): ${item.texto.slice(0, 400).trim()}…`
-              )
-            : [
-                "Incluir dispositivos legais e jurisprudência do rito competente, com lastro verificável.",
-              ])
+          ...montarDireitoPreviewScaffold({
+            areaId: areaIdPeca,
+            fatos: input.fatos,
+            tipoAcao,
+          })
+        );
+      } else {
+        /* Fora do JEC o scaffold só reserva a seção — nunca cola ementa crua nem
+           instrução interna na peça do cliente. A tese vem da geração com IA. */
+        corpoSecoes.push(
+          "A fundamentação jurídica desta seção será desenvolvida na redação com IA (ritos, dispositivos e jurisprudência com lastro verificável). Se esta peça for de reserva (IA indisponível), não protocolar — gere novamente com a redação completa."
         );
       }
     } else if (secao.chave === "valor") {
       corpoSecoes.push(...montarSecaoValorCausa(valorCausaResumo, secao.titulo));
     } else if (secao.chave === "pedidos") {
-      corpoSecoes.push(
-        "Ante o exposto, requer a Vossa Excelência:",
-        extrairPedidos(tipoAcao, tutelaUrgencia, valorCausaResumo, especie, {
-          pedirJusticaGratuita,
-          temMle,
-          areaId: areaIdPeca,
-        })
-      );
+      const pedidosRelato = (input.pedidosUsuario ?? []).filter(Boolean);
+      if (input.modoPreview && pedidosRelato.length > 0) {
+        corpoSecoes.push(
+          "Ante o exposto, requer a Vossa Excelência:",
+          pedidosRelato
+            .map((p, i) => `${String.fromCharCode(97 + i)}) ${p}`)
+            .join("\n")
+        );
+      } else {
+        corpoSecoes.push(
+          "Ante o exposto, requer a Vossa Excelência:",
+          extrairPedidos(
+            tipoAcao,
+            tutelaUrgencia,
+            valorCausaResumo,
+            especieScaffold,
+            {
+              pedirJusticaGratuita,
+              temMle,
+              areaId: areaIdPeca,
+            }
+          )
+        );
+      }
     } else {
       corpoSecoes.push(
-        ...paragrafoReservaSecao(secao.chave, input.fatos)
+        ...paragrafoReservaSecao(
+          secao.chave as ChaveSecaoJec,
+          input.fatos,
+          areaIdPeca
+        )
       );
     }
 
@@ -843,6 +935,9 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     poloAdvocacia: input.poloAdvocacia,
   });
 
+  const usaEmFaceDe =
+    !jaQualificadas && pecaUsaEmFaceDeReu(metaEsp.conectivoPartes);
+
   const pecaBruta = [
     enderecamento,
     montarMarcadorEspaco6(numeroProcesso, epigrafe),
@@ -851,11 +946,15 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     tituloPeca,
     ...(jaQualificadas
       ? [MARCADOR_ESPACO_2]
-      : [
-          MARCADOR_ESPACO_1,
-          `em face de ${qualificacaoReus}, ${metaEsp.conectivoPartes}`,
-          MARCADOR_ESPACO_2,
-        ]),
+      : usaEmFaceDe
+        ? [
+            MARCADOR_ESPACO_1,
+            `em face de ${qualificacaoReus}, ${metaEsp.conectivoPartes}`,
+            MARCADOR_ESPACO_2,
+          ]
+        : metaEsp.conectivoPartes
+          ? [MARCADOR_ESPACO_1, metaEsp.conectivoPartes, MARCADOR_ESPACO_2]
+          : [MARCADOR_ESPACO_2]),
     ...corpoSecoes,
     "Nestes termos,",
     "pede deferimento.",
@@ -872,14 +971,20 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
         provas: [...input.provas, ...input.fotos],
         midias: input.midias,
       })
-    : injetarQualificacaoReus(
-        injetarProvasELinkNuvem(pecaBruta, {
+    : usaEmFaceDe
+      ? injetarQualificacaoReus(
+          injetarProvasELinkNuvem(pecaBruta, {
+            linkNuvem,
+            provas: [...input.provas, ...input.fotos],
+            midias: input.midias,
+          }),
+          formatarQualificacaoReus(input.reus ?? [])
+        )
+      : injetarProvasELinkNuvem(pecaBruta, {
           linkNuvem,
           provas: [...input.provas, ...input.fotos],
           midias: input.midias,
-        }),
-        formatarQualificacaoReus(input.reus ?? [])
-      );
+        });
   const peca = aplicarFormatacaoTextoJuridico(pecaComProvas);
   const { pecaHtml } = gerarDocumentoTimbrado(
     peca,

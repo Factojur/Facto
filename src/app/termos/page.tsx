@@ -145,10 +145,11 @@ export default function TermosPage() {
             no momento da contratação.
           </li>
           <li>
-            Em regra, a <strong>Entrada do caso</strong> e análises auxiliares
-            não consomem cota de peça; o débito ocorre no{" "}
-            <strong>Gerar peça</strong> (ou equivalente), conforme regras do
-            plano.
+            Em regra, o <strong>assistente</strong> (relato/intake), a{" "}
+            <strong>pré-visualização forense</strong> e a{" "}
+            <strong>Entrada do caso</strong> no formulário não consomem cota de
+            peça; o débito ocorre na <strong>redação confirmada</strong>{" "}
+            (“Redigir” / “Gerar peça” ou equivalente), conforme regras do plano.
           </li>
           <li>
             Trial e períodos promocionais, quando oferecidos, são pessoais,
