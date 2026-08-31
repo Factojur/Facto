@@ -15,21 +15,11 @@ export type PreviewTriagemData = {
   pedidosFormulario?: string[];
 };
 
-export function PreviewTriagemPeca({
+/** Corpo reutilizável do plano (chat + formulário). */
+export function PlanoEstrategicoCorpo({
   triagem,
-  confirmando,
-  onConfirmar,
-  onVoltar,
-  onReanalisar,
-  rotuloVoltar = "Voltar ao formulário",
 }: {
   triagem: PreviewTriagemData;
-  confirmando?: boolean;
-  onConfirmar: () => void;
-  onVoltar: () => void;
-  /** Nova triagem após editar o formulário (não consome cota). */
-  onReanalisar?: () => void;
-  rotuloVoltar?: string;
 }) {
   const { analiseEstrategica: a } = triagem;
   const nOk = triagem.cobertura.filter((c) => c.noPlano).length;
@@ -38,25 +28,8 @@ export function PreviewTriagemPeca({
     .filter(Boolean);
 
   return (
-    <section className="rounded-xl border-2 border-stone-400 bg-gradient-to-b from-stone-50 to-white p-5 shadow-md ring-1 ring-stone-200/80">
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-emerald-900">
-          Triagem — não consome cota
-        </span>
-        <span className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-950">
-          A redação completa só debita 1 peça ao confirmar
-        </span>
-      </div>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-stone-900">
-            Plano estratégico — conferir antes de redigir
-          </h2>
-          <p className="mt-1 text-sm text-stone-600">
-            A triagem leu o dossiê inteiro e definiu tópicos, teses e pedidos.
-            Revise o plano; a redação seguirá estes títulos.
-          </p>
-        </div>
+    <>
+      <div className="mt-4 flex flex-wrap items-start justify-between gap-3">
         {triagem.coberturaResumo && (
           <span className="rounded-full border border-stone-200 bg-white px-3 py-1 text-xs font-medium text-stone-700">
             Cobertura {triagem.coberturaResumo}
@@ -184,12 +157,55 @@ export function PreviewTriagemPeca({
 
       <details className="mt-4">
         <summary className="cursor-pointer text-xs font-medium text-stone-500 hover:text-stone-700">
-          Ver triagem completa (texto)
+          Ver análise completa (texto)
         </summary>
         <pre className="mt-2 max-h-48 overflow-auto rounded-lg border border-stone-200 bg-stone-100/80 p-3 text-xs whitespace-pre-wrap text-stone-700">
           {triagem.estrategiaJuridica}
         </pre>
       </details>
+    </>
+  );
+}
+
+export function PreviewTriagemPeca({
+  triagem,
+  confirmando,
+  onConfirmar,
+  onVoltar,
+  onReanalisar,
+  rotuloVoltar = "Voltar ao formulário",
+}: {
+  triagem: PreviewTriagemData;
+  confirmando?: boolean;
+  onConfirmar: () => void;
+  onVoltar: () => void;
+  /** Nova triagem após editar o formulário (não consome cota). */
+  onReanalisar?: () => void;
+  rotuloVoltar?: string;
+}) {
+  return (
+    <section className="rounded-xl border-2 border-stone-400 bg-gradient-to-b from-stone-50 to-white p-5 shadow-md ring-1 ring-stone-200/80">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-emerald-900">
+          Triagem — não consome cota
+        </span>
+        <span className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-950">
+          A redação completa só debita 1 peça ao confirmar
+        </span>
+      </div>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold text-stone-900">
+            Plano estratégico — conferir antes de redigir
+          </h2>
+          <p className="mt-1 text-sm text-stone-600">
+            A triagem leu o dossiê inteiro e definiu tópicos, teses e pedidos.
+            Revise o plano; a redação seguirá estes títulos.
+          </p>
+        </div>
+      </div>
+
+      <PlanoEstrategicoCorpo triagem={triagem} />
 
       <div className="mt-6 flex flex-wrap justify-end gap-3">
         <button

@@ -3,11 +3,15 @@
  * Uso: npx tsx scripts/testar-chat-minuta.ts
  */
 import {
+  aplicarInferenciaAreaAoEstado,
   aplicarPreenchimentoAoEstado,
+  areaExigeConfirmacao,
+  confirmarAreaChat,
   estadoCasoChatVazio,
   hrefChatMinuta,
   inferirAreaChat,
   montarPayloadGeracaoChat,
+  podeMontarPlanoChat,
   precisaEscolherTribunais,
   poloExigeConfirmacaoChat,
   validarPoloChat,
@@ -318,6 +322,36 @@ function main() {
       "Meu cliente Ricardo Alves foi preso em flagrante por furto simples. Peço habeas corpus com liminar contra prisão preventiva.",
   });
   assert(casoHc.tutelaUrgencia !== true, "HC: liminar não marca tutela CPC");
+
+  const infHc = inferirAreaChat({
+    texto:
+      "Meu cliente Ricardo Alves foi preso em flagrante por furto simples. Peço habeas corpus com liminar.",
+    leigo: false,
+  });
+  assert(infHc.areaId === "criminal" && infHc.confianca === "alta", "HC → criminal alta");
+  const estadoHc = aplicarInferenciaAreaAoEstado(estadoCasoChatVazio("jec"), infHc);
+  assert(estadoHc.areaConfirmada === true, "HC alta confirma área auto");
+
+  const infAmb = inferirAreaChat({
+    texto:
+      "O casal discute guarda do filho e pensão alimentícia, mas há também cobrança de dívida entre ex-cônjuges.",
+    leigo: false,
+  });
+  if (infAmb.confianca !== "alta") {
+    assert(areaExigeConfirmacao(infAmb), "caso ambíguo exige confirmação");
+    const estadoAmb = aplicarInferenciaAreaAoEstado(estadoCasoChatVazio("jec"), infAmb);
+    assert(estadoAmb.areaConfirmada === false, "ambiguidade não confirma área");
+  }
+  assert(!podeMontarPlanoChat(estadoCasoChatVazio("jec")), "plano bloqueado sem fatos");
+  const confirmado = confirmarAreaChat(
+    aplicarInferenciaAreaAoEstado(estadoCasoChatVazio("jec"), {
+      areaId: "familia",
+      confianca: "media",
+      alternativas: ["civil"],
+    }),
+    "familia"
+  );
+  assert(confirmado.areaConfirmada && confirmado.areaId === "familia", "confirmar área");
 
   const estadoQual = estadoCasoChatVazio("jec");
   estadoQual.fatos =

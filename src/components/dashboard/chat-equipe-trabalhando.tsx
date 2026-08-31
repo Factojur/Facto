@@ -22,8 +22,9 @@ const PASSOS: Record<Exclude<FaseEquipeChat, "idle">, PassoAgente[]> = {
     { skin: "Analista Facto", titulo: "Conferindo espécie e área" },
   ],
   preview: [
-    { skin: "Analista Facto", titulo: "Montando estrutura forense" },
-    { skin: "Pesquisa & súmulas", titulo: "Marcando lacunas de fundamentação" },
+    { skin: "Maestro", titulo: "Montando plano estratégico" },
+    { skin: "Estrategista", titulo: "Definindo tópicos e teses" },
+    { skin: "Pesquisa & súmulas", titulo: "Buscando lastro na base FACTO" },
   ],
   triagem: [
     { skin: "Maestro", titulo: "Preparando plano da peça" },

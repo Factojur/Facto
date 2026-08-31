@@ -115,6 +115,13 @@ export type EstadoCasoChat = {
   tesesIds: string[];
   resumoEntrada: string | null;
   replicaContestacao: ReplicaContestacaoResumo | null;
+  /** Área confirmada (manual, URL ou inferência alta). */
+  areaConfirmada: boolean;
+  /** Última inferência automática — desambiguação no chat. */
+  areaInferida: InferenciaAreaChat | null;
+  /** Plano estratégico (triagem) conferido pelo usuário. */
+  planoVisto: boolean;
+  /** @deprecated use planoVisto — mantido para sessões antigas. */
   previewVisto: boolean;
   provasCaso: ProvaTextoCaso[];
   linkNuvem: string;
@@ -153,6 +160,9 @@ export function estadoCasoChatVazio(
     tesesIds: [],
     resumoEntrada: null,
     replicaContestacao: null,
+    areaConfirmada: false,
+    areaInferida: null,
+    planoVisto: false,
     previewVisto: false,
     provasCaso: [],
     linkNuvem: "",
@@ -270,6 +280,90 @@ export function inferirAreaChat(params: {
     areaId: topId,
     confianca,
     alternativas: ordenado.slice(1, 4).map(([id]) => id),
+  };
+}
+
+/** Inferência média/baixa exige confirmação antes de plano ou redação. */
+export function areaExigeConfirmacao(
+  inferencia: InferenciaAreaChat | null | undefined
+): boolean {
+  if (!inferencia) return true;
+  return inferencia.confianca !== "alta";
+}
+
+export function opcoesAreaParaConfirmacao(
+  inferencia: InferenciaAreaChat | null | undefined
+): AreaIdMinuta[] {
+  if (!inferencia) return [];
+  const ids = [inferencia.areaId, ...inferencia.alternativas];
+  return [...new Set(ids)]
+    .filter((id) => chatMinutaAreaHabilitada(id))
+    .slice(0, 4);
+}
+
+export function aplicarInferenciaAreaAoEstado(
+  estado: EstadoCasoChat,
+  inferencia: InferenciaAreaChat,
+  opts?: { manual?: boolean }
+): EstadoCasoChat {
+  const autoConfirma = Boolean(opts?.manual) || inferencia.confianca === "alta";
+  return {
+    ...estado,
+    areaId: inferencia.areaId,
+    areaInferida: inferencia,
+    areaConfirmada: autoConfirma,
+    planoVisto: false,
+    previewVisto: false,
+  };
+}
+
+export function confirmarAreaChat(
+  estado: EstadoCasoChat,
+  areaId: AreaIdMinuta
+): EstadoCasoChat {
+  return {
+    ...estado,
+    areaId,
+    areaConfirmada: true,
+    areaInferida: { areaId, confianca: "alta", alternativas: [] },
+    planoVisto: false,
+    previewVisto: false,
+  };
+}
+
+export function podeMontarPlanoChat(estado: EstadoCasoChat): boolean {
+  return (
+    estado.fatos.trim().length >= 40 &&
+    estado.tipoAcao.trim().length > 0 &&
+    estado.areaConfirmada
+  );
+}
+
+export function montarResumoEntendimentoChat(estado: EstadoCasoChat): {
+  fatosResumo: string;
+  tipoAcao: string;
+  especie: string;
+  autores: string;
+  reus: string;
+  pedidos: string[];
+  foro: string;
+} {
+  const fatos = estado.fatos.trim();
+  const especie = inferirEspecieDaArea(
+    estado.areaId,
+    estado.tipoAcao || "Petição",
+    fatos,
+    estado.especiePeca
+  );
+  return {
+    fatosResumo:
+      fatos.length > 480 ? `${fatos.slice(0, 480).trim()}…` : fatos,
+    tipoAcao: estado.tipoAcao.trim() || "—",
+    especie: especie.replace(/-/g, " "),
+    autores: estado.autoresNomes.join(", ") || "—",
+    reus: estado.reusNomes.join(", ") || "—",
+    pedidos: estado.pedidos.filter(Boolean),
+    foro: estado.comarca.foro?.trim() || estado.comarca.cidade?.trim() || "—",
   };
 }
 
@@ -463,6 +557,15 @@ export function normalizarEstadoCasoChat(
     tribunaisDispensados: Boolean(bruto.tribunaisDispensados),
     qualificacaoAutor: bruto.qualificacaoAutor ?? {},
     qualificacaoReu: bruto.qualificacaoReu ?? {},
+    areaConfirmada: Boolean(
+      bruto.areaConfirmada ?? bruto.previewVisto ?? bruto.planoVisto
+    ),
+    areaInferida:
+      bruto.areaInferida && typeof bruto.areaInferida === "object"
+        ? (bruto.areaInferida as InferenciaAreaChat)
+        : null,
+    planoVisto: Boolean(bruto.planoVisto ?? bruto.previewVisto),
+    previewVisto: Boolean(bruto.previewVisto ?? bruto.planoVisto),
   };
 }
 
