@@ -229,6 +229,26 @@ export function pecaUsaEmFaceDeReu(
   return true;
 }
 
+/** Remédios com liminar própria — não usar flag tutelaUrgencia (art. 300 CPC). */
+export function especieUsaTutelaUrgenciaCpc(
+  especie: string | null | undefined
+): boolean {
+  const e = String(especie ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "");
+  if (!e) return true;
+  if (
+    /habeas|mandado.?seguranca|habeas.?data|revisao.?criminal|acao.?popular|^(adi|adpf|adc)$/.test(
+      e
+    )
+  ) {
+    return false;
+  }
+  return true;
+}
+
 export function tituloPecaDaArea(
   areaId: string,
   especie: string,

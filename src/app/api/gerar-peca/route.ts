@@ -48,7 +48,7 @@ import {
   verificarCitacoes,
 } from "@/lib/ia/verificacao-citacoes";
 import { anexarAuditoria } from "@/lib/ia/auditor-peca";
-import { geminiConfigurado } from "@/lib/ia/gemini-client";
+import { geminiConfigurado, erroGeracaoIaTransitivo } from "@/lib/ia/gemini-client";
 import { consumirUmaPeca, verificarSaldoCota } from "@/lib/cota-pecas-server";
 import { validarSessaoPecasAtiva } from "@/lib/sessao-pecas-server";
 import { formatarOabAssinatura } from "@/lib/formatar-oab";
@@ -902,6 +902,17 @@ async function postGerarPeca(request: Request) {
   });
 
   if (!ia.ok) {
+    if (erroGeracaoIaTransitivo(ia.erro)) {
+      return NextResponse.json(
+        {
+          error:
+            "A IA está temporariamente indisponível. Aguarde cerca de um minuto e tente novamente — sua cota não foi debitada.",
+          codigo: "IA_INDISPONIVEL",
+          detalhe: ia.erro,
+        },
+        { status: 503 }
+      );
+    }
     const fallbackNorm = finalizarTextoPeca(
       scaffold.peca,
       body,

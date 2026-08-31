@@ -73,6 +73,18 @@ function main() {
   });
   assert(ok.length === 0, "caso coerente sem alertas");
 
+  const hcTutela = detectarAlertasFatosPedidos({
+    fatos:
+      "Paciente preso em flagrante. Peço habeas corpus com liminar para relaxamento da prisão.",
+    pedidos: ["Concessão da ordem de habeas corpus"],
+    tutelaUrgencia: true,
+    especiePeca: "habeas-corpus",
+  });
+  assert(
+    !hcTutela.some((a) => a.id === "tutela-sem-fato"),
+    "HC com liminar não gera alerta de tutela CPC"
+  );
+
   const { oks, falhas } = stats();
   console.log(`\nAlerta fatos×pedidos: ${oks} ok, ${falhas} falha(s).`);
   if (falhas > 0) process.exit(1);

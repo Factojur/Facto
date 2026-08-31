@@ -312,6 +312,13 @@ function main() {
   assert(casoAgua.pedirJusticaGratuita === true, "local detecta JG");
   assert(casoAgua.pedidos.length >= 2, "local extrai pedidos");
 
+  const casoHc = organizarCasoLocal({
+    areaId: "criminal",
+    relato:
+      "Meu cliente Ricardo Alves foi preso em flagrante por furto simples. Peço habeas corpus com liminar contra prisão preventiva.",
+  });
+  assert(casoHc.tutelaUrgencia !== true, "HC: liminar não marca tutela CPC");
+
   const estadoQual = estadoCasoChatVazio("jec");
   estadoQual.fatos =
     "João Silva, CPF 123.456.789-09, residente na Rua das Flores, 100, Campinas/SP, contra Loja ABC Ltda.";

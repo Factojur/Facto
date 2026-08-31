@@ -96,6 +96,21 @@ function modeloSobrecarregado(status: number, mensagem: string): boolean {
   );
 }
 
+/** Falha transitória da IA — não debitar cota nem devolver scaffold silencioso. */
+export function erroGeracaoIaTransitivo(mensagem: string): boolean {
+  if (modeloSobrecarregado(0, mensagem)) return true;
+  const n = mensagem.toLowerCase();
+  return (
+    n.includes("falha de rede") ||
+    n.includes("network") ||
+    n.includes("econnreset") ||
+    n.includes("etimedout") ||
+    n.includes("fetch failed") ||
+    n.includes("timeout") ||
+    n.includes("socket hang up")
+  );
+}
+
 /** Auth / chave inválida — não adianta trocar de modelo. */
 function erroAutenticacao(status: number, mensagem: string): boolean {
   if (status === 401 || status === 403) return true;

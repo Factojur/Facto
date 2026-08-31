@@ -41,6 +41,7 @@ function corrigirOrtografiaForense(texto: string): string {
     .replace(/\bINDENIZÁVELE\b/gi, "INDENIZÁVEL E")
     .replace(/\bPROVASE\b/gi, "PROVAS E")
     .replace(/\bEXCELENTENT[IÍ]SSIM[OA]\b/gi, "EXCELENTÍSSIMO")
+    .replace(/\bEXCELCELENT[IÍ]SSIM[OA]\b/gi, "EXCELENTÍSSIMO")
     .replace(/\bVARADO\b/gi, "VARA DO")
     .replace(/\[\[\/?JURIS\]\]/gi, "")
     .replace(/\[Inserir[^\]]*\]/gi, "…");

@@ -7,6 +7,7 @@ import type { PreenchimentoEntradaCaso } from "@/lib/entrada-caso-types";
 import { extrairPartesDoRelato } from "@/lib/extrair-partes-relato";
 import { extrairMetadadosAutos } from "@/lib/peca-cabivel-autos";
 import {
+  especieUsaTutelaUrgenciaCpc,
   inferirEspecieDaArea,
   tituloPecaDaArea,
 } from "@/lib/peca-especie-area";
@@ -20,15 +21,16 @@ function norm(t: string): string {
   return t.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
 }
 
-function extrairPedidosDoRelato(relato: string): string[] {
+function extrairPedidosDoRelato(relato: string, especie: string): string[] {
   const pedidos: string[] = [];
   const n = norm(relato);
 
-  if (
-    /tutela\s+(de\s+)?urg[eê]ncia|liminar|antecipada|restabelecimento\s+imediato|restaurar\s+o\s+fornecimento|corte\s+indevido|implanta[cç][aã]o\s+imediata/.test(
+  const pedeTutelaCpc =
+    /tutela\s+(de\s+)?urg[eê]ncia|antecipada|restabelecimento\s+imediato|restaurar\s+o\s+fornecimento|corte\s+indevido|implanta[cç][aã]o\s+imediata/.test(
       n
-    )
-  ) {
+    ) ||
+    (/liminar/.test(n) && especieUsaTutelaUrgenciaCpc(especie));
+  if (pedeTutelaCpc) {
     pedidos.push(
       /implanta[cç][aã]o|benef[ií]cio|bpc|loas|inss/.test(n)
         ? "Tutela de urgência para implantação imediata do benefício"
@@ -131,7 +133,7 @@ export function organizarCasoLocal(params: {
     tituloPecaDaArea(params.areaId, especie, "Petição inicial") ||
     "Petição inicial";
   const teses = detectarTesesCanonicas(params.areaId, relato);
-  const pedidos = extrairPedidosDoRelato(relato);
+  const pedidos = extrairPedidosDoRelato(relato, especie);
   const n = norm(relato);
 
   return {
@@ -151,11 +153,14 @@ export function organizarCasoLocal(params: {
     pedirJusticaGratuita: /justi[cç]a\s+gratuita|gratuidade|hipossufici|jg\b/.test(n)
       ? true
       : null,
-    tutelaUrgencia: /tutela\s+(de\s+)?urg[eê]ncia|liminar|restabelecimento\s+imediato|corte\s+indevido/.test(
-      n
-    )
-      ? true
-      : null,
+    tutelaUrgencia:
+      (/tutela\s+(de\s+)?urg[eê]ncia|restabelecimento\s+imediato|corte\s+indevido/.test(
+        n
+      ) ||
+        (/liminar/.test(n) && especieUsaTutelaUrgenciaCpc(especie))) &&
+      especieUsaTutelaUrgenciaCpc(especie)
+        ? true
+        : null,
     danosMorais: /danos?\s*morais?/.test(n) ? true : null,
     danosMateriais: /danos?\s*materiais|restitui[cç][aã]o/.test(n) ? true : null,
     tesesIds: teses.map((t) => t.id),

@@ -639,6 +639,7 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     Object.values(input.documentos).flat().length;
 
   const linkNuvem = normalizarLinkNuvem(input.linkNuvem);
+  const areaIdPeca = input.areaId ?? "jec";
 
   let tipoAcao = input.tipoAcao;
   let tutelaUrgencia = input.tutelaUrgencia;
@@ -648,12 +649,12 @@ export function gerarPecaJec(input: GerarPecaJecInput): GerarPecaJecOutput {
     decisaoAssistente = analisarCaseAssistente({
       fatos: input.fatos,
       totalArquivos: totalProvas,
+      areaId: areaIdPeca,
     });
     tipoAcao = decisaoAssistente.tipoAcao;
     tutelaUrgencia = decisaoAssistente.tutelaUrgencia;
   }
 
-  const areaIdPeca = input.areaId ?? "jec";
   const fundamentoLegal = fundamentosLegaisBase(areaIdPeca, tutelaUrgencia);
 
   const itensConhecimento = lastroParaArea(

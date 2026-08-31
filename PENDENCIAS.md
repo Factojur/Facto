@@ -53,10 +53,12 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] **Endereçamento pós-IA** — `substituirEnderecamentoDeterministico` remove linhas extras (Vara Cível fantasma)
 - [x] **Formulário manual** — `aplicarQualificacaoExtraidaRelato` ao aplicar entrada-caso; catálogo de áreas aberto por padrão; workspace chat `min(72dvh,720px)` para ver áreas abaixo
 - [x] **Tipografia/juris** — `EXCELENTENTÍSSIMO`, `VARADO`, `[[/JURIS]]`; `injetarQualificacaoReus` mais agressivo
-- [x] **Testes** — `testar-chat-minuta` 63 ok; `testar-alerta-fatos-pedidos` 7 ok; `tsc --noEmit` ok
+- [x] **Testes** — `testar-chat-minuta` 67 ok; `testar-alerta-fatos-pedidos` 8 ok; `tsc --noEmit` ok
 - [x] **HC/Penal preview** — `pecaUsaEmFaceDeReu` (sem “em face de” no paciente); dedup autor=réu; inferência criminal > família (“família na cidade”)
-- [x] **Deploy produção (31/08 manhã)** — `dpl_Cey6Dejo3NiTomsJDqMcT3vh3o4F` · HC em face de + partes
-- [ ] **E2E 5 peças (31/08)** — matriz Penal chat + Prev/Trab/Cons/Civil manual; exports em `testes-e2e-31-08/` (scaffold ok; IA pendente)
+- [x] **Deploy produção (31/08 manhã)** — `dpl_Am7KfYQoJYPxz5p6vzm6ZWyaSxiC` · commit `2c0a1d4` · HC + inferência criminal + chat minuta completo
+- [x] **E2E 31/08** — 5 peças IA exportadas (`npx tsx scripts/exportar-e2e-31-08.ts --ia`); checklists preenchidos; browser Penal: preview+triagem ok; Prev manual: preenchimento+triagem ok; Redigir em prod falhou (Gemini)
+- [x] **Fixes pós-E2E (31/08 tarde)** — `EXCELCELENTÍSSIMO` normalizado; HC/MS sem flag tutela CPC (`especieUsaTutelaUrgenciaCpc`); alerta tutela ignorado em HC; `/api/gerar-peca` retorna **503 sem debitar cota** em falha transitória Gemini
+- [x] **E2E 5 peças (31/08)** — matriz Penal chat + Prev/Trab/Cons/Civil manual; exports IA em `testes-e2e-31-08/` (txt+pdf+docx+checklist); browser: preview/triagem ok, **Redigir prod** instável (Gemini sobrecarga / timeout 60s Vercel)
 
 ### Feito nesta rodada (31/08)
 
@@ -74,7 +76,7 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 ### P0 aberto pós-PDF (corrigido em código local — aguarda deploy)
 
 - [x] **Deploy** com lote Enel/BPC/endereçamento/form/manual — `dpl_ANALA7Xt2jc2Yckd8tu1F71WRnSx` · [factoia.com.br](https://factoia.com.br) · 31/08 ~05h
-- [ ] **Caso 2 “Erro ao redigir”** — reproduzir com log `[gerar-peca]` em prod após deploy
+- [x] **“Erro ao redigir” em prod (parcial)** — 503 `IA_INDISPONIVEL` sem debitar cota quando Gemini sobrecarregado; pendente: timeout Vercel 60s vs duração triagem+redação; retomar E2E browser após deploy
 - [ ] **Valor da causa no chat** — conferir `garantirSecaoValorCausa` após redeploy (R$ 8.000 Caso 1A)
 
 ### Melhorar sem gastar mais (IA / qualidade — implementar quando fizer sentido)

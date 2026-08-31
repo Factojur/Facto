@@ -44,7 +44,7 @@ import {
   autoresAPartirDosNomes,
   reusAPartirDosNomes,
 } from "@/lib/partes-ja-qualificadas";
-import { inferirEspecieDaArea } from "@/lib/peca-especie-area";
+import { inferirEspecieDaArea, especieUsaTutelaUrgenciaCpc } from "@/lib/peca-especie-area";
 import { getAreaById } from "@/lib/areas-atuacao";
 
 /** Áreas no chat — Fase 1 + rollout Fase 3 (exc. Criminal, Const, JECR até smoke dedicado). */
@@ -658,6 +658,17 @@ export function aplicarPreenchimentoAoEstado(
   }
   if (preenchimento.tutelaUrgencia != null) {
     next.tutelaUrgencia = preenchimento.tutelaUrgencia;
+  }
+
+  const areaResolvida = areaId ?? next.areaId;
+  const especie = inferirEspecieDaArea(
+    areaResolvida,
+    next.tipoAcao || "Petição",
+    next.fatos,
+    next.especiePeca
+  );
+  if (!especieUsaTutelaUrgenciaCpc(especie)) {
+    next.tutelaUrgencia = false;
   }
 
   return next;

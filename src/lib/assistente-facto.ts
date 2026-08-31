@@ -5,6 +5,10 @@
  */
 
 import { ritoDaArea } from "@/lib/area-rito";
+import {
+  especieUsaTutelaUrgenciaCpc,
+  inferirEspecieDaArea,
+} from "@/lib/peca-especie-area";
 
 export const ASSISTENTE_FACTO = "assistente-facto";
 
@@ -297,7 +301,7 @@ export function analisarCaseAssistente(input: {
   }
   }
 
-  const tutelaUrgencia = contemAlgum(fatos, [
+  const tutelaUrgenciaBruta = contemAlgum(fatos, [
     "urgente",
     "urgência",
     "urgencia",
@@ -313,6 +317,14 @@ export function analisarCaseAssistente(input: {
     "emergência",
     "emergencia",
   ]);
+  const especieInferida = inferirEspecieDaArea(
+    areaId,
+    tipoAcao,
+    input.fatos,
+    null
+  );
+  const tutelaUrgencia =
+    tutelaUrgenciaBruta && especieUsaTutelaUrgenciaCpc(especieInferida);
 
   const danosMorais = contemAlgum(fatos, [
     "dano moral",

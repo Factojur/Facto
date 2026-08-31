@@ -3,6 +3,8 @@
  * Não bloqueia geração — só chips de conferência antes de redigir/protocolar.
  */
 
+import { especieUsaTutelaUrgenciaCpc } from "@/lib/peca-especie-area";
+
 export type AlertaFatosPedidos = {
   id: string;
   gravidade: "alerta" | "info";
@@ -70,12 +72,15 @@ export function detectarAlertasFatosPedidos(input: {
       pedidosTexto
     );
   if (input.tutelaUrgencia && !urgenciaNosFatos) {
-    alertas.push({
-      id: "tutela-sem-fato",
-      gravidade: "alerta",
-      mensagem:
-        "Tutela de urgência marcada, mas os fatos não descrevem urgência ou perigo — inclua na narrativa ou desmarque.",
-    });
+    const esp = norm(input.especiePeca ?? "");
+    if (especieUsaTutelaUrgenciaCpc(esp)) {
+      alertas.push({
+        id: "tutela-sem-fato",
+        gravidade: "alerta",
+        mensagem:
+          "Tutela de urgência marcada, mas os fatos não descrevem urgência ou perigo — inclua na narrativa ou desmarque.",
+      });
+    }
   }
 
   if (
