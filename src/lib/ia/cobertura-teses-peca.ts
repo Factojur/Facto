@@ -131,3 +131,96 @@ export function auditarTopicosNaPeca(
 
   return { faltando, ok };
 }
+
+function indiceTopicoDireito(topicos: TopicoPlanejado[]): number {
+  const idx = topicos.findIndex((t) => /direito|fundament|mérito|merito/i.test(t.titulo));
+  if (idx >= 0) return idx;
+  const fatos = topicos.findIndex((t) => /fato/i.test(t.titulo));
+  return fatos >= 0 && fatos < topicos.length - 1 ? fatos + 1 : Math.max(0, topicos.length - 1);
+}
+
+function indiceTopicoPedidos(topicos: TopicoPlanejado[]): number {
+  const idx = topicos.findIndex((t) => /pedido/i.test(t.titulo));
+  return idx >= 0 ? idx : topicos.length - 1;
+}
+
+function atualizarResumoCobertura(itens: ItemCoberturaTese[]): string {
+  const ok = itens.filter((i) => i.noPlano).length;
+  return `${ok}/${itens.length}`;
+}
+
+/** Inclui tese ou pedido pendente no plano local (1 clique, sem nova triagem). */
+export function incluirItemCoberturaNoPlano<
+  T extends {
+    estrategiaJuridica: string;
+    topicos: TopicoPlanejado[];
+    cobertura: ItemCoberturaTese[];
+    coberturaResumo?: string;
+    pedidosFormulario?: string[];
+  },
+>(triagem: T, itemId: string): T | null {
+  const item = triagem.cobertura.find((c) => c.id === itemId);
+  if (!item || item.noPlano) return null;
+
+  const topicos = triagem.topicos.map((t) => ({
+    ...t,
+    subtitulos: [...t.subtitulos],
+  }));
+  const pedidosFormulario = [...(triagem.pedidosFormulario ?? [])];
+
+  const ehPedido = item.rotulo.startsWith("Pedido:");
+  const textoInclusao = ehPedido
+    ? item.rotulo.replace(/^Pedido:\s*/i, "").trim()
+    : item.rotulo.trim();
+
+  if (!textoInclusao) return null;
+
+  if (ehPedido) {
+    if (!pedidosFormulario.some((p) => norm(p) === norm(textoInclusao))) {
+      pedidosFormulario.push(textoInclusao);
+    }
+    if (topicos.length === 0) {
+      topicos.push({
+        romano: "I",
+        titulo: "DOS PEDIDOS",
+        subtitulos: [textoInclusao],
+      });
+    } else {
+      const idx = indiceTopicoPedidos(topicos);
+      const alvo = topicos[idx]!;
+      if (!alvo.subtitulos.some((s) => norm(s) === norm(textoInclusao))) {
+        alvo.subtitulos.push(textoInclusao);
+      }
+    }
+  } else if (topicos.length === 0) {
+    topicos.push({
+      romano: "I",
+      titulo: "DO DIREITO",
+      subtitulos: [textoInclusao],
+    });
+  } else {
+    const idx = indiceTopicoDireito(topicos);
+    const alvo = topicos[idx]!;
+    if (!alvo.subtitulos.some((s) => norm(s) === norm(textoInclusao))) {
+      alvo.subtitulos.push(textoInclusao);
+    }
+  }
+
+  const cobertura = triagem.cobertura.map((c) =>
+    c.id === itemId ? { ...c, noPlano: true } : c
+  );
+
+  const nota = `\n[Incluído no plano: ${textoInclusao}]`;
+  const estrategiaJuridica = triagem.estrategiaJuridica.includes(textoInclusao)
+    ? triagem.estrategiaJuridica
+    : `${triagem.estrategiaJuridica.trim()}${nota}`;
+
+  return {
+    ...triagem,
+    topicos,
+    pedidosFormulario,
+    cobertura,
+    coberturaResumo: atualizarResumoCobertura(cobertura),
+    estrategiaJuridica,
+  };
+}

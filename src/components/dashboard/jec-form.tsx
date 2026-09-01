@@ -175,7 +175,7 @@ import {
 } from "@/lib/memoria-cliente-local";
 import { salvarPerfilClienteComSync } from "@/lib/memoria-cliente-sync";
 import { AJUSTES_POR_GERACAO } from "@/lib/ia/ajustar-trecho-peca";
-import { auditarTopicosNaPeca } from "@/lib/ia/cobertura-teses-peca";
+import { auditarTopicosNaPeca, incluirItemCoberturaNoPlano } from "@/lib/ia/cobertura-teses-peca";
 
 type GuiaJec = GuiaMinuta;
 const GUIAS_JEC = GUIAS_MINUTA;
@@ -2080,6 +2080,21 @@ export function JecForm({
     setFaseGeracao("idle");
   }
 
+  function incluirCoberturaNoPlano(itemId: string) {
+    if (!triagemPreview) return;
+    const next = incluirItemCoberturaNoPlano(triagemPreview, itemId);
+    if (!next) return;
+    setTriagemPreview(next);
+    setPayloadPendente((p) =>
+      p
+        ? {
+            ...p,
+            pedidosUsuario: next.pedidosFormulario ?? p.pedidosUsuario,
+          }
+        : p
+    );
+  }
+
   function cancelarTriagem() {
     setTriagemPreview(null);
     setPayloadPendente(null);
@@ -3215,6 +3230,7 @@ export function JecForm({
             onConfirmar={() => void confirmarRedacao()}
             onVoltar={cancelarTriagem}
             onReanalisar={reanalisarTriagem}
+            onIncluirCobertura={incluirCoberturaNoPlano}
           />
         </div>
       )}

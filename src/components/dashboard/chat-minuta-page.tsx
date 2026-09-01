@@ -120,6 +120,7 @@ import {
   salvarSessaoChatNuvem,
 } from "@/lib/sync-nuvem-client";
 import { detectarAlertasFatosPedidos } from "@/lib/alerta-fatos-pedidos";
+import { incluirItemCoberturaNoPlano } from "@/lib/ia/cobertura-teses-peca";
 import { calcularResumoValorCausa } from "@/lib/valores-causa";
 import type { CitacaoVerificada } from "@/lib/ia/verificacao-citacoes";
 import { sugerirPrazoDaPeca } from "@/lib/prazo-intimacao";
@@ -1536,6 +1537,36 @@ export function ChatMinutaPage({
     );
   }
 
+  function incluirCoberturaNoPlano(itemId: string) {
+    if (!triagemPreview) return;
+    const next = incluirItemCoberturaNoPlano(triagemPreview, itemId);
+    if (!next) return;
+    const item = triagemPreview.cobertura.find((c) => c.id === itemId);
+    setTriagemPreview(next);
+    setVersoesPlano((v) => registrarVersaoPlano(v, next, item?.rotulo ?? "inclusão"));
+    destacarPlanoAtualizado();
+    if (next.pedidosFormulario?.length) {
+      setEstado((e) => ({
+        ...e,
+        pedidos: next.pedidosFormulario ?? e.pedidos,
+        planoVisto: true,
+        previewVisto: true,
+      }));
+    }
+    setPayloadPendente((p) =>
+      p
+        ? {
+            ...p,
+            pedidosUsuario: next.pedidosFormulario ?? p.pedidosUsuario,
+          }
+        : p
+    );
+    adicionarMensagem(
+      "sistema",
+      `Incluído no plano: **${item?.rotulo.replace(/^Pedido:\s*/i, "") ?? "item"}**.`
+    );
+  }
+
   function trocarArea(nova: AreaIdMinuta) {
     if (!chatMinutaAreaHabilitada(nova)) return;
     setAreaManual(true);
@@ -2316,6 +2347,7 @@ export function ChatMinutaPage({
               }
               onPedidosChange={handlePedidosPlano}
               onRestaurarVersao={restaurarVersaoPlano}
+              onIncluirCobertura={incluirCoberturaNoPlano}
             />
           )}
         </div>

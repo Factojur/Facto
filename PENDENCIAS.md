@@ -62,6 +62,10 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] **Fixes pós-E2E (31/08 tarde)** — `EXCELCELENTÍSSIMO` normalizado; HC/MS sem flag tutela CPC (`especieUsaTutelaUrgenciaCpc`); alerta tutela ignorado em HC; `/api/gerar-peca` retorna **503 sem debitar cota** em falha transitória Gemini
 - [x] **E2E 5 peças (31/08)** — matriz Penal chat + Prev/Trab/Cons/Civil manual; exports IA em `testes-e2e-31-08/` (txt+pdf+docx+checklist); browser: preview/triagem ok, **Redigir prod** instável (Gemini sobrecarga / timeout 60s Vercel)
 
+### Feito nesta rodada (01/09 manhã)
+
+- [x] **Cobertura clicável** — itens pendentes (!) no plano viram botão **+ Incluir no plano** (tese → subtópico do direito; pedido → DOS PEDIDOS), sem nova triagem/cota
+
 ### Feito nesta rodada (31/08 noite — fluidez chat)
 
 - [x] **Camada 1 — fluidez** — gates suaves (área média auto-confirma + chip; polo inferido; tribunais sugestão); resposta rica no thread; highlight no plano; edição inline de pedidos; CTA único Continuar/Redigir; entrada-caso em complementos
@@ -69,6 +73,7 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] **Camada 3 — moat** — versões do plano; alertas fatos×pedidos no painel; lastro/cobertura já no `PlanoEstrategicoCorpo`
 - [x] **Testes** — `testar-chat-minuta` 75 ok; `testar-chat-fluidez` ok; `tsc --noEmit` ok
 - [x] **Seeds agendados** — `FACTO-seed-juris-01h` (01/09 01h, lote **599**) · `FACTO-seed-sumulas-04h` (01/09 04h) · contas free `GEMINI_API_KEY_SEED`
+- [x] **Deploy produção (31/08 noite — fluidez)** — `dpl_GCLh3Jxa2VDVm61uvYEw8jUuyWRe` · commit `4818c43` · [factoia.com.br](https://factoia.com.br)
 
 ### Feito nesta rodada (31/08 noite)
 

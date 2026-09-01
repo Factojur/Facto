@@ -18,8 +18,11 @@ export type PreviewTriagemData = {
 /** Corpo reutilizável do plano (chat + formulário). */
 export function PlanoEstrategicoCorpo({
   triagem,
+  onIncluirCobertura,
 }: {
   triagem: PreviewTriagemData;
+  /** 1 clique em item pendente — inclui tese/pedido no plano sem nova triagem. */
+  onIncluirCobertura?: (itemId: string) => void;
 }) {
   const { analiseEstrategica: a } = triagem;
   const nOk = triagem.cobertura.filter((c) => c.noPlano).length;
@@ -87,29 +90,39 @@ export function PlanoEstrategicoCorpo({
           </h3>
           <p className="mt-0.5 text-xs text-stone-500">
             {nOk} de {triagem.cobertura.length} refletidos no plano da triagem.
+            {triagem.cobertura.some((c) => !c.noPlano) && onIncluirCobertura && (
+              <span className="text-stone-600">
+                {" "}
+                Toque em um item pendente para incluir.
+              </span>
+            )}
           </p>
-          <ul className="mt-2 space-y-1">
+          <ul className="mt-2 space-y-1.5">
             {triagem.cobertura.map((c) => (
-              <li
-                key={c.id}
-                className="flex items-start gap-2 text-sm text-stone-700"
-              >
+              <li key={c.id} className="flex items-start gap-2 text-sm">
                 <span
                   className={
                     c.noPlano ? "text-emerald-600" : "text-amber-600"
                   }
+                  aria-hidden
                 >
                   {c.noPlano ? "✓" : "!"}
                 </span>
-                <span>
-                  {c.rotulo}
-                  {!c.noPlano && (
-                    <span className="text-amber-800">
-                      {" "}
-                      — incluir na redação
+                {!c.noPlano && onIncluirCobertura ? (
+                  <button
+                    type="button"
+                    onClick={() => onIncluirCobertura(c.id)}
+                    className="rounded-lg border border-amber-300 bg-amber-50/90 px-2.5 py-1.5 text-left text-sm text-amber-950 transition hover:border-amber-400 hover:bg-amber-100"
+                    title="Incluir no plano (sem nova triagem)"
+                  >
+                    <span className="font-medium">{c.rotulo}</span>
+                    <span className="mt-0.5 block text-xs font-semibold text-amber-800">
+                      + Incluir no plano
                     </span>
-                  )}
-                </span>
+                  </button>
+                ) : (
+                  <span className="text-stone-700">{c.rotulo}</span>
+                )}
               </li>
             ))}
           </ul>
@@ -173,6 +186,7 @@ export function PreviewTriagemPeca({
   onConfirmar,
   onVoltar,
   onReanalisar,
+  onIncluirCobertura,
   rotuloVoltar = "Voltar ao formulário",
 }: {
   triagem: PreviewTriagemData;
@@ -181,6 +195,7 @@ export function PreviewTriagemPeca({
   onVoltar: () => void;
   /** Nova triagem após editar o formulário (não consome cota). */
   onReanalisar?: () => void;
+  onIncluirCobertura?: (itemId: string) => void;
   rotuloVoltar?: string;
 }) {
   return (
@@ -205,7 +220,7 @@ export function PreviewTriagemPeca({
         </div>
       </div>
 
-      <PlanoEstrategicoCorpo triagem={triagem} />
+      <PlanoEstrategicoCorpo triagem={triagem} onIncluirCobertura={onIncluirCobertura} />
 
       <div className="mt-6 flex flex-wrap justify-end gap-3">
         <button

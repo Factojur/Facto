@@ -9,6 +9,7 @@ import {
 import { registrarVersaoPlano } from "../src/lib/chat-plano-versoes";
 import { estadoCasoChatVazio } from "../src/lib/chat-minuta";
 import type { PreviewTriagemData } from "../src/components/dashboard/preview-triagem-peca";
+import { incluirItemCoberturaNoPlano } from "../src/lib/ia/cobertura-teses-peca";
 
 function triagemFake(): PreviewTriagemData {
   return {
@@ -41,6 +42,20 @@ function main() {
   assert(v1.length === 1, "versão registrada");
   const v2 = registrarVersaoPlano(v1, triagemFake(), "dup");
   assert(v2.length === 1, "dedup versão igual");
+
+  const triagemPendente: PreviewTriagemData = {
+    ...triagemFake(),
+    cobertura: [
+      { id: "inexigibilidade-debito", rotulo: "Inexigibilidade de débito", noPlano: false, exigeSubtopico: true },
+    ],
+    topicos: [{ romano: "III", titulo: "DO DIREITO", subtitulos: ["CDC"] }],
+  };
+  const incluido = incluirItemCoberturaNoPlano(triagemPendente, "inexigibilidade-debito");
+  assert(incluido?.cobertura[0]?.noPlano === true, "cobertura marcada ok");
+  assert(
+    incluido?.topicos[0]?.subtitulos.some((s) => /inexigibilidade/i.test(s)),
+    "tese no subtópico"
+  );
 
   console.log("testar-chat-fluidez: ok");
 }

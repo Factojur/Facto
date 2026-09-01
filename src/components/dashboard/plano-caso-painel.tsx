@@ -96,6 +96,7 @@ export function PlanoCasoPainel({
   onAtualizarPlano,
   onPedidosChange,
   onRestaurarVersao,
+  onIncluirCobertura,
 }: {
   estado: EstadoCasoChat;
   triagem: PreviewTriagemData | null;
@@ -108,6 +109,7 @@ export function PlanoCasoPainel({
   onAtualizarPlano?: () => void;
   onPedidosChange?: (pedidos: string[]) => void;
   onRestaurarVersao?: (versao: VersaoPlanoChat) => void;
+  onIncluirCobertura?: (itemId: string) => void;
 }) {
   const resumo = montarResumoEntendimentoChat(estado);
   const areaRotulo = rotuloAreaChat(estado.areaId);
@@ -192,7 +194,10 @@ export function PlanoCasoPainel({
           </div>
         )}
 
-        <PlanoEstrategicoCorpo triagem={triagem} />
+        <PlanoEstrategicoCorpo
+          triagem={triagem}
+          onIncluirCobertura={onIncluirCobertura}
+        />
 
         {onPedidosChange && resumo.pedidos.length > 0 && (
           <div className="mt-4 rounded-lg border border-stone-200 bg-white p-3">
