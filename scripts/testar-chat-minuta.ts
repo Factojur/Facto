@@ -16,6 +16,7 @@ import {
   podeMontarPlanoChat,
   precisaEscolherTribunais,
   poloExigeConfirmacaoChat,
+  sanitizarPartesPayloadChat,
   validarPoloChat,
 } from "../src/lib/chat-minuta";
 import { limiteAjustesPorPlano } from "../src/lib/ia/ajustar-trecho-peca";
@@ -25,6 +26,8 @@ import {
   respostaMetaLeiJuris,
 } from "../src/lib/chat-minuta-intencao";
 import { extrairPartesDoRelato } from "../src/lib/extrair-partes-relato";
+import { detectarRelatoMistoAreas } from "../src/lib/chat-anti-contaminacao";
+import { autoresAPartirDosNomes, reusAPartirDosNomes } from "../src/lib/partes-ja-qualificadas";
 import { pecaUsaEmFaceDeReu } from "../src/lib/peca-especie-area";
 import {
   extrairQualificacaoDoRelato,
@@ -435,6 +438,19 @@ function main() {
   );
   assert(/Brasil/i.test(endSimples.autor.logradouro ?? ""), "endereço: Av sem n°");
   assert(endSimples.autor.uf === "SP", "endereço: Campinas-SP");
+
+  const misto = detectarRelatoMistoAreas(
+    "Enel cortou energia. Meu cliente preso em flagrante, habeas corpus."
+  );
+  assert(misto.misto, "detecta relato misto consumidor+penal");
+
+  const hcPartes = sanitizarPartesPayloadChat(
+    "criminal",
+    "habeas-corpus",
+    autoresAPartirDosNomes("Ricardo Alves"),
+    reusAPartirDosNomes("Enel São Paulo")
+  );
+  assert(hcPartes.reus.length === 0, "HC remove Enel do payload");
 
   const { oks, falhas } = stats();
   console.log(`\n${oks} ok · ${falhas} falha(s)`);

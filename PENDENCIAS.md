@@ -62,6 +62,14 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] **Fixes pós-E2E (31/08 tarde)** — `EXCELCELENTÍSSIMO` normalizado; HC/MS sem flag tutela CPC (`especieUsaTutelaUrgenciaCpc`); alerta tutela ignorado em HC; `/api/gerar-peca` retorna **503 sem debitar cota** em falha transitória Gemini
 - [x] **E2E 5 peças (31/08)** — matriz Penal chat + Prev/Trab/Cons/Civil manual; exports IA em `testes-e2e-31-08/` (txt+pdf+docx+checklist); browser: preview/triagem ok, **Redigir prod** instável (Gemini sobrecarga / timeout 60s Vercel)
 
+### Feito nesta rodada (01/09 tarde — formatação P0 + fluidez)
+
+- [x] **Pipeline protocolo** — `pos-processar-peca-gerada.ts`: cabeçalho/epígrafe obrigatórios; strip préâmbulo IA; qualificação única; título antes do I; valor da causa em `finalizarTextoPeca`; placeholders limpos; `normalizarPecaGerada` pós-injeção
+- [x] **HC / Penal** — sem `em face de` civil; remove Enel/energia/multa CPC; payload sem réu concessionária
+- [x] **Anti-contaminação chat** — relato misto bloqueia; troca de área reinicia partes; **Novo caso** zera estado; complemento “também quero multa…” → pedidos (não qualificação)
+- [x] **Testes** — `testar-formatacao-peca` ok; `testar-chat-minuta` 77 ok; `testar-chat-fluidez` ok; `tsc --noEmit` ok
+- [ ] **Deploy produção** — aguarda push deste lote + reteste E2E JEC chat + Penal chat (Novo caso antes de cada)
+
 ### Feito nesta rodada (01/09 manhã)
 
 - [x] **Cobertura clicável** — itens pendentes (!) no plano viram botão **+ Incluir no plano** (tese → subtópico do direito; pedido → DOS PEDIDOS), sem nova triagem/cota
@@ -97,9 +105,11 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 
 ### P0 aberto pós-PDF (corrigido em código local — aguarda deploy)
 
-- [x] **Deploy** com lote Enel/BPC/endereçamento/form/manual — `dpl_ANALA7Xt2jc2Yckd8tu1F71WRnSx` · [factoia.com.br](https://factoia.com.br) · 31/08 ~05h
-- [x] **“Erro ao redigir” em prod (parcial)** — 503 `IA_INDISPONIVEL` sem debitar cota quando Gemini sobrecarregado; pendente: timeout Vercel 60s vs duração triagem+redação; retomar E2E browser após deploy
-- [ ] **Valor da causa no chat** — conferir `garantirSecaoValorCausa` após redeploy (R$ 8.000 Caso 1A)
+- [x] **Qualificação única + cabeçalho** — `pos-processar-peca-gerada` + `finalizarTextoPeca` (01/09)
+- [x] **Valor da causa no chat** — `garantirSecaoValorCausa` dentro de `finalizarTextoPeca` (01/09)
+- [x] **HC sem vazamento JEC** — sanitizar área + payload partes (01/09)
+- [x] **Anti-contaminação sessão** — misto/troca área/Novo caso (01/09)
+- [ ] **Reteste E2E** — Caso Enel (JEC) + HC Penal com **Novo caso** antes de redigir
 
 ### Melhorar sem gastar mais (IA / qualidade — implementar quando fizer sentido)
 

@@ -21,7 +21,7 @@ function norm(t: string): string {
   return t.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
 }
 
-function extrairPedidosDoRelato(relato: string, especie: string): string[] {
+export function extrairPedidosDoRelato(relato: string, especie: string): string[] {
   const pedidos: string[] = [];
   const n = norm(relato);
 

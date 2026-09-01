@@ -9,6 +9,13 @@ import {
   garantirSecaoValorCausa,
 } from "../src/lib/ia/mesclar-peca-hibrida";
 import { pecaTemFundamentacaoGenerica } from "../src/lib/ia/normalizar-peca-gerada";
+import {
+  garantirEstruturaCabecalho,
+  limparPlaceholdersQualificacao,
+  posProcessarDepoisQualificacao,
+  prepararCorpoParaInjecaoQualificacao,
+  sanitizarPecaPorArea,
+} from "../src/lib/ia/pos-processar-peca-gerada";
 
 const FIXTURE_IA = `
 EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DE DIREITO DO JUIZADO ESPECIAL CÍVEL DA COMARCA DE SÃO PAULO - SP
@@ -244,5 +251,37 @@ assert(/DOUTOR\(A\)/.test(typos.split("\n")[0]!), "endereçamento em caixa alta"
 assert(/patamar/i.test(typos), "corrige patagar");
 assert(/aplica-se a Súmula/i.test(typos), "corrige aplicajući-se");
 assert(/\*"In casu"\*/.test(typos) || /\*"in casu"\*/i.test(typos), "latim órfão vira itálico");
+
+const semCabecalho = prepararCorpoParaInjecaoQualificacao(
+  `Texto solto da IA sobre energia.\n\nI - DOS FATOS\nFato um.`
+);
+assert(/^I\s*-/m.test(semCabecalho), "remove préâmbulo até DOS FATOS");
+
+const comCab = garantirEstruturaCabecalho(semCabecalho, {
+  enderecamento:
+    "EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DE DIREITO DO JUIZADO ESPECIAL CÍVEL DA COMARCA DE CAMPINAS - SP",
+  epigrafe: ["Processo nº —", "AUTOR: Maria", "RÉU: Enel"],
+});
+assert(/EXCELENTÍSSIMO/i.test(comCab), "injeta endereçamento");
+assert(/I\s*-\s*DOS FATOS/i.test(comCab), "mantém corpo");
+
+const placeholders = limparPlaceholdersQualificacao(
+  "Maria, [estado civil], CPF [CPF], valor [VALOR DA CAUSA]"
+);
+assert(!/\[CPF\]/.test(placeholders), "limpa placeholder CPF");
+
+const hcSujo = sanitizarPecaPorArea(
+  `EXCELENTÍSSIMO...\n\nem face de Enel São Paulo, pelos fatos.\n\nI - DOS FATOS\nPaciente preso em flagrante.\n\nPedido de multa diária de R$ 500.`,
+  { areaId: "criminal", especie: "habeas-corpus" }
+);
+assert(!/enel/i.test(hcSujo), "HC remove Enel");
+assert(!/multa diária/i.test(hcSujo), "HC remove multa CPC");
+
+const finalHc = posProcessarDepoisQualificacao(hcSujo, {
+  areaId: "criminal",
+  especie: "habeas-corpus",
+  tituloPeca: "HABEAS CORPUS",
+});
+assert(/HABEAS CORPUS/i.test(finalHc), "garante título HC");
 
 console.log("\nTodas as checagens locais passaram (0 tokens Gemini).");

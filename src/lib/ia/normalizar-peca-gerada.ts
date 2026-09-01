@@ -39,6 +39,7 @@ function corrigirOrtografiaForense(texto: string): string {
     .replace(/\bVALORDA\b/g, "VALOR DA")
     .replace(/\bDO VALORDA\b/gi, "DO VALOR DA")
     .replace(/\bINDENIZÁVELE\b/gi, "INDENIZÁVEL E")
+    .replace(/\bOBJETIVAE\b/gi, "OBJETIVA E")
     .replace(/\bPROVASE\b/gi, "PROVAS E")
     .replace(/\bEXCELENTENT[IÍ]SSIM[OA]\b/gi, "EXCELENTÍSSIMO")
     .replace(/\bEXCELCELENT[IÍ]SSIM[OA]\b/gi, "EXCELENTÍSSIMO")

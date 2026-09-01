@@ -14,6 +14,8 @@ import {
   aplicarFlagReconvencao,
   tituloPecaDaArea,
   secaoValorDaEspecie,
+  metaEspecieDaArea,
+  pecaUsaEmFaceDeReu,
 } from "@/lib/peca-especie-area";
 import { enfileirarUploadsJurisDoCaso } from "@/lib/juris-provedores/salvar-na-base";
 import { areaAbertaParaCliente } from "@/lib/acesso-areas";
@@ -41,6 +43,11 @@ import {
   normalizarPecaGerada,
   pecaTemFundamentacaoGenerica,
 } from "@/lib/ia/normalizar-peca-gerada";
+import {
+  posProcessarAntesQualificacao,
+  posProcessarDepoisQualificacao,
+  sanitizarPecaPorArea,
+} from "@/lib/ia/pos-processar-peca-gerada";
 import { mesclarFatosIaComDireitoReserva, garantirSecaoValorCausa } from "@/lib/ia/mesclar-peca-hibrida";
 import {
   anotarJurisprudenciasSemLastro,
@@ -262,14 +269,6 @@ function finalizarTextoPeca(
   areaId: string = "jec",
   inversaoOnus?: ReturnType<typeof avaliarInversaoOnusProva>
 ): string {
-  const comProvas = injetarProvasELinkNuvem(normalizarPecaGerada(texto), {
-    linkNuvem: body.linkNuvem,
-    provas: [...(body.provas ?? []), ...(body.fotos ?? [])],
-    midias: body.midias ?? [],
-  });
-  const comInversao = injetarInversaoOnusProva(comProvas, inversaoOnus ?? null);
-  const autores =
-    body.autores ?? (body.autor ? [body.autor] : []);
   const especie = aplicarFlagReconvencao(
     areaId,
     inferirEspecieDaArea(
@@ -281,6 +280,46 @@ function finalizarTextoPeca(
     body.comReconvencao
   );
   const idsInicial = idsPeticaoInicialDaArea(areaId);
+  const metaEsp = metaEspecieDaArea(areaId, especie);
+  const enderecamento = formatarEnderecamentoPadrao({
+    comarca: body.comarca ?? { cidade: "", uf: "" },
+    areaJudiciaria: rotuloAreaJudiciaria(areaId),
+    areaId,
+    especiePeca: especie,
+    varaEmBranco: idsInicial.includes(especie),
+  });
+  const autoresBody =
+    body.autores ?? (body.autor ? [body.autor] : []);
+  const tituloPeca =
+    tituloPecaDaArea(areaId, especie, body.tipoAcao) || body.tipoAcao;
+  const epigrafe = linhasEpigrafePeca({
+    areaId,
+    especie,
+    numeroProcesso: body.comarca?.numeroProcesso,
+    autores: autoresBody,
+    reus: body.reus ?? [],
+    fatos: body.fatos,
+    pecaInaugural: idsInicial.includes(especie),
+    poloAdvocacia: body.poloAdvocacia,
+  });
+
+  let t = posProcessarAntesQualificacao(normalizarPecaGerada(texto), {
+    areaId,
+    especie,
+    enderecamento,
+    epigrafe,
+    tituloPeca,
+    numeroProcesso: body.comarca?.numeroProcesso ?? null,
+    reinjetarQualificacao: !pecaUsaPartesJaQualificadas(especie, idsInicial),
+  });
+
+  const comProvas = injetarProvasELinkNuvem(t, {
+    linkNuvem: body.linkNuvem,
+    provas: [...(body.provas ?? []), ...(body.fotos ?? [])],
+    midias: body.midias ?? [],
+  });
+  const comInversao = injetarInversaoOnusProva(comProvas, inversaoOnus ?? null);
+  const autores = autoresBody;
   const modulo = moduloDaArea(areaId);
   const poloCliente = resolverPoloClienteQualificacao(
     areaId,
@@ -308,13 +347,42 @@ function finalizarTextoPeca(
         enderecoAdvogado: opcoes?.enderecoAdvogado,
         fundamentoLei: modulo.fundamentoQualificacao,
       });
-  const comReus = pecaUsaPartesJaQualificadas(especie, idsInicial)
-    ? comInversao
-    : injetarQualificacaoReus(
-        comInversao,
-        formatarQualificacaoReus(body.reus ?? [])
-      );
-  return injetarQualificacaoAutor(comReus, blocoAutor);
+  const usaEmFaceDe =
+    !pecaUsaPartesJaQualificadas(especie, idsInicial) &&
+    pecaUsaEmFaceDeReu(metaEsp.conectivoPartes);
+  const comReus =
+    pecaUsaPartesJaQualificadas(especie, idsInicial) || !usaEmFaceDe
+      ? comInversao
+      : injetarQualificacaoReus(
+          comInversao,
+          formatarQualificacaoReus(body.reus ?? [])
+        );
+  const comAutor = injetarQualificacaoAutor(comReus, blocoAutor);
+
+  const secaoValor = secaoValorDaEspecie(areaId, especie);
+  const valorCausaResumo = (() => {
+    if (body.valoresCausa) {
+      const calc = calcularResumoValorCausa(body.valoresCausa);
+      if (calc.totalCentavos > 0) return calc;
+    }
+    return inferirResumoValorCausaDosFatos(body.fatos) ?? null;
+  })();
+  const blocoValorDeterministico =
+    secaoValor && valorCausaResumo && valorCausaResumo.totalCentavos > 0
+      ? montarSecaoValorCausa(valorCausaResumo, secaoValor.titulo).join("\n")
+      : "";
+
+  return posProcessarDepoisQualificacao(
+    sanitizarPecaPorArea(comAutor, { areaId, especie }),
+    {
+      areaId,
+      especie,
+      tituloPeca,
+      blocoValorCausa: blocoValorDeterministico || undefined,
+      tituloSecaoValor: secaoValor?.titulo,
+      romanoSecaoValor: secaoValor?.romano,
+    }
+  );
 }
 
 export async function POST(request: Request) {

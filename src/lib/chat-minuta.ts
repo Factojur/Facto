@@ -35,6 +35,8 @@ import type { ProvaTextoCaso } from "@/lib/provas-caso-texto";
 import type { CategoriaValorId, ItemValor } from "@/lib/valores-causa";
 import { formularioValoresEstaVazio } from "@/lib/valores-causa";
 import type { GerarPecaJecInput } from "@/lib/gerar-peca-jec";
+import type { AutorValue } from "@/lib/autor-types";
+import type { ReuValue } from "@/lib/reu-types";
 import {
   normalizarAreaIdMinuta,
   type AreaIdMinuta,
@@ -43,6 +45,7 @@ import {
 import {
   autoresAPartirDosNomes,
   reusAPartirDosNomes,
+  parecePessoaJuridica,
 } from "@/lib/partes-ja-qualificadas";
 import { inferirEspecieDaArea, especieUsaTutelaUrgenciaCpc } from "@/lib/peca-especie-area";
 import { getAreaById } from "@/lib/areas-atuacao";
@@ -440,6 +443,59 @@ function montarLeiMunicipalPayload(
   };
 }
 
+function normNomeParte(nome: string | undefined | null): string {
+  return String(nome ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function nomeReu(r: ReuValue): string {
+  return r.tipo === "pj"
+    ? r.razaoSocial || r.nomeFantasia || ""
+    : r.nomeCompleto || "";
+}
+
+const RE_CONSUMIDOR_REU =
+  /\b(enel|sabesp|energia|concession[aá]ria|fornecedor|companhia\s+de\s+energia)\b/i;
+
+/** Uma qualificação por polo; HC sem réu civil de outro caso. */
+export function sanitizarPartesPayloadChat(
+  areaId: AreaIdMinuta,
+  especie: string,
+  autores: AutorValue[],
+  reus: ReuValue[]
+): { autores: AutorValue[]; reus: ReuValue[] } {
+  const autoresOut = autores.slice(0, 1);
+  const nomesAutor = new Set(
+    autoresOut.map((a) => normNomeParte(a.nomeCompleto)).filter(Boolean)
+  );
+
+  let reusOut = reus.filter((r) => {
+    const n = normNomeParte(nomeReu(r));
+    if (!n) return false;
+    for (const a of nomesAutor) {
+      if (a === n || n.includes(a) || a.includes(n)) return false;
+    }
+    return true;
+  });
+
+  if (areaId === "criminal" && especie === "habeas-corpus") {
+    reusOut = reusOut.filter((r) => {
+      const rotulo = nomeReu(r);
+      if (RE_CONSUMIDOR_REU.test(rotulo)) return false;
+      if (parecePessoaJuridica(rotulo) && /enel|sabesp|energia/i.test(rotulo)) {
+        return false;
+      }
+      return true;
+    });
+  }
+
+  return { autores: autoresOut, reus: reusOut.slice(0, 2) };
+}
+
 export function montarPayloadGeracaoChat(
   estado: EstadoCasoChat,
   extras?: {
@@ -485,6 +541,9 @@ export function montarPayloadGeracaoChat(
   );
   autores = qual.autores;
   reus = qual.reus;
+  const partesLimpas = sanitizarPartesPayloadChat(areaId, especie, autores, reus);
+  autores = partesLimpas.autores;
+  reus = partesLimpas.reus;
 
   const estadoSync = sincronizarTribunaisComarca(
     sincronizarComarcaDaQualificacao(estado)

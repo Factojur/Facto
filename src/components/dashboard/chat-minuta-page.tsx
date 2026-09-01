@@ -63,6 +63,17 @@ import {
   perguntaProativaLocal,
 } from "@/lib/chat-resposta-turno";
 import {
+  detectarRelatoMistoAreas,
+  deveResetarPorTrocaArea,
+  mensagemTrocaArea,
+  prepararEstadoTrocaArea,
+} from "@/lib/chat-anti-contaminacao";
+import {
+  extrairPedidosComplemento,
+  mesclarPedidosEstado,
+  pareceComplementoSomentePedidos,
+} from "@/lib/complemento-pedidos-chat";
+import {
   registrarVersaoPlano,
   type VersaoPlanoChat,
 } from "@/lib/chat-plano-versoes";
@@ -690,7 +701,9 @@ export function ChatMinutaPage({
       clearTimeout(previewAutoTimerRef.current);
       previewAutoTimerRef.current = null;
     }
-    const area = opcoes?.areaPref ?? estado.areaId;
+    const area =
+      opcoes?.areaPref ??
+      (opcoes?.manterArea ? estado.areaId : "jec");
     const nova = criarSessaoChatVazia(area);
     setSessaoId(nova.id);
     setMensagens([MSG_BOAS_VINDAS]);
@@ -718,6 +731,10 @@ export function ChatMinutaPage({
     setInput("");
     setPedidoAjuste("");
     planoUltimoFingerprintRef.current = null;
+    setVersoesPlano([]);
+    const estadoZerado = estadoCasoChatVazio(area);
+    estadoRef.current = estadoZerado;
+    estadoAnteriorRef.current = estadoZerado;
   }
 
   /** Limpa conversa e preview; grava o caso atual antes. Mantém a área se já estava definida. */
@@ -745,7 +762,7 @@ export function ChatMinutaPage({
     }
     persistirSessaoAtualAgora();
     limparWorkspaceChat({
-      areaPref: estado.areaId,
+      areaPref: areaUrl ? normalizarAreaIdMinuta(areaUrl) : "jec",
       manterArea: Boolean(areaUrl),
     });
   }
@@ -1091,6 +1108,43 @@ export function ChatMinutaPage({
       }
     }
 
+    if (
+      filesNow.length === 0 &&
+      texto &&
+      casoJaOrganizado &&
+      pareceComplementoSomentePedidos(texto, true)
+    ) {
+      const novosPedidos = extrairPedidosComplemento(
+        texto,
+        estado.areaId,
+        estado.tipoAcao,
+        estado.fatos
+      );
+      const pedidos = mesclarPedidosEstado(estado.pedidos, novosPedidos);
+      const next: EstadoCasoChat = {
+        ...estado,
+        pedidos,
+        planoVisto: false,
+        previewVisto: false,
+        pedirJusticaGratuita:
+          estado.pedirJusticaGratuita ||
+          /\bjusti[cç]a\s+gratuita\b|\bgratuidade\b/i.test(texto),
+      };
+      setEstado(next);
+      estadoRef.current = next;
+      estadoAnteriorRef.current = next;
+      planoUltimoFingerprintRef.current = null;
+      adicionarMensagem(
+        "assistente",
+        [
+          `Incluí no plano: ${novosPedidos.map((p) => `“${p}”`).join(", ") || "pedido complementar"}.`,
+          "O plano à direita será atualizado. Quando estiver bom, **Redigir (1 peça)**.",
+        ].join("\n\n")
+      );
+      void executarPlano({ silencioso: false });
+      return;
+    }
+
     setEnviando(true);
     entradaAbortRef.current?.abort();
     const ac = new AbortController();
@@ -1098,8 +1152,32 @@ export function ChatMinutaPage({
 
     try {
       const relatoAcumulado = [estado.fatos, texto].filter(Boolean).join("\n\n");
+
+      const inferenciaTurno = inferirAreaChat({
+        texto: texto || relatoAcumulado,
+        preferida: areaUrl,
+        leigo,
+      });
+      const trocaAreaProvavel =
+        filesNow.length === 0 &&
+        Boolean(texto) &&
+        !areaManual &&
+        deveResetarPorTrocaArea(estado, inferenciaTurno, false);
+
+      const relatoParaProcessar =
+        trocaAreaProvavel && texto ? texto : relatoAcumulado;
+
+      const misto = detectarRelatoMistoAreas(
+        trocaAreaProvavel && texto ? texto : relatoAcumulado
+      );
+      if (misto.misto && !trocaAreaProvavel) {
+        setErro(misto.mensagem ?? "Relato mistura áreas diferentes.");
+        adicionarMensagem("sistema", misto.mensagem ?? "");
+        return;
+      }
+
       const { relato, arquivos: payloadArquivos } = await processarArquivos(
-        relatoAcumulado,
+        relatoParaProcessar,
         filesNow
       );
 
@@ -1115,14 +1193,20 @@ export function ChatMinutaPage({
       });
       const areaParaOrg = areaManual ? estado.areaId : inferencia.areaId;
       const estadoAntes = estadoAnteriorRef.current;
+      const trocaArea =
+        trocaAreaProvavel ||
+        deveResetarPorTrocaArea(estadoAntes, inferencia, areaManual);
+      const baseEstado = trocaArea
+        ? prepararEstadoTrocaArea(inferencia, texto || relato)
+        : estadoAntes;
       const preenchimentoLocal = organizarCasoLocal({
         relato,
         areaId: areaParaOrg,
       });
 
       let nextEstado = areaManual
-        ? { ...estadoAntes, areaConfirmada: true }
-        : aplicarInferenciaAreaAoEstado(estadoAntes, inferencia);
+        ? { ...baseEstado, areaConfirmada: true }
+        : aplicarInferenciaAreaAoEstado(baseEstado, inferencia);
       nextEstado = aplicarOrganizacaoAoEstadoChat(nextEstado, preenchimentoLocal, {
         areaId: areaParaOrg,
         relato,
@@ -1249,16 +1333,28 @@ export function ChatMinutaPage({
           ? "Preciso que você **confirme a área** abaixo — o relato pode caber em mais de um módulo."
           : `Área identificada: **${rotuloAreaChat(areaParaOrg)}**.`;
 
+      const msgTroca =
+        trocaArea && estadoAntes.areaId !== inferencia.areaId
+          ? mensagemTrocaArea(
+              estadoAntes.areaId,
+              inferencia.areaId,
+              rotuloAreaChat
+            )
+          : null;
+
       adicionarMensagem(
         "assistente",
         [
+          msgTroca,
           montarRespostaTurnoLocal({
             diff: diffEstadoCasoChat(estadoAntes, nextEstado),
             estado: nextEstado,
-            primeiroRelato: true,
+            primeiroRelato: !casoJaOrganizado || trocaArea,
           }),
           msgArea,
-        ].join("\n\n")
+        ]
+          .filter(Boolean)
+          .join("\n\n")
       );
 
       const timeoutId = window.setTimeout(() => ac.abort(), 90_000);
