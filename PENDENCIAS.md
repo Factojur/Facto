@@ -68,7 +68,17 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] **HC / Penal** — sem `em face de` civil; remove Enel/energia/multa CPC; payload sem réu concessionária
 - [x] **Anti-contaminação chat** — relato misto bloqueia; troca de área reinicia partes; **Novo caso** zera estado; complemento “também quero multa…” → pedidos (não qualificação)
 - [x] **Testes** — `testar-formatacao-peca` ok; `testar-chat-minuta` 77 ok; `testar-chat-fluidez` ok; `tsc --noEmit` ok
-- [ ] **Deploy produção** — aguarda push deste lote + reteste E2E JEC chat + Penal chat (Novo caso antes de cada)
+- [ ] **Deploy produção** — aguarda push lote chat Fase 1 · reteste E2E JEC + Penal chat (Novo caso)
+
+### Feito nesta rodada (01/09 tarde — chat Fase 1 + UX workspace)
+
+- [x] **Chat Fase 1** — `chat-conversa-assistente.ts` + `/api/chat-conversa`; turno unificado; conversa não trava se Gemini cair
+- [x] **Plano fallback local** — `plano-fallback-local.ts`; triagem retorna plano preliminar (sem erro vermelho); retry 3× no painel
+- [x] **Gates → aviso âmbar** — polo/relato curto/misto não bloqueiam com faixa vermelha
+- [x] **Workspace fixado** — botão **Fixar Área de Trabalho** (chat); wordmark FACTO semitransparente no documento quando fixado
+- [x] **Script Anthropic** — `--no-sensitive` no `configurar-anthropic-vercel.ps1`
+- [x] **Fase 2 intacta** — Redigir → `/api/gerar-peca` + formatação por área (sem mudança no pipeline)
+- [x] **Banner nuvem** — `aviso-memoria-local` atualizado (opt-in Nuvem; some quando sync ativo)
 
 ### Feito nesta rodada (01/09 noite — melhorias objetivo)
 
@@ -77,7 +87,7 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] **Log COGS** — `log-custo-ia.ts` + tokens Gemini/Anthropic em stdout (`[custo-ia]`)
 - [x] **Auditor → ajuste** — `pedidoAjusteDeAuditoria` + sugestão no chat pós-Redigir
 - [x] **Script Anthropic** — `scripts/configurar-anthropic-vercel.ps1` (local + Vercel Non-sensitive)
-- [ ] **Anthropic na Vercel** — Jefferson: rodar script ou colar `ANTHROPIC_API_KEY` + redeploy
+- [x] **Anthropic na Vercel** — `ANTHROPIC_API_KEY` + `ANTHROPIC_MODELO_REDACAO` (01/09) · redeploy `dpl_Cy95aDWa7Yw2PCsmfj5xri2Yxhm5`
 
 - [x] **UX chat-first** — catálogo “Preencha manualmente” só com `previewAreas`; leigo → **Começar no assistente** (`/dashboard/chat?area=jec`); link **Formulário** no chat só `previewInterno` (QA)
 - [x] **Rotas de área preservadas** — `/dashboard/jec`, `/dashboard/criminal`, etc. intactos; `moduloDaArea(areaId)` + espécies/kits por área no Redigir
@@ -145,10 +155,10 @@ Ordem sugerida: lastro/prompts → autos/último ato → auditor→ajuste → pa
 | # | Item | Benefício | Status |
 |---|------|-----------|--------|
 | G1 | **Lastro + seed** até meta / lacunas (TRE/TSE etc. em paralelo) | Fundamentação sentida; menos peça genérica | Em curso (560/788) |
-| G2 | **Prompts por área** — rito, endereçamento, pedidos típicos mais duros | Qualidade sem +tokens | Pendente |
-| G3 | **Último ato / espécie em autos longos** — extração CNJ e ato decisivo | Menos espécie errada | Pendente |
+| G2 | **Prompts por área** — rito, endereçamento, pedidos típicos mais duros | Qualidade sem +tokens | Feito 01/09 (`blocoRitoArea`) |
+| G3 | **Último ato / espécie em autos longos** — extração CNJ e ato decisivo | Menos espécie errada | Feito 01/09 (`extrairUltimoAtoDoTexto`) |
 | G4 | **Qualificação local** — regex/ViaCEP/partes (refino contínuo) | Menos buraco sem token | Parcial (30/08 noite: Enel PJ, BPC autor, split “cortou”; deploy pendente) |
-| G5 | **Auditor → ajuste pontual** — amarrar achados a 1 reescrita focada | Menos lacuna na minuta | Pendente |
+| G5 | **Auditor → ajuste pontual** — amarrar achados a 1 reescrita focada | Menos lacuna na minuta | Feito 01/09 (`pedidoAjusteDeAuditoria`) |
 | G6 | **Paginação do preview** (folha a folha) — após testes de UX | Melhor conferência humana | Aguardando testes |
 | G7 | **Copy / tooltips / home** — clareza do fluxo (sem confundir base × anexo) | Menos erro de uso | Feito 30/08 (manter alinhado) |
 
@@ -240,7 +250,7 @@ Ordem sugerida para o agente/Jefferson. **Grátis** = implementar quando fizer s
 
 - [ ] **Compra real MP** — testando ponta a ponta
 - [ ] **Seed juris** — lote **560** / **788** · meta **100k+** · lotes **684+** lacunas fracas até vencimento 13/09
-- [ ] **Gemini paygo + `ANTHROPIC_API_KEY`** — paygo ok · **chave Anthropic criada 01/09** · falta colar na Vercel + redeploy + 1 peça Sonnet real
+- [x] **Gemini paygo + `ANTHROPIC_API_KEY`** — paygo ok · chave Anthropic na Vercel 01/09 · falta 1 peça Sonnet real em prod (HC Pro)
 - [ ] **Testar gestão** em produção (`factoia.com.br/gestao`)
 - [x] **Smoke lastro (embedding)** — 29/08: **20 ok · 0 fraco · 0 falhas** (Gemini 429 com retry; ok)
 - [x] **Restaurar sessão nuvem** — GET `/api/chat/sessoes?sessaoId=` · Meus casos → Continuar · `?sessaoNuvem=` importa snapshot local

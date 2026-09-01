@@ -10,6 +10,7 @@ import { registrarVersaoPlano } from "../src/lib/chat-plano-versoes";
 import { estadoCasoChatVazio } from "../src/lib/chat-minuta";
 import type { PreviewTriagemData } from "../src/components/dashboard/preview-triagem-peca";
 import { incluirItemCoberturaNoPlano } from "../src/lib/ia/cobertura-teses-peca";
+import { montarPlanoFallbackLocal } from "../src/lib/ia/plano-fallback-local";
 
 function triagemFake(): PreviewTriagemData {
   return {
@@ -56,6 +57,10 @@ function main() {
     incluido?.topicos[0]?.subtitulos.some((s) => /inexigibilidade/i.test(s)),
     "tese no subtópico"
   );
+
+  const fb = montarPlanoFallbackLocal(b);
+  assert(fb.topicos.length >= 3, "fallback tem topicos");
+  assert(fb.modelo === "local-fallback", "fallback modelo");
 
   console.log("testar-chat-fluidez: ok");
 }

@@ -23,7 +23,8 @@ import {
   executarTriagemCaso,
   montarContextoTriagem,
 } from "@/lib/ia/triagem-caso-peca";
-import { mensagemErroIaParaCliente } from "@/lib/erro-ia-cliente";
+import { erroGeracaoIaTransitivo } from "@/lib/ia/gemini-client";
+import { montarPlanoFallbackTriagem } from "@/lib/ia/plano-fallback-local";
 import { opcoesLastroFromPayload } from "@/lib/chat-minuta";
 import type { GerarPecaJecInput } from "@/lib/gerar-peca-jec";
 import type { JurisCasoPayload } from "@/lib/juris-caso-types";
@@ -307,10 +308,30 @@ export async function POST(request: Request) {
     });
 
     if (!triagem.ok) {
-      return NextResponse.json(
-        { error: mensagemErroIaParaCliente(triagem.erro) },
-        { status: 400 }
-      );
+      const fallback = montarPlanoFallbackTriagem({
+        areaId,
+        tipoAcao: body.tipoAcao,
+        fatos: body.fatos,
+        especiePeca: vinculos.especie,
+        pedidosUsuario: body.pedidosUsuario,
+        tesesIds: Array.isArray(body.tesesIds)
+          ? body.tesesIds.map((id) => String(id)).filter(Boolean)
+          : [],
+        motivo: erroGeracaoIaTransitivo(triagem.erro)
+          ? "serviço ocupado — tentando de novo em instantes"
+          : "análise estratégica indisponível",
+      });
+      const nCoberturaOk = fallback.cobertura.filter((i) => i.noPlano).length;
+      return NextResponse.json({
+        ok: true,
+        fallbackLocal: true,
+        estrategiaJuridica: fallback.estrategiaJuridica,
+        analiseEstrategica: fallback.analiseEstrategica,
+        topicos: fallback.topicos,
+        cobertura: fallback.cobertura,
+        coberturaResumo: `${nCoberturaOk}/${fallback.cobertura.length}`,
+        modelo: fallback.modelo,
+      });
     }
 
     const nCoberturaOk = triagem.cobertura.filter((i) => i.noPlano).length;

@@ -8,11 +8,10 @@ import {
 } from "@/lib/ia/chat-conversa-assistente";
 import { mensagemErroIaParaCliente } from "@/lib/erro-ia-cliente";
 
-export const maxDuration = 25;
+export const maxDuration = 30;
 
 /**
- * POST /api/chat-refinar-plano — turno conversacional (Flash-Lite).
- * Não debita cota de peça; custo marginal ~centavos por turno.
+ * POST /api/chat-conversa — turno Fase 1 (conversa fluida, sem cota de peça).
  */
 export async function POST(request: Request) {
   try {
@@ -31,7 +30,7 @@ export async function POST(request: Request) {
     if (!gate.ok) return gate.response;
 
     const mensagem = String(body?.mensagem ?? "").trim();
-    if (mensagem.length < 3) {
+    if (mensagem.length < 2) {
       return NextResponse.json(
         { error: "Mensagem muito curta.", codigo: "MSG_CURTA" },
         { status: 400 }
@@ -39,38 +38,32 @@ export async function POST(request: Request) {
     }
 
     const estado = body?.estado;
-    if (!estado?.fatos?.trim()) {
-      return NextResponse.json(
-        { error: "Organize o caso antes de refinar.", codigo: "SEM_CASO" },
-        { status: 400 }
-      );
+    if (!estado?.fatos?.trim() && mensagem.length < 20) {
+      return NextResponse.json({
+        ok: true,
+        resposta:
+          "Conte um pouco mais sobre o caso — fatos, partes, o que você precisa na peça. Pode colar texto ou anexar PDF.",
+        modelo: "local",
+      });
     }
 
-    const mensagens = Array.isArray(body?.mensagens) ? body.mensagens : [];
+    const estadoAnterior = body?.estadoAnterior ?? estado!;
+    const mensagens = Array.isArray(body?.mensagens) ? body!.mensagens! : [];
     const triagem = body?.triagem ?? null;
 
     const resultado = await conversarAssistenteFase1({
       mensagem,
-      estado,
-      estadoAnterior: body?.estadoAnterior ?? estado,
+      estado: estado!,
+      estadoAnterior,
       triagem,
       mensagens,
       primeiroRelato: Boolean(body?.primeiroRelato),
       avisoExtra: body?.avisoExtra ?? null,
     });
 
-    if (!resultado) {
-      return NextResponse.json({
-        ok: true,
-        resposta:
-          "Entendi. O plano à direita será atualizado — continue conversando ou confirme **Redigir** quando estiver pronto.",
-        fallback: true,
-      });
-    }
-
     let estadoAtualizado: EstadoCasoChat | undefined;
     if (resultado.patchEstado) {
-      estadoAtualizado = aplicarPatchEstadoRefinar(estado, resultado.patchEstado);
+      estadoAtualizado = aplicarPatchEstadoRefinar(estado!, resultado.patchEstado);
     }
 
     return NextResponse.json({
@@ -81,13 +74,13 @@ export async function POST(request: Request) {
       modelo: resultado.modelo,
     });
   } catch (erro) {
-    console.error("[chat-refinar-plano]", erro);
+    console.error("[chat-conversa]", erro);
     return NextResponse.json(
       {
         error:
           erro instanceof Error
             ? mensagemErroIaParaCliente(erro.message)
-            : "Falha ao refinar o plano.",
+            : "Falha na conversa.",
       },
       { status: 500 }
     );

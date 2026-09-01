@@ -2,21 +2,24 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { lerOptInSyncNuvemChat } from "@/lib/chat-minuta-storage";
 
-const CHAVE_DISMISS = "facto-aviso-memoria-local-v1";
+const CHAVE_DISMISS = "facto-aviso-memoria-local-v2";
 
 export function AvisoMemoriaLocal() {
   const [visivel, setVisivel] = useState(false);
+  const [syncAtivo, setSyncAtivo] = useState(false);
 
   useEffect(() => {
     try {
+      setSyncAtivo(lerOptInSyncNuvemChat());
       setVisivel(localStorage.getItem(CHAVE_DISMISS) !== "1");
     } catch {
       setVisivel(true);
     }
   }, []);
 
-  if (!visivel) return null;
+  if (!visivel || syncAtivo) return null;
 
   return (
     <div
@@ -24,10 +27,11 @@ export function AvisoMemoriaLocal() {
       className="border-b border-amber-900/40 bg-amber-950/50 px-4 py-2.5 text-center text-xs text-amber-100/90 sm:px-6"
     >
       <span>
-        Rascunhos, histórico JEC, conversas do assistente e memória de cliente ficam{" "}
-        <strong className="font-medium">só neste navegador</strong> — não
-        sincronizam com a nuvem. Limpar dados do site apaga esse conteúdo.{" "}
-        <Link href="/privacidade" className="underline hover:text-white">
+        Por padrão, rascunhos, histórico JEC, conversas e memória de cliente ficam{" "}
+        <strong className="font-medium">só neste navegador</strong>. Para sincronizar
+        entre dispositivos, ative <strong className="font-medium">Nuvem</strong> no
+        assistente (opt-in LGPD). Limpar dados do site apaga o conteúdo local.{" "}
+        <Link href="/privacidade#sync-nuvem" className="underline hover:text-white">
           Privacidade
         </Link>
       </span>

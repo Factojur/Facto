@@ -30,9 +30,10 @@ $env:ANTHROPIC_API_KEY = $AnthropicApiKey
 $env:ANTHROPIC_MODELO_REDACAO = $Modelo
 
 Write-Host "Enviando para Vercel (Non-sensitive)..."
-$AnthropicApiKey | vercel env add ANTHROPIC_API_KEY production --force
-$AnthropicApiKey | vercel env add ANTHROPIC_API_KEY preview --force
-$Modelo | vercel env add ANTHROPIC_MODELO_REDACAO production --force
-$Modelo | vercel env add ANTHROPIC_MODELO_REDACAO preview --force
+# --no-sensitive: Vercel CLI marca API keys como Sensitive por padrao; FACTO precisa legivel no painel.
+$AnthropicApiKey | vercel env add ANTHROPIC_API_KEY production --force --no-sensitive
+$AnthropicApiKey | vercel env add ANTHROPIC_API_KEY preview --force --no-sensitive
+$Modelo | vercel env add ANTHROPIC_MODELO_REDACAO production --force --no-sensitive
+$Modelo | vercel env add ANTHROPIC_MODELO_REDACAO preview --force --no-sensitive
 
 Write-Host "Feito. Rode: vercel --prod (ou redeploy no painel)."

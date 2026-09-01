@@ -67,7 +67,7 @@ function blocoBaseMunicipalEJuris(
   ].join("\n");
 }
 
-function blocoRitoArea(areaId: string): string {
+export function blocoRitoArea(areaId: string): string {
   const m = moduloDaArea(areaId);
   return [
     `ÁREA / RITO: ${m.tituloDashboard}`,

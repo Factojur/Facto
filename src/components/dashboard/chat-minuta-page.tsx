@@ -96,6 +96,7 @@ import {
 } from "@/lib/escritorio-storage";
 import type { GerarPecaJecOutput } from "@/lib/gerar-peca-jec";
 import { pedidoAjusteDeAuditoria } from "@/lib/ia/auditor-peca";
+import { montarPlanoFallbackLocal } from "@/lib/ia/plano-fallback-local";
 import { limiteAjustesPorPlano } from "@/lib/ia/ajustar-trecho-peca";
 import { normalizarAreaIdMinuta, type AreaIdMinuta, hrefMinutaSeExistir, moduloDaArea } from "@/lib/minuta-modulo";
 import type { PlanoId } from "@/lib/planos-facto";
@@ -233,6 +234,14 @@ function IconeFixarWorkspace({ fixado }: { fixado: boolean }) {
   );
 }
 
+function classeBotaoFixarTexto(fixado: boolean) {
+  return `shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-facto-gold/40 ${
+    fixado
+      ? "border-facto-gold/50 bg-facto-gold/20 text-facto-gold"
+      : "border-stone-600 bg-stone-800/90 text-stone-300 hover:border-facto-gold/45 hover:text-amber-50"
+  }`;
+}
+
 function classeBotaoFixarIcone(fixado: boolean, fundoClaro: boolean) {
   return `inline-flex shrink-0 items-center justify-center bg-transparent p-1 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-facto-gold/40 disabled:opacity-50 ${
     fixado
@@ -282,6 +291,7 @@ export function ChatMinutaPage({
   const [planoLoading, setPlanoLoading] = useState(false);
   const [redigindo, setRedigindo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [avisos, setAvisos] = useState<string | null>(null);
   const [drawerAberto, setDrawerAberto] = useState(false);
   const [drawerAba, setDrawerAba] = useState<"resumo" | "complementos">("resumo");
   const [sessaoId, setSessaoId] = useState<string | null>(null);
@@ -569,6 +579,7 @@ export function ChatMinutaPage({
         setTriagemPreview(null);
         setPayloadPendente(null);
         setErro(null);
+        setAvisos(null);
         setLastroRedacao(null);
         setMostrarSessoes(false);
         planoUltimoFingerprintRef.current = null;
@@ -646,6 +657,7 @@ export function ChatMinutaPage({
     setTriagemPreview(null);
     setPayloadPendente(null);
     setErro(null);
+    setAvisos(null);
     setLastroRedacao(null);
     const temConteudo =
       Boolean(estadoNorm.fatos.trim()) ||
@@ -730,6 +742,7 @@ export function ChatMinutaPage({
     setTriagemPreview(null);
     setPayloadPendente(null);
     setErro(null);
+    setAvisos(null);
     setLastroRedacao(null);
     setMostrarSessoes(false);
     setInput("");
@@ -746,6 +759,7 @@ export function ChatMinutaPage({
     if (!sessaoTemTrabalho()) {
       setMensagens([{ ...MSG_BOAS_VINDAS, id: idMensagemChat(), ts: Date.now() }]);
       setErro(null);
+    setAvisos(null);
       setInput("");
       return;
     }
@@ -761,6 +775,7 @@ export function ChatMinutaPage({
     if (!sessaoTemTrabalho()) {
       setMensagens([{ ...MSG_BOAS_VINDAS, id: idMensagemChat(), ts: Date.now() }]);
       setErro(null);
+    setAvisos(null);
       setInput("");
       return;
     }
@@ -870,7 +885,7 @@ export function ChatMinutaPage({
     }
     const msg = validarPoloChat(comPolo);
     if (msg) {
-      setErro(msg);
+      setAvisos(msg);
       return false;
     }
     return true;
@@ -891,6 +906,7 @@ export function ChatMinutaPage({
       poloConfirmado: true,
     }));
     setErro(null);
+    setAvisos(null);
   }
 
   const adicionarMensagem = useCallback(
@@ -903,86 +919,148 @@ export function ChatMinutaPage({
     []
   );
 
+  const aplicarTriagemNoPainel = useCallback(
+    (
+      triagemNova: PreviewTriagemData,
+      payload: ReturnType<typeof montarPayloadGeracaoChat>,
+      fp: string,
+      opts?: { silencioso?: boolean; rotulo?: string }
+    ): { triagem: PreviewTriagemData; payload: ReturnType<typeof montarPayloadGeracaoChat> } => {
+      planoUltimoFingerprintRef.current = fp;
+      setPayloadPendente(payload);
+      setTriagemPreview(triagemNova);
+      setVersoesPlano((v) =>
+        registrarVersaoPlano(v, triagemNova, opts?.silencioso ? "auto" : "atualizado")
+      );
+      destacarPlanoAtualizado();
+      setEstado((atual) => ({
+        ...atual,
+        planoVisto: true,
+        previewVisto: true,
+      }));
+      if (!opts?.silencioso && opts?.rotulo) {
+        adicionarMensagem("assistente", opts.rotulo);
+      }
+      return { triagem: triagemNova, payload };
+    },
+    [adicionarMensagem]
+  );
+
   const executarPlano = useCallback(
-    async (opts?: { silencioso?: boolean; forcar?: boolean }) => {
+    async (opts?: {
+      silencioso?: boolean;
+      forcar?: boolean;
+    }): Promise<{
+      triagem: PreviewTriagemData;
+      payload: ReturnType<typeof montarPayloadGeracaoChat>;
+    } | null> => {
       const e = estadoRef.current;
       const esc = escritorioRef.current;
       const fp = fingerprintPlanoEstado(e, esc.usarTimbre);
 
-      if (!opts?.forcar && fp === planoUltimoFingerprintRef.current) return;
+      if (!opts?.forcar && fp === planoUltimoFingerprintRef.current) {
+        if (triagemPreview && payloadPendente) {
+          return { triagem: triagemPreview, payload: payloadPendente };
+        }
+        return null;
+      }
 
-      if (!podeMontarPlanoChat(e)) return;
+      if (!podeMontarPlanoChat(e)) return null;
       const ePolo = aplicarPoloInferidoChat(e);
-      if (validarPoloChat(ePolo)) return;
+      if (validarPoloChat(ePolo)) return null;
 
       planoAbortRef.current?.abort();
       const ac = new AbortController();
       planoAbortRef.current = ac;
 
       setPlanoLoading(true);
-      if (!opts?.silencioso) setErro(null);
+      if (!opts?.silencioso) {
+        setErro(null);
+        setAvisos(null);
+      }
+
+      const payload = montarPayloadGeracaoChat(ePolo, { atuarLeigo: leigo });
+
+      const aplicarFallbackLocal = (motivo: string) => {
+        if (ac.signal.aborted) return null;
+        const triagemNova = montarPlanoFallbackLocal(ePolo, motivo);
+        return aplicarTriagemNoPainel(triagemNova, payload, fp, {
+          silencioso: opts?.silencioso,
+          rotulo: opts?.silencioso
+            ? undefined
+            : "Montei um **plano preliminar** à direita — a análise completa segue em segundo plano. Você já pode conversar e refinar.",
+        });
+      };
 
       try {
-        const payload = montarPayloadGeracaoChat(e, { atuarLeigo: leigo });
-        const res = await fetch("/api/triagem-peca", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...payload,
-            escritorio: esc.usarTimbre ? esc : undefined,
-          }),
-          signal: ac.signal,
-        });
-        const data = (await res.json().catch(() => ({}))) as {
-          error?: string;
-          ok?: boolean;
-        } & Partial<PreviewTriagemData>;
-
-        if (ac.signal.aborted) return;
-        if (!res.ok || !data.ok) {
-          if (!opts?.silencioso) {
-            setErro(data.error ?? "Falha ao montar o plano do caso.");
+        for (let tentativa = 0; tentativa < 3; tentativa++) {
+          if (tentativa > 0) {
+            await new Promise((r) => setTimeout(r, 1500 * tentativa));
           }
-          return;
+          if (ac.signal.aborted) return null;
+
+          const res = await fetch("/api/triagem-peca", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...payload,
+              escritorio: esc.usarTimbre ? esc : undefined,
+            }),
+            signal: ac.signal,
+          });
+          const data = (await res.json().catch(() => ({}))) as {
+            error?: string;
+            ok?: boolean;
+            fallbackLocal?: boolean;
+          } & Partial<PreviewTriagemData>;
+
+          if (ac.signal.aborted) return null;
+          if (res.ok && data.ok && data.estrategiaJuridica) {
+            const triagemNova: PreviewTriagemData = {
+              estrategiaJuridica: data.estrategiaJuridica,
+              analiseEstrategica: data.analiseEstrategica!,
+              topicos: data.topicos ?? [],
+              cobertura: data.cobertura ?? [],
+              coberturaResumo: data.coberturaResumo,
+              modelo: data.modelo,
+              pedidosFormulario: payload.pedidosUsuario,
+            };
+            const aplicado = aplicarTriagemNoPainel(triagemNova, payload, fp, {
+              silencioso: opts?.silencioso,
+              rotulo: data.fallbackLocal
+                ? undefined
+                : "Plano estratégico atualizado à direita — revise tópicos e pedidos. Quando estiver bom, confirme a redação (1 peça).",
+            });
+            if (data.fallbackLocal && !opts?.silencioso) {
+              setAvisos(
+                "Plano preliminar no painel — a análise estratégica completa será atualizada quando o serviço responder."
+              );
+            }
+            return aplicado;
+          }
+
+          if (!res.ok && tentativa < 2) continue;
         }
 
-        planoUltimoFingerprintRef.current = fp;
-        setPayloadPendente(payload);
-        const triagemNova: PreviewTriagemData = {
-          estrategiaJuridica: data.estrategiaJuridica!,
-          analiseEstrategica: data.analiseEstrategica!,
-          topicos: data.topicos ?? [],
-          cobertura: data.cobertura ?? [],
-          coberturaResumo: data.coberturaResumo,
-          modelo: data.modelo,
-          pedidosFormulario: payload.pedidosUsuario,
-        };
-        setTriagemPreview(triagemNova);
-        setVersoesPlano((v) =>
-          registrarVersaoPlano(v, triagemNova, opts?.silencioso ? "auto" : "atualizado")
-        );
-        destacarPlanoAtualizado();
-        setEstado((atual) => ({
-          ...atual,
-          planoVisto: true,
-          previewVisto: true,
-        }));
+        const fb = aplicarFallbackLocal("rede ou serviço indisponível");
         if (!opts?.silencioso) {
-          adicionarMensagem(
-            "assistente",
-            "Plano estratégico atualizado à direita — revise tópicos e pedidos. Quando estiver bom, confirme a redação (1 peça)."
+          setAvisos(
+            "Usei um plano preliminar local — você pode continuar conversando normalmente."
           );
         }
+        return fb;
       } catch (err) {
-        if (err instanceof DOMException && err.name === "AbortError") return;
+        if (err instanceof DOMException && err.name === "AbortError") return null;
+        const fb = aplicarFallbackLocal("falha de rede");
         if (!opts?.silencioso) {
-          setErro("Falha de rede ao montar o plano.");
+          setAvisos("Plano preliminar ativo — tente **Atualizar plano** em instantes se quiser a versão completa.");
         }
+        return fb;
       } finally {
         if (!ac.signal.aborted) setPlanoLoading(false);
       }
     },
-    [adicionarMensagem, leigo]
+    [adicionarMensagem, aplicarTriagemNoPainel, leigo, payloadPendente, triagemPreview]
   );
 
   useEffect(() => {
@@ -1044,6 +1122,7 @@ export function ChatMinutaPage({
     if (enviando) return;
 
     setErro(null);
+    setAvisos(null);
     garantirSessaoId();
     adicionarMensagem("usuario", texto || `[Anexo: ${arquivos.map((f) => f.name).join(", ")}]`);
     setInput("");
@@ -1061,6 +1140,7 @@ export function ChatMinutaPage({
         setEnviando(true);
         setAjustando(true);
         setErro(null);
+        setAvisos(null);
         try {
           const res = await fetch("/api/ajustar-peca", {
             method: "POST",
@@ -1173,11 +1253,12 @@ export function ChatMinutaPage({
       const misto = detectarRelatoMistoAreas(
         trocaAreaProvavel && texto ? texto : relatoAcumulado
       );
-      if (misto.misto && !trocaAreaProvavel) {
-        setErro(misto.mensagem ?? "Relato mistura áreas diferentes.");
-        adicionarMensagem("sistema", misto.mensagem ?? "");
-        return;
-      }
+      const avisoMisto =
+        misto.misto && !trocaAreaProvavel
+          ? (misto.mensagem ??
+            "O relato mistura temas de áreas diferentes — use **Novo caso** para cada peça.")
+          : null;
+      if (avisoMisto) setAvisos(avisoMisto);
 
       const { relato, arquivos: payloadArquivos } = await processarArquivos(
         relatoParaProcessar,
@@ -1185,7 +1266,10 @@ export function ChatMinutaPage({
       );
 
       if (relato.length < 40 && payloadArquivos.length === 0) {
-        setErro("Descreva um pouco mais o caso (mín. ~40 caracteres) ou anexe um documento.");
+        adicionarMensagem(
+          "assistente",
+          "Para eu organizar o caso, conte um pouco mais — **fatos**, **partes** e o que você precisa na peça — ou **anexe um PDF**."
+        );
         return;
       }
 
@@ -1217,94 +1301,21 @@ export function ChatMinutaPage({
       nextEstado = aplicarPoloInferidoChat(nextEstado);
       nextEstado = { ...nextEstado, planoVisto: false, previewVisto: false };
 
+      const primeiroRelato =
+        !casoJaOrganizado || trocaArea || payloadArquivos.length > 0;
+
+      if (primeiroRelato && (trocaArea || payloadArquivos.length > 0)) {
+        setTriagemPreview(null);
+        setPayloadPendente(null);
+        setVersoesPlano([]);
+        planoUltimoFingerprintRef.current = null;
+      }
+
       setEstado(nextEstado);
       estadoRef.current = nextEstado;
       estadoAnteriorRef.current = nextEstado;
-      planoUltimoFingerprintRef.current = null;
+      if (primeiroRelato) planoUltimoFingerprintRef.current = null;
 
-      const complementoSemAnexo =
-        casoJaOrganizado && payloadArquivos.length === 0;
-
-      if (complementoSemAnexo) {
-        let respostaAssist = montarRespostaTurnoLocal({
-          diff: diffEstadoCasoChat(estadoAntes, nextEstado),
-          estado: nextEstado,
-          primeiroRelato: false,
-        });
-
-        try {
-          const resRefinar = await fetch("/api/chat-refinar-plano", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              mensagem: texto,
-              estado: nextEstado,
-              triagem: triagemPreview,
-              mensagens: [...mensagens, { id: "tmp", papel: "usuario", texto, ts: Date.now() }],
-            }),
-          });
-          const dataRefinar = (await resRefinar.json().catch(() => ({}))) as {
-            ok?: boolean;
-            resposta?: string;
-            estado?: EstadoCasoChat;
-            perguntaProativa?: string | null;
-          };
-          if (resRefinar.ok && dataRefinar.ok && dataRefinar.resposta) {
-            respostaAssist = dataRefinar.resposta;
-            if (dataRefinar.estado) {
-              nextEstado = dataRefinar.estado;
-              setEstado(nextEstado);
-              estadoRef.current = nextEstado;
-            }
-            if (dataRefinar.perguntaProativa) {
-              respostaAssist += `\n\n${dataRefinar.perguntaProativa}`;
-            }
-          }
-        } catch {
-          /* fallback local */
-        }
-
-        const proativa = perguntaProativaLocal(nextEstado);
-        if (proativa && !respostaAssist.includes(proativa.slice(0, 20))) {
-          respostaAssist += `\n\n${proativa}`;
-        }
-
-        adicionarMensagem("assistente", respostaAssist);
-        setErro(null);
-
-        void fetch("/api/entrada-caso", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            relato,
-            areaId: areaParaOrg,
-            arquivos: [],
-          }),
-        })
-          .then((r) => r.json())
-          .then((data: { preenchimento?: Parameters<typeof aplicarPreenchimentoAoEstado>[1] }) => {
-            if (!data.preenchimento) return;
-            setEstado((atual) => {
-              const merged = aplicarOrganizacaoAoEstadoChat(atual, data.preenchimento!, {
-                areaId: areaParaOrg,
-                relato,
-              });
-              estadoRef.current = merged;
-              return merged;
-            });
-            planoUltimoFingerprintRef.current = null;
-          })
-          .catch(() => undefined);
-
-        return;
-      }
-
-      setTriagemPreview(null);
-      setPayloadPendente(null);
-      setVersoesPlano([]);
-      planoUltimoFingerprintRef.current = null;
-
-      // ViaCEP gratuito — completa logradouro/bairro/cidade sem cota Gemini
       void (async () => {
         try {
           const partes = extrairQualificacaoDoRelato(relato);
@@ -1326,96 +1337,97 @@ export function ChatMinutaPage({
             )
           );
         } catch {
-          /* ViaCEP indisponível — preview segue com o que o relato trouxe */
+          /* ViaCEP indisponível */
         }
       })();
 
-      const msgArea = areaManual
-        ? `Área: **${rotuloAreaChat(areaParaOrg)}**.`
-        : areaExigeConfirmacao(inferencia)
-          ? "Preciso que você **confirme a área** abaixo — o relato pode caber em mais de um módulo."
-          : `Área identificada: **${rotuloAreaChat(areaParaOrg)}**.`;
+      let respostaAssist = montarRespostaTurnoLocal({
+        diff: diffEstadoCasoChat(estadoAntes, nextEstado),
+        estado: nextEstado,
+        primeiroRelato,
+      });
 
-      const msgTroca =
-        trocaArea && estadoAntes.areaId !== inferencia.areaId
-          ? mensagemTrocaArea(
-              estadoAntes.areaId,
-              inferencia.areaId,
-              rotuloAreaChat
-            )
-          : null;
-
-      adicionarMensagem(
-        "assistente",
-        [
-          msgTroca,
-          montarRespostaTurnoLocal({
-            diff: diffEstadoCasoChat(estadoAntes, nextEstado),
-            estado: nextEstado,
-            primeiroRelato: !casoJaOrganizado || trocaArea,
-          }),
-          msgArea,
-        ]
-          .filter(Boolean)
-          .join("\n\n")
-      );
-
-      const timeoutId = window.setTimeout(() => ac.abort(), 90_000);
       try {
-        const res = await fetch("/api/entrada-caso", {
+        const resConversa = await fetch("/api/chat-conversa", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            relato,
-            areaId: areaParaOrg,
-            arquivos: payloadArquivos,
+            mensagem: texto || "Analise os documentos anexados e organize o caso.",
+            estado: nextEstado,
+            estadoAnterior: estadoAntes,
+            triagem: triagemPreview,
+            mensagens: [
+              ...mensagens,
+              {
+                id: "tmp",
+                papel: "usuario",
+                texto: texto || `[Anexo: ${filesNow.map((f) => f.name).join(", ")}]`,
+                ts: Date.now(),
+              },
+            ],
+            primeiroRelato,
+            avisoExtra: avisoMisto,
           }),
-          signal: ac.signal,
         });
-        const data = (await res.json().catch(() => ({}))) as {
-          preenchimento?: Parameters<typeof aplicarPreenchimentoAoEstado>[1];
-          replicaContestacao?: ReplicaContestacaoResumo | null;
+        const dataConversa = (await resConversa.json().catch(() => ({}))) as {
+          ok?: boolean;
+          resposta?: string;
+          estado?: EstadoCasoChat;
         };
-
-        if (res.ok && data.preenchimento) {
-          setEstado((atual) =>
-            aplicarOrganizacaoAoEstadoChat(atual, data.preenchimento!, {
-              areaId: areaParaOrg,
-              relato,
-              replicaContestacao: data.replicaContestacao ?? undefined,
-            })
-          );
-          const linhas = [
-            data.preenchimento.resumoConferencia ||
-              "Análise detalhada concluída — confira partes e pedidos.",
-          ];
-          if (data.replicaContestacao?.detectada) {
-            linhas.push(
-              "Detectei contestação nos autos — espécie sugerida: réplica à contestação."
-            );
+        if (resConversa.ok && dataConversa.ok && dataConversa.resposta) {
+          respostaAssist = dataConversa.resposta;
+          if (dataConversa.estado) {
+            nextEstado = dataConversa.estado;
+            setEstado(nextEstado);
+            estadoRef.current = nextEstado;
+            estadoAnteriorRef.current = nextEstado;
+            planoUltimoFingerprintRef.current = null;
           }
-          adicionarMensagem("assistente", linhas.join("\n\n"));
-        } else {
-          adicionarMensagem(
-            "sistema",
-            "Análise detalhada indisponível — use o entendimento local e confirme a área. Você pode redigir após o plano."
-          );
         }
-      } catch (e) {
-        if (!(e instanceof DOMException && e.name === "AbortError")) {
-          console.warn("[chat] entrada-caso:", e);
-        }
-        adicionarMensagem(
-          "sistema",
-          "Análise detalhada demorou — mantive a versão rápida do caso. O plano à direita será atualizado quando possível."
-        );
-      } finally {
-        window.clearTimeout(timeoutId);
+      } catch {
+        /* fallback local já em respostaAssist */
       }
 
-      setTriagemPreview(null);
-      setPayloadPendente(null);
+      adicionarMensagem("assistente", respostaAssist);
       setErro(null);
+    setAvisos(null);
+
+      void fetch("/api/entrada-caso", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          relato,
+          areaId: areaParaOrg,
+          arquivos: payloadArquivos,
+        }),
+      })
+        .then((r) => r.json())
+        .then(
+          (data: {
+            preenchimento?: Parameters<typeof aplicarPreenchimentoAoEstado>[1];
+            replicaContestacao?: ReplicaContestacaoResumo | null;
+          }) => {
+            if (!data.preenchimento) return;
+            setEstado((atual) => {
+              const merged = aplicarOrganizacaoAoEstadoChat(atual, data.preenchimento!, {
+                areaId: areaParaOrg,
+                relato,
+                replicaContestacao: data.replicaContestacao ?? undefined,
+              });
+              estadoRef.current = merged;
+              estadoAnteriorRef.current = merged;
+              return merged;
+            });
+            planoUltimoFingerprintRef.current = null;
+            if (data.replicaContestacao?.detectada) {
+              adicionarMensagem(
+                "assistente",
+                "Detectei **contestação** nos autos — espécie sugerida: réplica à contestação."
+              );
+            }
+          }
+        )
+        .catch(() => undefined);
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Falha ao processar mensagem.");
     } finally {
@@ -1430,7 +1442,9 @@ export function ChatMinutaPage({
       estadoRef.current = estadoRedacao;
     }
     if (!podeMontarPlano) {
-      setErro("Organize o caso antes de redigir — descreva os fatos com mais detalhe.");
+      setAvisos(
+        "Descreva um pouco mais o caso à esquerda — fatos, partes e pedidos — para eu montar o plano."
+      );
       return;
     }
     if (!garantirPolo()) return;
@@ -1442,31 +1456,44 @@ export function ChatMinutaPage({
     }
 
     setAbaMobile("peca");
-    if (!estado.planoVisto) {
-      await executarPlano({ silencioso: false });
+    const plano = await executarPlano({ silencioso: false });
+    const e = estadoRef.current;
+    if (!e || !podeMontarPlanoChat(e)) {
+      setAvisos("Aguarde o plano à direita ou continue conversando um instante.");
       return;
     }
-
-    setErro("Revise o plano à direita e confirme a redação.");
+    const payload =
+      plano?.payload ?? montarPayloadGeracaoChat(e, { atuarLeigo: leigo });
+    const triagem =
+      plano?.triagem ?? montarPlanoFallbackLocal(e, "aguardando análise");
+    setPayloadPendente(payload);
+    setTriagemPreview(triagem);
+    await confirmarRedacao({ triagem, payload });
   }
 
-  async function confirmarRedacao() {
-    if (!triagemPreview || !payloadPendente) return;
+  async function confirmarRedacao(overrides?: {
+    triagem?: PreviewTriagemData;
+    payload?: ReturnType<typeof montarPayloadGeracaoChat>;
+  }) {
+    const triagem = overrides?.triagem ?? triagemPreview;
+    const payload = overrides?.payload ?? payloadPendente;
+    if (!triagem || !payload) return;
     setRedigindo(true);
     setErro(null);
+    setAvisos(null);
     try {
       const res = await fetch("/api/gerar-peca", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...payloadPendente,
+          ...payload,
           escritorio: escritorio.usarTimbre ? escritorio : undefined,
           triagemPrecalculada: {
-            estrategiaJuridica: triagemPreview.estrategiaJuridica,
-            topicos: triagemPreview.topicos,
-            cobertura: triagemPreview.cobertura,
-            modelo: triagemPreview.modelo ?? "triagem",
-            analiseEstrategica: triagemPreview.analiseEstrategica,
+            estrategiaJuridica: triagem.estrategiaJuridica,
+            topicos: triagem.topicos,
+            cobertura: triagem.cobertura,
+            modelo: triagem.modelo ?? "triagem",
+            analiseEstrategica: triagem.analiseEstrategica,
           },
         }),
       });
@@ -1589,6 +1616,7 @@ export function ChatMinutaPage({
     }
     setAjustando(true);
     setErro(null);
+    setAvisos(null);
     try {
       const res = await fetch("/api/ajustar-peca", {
         method: "POST",
@@ -1629,6 +1657,7 @@ export function ChatMinutaPage({
     setTriagemPreview(null);
     setPayloadPendente(null);
     setErro(null);
+    setAvisos(null);
     adicionarMensagem(
       "sistema",
       `Área confirmada: **${rotuloAreaChat(areaId)}**. Montando o plano estratégico…`
@@ -1915,17 +1944,17 @@ export function ChatMinutaPage({
                   title={
                     workspaceFixado
                       ? "Desfixar: volta o assistente ao lugar na home. Atalho: Esc."
-                      : "Fixar: coloca o assistente em tela cheia (chat + documento), sem o restante da home. Clique de novo ou Esc para sair."
+                      : "Fixar: coloca o assistente em tela cheia (chat + documento), sem o restante da home."
                   }
                   aria-label={
                     workspaceFixado
-                      ? "Sair da tela cheia"
-                      : "Fixar assistente em tela cheia"
+                      ? "Desfixar área de trabalho"
+                      : "Fixar área de trabalho em tela cheia"
                   }
                   aria-pressed={workspaceFixado}
-                  className={classeBotaoFixarIcone(workspaceFixado, false)}
+                  className={classeBotaoFixarTexto(workspaceFixado)}
                 >
-                  <IconeFixarWorkspace fixado={workspaceFixado} />
+                  {workspaceFixado ? "Desfixar Área de Trabalho" : "Fixar Área de Trabalho"}
                 </button>
               )}
             </div>
@@ -2112,6 +2141,11 @@ export function ChatMinutaPage({
           className={`max-h-[42vh] shrink-0 overflow-y-auto border-t px-3 py-2.5 sm:px-4 ${tema.chatComposer}`}
         >
           <div className="mx-auto max-w-3xl">
+          {avisos && (
+            <p className="mb-2 rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-1.5 text-sm text-amber-950">
+              {avisos}
+            </p>
+          )}
           {erro && (
             <p className="mb-2 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm text-red-800">
               {erro}
@@ -2288,6 +2322,7 @@ export function ChatMinutaPage({
               onErro={setErro}
               onTranscrito={(texto) => {
                 setErro(null);
+        setAvisos(null);
                 setInput((atual) => juntarTranscricao(atual, texto));
               }}
               className={
@@ -2342,7 +2377,7 @@ export function ChatMinutaPage({
 
       {/* Coluna preview */}
       <div
-        className={`min-h-0 min-w-0 flex-1 flex-col lg:flex lg:min-h-0 ${previewColCls} ${
+        className={`relative min-h-0 min-w-0 flex-1 flex-col lg:flex lg:min-h-0 ${previewColCls} ${
           abaMobile === "peca" ? "flex" : "hidden lg:flex"
         }`}
       >
@@ -2424,6 +2459,20 @@ export function ChatMinutaPage({
             <p className="mt-0.5 text-[11px] text-stone-500">{avisoPreview}</p>
           )}
         </div>
+        <div className="relative min-h-0 flex-1">
+          {modoWorkspace && workspaceFixado && (
+            <div
+              className="pointer-events-none absolute bottom-4 right-4 z-30 sm:bottom-6 sm:right-6"
+              aria-hidden
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/brand/facto-wordmark.png"
+                alt=""
+                className="h-11 w-auto max-w-[min(44vw,12rem)] select-none opacity-[0.13] sm:h-14"
+              />
+            </div>
+          )}
         <div className={`min-h-0 flex-1 overflow-y-auto p-3 sm:p-4 ${previewBodyCls}`}>
           {geradoPorIA && pecaHtml ? (
             <div className="w-full space-y-4">
@@ -2465,6 +2514,7 @@ export function ChatMinutaPage({
               onIncluirCobertura={incluirCoberturaNoPlano}
             />
           )}
+        </div>
         </div>
       </div>
 
