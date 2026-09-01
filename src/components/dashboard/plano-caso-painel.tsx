@@ -5,10 +5,13 @@ import { PlanoEstrategicoCorpo } from "@/components/dashboard/preview-triagem-pe
 import { AlertaFatosPedidosChips } from "@/components/dashboard/alerta-fatos-pedidos-chips";
 import type { AlertaFatosPedidos } from "@/lib/alerta-fatos-pedidos";
 import {
+  casoChatPainelVazio,
+  casoChatTemConteudo,
   montarResumoEntendimentoChat,
   rotuloAreaChat,
   type EstadoCasoChat,
 } from "@/lib/chat-minuta";
+import { ChatPainelContextoVazio } from "@/components/dashboard/chat-painel-contexto-vazio";
 import type { VersaoPlanoChat } from "@/lib/chat-plano-versoes";
 
 function EntendimentoLocalCard({
@@ -112,13 +115,26 @@ export function PlanoCasoPainel({
   onIncluirCobertura?: (itemId: string) => void;
 }) {
   const resumo = montarResumoEntendimentoChat(estado);
-  const areaRotulo = rotuloAreaChat(estado.areaId);
+  const painelVazio = casoChatPainelVazio(estado);
+  const areaRotulo = painelVazio
+    ? "A definir"
+    : estado.areaConfirmada || estado.areaInferida
+      ? rotuloAreaChat(estado.areaId)
+      : "A definir";
   const nVersoes = versoes?.length ?? 0;
+
+  if (painelVazio && !carregando) {
+    return <ChatPainelContextoVazio />;
+  }
 
   if (carregando && !triagem) {
     return (
       <div className="mx-auto max-w-3xl space-y-4">
-        <EntendimentoLocalCard resumo={resumo} areaRotulo={areaRotulo} />
+        {casoChatTemConteudo(estado) ? (
+          <EntendimentoLocalCard resumo={resumo} areaRotulo={areaRotulo} />
+        ) : (
+          <ChatPainelContextoVazio />
+        )}
         <div
           className="rounded-xl border border-dashed border-stone-300 bg-white/80 p-6 text-center"
           aria-busy="true"

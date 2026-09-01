@@ -9,6 +9,11 @@ import { AlertaFatosPedidosChips } from "@/components/dashboard/alerta-fatos-ped
 import { CitacoesRastreaveisPanel } from "@/components/dashboard/citacoes-rastreaveis-panel";
 import { ChatConfirmarArea } from "@/components/dashboard/chat-confirmar-area";
 import { PlanoCasoPainel } from "@/components/dashboard/plano-caso-painel";
+import { ChatIndicadorDigitando } from "@/components/dashboard/chat-indicador-digitando";
+import { ChatAdicionarContexto } from "@/components/dashboard/chat-adicionar-contexto";
+import { ChatAnexosBanner } from "@/components/dashboard/chat-anexos-banner";
+import { ChatModoConversaToggle } from "@/components/dashboard/chat-modo-conversa-toggle";
+import type { JurisCasoSalvo } from "@/components/dashboard/juris-caso-form";
 import type { PreviewTriagemData } from "@/components/dashboard/preview-triagem-peca";
 import { BotaoFalarCampo } from "@/components/dashboard/botao-falar-campo";
 import { ReplicaContestacaoPainel } from "@/components/dashboard/replica-contestacao-painel";
@@ -40,6 +45,7 @@ import {
   areaExigeConfirmacao,
   areaSugereConfirmacao,
   chatMinutaAreaHabilitada,
+  casoChatTemConteudo,
   confirmarAreaChat,
   estadoCasoChatVazio,
   garantirAreaParaRedacao,
@@ -57,6 +63,12 @@ import {
   type EstadoCasoChat,
   type MensagemChat,
 } from "@/lib/chat-minuta";
+import {
+  configModoConversa,
+  lerModoConversaStorage,
+  salvarModoConversaStorage,
+  type ModoConversaChat,
+} from "@/lib/modo-conversa-chat";
 import {
   diffEstadoCasoChat,
   montarRespostaTurnoLocal,
@@ -172,7 +184,7 @@ const MSG_BOAS_VINDAS: MensagemChat = {
   id: "welcome",
   papel: "assistente",
   texto:
-    "Conte o caso em linguagem natural — ou use uma sugestão abaixo. Vou montar um **plano estratégico** à direita (sem cota). Confirme a área se houver dúvida, converse até ficar bom e só então **redija** (1 peça). Em **Provas / lei e juris** você cola lei municipal e julgados do caso.",
+    "Conte o caso em linguagem natural. Monto o **plano estratégico** à direita e, quando você quiser, **redijo** a peça protocolável (1 crédito).",
   ts: Date.now(),
 };
 
@@ -294,6 +306,14 @@ export function ChatMinutaPage({
   const [avisos, setAvisos] = useState<string | null>(null);
   const [drawerAberto, setDrawerAberto] = useState(false);
   const [drawerAba, setDrawerAba] = useState<"resumo" | "complementos">("resumo");
+  const [complementosFoco, setComplementosFoco] = useState<
+    "provas" | "juris" | "lei" | null
+  >(null);
+  const [contextoPainelAberto, setContextoPainelAberto] = useState(false);
+  const [modoConversa, setModoConversa] = useState<ModoConversaChat>(() =>
+    lerModoConversaStorage()
+  );
+  const [processandoDocumentos, setProcessandoDocumentos] = useState(false);
   const [sessaoId, setSessaoId] = useState<string | null>(null);
   const [mostrarSessoes, setMostrarSessoes] = useState(false);
   const [mostrarMinutasNuvem, setMostrarMinutasNuvem] = useState(false);
@@ -349,8 +369,61 @@ export function ChatMinutaPage({
   const areasDisponiveis = areasChatMinutaDisponiveis();
   const limiteAjustes = limiteAjustesPorPlano(plano, leigo);
   const ajustesRestantes = Math.max(0, limiteAjustes - ajustesFeitos);
-  const casoJaOrganizado =
-    estado.fatos.trim().length >= 40 && estado.tipoAcao.trim().length > 0;
+  const casoJaOrganizado = casoChatTemConteudo(estado);
+
+  const provasUtilCount = useMemo(
+    () =>
+      estado.provasCaso.filter((p) => p.texto.trim().length >= 40).length,
+    [estado.provasCaso]
+  );
+
+  const consultaJurisChat = useMemo(
+    () => [estado.tipoAcao, estado.fatos].filter(Boolean).join("\n"),
+    [estado.tipoAcao, estado.fatos]
+  );
+
+  const anexosItemCount = useMemo(
+    () =>
+      arquivos.length +
+      provasUtilCount +
+      estado.jurisCaso.length +
+      (estado.leiMunicipalTexto?.trim() ? 1 : 0),
+    [
+      arquivos.length,
+      provasUtilCount,
+      estado.jurisCaso.length,
+      estado.leiMunicipalTexto,
+    ]
+  );
+
+  const abrirComplementos = useCallback(
+    (foco: "provas" | "juris" | "lei") => {
+      setDrawerAba("complementos");
+      setDrawerAberto(true);
+      setComplementosFoco(foco);
+    },
+    []
+  );
+
+  useEffect(() => {
+    salvarModoConversaStorage(modoConversa);
+  }, [modoConversa]);
+
+  useEffect(() => {
+    if (!drawerAberto || drawerAba !== "complementos" || !complementosFoco) {
+      return;
+    }
+    const id =
+      complementosFoco === "provas"
+        ? "secao-provas"
+        : complementosFoco === "lei"
+          ? "secao-lei-municipal"
+          : "secao-juris-caso";
+    const t = window.setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, [drawerAberto, drawerAba, complementosFoco]);
   const tema = useMemo(
     () =>
       resolverTemaChatMinuta(temaId, {
@@ -919,6 +992,86 @@ export function ChatMinutaPage({
     []
   );
 
+  const [msgStreamId, setMsgStreamId] = useState<string | null>(null);
+
+  const consumirStreamConversa = useCallback(
+    async (payload: {
+      mensagem: string;
+      estado: EstadoCasoChat;
+      estadoAnterior: EstadoCasoChat;
+      triagem: PreviewTriagemData | null;
+      mensagens: MensagemChat[];
+      primeiroRelato: boolean;
+      avisoExtra: string | null;
+      modo: ModoConversaChat;
+    }): Promise<string | null> => {
+      const msgId = idMensagemChat();
+      setMsgStreamId(msgId);
+      setMensagens((m) => [
+        ...m,
+        { id: msgId, papel: "assistente", texto: "", ts: Date.now() },
+      ]);
+
+      try {
+        const res = await fetch("/api/chat-conversa/stream", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok || !res.body) {
+          setMensagens((m) => m.filter((x) => x.id !== msgId));
+          return null;
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let texto = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const linhas = buffer.split("\n");
+          buffer = linhas.pop() ?? "";
+          for (const linha of linhas) {
+            if (!linha.trim()) continue;
+            const evt = JSON.parse(linha) as {
+              t?: string;
+              error?: string;
+              done?: boolean;
+            };
+            if (evt.error) {
+              setMensagens((m) => m.filter((x) => x.id !== msgId));
+              return null;
+            }
+            if (evt.t) {
+              texto += evt.t;
+              const acumulado = texto;
+              setMensagens((m) =>
+                m.map((x) =>
+                  x.id === msgId ? { ...x, texto: acumulado } : x
+                )
+              );
+            }
+          }
+        }
+
+        if (!texto.trim()) {
+          setMensagens((m) => m.filter((x) => x.id !== msgId));
+          return null;
+        }
+        return texto.trim();
+      } catch {
+        setMensagens((m) => m.filter((x) => x.id !== msgId));
+        return null;
+      } finally {
+        setMsgStreamId(null);
+      }
+    },
+    []
+  );
+
   const aplicarTriagemNoPainel = useCallback(
     (
       triagemNova: PreviewTriagemData,
@@ -1069,9 +1222,10 @@ export function ChatMinutaPage({
     if (validarPoloChat(aplicarPoloInferidoChat(estado))) return;
 
     if (previewAutoTimerRef.current) clearTimeout(previewAutoTimerRef.current);
+    const debounceMs = configModoConversa(modoConversa).debouncePlanoMs;
     previewAutoTimerRef.current = setTimeout(() => {
       void executarPlano({ silencioso: true });
-    }, 1200);
+    }, debounceMs);
 
     return () => {
       if (previewAutoTimerRef.current) clearTimeout(previewAutoTimerRef.current);
@@ -1083,6 +1237,7 @@ export function ChatMinutaPage({
     redigindo,
     executarPlano,
     estado,
+    modoConversa,
   ]);
 
   async function processarArquivos(
@@ -1123,6 +1278,7 @@ export function ChatMinutaPage({
 
     setErro(null);
     setAvisos(null);
+    setContextoPainelAberto(false);
     garantirSessaoId();
     adicionarMensagem("usuario", texto || `[Anexo: ${arquivos.map((f) => f.name).join(", ")}]`);
     setInput("");
@@ -1229,6 +1385,7 @@ export function ChatMinutaPage({
     }
 
     setEnviando(true);
+    if (filesNow.length > 0) setProcessandoDocumentos(true);
     entradaAbortRef.current?.abort();
     const ac = new AbortController();
     entradaAbortRef.current = ac;
@@ -1347,50 +1504,69 @@ export function ChatMinutaPage({
         primeiroRelato,
       });
 
+      const payloadConversa = {
+        mensagem: texto || "Analise os documentos anexados e organize o caso.",
+        estado: nextEstado,
+        estadoAnterior: estadoAntes,
+        triagem: triagemPreview,
+        mensagens: [
+          ...mensagens,
+          {
+            id: "tmp",
+            papel: "usuario" as const,
+            texto: texto || `[Anexo: ${filesNow.map((f) => f.name).join(", ")}]`,
+            ts: Date.now(),
+          },
+        ],
+        primeiroRelato,
+        avisoExtra: avisoMisto,
+        modo: modoConversa,
+      };
+
+      let usouStream = false;
       try {
-        const resConversa = await fetch("/api/chat-conversa", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            mensagem: texto || "Analise os documentos anexados e organize o caso.",
-            estado: nextEstado,
-            estadoAnterior: estadoAntes,
-            triagem: triagemPreview,
-            mensagens: [
-              ...mensagens,
-              {
-                id: "tmp",
-                papel: "usuario",
-                texto: texto || `[Anexo: ${filesNow.map((f) => f.name).join(", ")}]`,
-                ts: Date.now(),
-              },
-            ],
-            primeiroRelato,
-            avisoExtra: avisoMisto,
-          }),
-        });
-        const dataConversa = (await resConversa.json().catch(() => ({}))) as {
-          ok?: boolean;
-          resposta?: string;
-          estado?: EstadoCasoChat;
-        };
-        if (resConversa.ok && dataConversa.ok && dataConversa.resposta) {
-          respostaAssist = dataConversa.resposta;
-          if (dataConversa.estado) {
-            nextEstado = dataConversa.estado;
-            setEstado(nextEstado);
-            estadoRef.current = nextEstado;
-            estadoAnteriorRef.current = nextEstado;
-            planoUltimoFingerprintRef.current = null;
+        const streamed = await consumirStreamConversa(payloadConversa);
+        if (streamed) {
+          respostaAssist = streamed;
+          usouStream = true;
+        } else {
+          const resConversa = await fetch("/api/chat-conversa", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payloadConversa),
+          });
+          const dataConversa = (await resConversa.json().catch(() => ({}))) as {
+            ok?: boolean;
+            resposta?: string;
+            estado?: EstadoCasoChat;
+          };
+          if (resConversa.ok && dataConversa.ok && dataConversa.resposta) {
+            respostaAssist = dataConversa.resposta;
+            if (dataConversa.estado) {
+              nextEstado = dataConversa.estado;
+              setEstado(nextEstado);
+              estadoRef.current = nextEstado;
+              estadoAnteriorRef.current = nextEstado;
+              planoUltimoFingerprintRef.current = null;
+            }
           }
         }
       } catch {
         /* fallback local já em respostaAssist */
       }
 
-      adicionarMensagem("assistente", respostaAssist);
+      if (!usouStream) {
+        adicionarMensagem("assistente", respostaAssist);
+      }
       setErro(null);
-    setAvisos(null);
+      setAvisos(null);
+
+      if (
+        configModoConversa(modoConversa).forcarPlanoAposTurno &&
+        podeMontarPlanoChat(estadoRef.current)
+      ) {
+        void executarPlano({ silencioso: false, forcar: true });
+      }
 
       void fetch("/api/entrada-caso", {
         method: "POST",
@@ -1432,6 +1608,7 @@ export function ChatMinutaPage({
       setErro(e instanceof Error ? e.message : "Falha ao processar mensagem.");
     } finally {
       setEnviando(false);
+      setProcessandoDocumentos(false);
     }
   }
 
@@ -1865,6 +2042,12 @@ export function ChatMinutaPage({
               )}
             </div>
             <div className="flex flex-wrap items-center gap-1">
+              <ChatModoConversaToggle
+                modo={modoConversa}
+                onModoChange={setModoConversa}
+                modoWorkspace={modoWorkspace}
+                compacto
+              />
               {!modoWorkspace && (
                 <button
                   type="button"
@@ -1898,6 +2081,34 @@ export function ChatMinutaPage({
               >
                 Meus casos
               </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  setDrawerAba("resumo");
+                  setDrawerAberto(true);
+                }}
+                title="O que entendi do caso"
+                className={pillBtn}
+              >
+                Entendimento
+              </button>
+              <button
+                type="button"
+                disabled={
+                  redigindo ||
+                  (casoJaOrganizado && !podeMontarPlano) ||
+                  planoLoading
+                }
+                onClick={() => void handleIniciarRedacao()}
+                title="Monta/atualiza o plano ou redige a peça (1 cota)"
+                className={
+                  modoWorkspace
+                    ? "rounded-full border border-facto-gold/50 bg-facto-gold/15 px-2 py-0.5 text-[10px] font-semibold text-facto-gold backdrop-blur-sm transition hover:bg-facto-gold/25 disabled:opacity-50"
+                    : "rounded-full border border-facto-gold/50 bg-facto-gold/20 px-2 py-0.5 text-[10px] font-semibold text-facto-gold disabled:opacity-50"
+                }
+              >
+                {rotuloCtaPrincipal}
+              </button>
               {timbreConfigurado ? (
                 <label
                   title="Timbre: liga ou desliga cabeçalho, rodapé e marca d'água do escritório na peça. Configure as imagens em Meu perfil."
@@ -2008,7 +2219,7 @@ export function ChatMinutaPage({
 
         <div
           data-chat-mensagens-scroll
-          className={`min-h-0 flex-1 overflow-y-auto px-3 py-3 sm:px-4 sm:py-4 ${tema.chatScroll}`}
+          className={`relative min-h-0 flex-1 overflow-y-auto px-3 py-3 sm:px-4 sm:py-4 ${tema.chatScroll}`}
         >
           <div className="mx-auto max-w-3xl space-y-3">
             {estado.replicaContestacao?.detectada ? (
@@ -2021,7 +2232,16 @@ export function ChatMinutaPage({
                 }
               />
             ) : null}
-            {mensagens.map((m) => (
+            {mensagens
+              .filter(
+                (m) =>
+                  !(
+                    m.id === "welcome" &&
+                    mensagens.length <= 1 &&
+                    !casoJaOrganizado
+                  )
+              )
+              .map((m) => (
               <div
                 key={m.id}
                 className={`flex ${m.papel === "usuario" ? "justify-end" : "justify-start"}`}
@@ -2039,6 +2259,31 @@ export function ChatMinutaPage({
                 </div>
               </div>
             ))}
+            {enviando && !msgStreamId && (
+              <ChatIndicadorDigitando temaAssistente={tema.msgAssistente} />
+            )}
+            {mensagens.length <= 1 && !casoJaOrganizado && (
+              <div className="flex flex-col items-center px-2 py-6 text-center sm:py-10">
+                <p
+                  className={
+                    modoWorkspace
+                      ? "text-base font-semibold text-stone-200 sm:text-lg"
+                      : "text-base font-semibold text-stone-800 sm:text-lg"
+                  }
+                >
+                  O futuro do seu caso começa aqui
+                </p>
+                <p
+                  className={
+                    modoWorkspace
+                      ? "mt-2 max-w-md text-xs text-stone-500 sm:text-sm"
+                      : "mt-2 max-w-md text-xs text-stone-600 sm:text-sm"
+                  }
+                >
+                  Descreva o caso, anexe documentos ou use uma sugestão.
+                </p>
+              </div>
+            )}
             {mensagens.length <= 1 && !casoJaOrganizado && (
               <div className="flex flex-wrap gap-2 pt-1">
                 {(
@@ -2181,70 +2426,15 @@ export function ChatMinutaPage({
             </div>
           )}
 
-          <div className="mb-2 flex flex-wrap items-center gap-1.5">
-            <button
-              type="button"
-              disabled={
-                redigindo ||
-                (casoJaOrganizado && !podeMontarPlano) ||
-                planoLoading
-              }
-              onClick={() => void handleIniciarRedacao()}
-              title="Continua o fluxo: monta/atualiza o plano ou redige a peça (1 cota)."
-              className={
-                modoWorkspace
-                  ? "rounded-md border border-facto-gold/40 bg-facto-gold/20 px-2.5 py-1 text-[11px] font-semibold text-facto-gold transition hover:bg-facto-gold/30 disabled:opacity-50"
-                  : "rounded-md bg-stone-800 px-2.5 py-1 text-[11px] font-semibold text-amber-50 hover:bg-stone-700 disabled:opacity-50"
-              }
-            >
-              {rotuloCtaPrincipal}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setDrawerAba("resumo");
-                setDrawerAberto(true);
-              }}
-              title="O que entendi: resumo do que o assistente captou (área, partes, pedidos, foro). Revise aqui se algo estiver errado antes de redigir."
-              className={
-                modoWorkspace
-                  ? "rounded-md px-2 py-1 text-[11px] text-stone-400 underline-offset-2 hover:text-facto-gold hover:underline"
-                  : "rounded-md px-2 py-1 text-[11px] text-stone-500 underline-offset-2 hover:text-stone-800 hover:underline"
-              }
-            >
-              O que entendi
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setDrawerAba("complementos");
-                setDrawerAberto(true);
-              }}
-              className={
-                modoWorkspace
-                  ? "rounded-md px-2 py-1 text-[11px] text-stone-400 underline-offset-2 hover:text-facto-gold hover:underline"
-                  : "rounded-md px-2 py-1 text-[11px] text-stone-500 underline-offset-2 hover:text-stone-800 hover:underline"
-              }
-              title="Provas / lei e juris: anexe provas do fato (contrato, print), lei municipal do município e acórdãos/súmulas do seu caso — insumos para a redação, distintos do protocolo."
-            >
-              Provas / lei e juris
-            </button>
-            {triagemPreview && !geradoPorIA && (
-              <button
-                type="button"
-                onClick={() => {
-                  setAbaMobile("peca");
-                }}
-                className="text-[11px] text-stone-400 underline-offset-2 hover:underline"
-              >
-                ver plano à direita
-              </button>
-            )}
-          </div>
-
           {geradoPorIA && ajustesRestantes > 0 && (
-            <div className="mb-2 rounded-lg border border-stone-200 bg-stone-50 p-2.5">
-              <p className="text-[11px] font-medium text-stone-700">
+            <div
+              className={`mb-2 rounded-lg border p-2.5 ${
+                modoWorkspace
+                  ? "border-white/10 bg-white/[0.04]"
+                  : "border-stone-200 bg-stone-50"
+              }`}
+            >
+              <p className="text-[11px] font-medium text-stone-400">
                 Ajuste de trecho ({ajustesRestantes} restante
                 {ajustesRestantes !== 1 ? "s" : ""})
               </p>
@@ -2252,8 +2442,8 @@ export function ChatMinutaPage({
                 rows={2}
                 value={pedidoAjuste}
                 onChange={(e) => setPedidoAjuste(e.target.value)}
-                placeholder="Ex.: incluir pedido de tutela antecipada no item III"
-                className="mt-1.5 w-full rounded-md border border-stone-200 px-2 py-1 text-sm"
+                placeholder="Ex.: incluir pedido de tutela no item III"
+                className="mt-1.5 w-full rounded-md border border-stone-600/40 bg-stone-900/40 px-2 py-1 text-sm text-stone-200"
               />
               <button
                 type="button"
@@ -2266,6 +2456,17 @@ export function ChatMinutaPage({
             </div>
           )}
 
+          <div
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              const files = Array.from(e.dataTransfer.files ?? []).slice(0, 4);
+              if (files.length) {
+                setArquivos(files);
+                setContextoPainelAberto(true);
+              }
+            }}
+          >
           <textarea
             rows={2}
             value={input}
@@ -2280,41 +2481,13 @@ export function ChatMinutaPage({
             className={`w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 sm:text-[15px] ${tema.input}`}
           />
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
-            <label
-              title="Anexar PDF ou Word (até 4 arquivos): e-mail do cliente, autos ou petição. O assistente lê o texto para organizar o caso — não consome cota de peça."
-              className={
-                modoWorkspace
-                  ? "inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.06] px-2.5 py-1.5 text-[12px] font-medium text-stone-200 backdrop-blur-sm hover:bg-white/10"
-                  : "inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-[12px] font-medium text-stone-800 shadow-sm hover:bg-stone-50"
-              }
-            >
-              <input
-                type="file"
-                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png"
-                multiple
-                className="sr-only"
-                onChange={(e) =>
-                  setArquivos(Array.from(e.target.files ?? []).slice(0, 4))
-                }
-              />
-              <svg
-                viewBox="0 0 24 24"
-                className={`h-3.5 w-3.5 shrink-0 ${
-                  modoWorkspace ? "text-facto-gold" : "text-stone-700"
-                }`}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.8}
-                aria-hidden
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M21.44 11.05l-8.49 8.49a5.25 5.25 0 01-7.43-7.43l8.84-8.84a3.5 3.5 0 014.95 4.95l-8.84 8.84a1.75 1.75 0 01-2.47-2.47l8.13-8.14"
-                />
-              </svg>
-              Anexar PDF/Word
-            </label>
+            <ChatAdicionarContexto
+              modoWorkspace={modoWorkspace}
+              aberto={contextoPainelAberto}
+              onAbertoChange={setContextoPainelAberto}
+              itemCount={anexosItemCount}
+              processandoDocumentos={processandoDocumentos}
+            />
             <BotaoFalarCampo
               disabled={enviando}
               areaId={estado.areaId}
@@ -2351,28 +2524,9 @@ export function ChatMinutaPage({
                     : "Enviar"}
             </button>
           </div>
-          {arquivos.length > 0 && (
-            <p className="mt-1 text-[11px] text-stone-600">
-              Anexos prontos: {arquivos.map((f) => f.name).join(" · ")}
-            </p>
-          )}
-          <p className="mt-1 text-[10px] text-stone-500">
-            Lei municipal e acórdão do caso: use{" "}
-            <button
-              type="button"
-              className="font-medium underline underline-offset-2"
-              title="Abre o painel de complementos: provas do fato, lei municipal e jurisprudência anexada do caso."
-              onClick={() => {
-                setDrawerAba("complementos");
-                setDrawerAberto(true);
-              }}
-            >
-              Provas / lei e juris
-            </button>
-            .
-          </p>
           </div>
         </div>
+      </div>
       </div>
 
       {/* Coluna preview */}
@@ -2517,6 +2671,45 @@ export function ChatMinutaPage({
         </div>
         </div>
       </div>
+
+      {contextoPainelAberto && (
+        <ChatAnexosBanner
+          modoWorkspace={modoWorkspace}
+          onFechar={() => setContextoPainelAberto(false)}
+          arquivos={arquivos}
+          onArquivosChange={(files) => setArquivos(files.slice(0, 4))}
+          provasUtil={provasUtilCount}
+          jurisCount={estado.jurisCaso.length}
+          temLeiMunicipal={Boolean(estado.leiMunicipalTexto?.trim())}
+          processandoDocumentos={processandoDocumentos}
+          consultaJuris={consultaJurisChat}
+          areaId={estado.areaId}
+          ufForo={estado.comarca.uf}
+          jurisUploads={estado.jurisCaso as JurisCasoSalvo[]}
+          onJurisAplicar={(itens) => {
+            setEstado((prev) => {
+              const ids = new Set(
+                prev.jurisCaso.map((p) => p.titulo.toLowerCase())
+              );
+              const novos = itens.filter(
+                (i) => !ids.has(i.titulo.toLowerCase())
+              );
+              const merged = {
+                ...prev,
+                jurisCaso: [...prev.jurisCaso, ...novos].slice(0, 5),
+              };
+              estadoRef.current = merged;
+              estadoAnteriorRef.current = merged;
+              return merged;
+            });
+            planoUltimoFingerprintRef.current = null;
+          }}
+          onAbrirComplementos={abrirComplementos}
+          onEnviar={() => void handleEnviarMensagem()}
+          enviando={enviando}
+          envioDesabilitado={planoLoading || redigindo}
+        />
+      )}
 
       <MinutasHistoricoPainel
         aberto={mostrarMinutasNuvem}

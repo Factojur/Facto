@@ -25,9 +25,94 @@ import {
   montarRespostaTurnoLocal,
   perguntaProativaLocal,
 } from "@/lib/chat-resposta-turno";
+import {
+  configModoConversa,
+  MODO_CONVERSA_PADRAO,
+  normalizarModoConversa,
+  type ModoConversaChat,
+} from "@/lib/modo-conversa-chat";
 
 export type { PatchEstadoRefinar, ResultadoRefinarPlano };
 export { aplicarPatchEstadoRefinar };
+
+export type PromptsConversaFase1 = {
+  system: string;
+  user: string;
+  maxOutputTokens: number;
+  temperature: number;
+};
+
+function blocoBaseSistemaConversa(modo: ModoConversaChat): string[] {
+  const cfg = configModoConversa(modo);
+  return [
+    "Você é o assistente jurídico FACTO — conversa fluida com advogado ou leigo.",
+    "Objetivo: entender o caso, interpretar fatos, sugerir teses e pedidos, organizar ideias.",
+    "NÃO redija petição inteira. NÃO invente fatos não narrados.",
+    "Tom: profissional, direto, acolhedor — como um colega experiente no chat.",
+    "Pode usar listas curtas e **negrito** em termos-chave.",
+    ...cfg.instrucoesSistema,
+    "A redação formal da peça só ocorre quando o usuário clicar Redigir (1 crédito).",
+  ];
+}
+
+function montarUserConversa(input: {
+  mensagem: string;
+  estado: EstadoCasoChat;
+  triagem: PreviewTriagemData | null;
+  mensagens: MensagemChat[];
+  avisoExtra?: string | null;
+}): string {
+  const resumo = montarResumoEntendimentoChat(input.estado);
+  const thread = resumirThread(input.mensagens);
+  const planoBreve = input.triagem
+    ? `Plano atual — tópicos: ${input.triagem.topicos.map((t) => t.titulo).join("; ").slice(0, 500)}`
+    : "Plano ainda em montagem (painel à direita).";
+
+  return [
+    blocoRitoArea(input.estado.areaId),
+    "",
+    `Área: ${rotuloAreaChat(input.estado.areaId)}`,
+    `Ação/espécie: ${resumo.tipoAcao} · ${resumo.especie}`,
+    `Partes: ${resumo.autores} × ${resumo.reus}`,
+    `Foro: ${resumo.foro}`,
+    `Pedidos no caso: ${resumo.pedidos.join("; ") || "—"}`,
+    `Fatos (trecho): ${resumo.fatosResumo}`,
+    planoBreve,
+    input.avisoExtra ? `Aviso interno: ${input.avisoExtra}` : "",
+    "",
+    "Histórico recente:",
+    thread || "(primeira mensagem)",
+    "",
+    `Nova mensagem do usuário:\n${input.mensagem.slice(0, 4000)}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+/** Prompts para stream (markdown direto, sem JSON). */
+export function montarPromptsConversaStream(input: {
+  mensagem: string;
+  estado: EstadoCasoChat;
+  triagem: PreviewTriagemData | null;
+  mensagens: MensagemChat[];
+  avisoExtra?: string | null;
+  modo?: ModoConversaChat;
+}): PromptsConversaFase1 {
+  const modo = normalizarModoConversa(input.modo ?? MODO_CONVERSA_PADRAO);
+  const cfg = configModoConversa(modo);
+
+  const system = [
+    ...blocoBaseSistemaConversa(modo),
+    "Responda APENAS com o texto markdown para o chat — sem JSON, sem blocos de código.",
+  ].join("\n");
+
+  return {
+    system,
+    user: montarUserConversa(input),
+    maxOutputTokens: cfg.maxOutputTokens,
+    temperature: cfg.temperature,
+  };
+}
 
 const LIMITE_MSGS = 12;
 const LIMITE_CHARS_MSG = 1200;
@@ -107,8 +192,11 @@ export async function conversarAssistenteFase1(input: {
   mensagens: MensagemChat[];
   primeiroRelato?: boolean;
   avisoExtra?: string | null;
+  modo?: ModoConversaChat;
 }): Promise<ResultadoRefinarPlano> {
   const primeiroRelato = input.primeiroRelato ?? false;
+  const modo = normalizarModoConversa(input.modo ?? MODO_CONVERSA_PADRAO);
+  const cfg = configModoConversa(modo);
 
   if (!geminiConfigurado()) {
     return respostaConversaFallback({
@@ -119,37 +207,16 @@ export async function conversarAssistenteFase1(input: {
     });
   }
 
-  const resumo = montarResumoEntendimentoChat(input.estado);
-  const thread = resumirThread(input.mensagens);
-  const planoBreve = input.triagem
-    ? `Plano atual — tópicos: ${input.triagem.topicos.map((t) => t.titulo).join("; ").slice(0, 500)}`
-    : "Plano ainda em montagem (painel à direita).";
-
-  const system = [
-    "Você é o assistente jurídico FACTO — conversa fluida com advogado ou leigo.",
-    "Objetivo: entender o caso, interpretar fatos, sugerir teses e pedidos, organizar ideias.",
-    "NÃO redija petição inteira. NÃO invente fatos não narrados.",
-    "Tom: profissional, direto, acolhedor. Pode usar listas curtas e **negrito** em termos-chave.",
-    "Responda em 1–3 parágrafos (até ~8 frases). Termine com pergunta útil quando faltar dado.",
-    "A redação formal da peça só ocorre quando o usuário clicar Redigir (1 crédito).",
-  ].join("\n");
+  const system = blocoBaseSistemaConversa(modo).join("\n");
 
   const user = [
-    blocoRitoArea(input.estado.areaId),
-    "",
-    `Área: ${rotuloAreaChat(input.estado.areaId)}`,
-    `Ação/espécie: ${resumo.tipoAcao} · ${resumo.especie}`,
-    `Partes: ${resumo.autores} × ${resumo.reus}`,
-    `Foro: ${resumo.foro}`,
-    `Pedidos no caso: ${resumo.pedidos.join("; ") || "—"}`,
-    `Fatos (trecho): ${resumo.fatosResumo}`,
-    planoBreve,
-    input.avisoExtra ? `Aviso interno: ${input.avisoExtra}` : "",
-    "",
-    "Histórico recente:",
-    thread || "(primeira mensagem)",
-    "",
-    `Nova mensagem do usuário:\n${input.mensagem.slice(0, 4000)}`,
+    montarUserConversa({
+      mensagem: input.mensagem,
+      estado: input.estado,
+      triagem: input.triagem,
+      mensagens: input.mensagens,
+      avisoExtra: input.avisoExtra,
+    }),
     "",
     "Retorne APENAS JSON válido:",
     `{
@@ -158,16 +225,14 @@ export async function conversarAssistenteFase1(input: {
   "perguntaProativa": "pergunta curta ou null"
 }`,
     "patchEstado: só campos explicitamente pedidos ou corrigidos nesta mensagem.",
-  ]
-    .filter(Boolean)
-    .join("\n");
+  ].join("\n");
 
   const resultado = await gerarTextoComGemini({
     modelos: MODELOS_TRIAGEM,
     systemPrompt: system,
     userPrompt: user,
-    maxOutputTokens: 1800,
-    temperature: 0.45,
+    maxOutputTokens: cfg.maxOutputTokens,
+    temperature: cfg.temperature,
   });
 
   if (!resultado.ok) {

@@ -42,10 +42,12 @@ export function ChatComplementosSection({
         }
       />
 
-      <JurisCasoSection
-        value={estado.jurisCaso}
-        onChange={(jurisCaso) => onChange({ jurisCaso })}
-      />
+      <div id="secao-juris-caso" className="scroll-mt-24">
+        <JurisCasoSection
+          value={estado.jurisCaso}
+          onChange={(jurisCaso) => onChange({ jurisCaso })}
+        />
+      </div>
 
       <p className="rounded-lg border border-amber-200/80 bg-amber-50/80 px-3 py-2 text-xs text-amber-950">
         <strong>Jurisprudência do caso:</strong> cole a ementa ou anexe o PDF do
@@ -62,7 +64,7 @@ export function ChatComplementosSection({
         textoAjuda="Mesma planilha do formulário completo — entra no pedido e no valor da causa."
       />
 
-      <section className="rounded-lg border border-slate-200 bg-slate-50/80 p-4">
+      <section id="secao-lei-municipal" className="scroll-mt-24 rounded-lg border border-slate-200 bg-slate-50/80 p-4">
         <h4 className="text-sm font-semibold text-slate-900">Lei municipal (opcional)</h4>
         <p className="mt-1 text-xs text-slate-600">
           Cole o texto da norma municipal pertinente (título + artigos). Não é

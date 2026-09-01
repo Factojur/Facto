@@ -80,6 +80,17 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] **Fase 2 intacta** — Redigir → `/api/gerar-peca` + formatação por área (sem mudança no pipeline)
 - [x] **Banner nuvem** — `aviso-memoria-local` atualizado (opt-in Nuvem; some quando sync ativo)
 
+### Feito nesta rodada (01/09 noite — chat MinutaIA-like + painel zerado)
+
+- [x] **Painel zerado** — sem JEC/petição pré-preenchidos; `casoChatPainelVazio` + `ChatPainelContextoVazio`
+- [x] **Estado vazio** — `especiePeca` vazio em `estadoCasoChatVazio`; resumo só após relato ≥40 chars
+- [x] **Empty state chat** — tagline central “O futuro da minuta começa aqui” + chips (estilo MinutaIA, cara FACTO)
+- [x] **Indicador digitando** — bolha animada durante turno `/api/chat-conversa`
+- [x] **Conversa mais fluida** — prompt Fase 1 com 2–4 parágrafos; `maxOutputTokens` 2400
+- [ ] **Fase 2 (avaliar depois)** — streaming redação + formatação/entrega peça (pipeline atual intacto)
+- [x] **Painel Anexos** — banner portal `z-[200]`; botão **Enviar** no rodapé (dispara o turno do chat); fecha ao enviar
+- [x] **Modo Instantâneo / Planejado** — toggle no header; prompts/tokens distintos; Planejado força atualização do plano a cada turno
+
 ### Feito nesta rodada (01/09 noite — melhorias objetivo)
 
 - [x] **Último ato local** — `extrairUltimoAtoDoTexto` + `organizarCasoLocal` ajusta espécie (`ajustarEspecieCabivel`) e passa `ultimoAto` no payload do chat

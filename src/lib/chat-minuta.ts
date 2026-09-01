@@ -156,7 +156,7 @@ export function estadoCasoChatVazio(
     areaId,
     fatos: "",
     tipoAcao: "",
-    especiePeca: "peticao-inicial",
+    especiePeca: "",
     poloAdvocacia: "ativo",
     poloConfirmado: false,
     pedirJusticaGratuita: false,
@@ -354,14 +354,23 @@ export function confirmarAreaChat(
   };
 }
 
+/** Caso com relato mínimo para organizar plano e painel. */
+export function casoChatTemConteudo(estado: EstadoCasoChat): boolean {
+  return estado.fatos.trim().length >= 40;
+}
+
+/** Painel direito ainda sem relato — não mostrar JEC/petição pré-preenchidos. */
+export function casoChatPainelVazio(estado: EstadoCasoChat): boolean {
+  return !estado.fatos.trim();
+}
+
 export function podeMontarPlanoChat(estado: EstadoCasoChat): boolean {
   const temArea =
     estado.areaConfirmada ||
     Boolean(estado.areaInferida?.areaId) ||
     Boolean(estado.areaId);
   return (
-    estado.fatos.trim().length >= 40 &&
-    estado.tipoAcao.trim().length > 0 &&
+    casoChatTemConteudo(estado) &&
     temArea
   );
 }
@@ -385,17 +394,23 @@ export function montarResumoEntendimentoChat(estado: EstadoCasoChat): {
   foro: string;
 } {
   const fatos = estado.fatos.trim();
-  const especie = inferirEspecieDaArea(
-    estado.areaId,
-    estado.tipoAcao || "Petição",
-    fatos,
-    estado.especiePeca
-  );
+  const temConteudo = casoChatTemConteudo(estado);
+  const especie = temConteudo
+    ? inferirEspecieDaArea(
+        estado.areaId,
+        estado.tipoAcao || "Petição",
+        fatos,
+        estado.especiePeca || undefined
+      )
+    : "";
   return {
-    fatosResumo:
-      fatos.length > 480 ? `${fatos.slice(0, 480).trim()}…` : fatos,
+    fatosResumo: fatos.length
+      ? fatos.length > 480
+        ? `${fatos.slice(0, 480).trim()}…`
+        : fatos
+      : "",
     tipoAcao: estado.tipoAcao.trim() || "—",
-    especie: especie.replace(/-/g, " "),
+    especie: temConteudo && especie ? especie.replace(/-/g, " ") : "—",
     autores: estado.autoresNomes.join(", ") || "—",
     reus: estado.reusNomes.join(", ") || "—",
     pedidos: estado.pedidos.filter(Boolean),

@@ -7,6 +7,7 @@ import {
   conversarAssistenteFase1,
 } from "@/lib/ia/chat-conversa-assistente";
 import { mensagemErroIaParaCliente } from "@/lib/erro-ia-cliente";
+import { normalizarModoConversa } from "@/lib/modo-conversa-chat";
 
 export const maxDuration = 30;
 
@@ -23,6 +24,7 @@ export async function POST(request: Request) {
       mensagens?: MensagemChat[];
       primeiroRelato?: boolean;
       avisoExtra?: string | null;
+      modo?: string;
     } | null;
 
     const areaId = body?.estado?.areaId;
@@ -59,6 +61,7 @@ export async function POST(request: Request) {
       mensagens,
       primeiroRelato: Boolean(body?.primeiroRelato),
       avisoExtra: body?.avisoExtra ?? null,
+      modo: normalizarModoConversa(body?.modo),
     });
 
     let estadoAtualizado: EstadoCasoChat | undefined;

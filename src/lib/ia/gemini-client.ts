@@ -136,6 +136,123 @@ export type AnexoGemini = {
   dataBase64: string;
 };
 
+/** Stream NDJSON: linhas `{ t?: string }` (delta) e `{ done?: true, modelo?: string }` ou `{ error?: string }`. */
+export function streamTextoGeminiNdjson(params: {
+  systemPrompt: string;
+  userPrompt: string;
+  modelos?: readonly string[];
+  temperature?: number;
+  maxOutputTokens?: number;
+}): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  const cadeia =
+    params.modelos && params.modelos.length > 0
+      ? [...params.modelos]
+      : [...MODELOS_TRIAGEM];
+
+  return new ReadableStream({
+    async start(controller) {
+      const apiKey = process.env.GEMINI_API_KEY?.trim();
+      if (!apiKey) {
+        controller.enqueue(
+          encoder.encode(
+            `${JSON.stringify({ error: "GEMINI_API_KEY não configurada." })}\n`
+          )
+        );
+        controller.close();
+        return;
+      }
+
+      const corpoBase = {
+        systemInstruction: { parts: [{ text: params.systemPrompt }] },
+        contents: [{ role: "user", parts: [{ text: params.userPrompt }] }],
+        generationConfig: {
+          temperature: params.temperature ?? 0.5,
+          maxOutputTokens: params.maxOutputTokens ?? 2400,
+        },
+      };
+
+      let ultimoErro = "Nenhum modelo respondeu.";
+      for (const modelo of cadeia) {
+        try {
+          const res = await fetch(
+            `${GEMINI_API_URL}/${modelo}:streamGenerateContent?alt=sse`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "x-goog-api-key": apiKey,
+              },
+              body: JSON.stringify(corpoBase),
+            }
+          );
+
+          if (!res.ok || !res.body) {
+            const dados = await res.json().catch(() => null);
+            ultimoErro =
+              dados?.error?.message ?? `Status ${res.status} em ${modelo}`;
+            if (modeloIndisponivel(res.status, ultimoErro)) continue;
+            if (modeloSobrecarregado(res.status, ultimoErro)) continue;
+            break;
+          }
+
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+          let emitted = false;
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const parts = buffer.split("\n");
+            buffer = parts.pop() ?? "";
+
+            for (const line of parts) {
+              const trimmed = line.trim();
+              if (!trimmed.startsWith("data:")) continue;
+              const payload = trimmed.slice(5).trim();
+              if (!payload || payload === "[DONE]") continue;
+              try {
+                const json = JSON.parse(payload) as {
+                  candidates?: Array<{
+                    content?: { parts?: Array<{ text?: string }> };
+                  }>;
+                };
+                const delta = json.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (delta) {
+                  emitted = true;
+                  controller.enqueue(
+                    encoder.encode(`${JSON.stringify({ t: delta })}\n`)
+                  );
+                }
+              } catch {
+                /* fragmento SSE */
+              }
+            }
+          }
+
+          if (emitted) {
+            controller.enqueue(
+              encoder.encode(`${JSON.stringify({ done: true, modelo })}\n`)
+            );
+            controller.close();
+            return;
+          }
+          ultimoErro = `Resposta vazia (${modelo})`;
+        } catch (e) {
+          ultimoErro = e instanceof Error ? e.message : "Falha de rede";
+        }
+      }
+
+      controller.enqueue(
+        encoder.encode(`${JSON.stringify({ error: ultimoErro })}\n`)
+      );
+      controller.close();
+    },
+  });
+}
+
 async function chamarGemini(params: {
   systemPrompt: string;
   userPrompt: string;
