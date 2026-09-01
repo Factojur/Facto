@@ -70,6 +70,12 @@ import {
   type ModoConversaChat,
 } from "@/lib/modo-conversa-chat";
 import {
+  deveChamarEntradaCaso,
+  marcarAnexosEntradaProcessada,
+  processarArquivosComMemoria,
+  type AnexoMemoriaItem,
+} from "@/lib/chat-anexos-memoria";
+import {
   diffEstadoCasoChat,
   montarRespostaTurnoLocal,
   perguntaProativaLocal,
@@ -313,6 +319,8 @@ export function ChatMinutaPage({
   const [modoConversa, setModoConversa] = useState<ModoConversaChat>(() =>
     lerModoConversaStorage()
   );
+  const [anexosMemoria, setAnexosMemoria] = useState<AnexoMemoriaItem[]>([]);
+  const anexosMemoriaRef = useRef<AnexoMemoriaItem[]>([]);
   const [processandoDocumentos, setProcessandoDocumentos] = useState(false);
   const [sessaoId, setSessaoId] = useState<string | null>(null);
   const [mostrarSessoes, setMostrarSessoes] = useState(false);
@@ -408,6 +416,10 @@ export function ChatMinutaPage({
   useEffect(() => {
     salvarModoConversaStorage(modoConversa);
   }, [modoConversa]);
+
+  useEffect(() => {
+    anexosMemoriaRef.current = anexosMemoria;
+  }, [anexosMemoria]);
 
   useEffect(() => {
     if (!drawerAberto || drawerAba !== "complementos" || !complementosFoco) {
@@ -732,6 +744,7 @@ export function ChatMinutaPage({
     setErro(null);
     setAvisos(null);
     setLastroRedacao(null);
+    setAnexosMemoria(snap.anexosMemoria ?? []);
     const temConteudo =
       Boolean(estadoNorm.fatos.trim()) ||
       Boolean(estadoNorm.resumoEntrada?.trim()) ||
@@ -775,6 +788,7 @@ export function ChatMinutaPage({
         geradoPorIA,
         ajustesFeitos,
         avisoPreview,
+        anexosMemoria,
       },
       novaPeca: null,
     });
@@ -820,6 +834,7 @@ export function ChatMinutaPage({
     setMostrarSessoes(false);
     setInput("");
     setPedidoAjuste("");
+    setAnexosMemoria([]);
     planoUltimoFingerprintRef.current = null;
     setVersoesPlano([]);
     const estadoZerado = estadoCasoChatVazio(area);
@@ -885,6 +900,7 @@ export function ChatMinutaPage({
           geradoPorIA,
           ajustesFeitos,
           avisoPreview,
+          anexosMemoria,
         },
         novaPeca: null,
       });
@@ -902,6 +918,7 @@ export function ChatMinutaPage({
     geradoPorIA,
     ajustesFeitos,
     avisoPreview,
+    anexosMemoria,
     syncNuvemOptIn,
   ]);
 
@@ -1243,32 +1260,26 @@ export function ChatMinutaPage({
   async function processarArquivos(
     relatoBase: string,
     files: File[]
-  ): Promise<{ relato: string; arquivos: ArquivoEnvio[] }> {
-    let relatoMaisTexto = relatoBase.trim();
-    const payloadArquivos: ArquivoEnvio[] = [];
-    for (const file of files.slice(0, 4)) {
-      if (file.size > LIMITE_ARQUIVO_LOCAL_BYTES) {
-        throw new Error(`“${file.name}” passa de 40 MB.`);
-      }
-      try {
-        const texto = await extrairTextoArquivoLocal(file);
-        if (texto.length >= MIN_CHARS_TEXTO_UTIL) {
-          relatoMaisTexto = [relatoMaisTexto, `--- ${file.name} ---\n${texto}`]
-            .filter(Boolean)
-            .join("\n\n");
-          continue;
-        }
-      } catch {
-        /* OCR no servidor */
-      }
-      if (file.size > LIMITE_UPLOAD_ANALISE_BYTES) {
-        throw new Error(
-          `“${file.name}” parece escaneado e é grande demais para leitura automática. Cole o texto ou envie um PDF mais leve.`
-        );
-      }
-      payloadArquivos.push(await arquivoParaBase64(file));
-    }
-    return { relato: relatoMaisTexto, arquivos: payloadArquivos };
+  ): Promise<{
+    relato: string;
+    arquivos: ArquivoEnvio[];
+    memoria: AnexoMemoriaItem[];
+    reutilizouCache: boolean;
+    fingerprintsEnviadosServidor: string[];
+  }> {
+    const resultado = await processarArquivosComMemoria({
+      relatoBase,
+      files,
+      memoria: anexosMemoriaRef.current,
+      extrairTextoLocal: extrairTextoArquivoLocal,
+      minCharsTextoUtil: MIN_CHARS_TEXTO_UTIL,
+      limiteArquivoBytes: LIMITE_ARQUIVO_LOCAL_BYTES,
+      limiteUploadBytes: LIMITE_UPLOAD_ANALISE_BYTES,
+      arquivoParaBase64,
+    });
+    setAnexosMemoria(resultado.memoria);
+    anexosMemoriaRef.current = resultado.memoria;
+    return resultado;
   }
 
   async function handleEnviarMensagem() {
@@ -1417,10 +1428,18 @@ export function ChatMinutaPage({
           : null;
       if (avisoMisto) setAvisos(avisoMisto);
 
-      const { relato, arquivos: payloadArquivos } = await processarArquivos(
-        relatoParaProcessar,
-        filesNow
-      );
+      const {
+        relato,
+        arquivos: payloadArquivos,
+        reutilizouCache,
+        fingerprintsEnviadosServidor,
+      } = await processarArquivos(relatoParaProcessar, filesNow);
+
+      if (reutilizouCache && filesNow.length > 0 && !avisoMisto) {
+        setAvisos(
+          "Usei o texto já lido deste anexo — não foi necessário reler o PDF."
+        );
+      }
 
       if (relato.length < 40 && payloadArquivos.length === 0) {
         adicionarMensagem(
@@ -1568,42 +1587,63 @@ export function ChatMinutaPage({
         void executarPlano({ silencioso: false, forcar: true });
       }
 
-      void fetch("/api/entrada-caso", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          relato,
-          areaId: areaParaOrg,
-          arquivos: payloadArquivos,
-        }),
-      })
-        .then((r) => r.json())
-        .then(
-          (data: {
-            preenchimento?: Parameters<typeof aplicarPreenchimentoAoEstado>[1];
-            replicaContestacao?: ReplicaContestacaoResumo | null;
-          }) => {
-            if (!data.preenchimento) return;
-            setEstado((atual) => {
-              const merged = aplicarOrganizacaoAoEstadoChat(atual, data.preenchimento!, {
-                areaId: areaParaOrg,
-                relato,
-                replicaContestacao: data.replicaContestacao ?? undefined,
+      if (
+        deveChamarEntradaCaso({
+          arquivosParaServidor: payloadArquivos.length,
+          casoJaOrganizado: casoChatTemConteudo(estadoRef.current),
+        })
+      ) {
+        void fetch("/api/entrada-caso", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            relato,
+            areaId: areaParaOrg,
+            arquivos: payloadArquivos,
+          }),
+        })
+          .then((r) => r.json())
+          .then(
+            (data: {
+              preenchimento?: Parameters<typeof aplicarPreenchimentoAoEstado>[1];
+              replicaContestacao?: ReplicaContestacaoResumo | null;
+            }) => {
+              if (fingerprintsEnviadosServidor.length > 0) {
+                setAnexosMemoria((atual) => {
+                  const next = marcarAnexosEntradaProcessada(
+                    atual,
+                    fingerprintsEnviadosServidor
+                  );
+                  anexosMemoriaRef.current = next;
+                  return next;
+                });
+              }
+              if (!data.preenchimento) return;
+              setEstado((atual) => {
+                const merged = aplicarOrganizacaoAoEstadoChat(
+                  atual,
+                  data.preenchimento!,
+                  {
+                    areaId: areaParaOrg,
+                    relato,
+                    replicaContestacao: data.replicaContestacao ?? undefined,
+                  }
+                );
+                estadoRef.current = merged;
+                estadoAnteriorRef.current = merged;
+                return merged;
               });
-              estadoRef.current = merged;
-              estadoAnteriorRef.current = merged;
-              return merged;
-            });
-            planoUltimoFingerprintRef.current = null;
-            if (data.replicaContestacao?.detectada) {
-              adicionarMensagem(
-                "assistente",
-                "Detectei **contestação** nos autos — espécie sugerida: réplica à contestação."
-              );
+              planoUltimoFingerprintRef.current = null;
+              if (data.replicaContestacao?.detectada) {
+                adicionarMensagem(
+                  "assistente",
+                  "Detectei **contestação** nos autos — espécie sugerida: réplica à contestação."
+                );
+              }
             }
-          }
-        )
-        .catch(() => undefined);
+          )
+          .catch(() => undefined);
+      }
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Falha ao processar mensagem.");
     } finally {
@@ -1735,6 +1775,7 @@ export function ChatMinutaPage({
             geradoPorIA: true,
             ajustesFeitos: 0,
             avisoPreview: null,
+            anexosMemoria,
           },
           novaPeca: {
             areaId: estado.areaId,

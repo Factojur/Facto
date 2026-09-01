@@ -90,6 +90,7 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [ ] **Fase 2 (avaliar depois)** — streaming redação + formatação/entrega peça (pipeline atual intacto)
 - [x] **Painel Anexos** — banner portal `z-[200]`; botão **Enviar** no rodapé (dispara o turno do chat); fecha ao enviar
 - [x] **Modo Instantâneo / Planejado** — toggle no header; prompts/tokens distintos; Planejado força atualização do plano a cada turno
+- [x] **Memória de anexo** — texto extraído por sessão; não re-OCR/reupload; `/api/entrada-caso` só com PDF novo
 
 ### Feito nesta rodada (01/09 noite — melhorias objetivo)
 

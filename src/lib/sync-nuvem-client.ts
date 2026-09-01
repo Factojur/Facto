@@ -184,6 +184,7 @@ function compactarSnapshotNuvem(snapshot: ChatSessaoSnapshot): ChatSessaoSnapsho
     mensagens: snapshot.mensagens.slice(-40),
     peca: snapshot.peca.slice(0, 80_000),
     pecaHtml: snapshot.pecaHtml.slice(0, 80_000),
+    anexosMemoria: snapshot.anexosMemoria?.slice(-6),
   };
 }
 

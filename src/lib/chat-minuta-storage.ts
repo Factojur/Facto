@@ -13,6 +13,10 @@ import {
   estadoCasoChatVazio,
   normalizarEstadoCasoChat,
 } from "@/lib/chat-minuta";
+import {
+  sanitizarAnexosMemoria,
+  type AnexoMemoriaItem,
+} from "@/lib/chat-anexos-memoria";
 
 export const CHAT_SESSOES_KEY = "facto:chat-sessoes-v2";
 export const CHAT_SESSAO_ATIVA_KEY = "facto:chat-sessao-ativa-v2";
@@ -39,6 +43,7 @@ export type ChatSessaoSnapshot = {
   geradoPorIA: boolean;
   ajustesFeitos: number;
   avisoPreview: string | null;
+  anexosMemoria?: AnexoMemoriaItem[];
 };
 
 export type ChatSessaoSalva = {
@@ -118,6 +123,7 @@ function lerLista(): ChatSessaoSalva[] {
       snapshot: {
         ...s.snapshot,
         estado: sanitizarEstadoChat(s.snapshot?.estado),
+        anexosMemoria: sanitizarAnexosMemoria(s.snapshot?.anexosMemoria),
       },
     }));
   } catch {
