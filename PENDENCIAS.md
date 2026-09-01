@@ -70,6 +70,33 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] **Testes** — `testar-formatacao-peca` ok; `testar-chat-minuta` 77 ok; `testar-chat-fluidez` ok; `tsc --noEmit` ok
 - [ ] **Deploy produção** — aguarda push deste lote + reteste E2E JEC chat + Penal chat (Novo caso antes de cada)
 
+### Feito nesta rodada (01/09 noite — melhorias objetivo)
+
+- [x] **Último ato local** — `extrairUltimoAtoDoTexto` + `organizarCasoLocal` ajusta espécie (`ajustarEspecieCabivel`) e passa `ultimoAto` no payload do chat
+- [x] **Prompts por área** — `blocoRitoArea` em triagem e redação (`assistente-facto-prompt.ts`)
+- [x] **Log COGS** — `log-custo-ia.ts` + tokens Gemini/Anthropic em stdout (`[custo-ia]`)
+- [x] **Auditor → ajuste** — `pedidoAjusteDeAuditoria` + sugestão no chat pós-Redigir
+- [x] **Script Anthropic** — `scripts/configurar-anthropic-vercel.ps1` (local + Vercel Non-sensitive)
+- [ ] **Anthropic na Vercel** — Jefferson: rodar script ou colar `ANTHROPIC_API_KEY` + redeploy
+
+- [x] **UX chat-first** — catálogo “Preencha manualmente” só com `previewAreas`; leigo → **Começar no assistente** (`/dashboard/chat?area=jec`); link **Formulário** no chat só `previewInterno` (QA)
+- [x] **Rotas de área preservadas** — `/dashboard/jec`, `/dashboard/criminal`, etc. intactos; `moduloDaArea(areaId)` + espécies/kits por área no Redigir
+- [x] **Comentário `minuta-modulo`** — JEC = laboratório de engenharia; produto segue rito da área escolhida no chat
+
+### Decisão comercial — margem na carteira (01/09)
+
+**Fechado:** meta **35–40% líquido** (após fixos + Gemini/Anthropic + MP), medida na **carteira mensal**, não por peça isolada.
+
+| Regra | Detalhe |
+|-------|---------|
+| **Compensação** | Casos leves (Flash ~R$ 0,11) subsidiam pesados (Sonnet ~R$ 0,69) — mesmo modelo do MinutaIA na assinatura, com **1 peça = 1 débito** |
+| **Peça pesada** | Margem variável menor (15–30%) **aceitável**; nunca negativa |
+| **Peça extrema** | Após teto Sonnet do plano → Flash + pós-processo forte; sem “2 peças” por enquanto (matemática ainda não exige) |
+| **Nunca vermelho** | Manter: teto Sonnet 12%/22%; JEC sem Sonnet; cap entrada 180k chars; chat sem reprocessar PDF/turno; seeds só `GEMINI_API_KEY_SEED`; **sem** juris ao vivo / GPT / auto-crítica sem ok |
+| **Folga atual** | Stress 30 clientes cota cheia ~**53%** líquido (`PLANO X` 20/08) — espaço para **mais qualidade nos pesados** sem subir preço |
+
+**COGS referência (paygo medido 01/09):** Flash **~R$ 0,11/peça** · Sonnet **~R$ 0,69/peça** · chat turno **~R$ 0,02–0,05** · entrada PDF **~R$ 0,03**. Saldo prepay: **R$ 56,72** (de R$ 60; **~R$ 3,28** gastos acumulados em testes).
+
 ### Feito nesta rodada (01/09 manhã)
 
 - [x] **Cobertura clicável** — itens pendentes (!) no plano viram botão **+ Incluir no plano** (tese → subtópico do direito; pedido → DOS PEDIDOS), sem nova triagem/cota
@@ -101,7 +128,7 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 
 **Próximo passo testes:** repetir matriz 1A–2B em [factoia.com.br](https://factoia.com.br) (deploy `dpl_ANALA7Xt2jc2Yckd8tu1F71WRnSx`).
 
-**Custo observado (paygo peças):** ~R$ 0,56 em 5 peças (R$ 60 → R$ 59,44) — seeds/reindex/smoke **não** devem usar essa conta.
+**Custo observado (paygo):** ~R$ 0,11/peça Flash (5 peças E2E ≈ R$ 0,56); saldo **R$ 56,72** / R$ 60 (**~R$ 3,28** total em testes + triagens + chat) — seeds/reindex/smoke **não** devem usar essa conta.
 
 ### P0 aberto pós-PDF (corrigido em código local — aguarda deploy)
 
@@ -134,6 +161,64 @@ Ordem sugerida: lastro/prompts → autos/último ato → auditor→ajuste → pa
 | C3 | 2ª API juris (TRE/TSE, TRF1/2/5/6) | Assinatura nova (R$ a cotar) | Lastro eleitoral/federal fora do Juris.ai | P1 pós-788 | Aguardando ok |
 | C4 | Auto-crítica pós-redação (1 pass leve Flash) | +tokens por peça | Menos erro de coerência | P2 | Aguardando ok |
 
+### Roadmap — o que podemos fazer (01/09)
+
+Ordem sugerida para o agente/Jefferson. **Grátis** = implementar quando fizer sentido; **custo** = só com ok explícito (regra `custo-e-escopo`).
+
+#### Agora (P0 — bloqueia confiança no chat)
+
+| # | Ação | Custo | Quem |
+|---|------|-------|------|
+| R1 | **Deploy** lote formatação P0 + chat-first (`47efe6e`+) | — | Agent |
+| R2 | **Reteste E2E** Enel JEC + HC Penal (**Novo caso** entre eles) | ~R$ 0,22 | Jefferson |
+| R3 | **`ANTHROPIC_API_KEY`** na Vercel + 1 peça Sonnet real | ~R$ 0,69/peça | Jefferson |
+| R4 | **Commit/push** alterações locais chat-first (se ainda unstaged) | — | Agent |
+
+#### Sem custo extra (ou custo já coberto) — qualidade e moat
+
+| # | Melhoria | Impacto |
+|---|----------|---------|
+| R5 | **Streaming** da redação no painel (UX MinutaIA) | Sensação de fluidez |
+| R6 | **Prompts por área** — rito, endereçamento, pedidos típicos (`G2`) | Menos vazamento JEC→Penal |
+| R7 | **Último ato / CNJ** em autos longos (`G3`) | Menos espécie errada (cumprimento vs ED) |
+| R8 | **Auditor → 1 ajuste focado** (`G5`) | Fecha lacunas sem re-redigir tudo |
+| R9 | **Paginação preview** folha a folha (`G6`) | Conferência antes de protocolar |
+| R10 | **Polo + espécie** nas demais áreas (IA recebe “atuando pelo…”) | Paridade JEC |
+| R11 | **Seed/lacunas** até 788 + reindex (`G1`) | Lastro sentido na peça |
+| R12 | **Medição COGS real** — log tokens/request → dashboard interno | Precisão da margem 35–40% |
+| R13 | **Spend cap** AI Studio + alerta saldo | Nunca vermelho operacional |
+
+#### Com custo — só com ok (margem na carteira absorve se teto ok)
+
+| # | Melhoria | COGS extra | Quando |
+|---|----------|------------|--------|
+| R14 | **Sonnet** ampliado (mais gatilhos/áreas) (`C2`) | ~R$ 0,58/peça vs Flash | Após chave + testes |
+| R15 | **OCR RG/comprovante** só endereço (`C1`) | ~R$ 0,01–0,03/doc | P2 |
+| R16 | **Auto-crítica** 1 pass Flash (`C4`) | ~R$ 0,05–0,10/peça | P2 |
+| R17 | **2ª API juris** TRE/TSE/TRF (`C3`) | assinatura | Pós-788 |
+
+#### Comercial / ops (não é código de peça)
+
+| # | Item | Status |
+|---|------|--------|
+| R18 | **Compra real MP** ponta a ponta | Jefferson testando |
+| R19 | **Links MP** alinhados 139,90 / 279,90 | Pendente |
+| R20 | **Supabase Pro** ao começar a vender | Lembrete A |
+| R21 | **Trial** 2 peças JEC 7 dias (teto ~R$ 1,34/user) | Decisão aberta |
+
+#### vs MinutaIA — onde ainda perdemos (e como fechar sem clone)
+
+| Gap MinutaIA | Resposta FACTO | Prioridade |
+|--------------|----------------|------------|
+| Chat ultra-fluido / streaming | Camadas 1–3 no ar; falta streaming redação | P1 |
+| Skills / modelo anexado | **Não clonar** — estilo escritório + peças modelo no Perfil | P2 |
+| Juris ao vivo tribunais | **Diferencial:** base curada + anexos (sem custo live) | Manter |
+| Processo 6k páginas | Cap 180k chars + último ato | R7 |
+| Formatação solta | **Moat:** pós-processo protocolável | R1 deploy |
+| Histórico infinito | Meus casos + nuvem opt-in | Feito; polish R12 |
+
+**Não fazer:** juris live, GPT em tudo, reprocessar PDF a cada turno, modo curto, web na peça — quebram margem 35–40%.
+
 ### Feito nesta rodada (29/08)
 
 - [x] **Preview automático no chat** — dispara sozinho após organizar o caso (debounce 500 ms); balão “Analista organizando…” / “Montando pré-visualização…”; botões “Atualizar preview” removidos
@@ -155,7 +240,7 @@ Ordem sugerida: lastro/prompts → autos/último ato → auditor→ajuste → pa
 
 - [ ] **Compra real MP** — testando ponta a ponta
 - [ ] **Seed juris** — lote **560** / **788** · meta **100k+** · lotes **684+** lacunas fracas até vencimento 13/09
-- [ ] **Gemini paygo + `ANTHROPIC_API_KEY`** — paygo **ok 30/08** · testar 3–5 peças reais (JEC + 1–2 áreas densas) · opcional `ANTHROPIC_MODELO_REDACAO`
+- [ ] **Gemini paygo + `ANTHROPIC_API_KEY`** — paygo ok · **chave Anthropic criada 01/09** · falta colar na Vercel + redeploy + 1 peça Sonnet real
 - [ ] **Testar gestão** em produção (`factoia.com.br/gestao`)
 - [x] **Smoke lastro (embedding)** — 29/08: **20 ok · 0 fraco · 0 falhas** (Gemini 429 com retry; ok)
 - [x] **Restaurar sessão nuvem** — GET `/api/chat/sessoes?sessaoId=` · Meus casos → Continuar · `?sessaoNuvem=` importa snapshot local
@@ -170,7 +255,7 @@ Ordem sugerida: lastro/prompts → autos/último ato → auditor→ajuste → pa
 2. `ANTHROPIC_API_KEY` (+ opcional `ANTHROPIC_MODELO_REDACAO=claude-sonnet-4-5`).
 3. Amostra manual: 1 JEC (Flash) · 1 Completo/Pro com gatilho Sonnet · 1 área densa (Const/Prev/Trab).
 4. Conferir: lastro na peça, endereçamento, Auditor, export Word/PDF.
-5. Anotar custo ~R$/peça no chat (estimativa atual ~R$ 2 Flash; Sonnet bem mais).
+5. Anotar custo ~R$/peça no chat (Flash **~R$ 0,11** medido; Sonnet **~R$ 0,69**; ver **Decisão margem 01/09**).
 
 ### Scorecard FACTO vs MinutaIA (30/08 — pós-testes PDF)
 
@@ -815,7 +900,7 @@ Premissas: peça Flash **R$ 0,27** · peça c/ Sonnet redator **R$ 0,90** (triag
 | 10× Pro | 2.000 | 440 (22%) | 2.799,00 | 817,20 | | | | | |
 | **Total** | **3.400** | **560** | **R$ 4.997,00** | **R$ 1.270,80** | **R$ 249,85** | **R$ 800** | **R$ 2.320,65** | **R$ 2.676,35** | **~53,6%** |
 
-Contribuição média (sem fixo): receita − IA − MP ≈ **R$ 3.476** (~70%). Meta ≥40% líquido **ok** neste cenário de cota cheia.
+Contribuição média (sem fixo): receita − IA − MP ≈ **R$ 3.476** (~70%). Meta **35–40% líquido** — ver **Decisão margem na carteira (01/09)**; stress atual ~53% com folga para qualidade nos pesados.
 
 ---
 

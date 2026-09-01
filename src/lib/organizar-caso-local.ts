@@ -5,7 +5,11 @@
 
 import type { PreenchimentoEntradaCaso } from "@/lib/entrada-caso-types";
 import { extrairPartesDoRelato } from "@/lib/extrair-partes-relato";
-import { extrairMetadadosAutos } from "@/lib/peca-cabivel-autos";
+import {
+  ajustarEspecieCabivel,
+  extrairMetadadosAutos,
+  extrairUltimoAtoDoTexto,
+} from "@/lib/peca-cabivel-autos";
 import {
   especieUsaTutelaUrgenciaCpc,
   inferirEspecieDaArea,
@@ -126,12 +130,19 @@ export function organizarCasoLocal(params: {
   const relato = params.relato.trim();
   const meta = extrairMetadadosAutos(relato);
   const partes = extrairPartesDoRelato(relato);
-  const especie =
+  let especie =
     inferirEspecieDaArea(params.areaId, "Petição inicial", relato, null) ||
     "peticao-inicial";
   const tipoAcao =
     tituloPecaDaArea(params.areaId, especie, "Petição inicial") ||
     "Petição inicial";
+  especie = ajustarEspecieCabivel({
+    areaId: params.areaId,
+    especie,
+    tipoAcao,
+    fatos: relato,
+  });
+  const ultimoAto = extrairUltimoAtoDoTexto(relato);
   const teses = detectarTesesCanonicas(params.areaId, relato);
   const pedidos = extrairPedidosDoRelato(relato, especie);
   const n = norm(relato);
@@ -148,7 +159,7 @@ export function organizarCasoLocal(params: {
     uf: meta.uf,
     numeroVara: meta.numeroVara,
     especieDoProcesso: null,
-    ultimoAto: null,
+    ultimoAto,
     pedidos,
     pedirJusticaGratuita: /justi[cç]a\s+gratuita|gratuidade|hipossufici|jg\b/.test(n)
       ? true
@@ -165,8 +176,15 @@ export function organizarCasoLocal(params: {
     danosMateriais: /danos?\s*materiais|restitui[cç][aã]o/.test(n) ? true : null,
     tesesIds: teses.map((t) => t.id),
     camposIncertos: partes.autoresNomes.length ? [] : ["partes"],
-    resumoConferencia:
+    resumoConferencia: [
       "Caso organizado em modo rápido — confira partes, pedidos e comarca antes de redigir.",
+      ultimoAto ? `Último ato detectado: ${ultimoAto.slice(0, 160)}` : null,
+      especie !== "peticao-inicial"
+        ? `Espécie sugerida: ${tipoAcao}.`
+        : null,
+    ]
+      .filter(Boolean)
+      .join(" "),
   };
 }
 

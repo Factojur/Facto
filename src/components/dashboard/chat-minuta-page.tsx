@@ -95,6 +95,7 @@ import {
   salvarEscritorioConfig,
 } from "@/lib/escritorio-storage";
 import type { GerarPecaJecOutput } from "@/lib/gerar-peca-jec";
+import { pedidoAjusteDeAuditoria } from "@/lib/ia/auditor-peca";
 import { limiteAjustesPorPlano } from "@/lib/ia/ajustar-trecho-peca";
 import { normalizarAreaIdMinuta, type AreaIdMinuta, hrefMinutaSeExistir, moduloDaArea } from "@/lib/minuta-modulo";
 import type { PlanoId } from "@/lib/planos-facto";
@@ -247,6 +248,7 @@ export function ChatMinutaPage({
   plano = null,
   modoWorkspace = false,
   onWorkspaceFixadoChange,
+  previewInterno = false,
 }: {
   leigo?: boolean;
   plano?: PlanoId | null;
@@ -254,6 +256,8 @@ export function ChatMinutaPage({
   modoWorkspace?: boolean;
   /** Home oculta o slot embutido enquanto o assistente está fixado em tela cheia. */
   onWorkspaceFixadoChange?: (fixado: boolean) => void;
+  /** QA/admin: expõe atalho ao formulário da área (não é o fluxo do cliente). */
+  previewInterno?: boolean;
 }) {
   const searchParams = useSearchParams();
   const areaUrl = searchParams.get("area");
@@ -820,7 +824,6 @@ export function ChatMinutaPage({
   }
 
   const hrefFormulario = hrefMinutaSeExistir(estado.areaId) ?? "/dashboard/jec";
-
   const podeMontarPlano = podeMontarPlanoChat(estado);
   const planoFingerprint = useMemo(
     () => fingerprintPlanoEstado(estado, escritorio.usarTimbre),
@@ -1480,9 +1483,23 @@ export function ChatMinutaPage({
       }
 
       if (data.peca && data.pecaHtml) {
-        const msgPosRedacao = exportacaoTrial
+        let msgPosRedacao = exportacaoTrial
           ? "Peça redigida. Visualize completa à direita; Word/PDF nos planos pagos. Copie o texto para conferência ou peça ajustes abaixo."
           : "Peça redigida. Exporte Word/PDF à direita ou peça ajustes pontuais abaixo.";
+        if (data.auditoria?.achados?.length) {
+          const alertas = data.auditoria.achados
+            .filter((a) => a.gravidade !== "info")
+            .slice(0, 4)
+            .map((a) => `• ${a.titulo}: ${a.detalhe}`)
+            .join("\n");
+          if (alertas) {
+            msgPosRedacao += `\n\nAuditor — conferir antes de protocolar:\n${alertas}`;
+          }
+          const pedidoAuditor = pedidoAjusteDeAuditoria(data.auditoria);
+          if (pedidoAuditor) {
+            msgPosRedacao += `\n\nSugestão de ajuste (cole no chat): “${pedidoAuditor}”`;
+          }
+        }
         const msgRedacao: MensagemChat = {
           id: idMensagemChat(),
           papel: "assistente",
@@ -1878,6 +1895,7 @@ export function ChatMinutaPage({
                   Timbre
                 </Link>
               )}
+              {previewInterno && (
               <Link
                 href={hrefFormulario}
                 title={`Formulário completo da área ${rotuloAreaChat(estado.areaId)}: identificação, fatos e pedidos em três abas — útil se preferir preencher campo a campo em vez do chat.`}
@@ -1889,6 +1907,7 @@ export function ChatMinutaPage({
               >
                 Formulário
               </Link>
+              )}
               {modoWorkspace && (
                 <button
                   type="button"

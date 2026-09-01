@@ -7,6 +7,8 @@
  * - ANTHROPIC_MODELO_REDACAO (default: claude-sonnet-4-5)
  */
 
+import { registrarUsoIa } from "@/lib/ia/log-custo-ia";
+
 export type ResultadoAnthropic =
   | { ok: true; texto: string; modelo: string }
   | { ok: false; erro: string };
@@ -56,6 +58,7 @@ export async function gerarTextoComAnthropic(params: {
       error?: { message?: string };
       content?: { type?: string; text?: string }[];
       model?: string;
+      usage?: { input_tokens?: number; output_tokens?: number };
     } | null;
 
     if (!resposta.ok) {
@@ -76,6 +79,17 @@ export async function gerarTextoComAnthropic(params: {
     if (!texto) {
       return { ok: false, erro: "Claude não retornou texto." };
     }
+
+    registrarUsoIa({
+      provedor: "anthropic",
+      modelo: dados?.model ?? modelo,
+      inputTokens: dados?.usage?.input_tokens,
+      outputTokens: dados?.usage?.output_tokens,
+      totalTokens:
+        (dados?.usage?.input_tokens ?? 0) + (dados?.usage?.output_tokens ?? 0) ||
+        undefined,
+      etapa: "redacao-sonnet",
+    });
 
     return { ok: true, texto, modelo: dados?.model ?? modelo };
   } catch (erro) {

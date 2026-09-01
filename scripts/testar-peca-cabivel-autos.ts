@@ -3,7 +3,7 @@
  * Uso: npx tsx scripts/testar-peca-cabivel-autos.ts
  */
 
-import { ajustarEspecieCabivel, incidenteExecucaoJaAberto, pecaCabivelAposUltimoAto, rotulosEpigrafePeca, linhasEpigrafePeca, extrairMetadadosAutos, janelaRelatoParaTriagem, analisarJanelaRelato, formatarEnderecoAdvogado, LIMITE_RELATO_TRIAGEM_CHARS } from "../src/lib/peca-cabivel-autos";
+import { ajustarEspecieCabivel, incidenteExecucaoJaAberto, pecaCabivelAposUltimoAto, rotulosEpigrafePeca, linhasEpigrafePeca, extrairMetadadosAutos, extrairUltimoAtoDoTexto, janelaRelatoParaTriagem, analisarJanelaRelato, formatarEnderecoAdvogado, LIMITE_RELATO_TRIAGEM_CHARS } from "../src/lib/peca-cabivel-autos";
 import { formatarEnderecamentoPadrao, rotuloAreaJudiciaria } from "../src/lib/endereco-comarca";
 import { inferirEspecieDaArea } from "../src/lib/peca-especie-area";
 import { formatarBlocoPartesJaQualificadas } from "../src/lib/partes-ja-qualificadas";
@@ -31,6 +31,8 @@ function main() {
   const { assert, stats } = createSuite();
 
   assert(incidenteExecucaoJaAberto(AUTOS_ASTREINTES), "detecta cumprimento já aberto");
+  const ultimo = extrairUltimoAtoDoTexto(AUTOS_ASTREINTES);
+  assert(Boolean(ultimo?.includes("DECIS")), "extrai último ato (decisão)");
   assert(
     pecaCabivelAposUltimoAto("jec", AUTOS_ASTREINTES) === "embargos",
     "JEC + erro material em astreintes → embargos (não reabre cumprimento)"

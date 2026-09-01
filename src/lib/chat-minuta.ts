@@ -17,6 +17,10 @@ import {
   ufDaQualificacao,
   type QualificacaoExtraida,
 } from "@/lib/extrair-qualificacao-relato";
+import {
+  analisarJanelaRelato,
+  resumoLeituraRelato,
+} from "@/lib/peca-cabivel-autos";
 import { extrasOrganizacaoLocal } from "@/lib/organizar-caso-local";
 import {
   MAX_TRIBUNAIS_POR_BUSCA,
@@ -117,6 +121,8 @@ export type EstadoCasoChat = {
   comarca: Partial<ComarcaInfo>;
   tesesIds: string[];
   resumoEntrada: string | null;
+  /** Último ato detectado nos autos (organização local / entrada). */
+  ultimoAto: string | null;
   replicaContestacao: ReplicaContestacaoResumo | null;
   /** Área confirmada (manual, URL ou inferência alta). */
   areaConfirmada: boolean;
@@ -162,6 +168,7 @@ export function estadoCasoChatVazio(
     comarca: {},
     tesesIds: [],
     resumoEntrada: null,
+    ultimoAto: null,
     replicaContestacao: null,
     areaConfirmada: false,
     areaInferida: null,
@@ -405,6 +412,8 @@ export type PayloadGeracaoChat = GerarPecaJecInput & {
   tesesIds?: string[];
   pedidosUsuario?: string[];
   resumoEntrada?: string | null;
+  ultimoAto?: string | null;
+  leituraRelato?: string | null;
   replicaContestacao?: ReplicaContestacaoResumo | null;
   tribunaisPreferidos?: string[];
   leiMunicipal?: {
@@ -548,6 +557,7 @@ export function montarPayloadGeracaoChat(
   const estadoSync = sincronizarTribunaisComarca(
     sincronizarComarcaDaQualificacao(estado)
   );
+  const janelaRelato = analisarJanelaRelato(estado.fatos);
 
   return {
     areaId,
@@ -586,6 +596,14 @@ export function montarPayloadGeracaoChat(
     pedidosUsuario,
     tesesIds: estado.tesesIds,
     resumoEntrada: estado.resumoEntrada ?? undefined,
+    ultimoAto: estado.ultimoAto?.trim() || null,
+    leituraRelato: janelaRelato.truncado
+      ? resumoLeituraRelato({
+          truncado: true,
+          encontrouDecisoes: janelaRelato.encontrouDecisoes,
+          fonte: "relato",
+        })
+      : null,
     replicaContestacao:
       extras?.replicaContestacao ?? estado.replicaContestacao ?? undefined,
     leiMunicipal: montarLeiMunicipalPayload(
@@ -642,6 +660,8 @@ export function normalizarEstadoCasoChat(
     tribunaisDispensados: Boolean(bruto.tribunaisDispensados),
     qualificacaoAutor: bruto.qualificacaoAutor ?? {},
     qualificacaoReu: bruto.qualificacaoReu ?? {},
+    ultimoAto:
+      typeof bruto.ultimoAto === "string" ? bruto.ultimoAto : base.ultimoAto,
     areaConfirmada: Boolean(
       bruto.areaConfirmada ?? bruto.previewVisto ?? bruto.planoVisto
     ),
@@ -846,6 +866,9 @@ export function aplicarPreenchimentoAoEstado(
   }
   if (preenchimento.tutelaUrgencia != null) {
     next.tutelaUrgencia = preenchimento.tutelaUrgencia;
+  }
+  if (preenchimento.ultimoAto?.trim()) {
+    next.ultimoAto = preenchimento.ultimoAto.trim();
   }
 
   const areaResolvida = areaId ?? next.areaId;

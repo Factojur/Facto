@@ -12,6 +12,8 @@
  * com pequeno backoff — não aborta na primeira falha transitória.
  */
 
+import { registrarUsoIa } from "@/lib/ia/log-custo-ia";
+
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
 /** Cadeia Etapa 1 — Paralegal / triagem (rápido e barato). */
@@ -53,6 +55,8 @@ export type ResultadoGeminiSucesso = {
   ok: true;
   texto: string;
   modelo: string;
+  inputTokens?: number;
+  outputTokens?: number;
 };
 
 export type ResultadoGeminiErro = {
@@ -237,7 +241,28 @@ async function chamarGemini(params: {
     return { ok: false, erro: "A IA não retornou nenhum texto." };
   }
 
-  return { ok: true, texto, modelo: params.modelo };
+  const usage = dados?.usageMetadata as
+    | {
+        promptTokenCount?: number;
+        candidatesTokenCount?: number;
+        totalTokenCount?: number;
+      }
+    | undefined;
+  registrarUsoIa({
+    provedor: "gemini",
+    modelo: params.modelo,
+    inputTokens: usage?.promptTokenCount,
+    outputTokens: usage?.candidatesTokenCount,
+    totalTokens: usage?.totalTokenCount,
+  });
+
+  return {
+    ok: true,
+    texto,
+    modelo: params.modelo,
+    inputTokens: usage?.promptTokenCount,
+    outputTokens: usage?.candidatesTokenCount,
+  };
 }
 
 function limparPrefixoErro(erro: string): string {

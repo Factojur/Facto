@@ -1,7 +1,8 @@
 /**
  * Contrato da dashboard de minuta (todas as áreas).
- * O JEC é a base de desenvolvimento: o que for genérico vive aqui;
- * o que for rito/espécie/endereçamento fica no módulo da área (`jec-*`).
+ * O JEC é referência de desenvolvimento (formulário de laboratório); em produção
+ * o chat usa `moduloDaArea(areaId)` + espécies/prompts da área escolhida — cada
+ * rito tem `AreaModuloConfig`, tabelas de espécie e kits próprios.
  */
 
 export type GuiaMinuta = "identificacao" | "fatos" | "pedidos";

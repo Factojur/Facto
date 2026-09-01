@@ -67,6 +67,18 @@ function blocoBaseMunicipalEJuris(
   ].join("\n");
 }
 
+function blocoRitoArea(areaId: string): string {
+  const m = moduloDaArea(areaId);
+  return [
+    `ÁREA / RITO: ${m.tituloDashboard}`,
+    `Base normativa: ${m.leiResumo}.`,
+    m.copyCabecalho,
+    `Polos desta área: ${m.rotuloPoloAtivo} (ativo) e ${m.rotuloPoloPassivo} (passivo).`,
+    `Qualificação ${m.fundamentoQualificacao}.`,
+    "Não misture rito de outra área (ex.: JEC 9.099 em Penal, ou CPC comum em trabalhista CLT).",
+  ].join("\n");
+}
+
 /**
  * ETAPA 1 — Agente Triador e Estrategista (Paralegal).
  * Devolve APENAS o resumo estruturado (estrategiaJuridica).
@@ -107,6 +119,7 @@ export function montarSystemPromptAnaliseEstrategica(
       : "";
   return [
     `Você é um Paralegal Especialista em ${rito}`,
+    blocoRitoArea(areaId),
     "Receba o relato do cliente (pode estar bagunçado, coloquial ou muito longo) e devolva APENAS um resumo estruturado contendo:",
     "",
     "1. Fatos em ordem cronológica (REESCRITOS em linguagem objetiva — NÃO copie o relato literalmente);",
@@ -222,6 +235,7 @@ export function montarSystemPromptRedacaoTier1(
 
   return [
     `Você é um Advogado Sênior de elite, especialista em ${especialidade}, conhecido por redigir peças forenses impecáveis (${meta.rotulo}).`,
+    blocoRitoArea(areaId),
     ritoLinha,
     "",
     `Missão: redigir a peça completa da espécie "${meta.rotulo}" (id ${especie}), utilizando os Fatos fornecidos pelo usuário e a Estratégia Jurídica (Teses e Leis) mapeada pelo Agente 1 (Paralegal).`,

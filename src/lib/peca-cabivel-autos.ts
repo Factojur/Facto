@@ -261,6 +261,39 @@ function complementoOrgaoDoTexto(texto: string): string | null {
   return partes.length ? partes.join(" ") : null;
 }
 
+/**
+ * Extrai o último ato decisório do fim dos autos/relato (0 tokens).
+ * Usado no chat e na entrada para orientar espécie e redação.
+ */
+export function extrairUltimoAtoDoTexto(
+  texto: string,
+  maxChars = 600
+): string | null {
+  const t = texto.replace(/\u0000/g, " ").trim();
+  if (!t) return null;
+
+  const cauda = t.slice(-Math.min(14_000, t.length));
+  const re =
+    /\b(DECIS[AÃ]O|DESPACHO|SENTEN[CÇ]A|AC[OÓ]RD[AÃ]O|CERTID[AÃ]O)\b/gi;
+  const matches = [...cauda.matchAll(re)];
+  let trecho = "";
+
+  if (matches.length > 0) {
+    const ultimo = matches[matches.length - 1]!;
+    const idx = ultimo.index ?? 0;
+    trecho = cauda.slice(idx).replace(/\s+/g, " ").trim();
+  } else {
+    const linhas = cauda
+      .split(/\n+/)
+      .map((l) => l.replace(/\s+/g, " ").trim())
+      .filter((l) => l.length >= 35);
+    trecho = linhas[linhas.length - 1] ?? "";
+  }
+
+  if (!trecho) return null;
+  return trecho.length > maxChars ? `${trecho.slice(0, maxChars)}…` : trecho;
+}
+
 export function extrairMetadadosAutos(texto: string): MetadadosAutos {
   const t = texto.replace(/\u0000/g, " ");
   const cnj = t.match(CNJ)?.[1] ?? null;

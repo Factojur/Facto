@@ -36,6 +36,17 @@ export type ResultadoAuditorPeca = {
   detalhe: string;
 };
 
+/** Monta pedido único para /api/ajustar-peca a partir do auditor (1 reescrita focada). */
+export function pedidoAjusteDeAuditoria(
+  auditoria: ResultadoAuditorPeca
+): string | null {
+  const alvo =
+    auditoria.achados.find((a) => a.gravidade === "bloqueante") ??
+    auditoria.achados.find((a) => a.gravidade === "alerta");
+  if (!alvo) return null;
+  return `Corrija na peça, sem alterar o restante: ${alvo.titulo} — ${alvo.detalhe}`;
+}
+
 export type AuditorPecaParams = {
   peca: string;
   areaId?: string;

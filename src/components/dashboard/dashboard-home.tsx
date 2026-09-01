@@ -2,11 +2,8 @@
 
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
-import {
-  areasDoCatalogo,
-  getAreaById,
-  hrefModuloArea,
-} from "@/lib/areas-atuacao";
+import { areasDoCatalogo, getAreaById } from "@/lib/areas-atuacao";
+import { hrefChatMinuta } from "@/lib/chat-minuta";
 import { getAreaTema } from "@/lib/area-temas";
 import {
   carregarFavoritosLocal,
@@ -22,6 +19,7 @@ import { AreasGradeHibrida } from "@/components/dashboard/areas-rede-visual";
 import { ChatMinutaPage } from "@/components/dashboard/chat-minuta-page";
 import { ChatFactoTitulo } from "@/components/dashboard/chat-facto-titulo";
 import { areaEstaLiberada } from "@/lib/acesso-areas";
+import { hrefModuloArea } from "@/lib/areas-atuacao";
 import type { PlanoId } from "@/lib/planos-facto";
 import { JusticaWatermark } from "@/components/dashboard/justica-watermark";
 import { sessaoChatAtivaTemTrabalho } from "@/lib/chat-minuta-storage";
@@ -242,6 +240,7 @@ export function DashboardHome({
                     leigo={leigo}
                     plano={plano}
                     modoWorkspace
+                    previewInterno={previewAreas}
                     onWorkspaceFixadoChange={setWorkspaceFixado}
                   />
                 </Suspense>
@@ -271,13 +270,13 @@ export function DashboardHome({
                 demais áreas exigem cadastro com OAB e plano Completo ou Pro.
               </p>
               <Link
-                href={areaJec.href!}
+                href={hrefChatMinuta("jec")}
                 className="mt-6 inline-flex items-center gap-2 rounded-lg bg-facto-gold px-5 py-2.5 text-sm font-semibold text-facto-dark transition hover:bg-[#a39a78]"
               >
-                Entrar no módulo <span aria-hidden>→</span>
+                Começar no assistente <span aria-hidden>→</span>
               </Link>
             </section>
-          ) : (
+          ) : previewAreas ? (
             <section className="space-y-6">
               {!catalogoAreasAberto ? (
                 <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-stone-900/90 via-stone-950 to-stone-900 px-6 py-5 md:px-8 md:py-6">
@@ -484,7 +483,7 @@ export function DashboardHome({
                 </>
               )}
             </section>
-          )}
+          ) : null}
 
           <FluxoFactoSection leigo={leigo} />
         </div>
