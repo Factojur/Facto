@@ -2,18 +2,25 @@
 
 import type { PreviewTriagemData } from "@/components/dashboard/preview-triagem-peca";
 import { PlanoEstrategicoCorpo } from "@/components/dashboard/preview-triagem-peca";
+import { AlertaFatosPedidosChips } from "@/components/dashboard/alerta-fatos-pedidos-chips";
+import type { AlertaFatosPedidos } from "@/lib/alerta-fatos-pedidos";
 import {
   montarResumoEntendimentoChat,
   rotuloAreaChat,
   type EstadoCasoChat,
 } from "@/lib/chat-minuta";
+import type { VersaoPlanoChat } from "@/lib/chat-plano-versoes";
 
 function EntendimentoLocalCard({
   resumo,
   areaRotulo,
+  pedidosEditaveis,
+  onPedidosChange,
 }: {
   resumo: ReturnType<typeof montarResumoEntendimentoChat>;
   areaRotulo: string;
+  pedidosEditaveis?: boolean;
+  onPedidosChange?: (pedidos: string[]) => void;
 }) {
   return (
     <div className="rounded-xl border border-stone-200 bg-white/95 p-4 shadow-sm">
@@ -50,11 +57,27 @@ function EntendimentoLocalCard({
       {resumo.pedidos.length > 0 && (
         <div className="mt-3">
           <p className="text-xs font-medium text-stone-500">Pedidos identificados</p>
-          <ul className="mt-1 list-inside list-disc text-sm text-stone-700">
-            {resumo.pedidos.map((p) => (
-              <li key={p}>{p}</li>
-            ))}
-          </ul>
+          {pedidosEditaveis && onPedidosChange ? (
+            <textarea
+              className="mt-1 w-full rounded-lg border border-stone-200 bg-white p-2 text-sm text-stone-800"
+              rows={Math.min(5, resumo.pedidos.length + 1)}
+              value={resumo.pedidos.join("\n")}
+              onChange={(e) =>
+                onPedidosChange(
+                  e.target.value
+                    .split("\n")
+                    .map((l) => l.trim())
+                    .filter(Boolean)
+                )
+              }
+            />
+          ) : (
+            <ul className="mt-1 list-inside list-disc text-sm text-stone-700">
+              {resumo.pedidos.map((p) => (
+                <li key={p}>{p}</li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
     </div>
@@ -66,18 +89,29 @@ export function PlanoCasoPainel({
   triagem,
   carregando,
   confirmando,
+  planoAtualizado,
+  versoes,
+  alertasFatosPedidos,
   onConfirmarRedacao,
   onAtualizarPlano,
+  onPedidosChange,
+  onRestaurarVersao,
 }: {
   estado: EstadoCasoChat;
   triagem: PreviewTriagemData | null;
   carregando?: boolean;
   confirmando?: boolean;
+  planoAtualizado?: boolean;
+  versoes?: VersaoPlanoChat[];
+  alertasFatosPedidos?: AlertaFatosPedidos[];
   onConfirmarRedacao: () => void;
   onAtualizarPlano?: () => void;
+  onPedidosChange?: (pedidos: string[]) => void;
+  onRestaurarVersao?: (versao: VersaoPlanoChat) => void;
 }) {
   const resumo = montarResumoEntendimentoChat(estado);
   const areaRotulo = rotuloAreaChat(estado.areaId);
+  const nVersoes = versoes?.length ?? 0;
 
   if (carregando && !triagem) {
     return (
@@ -93,7 +127,7 @@ export function PlanoCasoPainel({
             <div className="h-3 w-5/6 animate-pulse rounded bg-stone-100" />
           </div>
           <p className="mt-4 text-sm text-stone-600">
-            A IA está montando o plano estratégico (tópicos, teses e juris)…
+            Montando o plano estratégico (tópicos, teses e lastro)…
           </p>
           <p className="mt-1 text-xs text-stone-500">Não consome cota de peça.</p>
         </div>
@@ -104,9 +138,14 @@ export function PlanoCasoPainel({
   if (!triagem) {
     return (
       <div className="mx-auto max-w-3xl">
-        <EntendimentoLocalCard resumo={resumo} areaRotulo={areaRotulo} />
+        <EntendimentoLocalCard
+          resumo={resumo}
+          areaRotulo={areaRotulo}
+          pedidosEditaveis={Boolean(onPedidosChange)}
+          onPedidosChange={onPedidosChange}
+        />
         <p className="mt-4 text-center text-xs text-stone-500">
-          Continue conversando à esquerda ou aguarde o plano estratégico.
+          Continue conversando à esquerda — o plano atualiza automaticamente.
         </p>
       </div>
     );
@@ -114,24 +153,92 @@ export function PlanoCasoPainel({
 
   return (
     <div className="mx-auto max-w-3xl">
-      <section className="rounded-xl border border-stone-200 bg-gradient-to-b from-stone-50 to-white p-4 shadow-sm sm:p-5">
+      <section
+        className={`rounded-xl border bg-gradient-to-b from-stone-50 to-white p-4 shadow-sm transition-shadow sm:p-5 ${
+          planoAtualizado
+            ? "border-facto-gold/50 ring-1 ring-facto-gold/30"
+            : "border-stone-200"
+        }`}
+      >
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-900">
-            Plano do caso — não consome cota
+            Plano do caso — sem cota
           </span>
+          {nVersoes > 1 && (
+            <span className="rounded-full border border-stone-200 bg-white px-2.5 py-0.5 text-[10px] font-medium text-stone-600">
+              v{nVersoes}
+            </span>
+          )}
           {carregando && (
             <span className="text-[11px] text-stone-500">Atualizando…</span>
           )}
+          {planoAtualizado && !carregando && (
+            <span className="text-[11px] font-medium text-facto-gold">
+              Plano atualizado
+            </span>
+          )}
         </div>
         <h2 className="text-base font-semibold text-stone-900 sm:text-lg">
-          Proposta estratégica — converse até ficar bom, depois redija
+          Proposta estratégica — converse até ficar bom
         </h2>
         <p className="mt-1 text-sm text-stone-600">
-          Revise tópicos, teses e pedidos. A redação completa só debita 1 peça ao
+          Edite pedidos abaixo se precisar. A redação completa debita 1 peça ao
           confirmar.
         </p>
 
+        {alertasFatosPedidos && alertasFatosPedidos.length > 0 && (
+          <div className="mt-4">
+            <AlertaFatosPedidosChips alertas={alertasFatosPedidos} />
+          </div>
+        )}
+
         <PlanoEstrategicoCorpo triagem={triagem} />
+
+        {onPedidosChange && resumo.pedidos.length > 0 && (
+          <div className="mt-4 rounded-lg border border-stone-200 bg-white p-3">
+            <p className="text-xs font-semibold text-stone-600">
+              Pedidos (edição rápida)
+            </p>
+            <textarea
+              className="mt-2 w-full rounded-lg border border-stone-200 p-2 text-sm"
+              rows={3}
+              value={estado.pedidos.filter(Boolean).join("\n")}
+              onChange={(e) =>
+                onPedidosChange(
+                  e.target.value
+                    .split("\n")
+                    .map((l) => l.trim())
+                    .filter(Boolean)
+                )
+              }
+            />
+          </div>
+        )}
+
+        {versoes && versoes.length > 1 && onRestaurarVersao && (
+          <details className="mt-4">
+            <summary className="cursor-pointer text-xs font-medium text-stone-500">
+              Versões anteriores do plano ({versoes.length - 1})
+            </summary>
+            <ul className="mt-2 space-y-1">
+              {versoes
+                .slice(0, -1)
+                .reverse()
+                .map((v) => (
+                  <li key={v.id}>
+                    <button
+                      type="button"
+                      onClick={() => onRestaurarVersao(v)}
+                      className="text-xs text-stone-600 underline-offset-2 hover:underline"
+                    >
+                      {new Date(v.ts).toLocaleString("pt-BR")} —{" "}
+                      {v.resumoMudanca ?? "versão anterior"}
+                    </button>
+                  </li>
+                ))}
+            </ul>
+          </details>
+        )}
 
         <div className="mt-6 flex flex-wrap justify-end gap-2 border-t border-stone-200 pt-4">
           {onAtualizarPlano && (
@@ -150,7 +257,7 @@ export function PlanoCasoPainel({
             disabled={confirmando || carregando}
             className="rounded-lg bg-stone-800 px-5 py-2 text-sm font-semibold text-amber-50 shadow-sm hover:bg-stone-700 disabled:opacity-60"
           >
-            {confirmando ? "Redigindo a peça…" : "Confirmar e redigir (1 peça)"}
+            {confirmando ? "Redigindo a peça…" : "Redigir (1 peça)"}
           </button>
         </div>
       </section>

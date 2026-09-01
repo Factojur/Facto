@@ -6,8 +6,10 @@ import {
   aplicarInferenciaAreaAoEstado,
   aplicarPreenchimentoAoEstado,
   areaExigeConfirmacao,
+  areaSugereConfirmacao,
   confirmarAreaChat,
   estadoCasoChatVazio,
+  garantirAreaParaRedacao,
   hrefChatMinuta,
   inferirAreaChat,
   montarPayloadGeracaoChat,
@@ -113,9 +115,10 @@ function main() {
   const semPolo = validarPoloChat({
     ...estado,
     especiePeca: "recurso-inominado",
+    poloAdvocacia: null,
     poloConfirmado: false,
   });
-  assert(Boolean(semPolo), "bloqueia sem polo confirmado");
+  assert(Boolean(semPolo), "bloqueia sem polo definido");
 
   const comPolo = validarPoloChat({
     ...estado,
@@ -337,12 +340,22 @@ function main() {
       "O casal discute guarda do filho e pensão alimentícia, mas há também cobrança de dívida entre ex-cônjuges.",
     leigo: false,
   });
-  if (infAmb.confianca !== "alta") {
-    assert(areaExigeConfirmacao(infAmb), "caso ambíguo exige confirmação");
-    const estadoAmb = aplicarInferenciaAreaAoEstado(estadoCasoChatVazio("jec"), infAmb);
-    assert(estadoAmb.areaConfirmada === false, "ambiguidade não confirma área");
+  if (infAmb.confianca === "baixa") {
+    assert(areaExigeConfirmacao(infAmb), "caso ambíguo baixa exige chip");
+  }
+  if (infAmb.confianca === "media") {
+    assert(areaSugereConfirmacao(infAmb, false), "média sugere chip");
+    const estadoMed = aplicarInferenciaAreaAoEstado(estadoCasoChatVazio("jec"), infAmb);
+    assert(estadoMed.areaConfirmada === true, "média auto-confirma para plano");
   }
   assert(!podeMontarPlanoChat(estadoCasoChatVazio("jec")), "plano bloqueado sem fatos");
+  const estadoComFatos = estadoCasoChatVazio("jec");
+  estadoComFatos.fatos = "x".repeat(50);
+  estadoComFatos.tipoAcao = "Ação";
+  estadoComFatos.areaInferida = { areaId: "civil", confianca: "baixa", alternativas: [] };
+  assert(podeMontarPlanoChat(estadoComFatos), "plano com área inferida sem confirmar");
+  const redacao = garantirAreaParaRedacao(estadoComFatos);
+  assert(redacao.areaConfirmada, "garantir área na redação");
   const confirmado = confirmarAreaChat(
     aplicarInferenciaAreaAoEstado(estadoCasoChatVazio("jec"), {
       areaId: "familia",

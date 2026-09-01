@@ -62,11 +62,20 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] **Fixes pós-E2E (31/08 tarde)** — `EXCELCELENTÍSSIMO` normalizado; HC/MS sem flag tutela CPC (`especieUsaTutelaUrgenciaCpc`); alerta tutela ignorado em HC; `/api/gerar-peca` retorna **503 sem debitar cota** em falha transitória Gemini
 - [x] **E2E 5 peças (31/08)** — matriz Penal chat + Prev/Trab/Cons/Civil manual; exports IA em `testes-e2e-31-08/` (txt+pdf+docx+checklist); browser: preview/triagem ok, **Redigir prod** instável (Gemini sobrecarga / timeout 60s Vercel)
 
+### Feito nesta rodada (31/08 noite — fluidez chat)
+
+- [x] **Camada 1 — fluidez** — gates suaves (área média auto-confirma + chip; polo inferido; tribunais sugestão); resposta rica no thread; highlight no plano; edição inline de pedidos; CTA único Continuar/Redigir; entrada-caso em complementos
+- [x] **Camada 2 — conversa IA** — `POST /api/chat-refinar-plano` (Flash-Lite, sem cota peça); perguntas proativas locais; fallback determinístico
+- [x] **Camada 3 — moat** — versões do plano; alertas fatos×pedidos no painel; lastro/cobertura já no `PlanoEstrategicoCorpo`
+- [x] **Testes** — `testar-chat-minuta` 75 ok; `testar-chat-fluidez` ok; `tsc --noEmit` ok
+- [x] **Seeds agendados** — `FACTO-seed-juris-01h` (01/09 01h, lote **599**) · `FACTO-seed-sumulas-04h` (01/09 04h) · contas free `GEMINI_API_KEY_SEED`
+
 ### Feito nesta rodada (31/08 noite)
 
 - [x] **Chat plano vs scaffold** — preview forense substituído por plano estratégico automático (`/api/triagem-peca`); redação só após confirmar plano (1 peça)
 - [x] **Confirmação de área** — inferência alta auto-confirma; média/baixa pede escolha antes de plano/redigir (nunca área errada como decisão)
 - [x] **UX conversa** — mensagens orientam conversar até o plano ficar bom; botão Redigir confirma plano à direita
+- [x] **Deploy produção (31/08 noite)** — `dpl_Bdgzw51WJFsmqHcPfhhAjrmJewGs` · commit `bac07fa` · [factoia.com.br](https://factoia.com.br) · chat plano estratégico no ar
 
 ### Feito nesta rodada (31/08)
 

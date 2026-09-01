@@ -34,12 +34,15 @@ import { organizarCasoLocal } from "@/lib/organizar-caso-local";
 import {
   areasChatMinutaDisponiveis,
   aplicarInferenciaAreaAoEstado,
+  aplicarPoloInferidoChat,
   aplicarPreenchimentoAoEstado,
   aplicarOrganizacaoAoEstadoChat,
   areaExigeConfirmacao,
+  areaSugereConfirmacao,
   chatMinutaAreaHabilitada,
   confirmarAreaChat,
   estadoCasoChatVazio,
+  garantirAreaParaRedacao,
   idMensagemChat,
   inferirAreaChat,
   montarPayloadGeracaoChat,
@@ -54,6 +57,15 @@ import {
   type EstadoCasoChat,
   type MensagemChat,
 } from "@/lib/chat-minuta";
+import {
+  diffEstadoCasoChat,
+  montarRespostaTurnoLocal,
+  perguntaProativaLocal,
+} from "@/lib/chat-resposta-turno";
+import {
+  registrarVersaoPlano,
+  type VersaoPlanoChat,
+} from "@/lib/chat-plano-versoes";
 import {
   LIMITE_ARQUIVO_LOCAL_BYTES,
   MIN_CHARS_TEXTO_UTIL,
@@ -273,6 +285,9 @@ export function ChatMinutaPage({
   const [triagemPreview, setTriagemPreview] = useState<PreviewTriagemData | null>(
     null
   );
+  const [versoesPlano, setVersoesPlano] = useState<VersaoPlanoChat[]>([]);
+  const [planoHighlight, setPlanoHighlight] = useState(false);
+  const [areaSugestaoDispensada, setAreaSugestaoDispensada] = useState(false);
   const [payloadPendente, setPayloadPendente] = useState<ReturnType<
     typeof montarPayloadGeracaoChat
   > | null>(null);
@@ -301,6 +316,7 @@ export function ChatMinutaPage({
   const planoAbortRef = useRef<AbortController | null>(null);
   const planoUltimoFingerprintRef = useRef<string | null>(null);
   const estadoRef = useRef(estado);
+  const estadoAnteriorRef = useRef(estado);
   const escritorioRef = useRef(escritorio);
   estadoRef.current = estado;
   escritorioRef.current = escritorio;
@@ -350,7 +366,21 @@ export function ChatMinutaPage({
   const precisaConfirmarArea =
     casoJaOrganizado &&
     !estado.areaConfirmada &&
+    !areaSugestaoDispensada &&
     areaExigeConfirmacao(estado.areaInferida);
+  const sugereConfirmarArea =
+    casoJaOrganizado &&
+    !estado.areaConfirmada &&
+    !areaSugestaoDispensada &&
+    areaSugereConfirmacao(estado.areaInferida, estado.areaConfirmada);
+
+  const rotuloCtaPrincipal = useMemo(() => {
+    if (redigindo) return "Redigindo…";
+    if (planoLoading) return "Plano…";
+    if (!casoJaOrganizado) return "Enviar";
+    if (!triagemPreview) return "Continuar";
+    return "Redigir (1 peça)";
+  }, [redigindo, planoLoading, casoJaOrganizado, triagemPreview]);
 
   const resumoValores = useMemo(
     () => calcularResumoValorCausa(estado.valoresCausa),
@@ -806,8 +836,18 @@ export function ChatMinutaPage({
     if (pecaHtml || triagemPreview) setAbaMobile("peca");
   }, [pecaHtml, triagemPreview]);
 
+  function destacarPlanoAtualizado() {
+    setPlanoHighlight(true);
+    window.setTimeout(() => setPlanoHighlight(false), 2500);
+  }
+
   function garantirPolo(): boolean {
-    const msg = validarPoloChat(estado);
+    const comPolo = aplicarPoloInferidoChat(estadoRef.current);
+    if (comPolo !== estadoRef.current) {
+      setEstado(comPolo);
+      estadoRef.current = comPolo;
+    }
+    const msg = validarPoloChat(comPolo);
     if (msg) {
       setErro(msg);
       return false;
@@ -851,7 +891,8 @@ export function ChatMinutaPage({
       if (!opts?.forcar && fp === planoUltimoFingerprintRef.current) return;
 
       if (!podeMontarPlanoChat(e)) return;
-      if (validarPoloChat(e)) return;
+      const ePolo = aplicarPoloInferidoChat(e);
+      if (validarPoloChat(ePolo)) return;
 
       planoAbortRef.current?.abort();
       const ac = new AbortController();
@@ -886,7 +927,7 @@ export function ChatMinutaPage({
 
         planoUltimoFingerprintRef.current = fp;
         setPayloadPendente(payload);
-        setTriagemPreview({
+        const triagemNova: PreviewTriagemData = {
           estrategiaJuridica: data.estrategiaJuridica!,
           analiseEstrategica: data.analiseEstrategica!,
           topicos: data.topicos ?? [],
@@ -894,7 +935,12 @@ export function ChatMinutaPage({
           coberturaResumo: data.coberturaResumo,
           modelo: data.modelo,
           pedidosFormulario: payload.pedidosUsuario,
-        });
+        };
+        setTriagemPreview(triagemNova);
+        setVersoesPlano((v) =>
+          registrarVersaoPlano(v, triagemNova, opts?.silencioso ? "auto" : "atualizado")
+        );
+        destacarPlanoAtualizado();
         setEstado((atual) => ({
           ...atual,
           planoVisto: true,
@@ -921,13 +967,12 @@ export function ChatMinutaPage({
   useEffect(() => {
     if (geradoPorIA || enviando || redigindo) return;
     if (!podeMontarPlanoChat(estado)) return;
-    if (!estado.areaConfirmada) return;
-    if (validarPoloChat(estado)) return;
+    if (validarPoloChat(aplicarPoloInferidoChat(estado))) return;
 
     if (previewAutoTimerRef.current) clearTimeout(previewAutoTimerRef.current);
     previewAutoTimerRef.current = setTimeout(() => {
       void executarPlano({ silencioso: true });
-    }, 1500);
+    }, 1200);
 
     return () => {
       if (previewAutoTimerRef.current) clearTimeout(previewAutoTimerRef.current);
@@ -1068,23 +1113,107 @@ export function ChatMinutaPage({
         leigo,
       });
       const areaParaOrg = areaManual ? estado.areaId : inferencia.areaId;
+      const estadoAntes = estadoAnteriorRef.current;
       const preenchimentoLocal = organizarCasoLocal({
         relato,
         areaId: areaParaOrg,
       });
 
-      setEstado((atual) => {
-        let next = areaManual
-          ? { ...atual, areaConfirmada: true }
-          : aplicarInferenciaAreaAoEstado(atual, inferencia);
-        next = aplicarOrganizacaoAoEstadoChat(next, preenchimentoLocal, {
-          areaId: areaParaOrg,
-          relato,
-        });
-        return { ...next, planoVisto: false, previewVisto: false };
+      let nextEstado = areaManual
+        ? { ...estadoAntes, areaConfirmada: true }
+        : aplicarInferenciaAreaAoEstado(estadoAntes, inferencia);
+      nextEstado = aplicarOrganizacaoAoEstadoChat(nextEstado, preenchimentoLocal, {
+        areaId: areaParaOrg,
+        relato,
       });
+      nextEstado = aplicarPoloInferidoChat(nextEstado);
+      nextEstado = { ...nextEstado, planoVisto: false, previewVisto: false };
+
+      setEstado(nextEstado);
+      estadoRef.current = nextEstado;
+      estadoAnteriorRef.current = nextEstado;
+      planoUltimoFingerprintRef.current = null;
+
+      const complementoSemAnexo =
+        casoJaOrganizado && payloadArquivos.length === 0;
+
+      if (complementoSemAnexo) {
+        let respostaAssist = montarRespostaTurnoLocal({
+          diff: diffEstadoCasoChat(estadoAntes, nextEstado),
+          estado: nextEstado,
+          primeiroRelato: false,
+        });
+
+        try {
+          const resRefinar = await fetch("/api/chat-refinar-plano", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              mensagem: texto,
+              estado: nextEstado,
+              triagem: triagemPreview,
+              mensagens: [...mensagens, { id: "tmp", papel: "usuario", texto, ts: Date.now() }],
+            }),
+          });
+          const dataRefinar = (await resRefinar.json().catch(() => ({}))) as {
+            ok?: boolean;
+            resposta?: string;
+            estado?: EstadoCasoChat;
+            perguntaProativa?: string | null;
+          };
+          if (resRefinar.ok && dataRefinar.ok && dataRefinar.resposta) {
+            respostaAssist = dataRefinar.resposta;
+            if (dataRefinar.estado) {
+              nextEstado = dataRefinar.estado;
+              setEstado(nextEstado);
+              estadoRef.current = nextEstado;
+            }
+            if (dataRefinar.perguntaProativa) {
+              respostaAssist += `\n\n${dataRefinar.perguntaProativa}`;
+            }
+          }
+        } catch {
+          /* fallback local */
+        }
+
+        const proativa = perguntaProativaLocal(nextEstado);
+        if (proativa && !respostaAssist.includes(proativa.slice(0, 20))) {
+          respostaAssist += `\n\n${proativa}`;
+        }
+
+        adicionarMensagem("assistente", respostaAssist);
+        setErro(null);
+
+        void fetch("/api/entrada-caso", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            relato,
+            areaId: areaParaOrg,
+            arquivos: [],
+          }),
+        })
+          .then((r) => r.json())
+          .then((data: { preenchimento?: Parameters<typeof aplicarPreenchimentoAoEstado>[1] }) => {
+            if (!data.preenchimento) return;
+            setEstado((atual) => {
+              const merged = aplicarOrganizacaoAoEstadoChat(atual, data.preenchimento!, {
+                areaId: areaParaOrg,
+                relato,
+              });
+              estadoRef.current = merged;
+              return merged;
+            });
+            planoUltimoFingerprintRef.current = null;
+          })
+          .catch(() => undefined);
+
+        return;
+      }
+
       setTriagemPreview(null);
       setPayloadPendente(null);
+      setVersoesPlano([]);
       planoUltimoFingerprintRef.current = null;
 
       // ViaCEP gratuito — completa logradouro/bairro/cidade sem cota Gemini
@@ -1113,39 +1242,6 @@ export function ChatMinutaPage({
         }
       })();
 
-      const complementoSemAnexo =
-        casoJaOrganizado && payloadArquivos.length === 0;
-
-      if (complementoSemAnexo) {
-        const linhas = [
-          preenchimentoLocal.resumoConferencia,
-          "*(Complemento integrado — o plano à direita será atualizado.)*",
-        ];
-        if (!areaManual && areaExigeConfirmacao(inferencia)) {
-          linhas.push(
-            "Confirme a **área do caso** abaixo antes de redigir — evita espécie e endereçamento errados."
-          );
-        } else {
-          linhas.push(`Área: **${rotuloAreaChat(areaParaOrg)}**.`);
-        }
-        const ufNova =
-          preenchimentoLocal.uf?.trim() || estado.comarca.uf?.trim() || "";
-        if (
-          !ufNova &&
-          (estado.tribunaisPreferidos ?? []).length === 0 &&
-          !estado.tribunaisDispensados
-        ) {
-          linhas.push(
-            "Sem comarca/UF identificada — escolha **até 3 tribunais** abaixo para priorizar juris na redação."
-          );
-        }
-        adicionarMensagem("assistente", linhas.join("\n\n"));
-        setTriagemPreview(null);
-        setPayloadPendente(null);
-        setErro(null);
-        return;
-      }
-
       const msgArea = areaManual
         ? `Área: **${rotuloAreaChat(areaParaOrg)}**.`
         : areaExigeConfirmacao(inferencia)
@@ -1155,8 +1251,11 @@ export function ChatMinutaPage({
       adicionarMensagem(
         "assistente",
         [
-          "Recebi o caso. Vou montar o **plano estratégico** à direita (sem cota).",
-          "O Analista está conferindo espécie, teses e pedidos em segundo plano…",
+          montarRespostaTurnoLocal({
+            diff: diffEstadoCasoChat(estadoAntes, nextEstado),
+            estado: nextEstado,
+            primeiroRelato: true,
+          }),
           msgArea,
         ].join("\n\n")
       );
@@ -1225,10 +1324,10 @@ export function ChatMinutaPage({
   }
 
   async function handleIniciarRedacao() {
-    if (!estado.areaConfirmada) {
-      setErro("Confirme a área do caso antes de redigir.");
-      setAbaMobile("chat");
-      return;
+    const estadoRedacao = garantirAreaParaRedacao(estado);
+    if (estadoRedacao !== estado) {
+      setEstado(estadoRedacao);
+      estadoRef.current = estadoRedacao;
     }
     if (!podeMontarPlano) {
       setErro("Organize o caso antes de redigir — descreva os fatos com mais detalhe.");
@@ -1410,6 +1509,7 @@ export function ChatMinutaPage({
   function confirmarArea(areaId: AreaIdMinuta) {
     if (!chatMinutaAreaHabilitada(areaId)) return;
     setAreaManual(true);
+    setAreaSugestaoDispensada(false);
     setEstado((e) => confirmarAreaChat(e, areaId));
     planoUltimoFingerprintRef.current = null;
     setTriagemPreview(null);
@@ -1418,6 +1518,21 @@ export function ChatMinutaPage({
     adicionarMensagem(
       "sistema",
       `Área confirmada: **${rotuloAreaChat(areaId)}**. Montando o plano estratégico…`
+    );
+  }
+
+  function handlePedidosPlano(pedidos: string[]) {
+    setEstado((e) => ({ ...e, pedidos, planoVisto: false, previewVisto: false }));
+    planoUltimoFingerprintRef.current = null;
+  }
+
+  function restaurarVersaoPlano(versao: VersaoPlanoChat) {
+    setTriagemPreview(versao.triagem);
+    setEstado((e) => ({ ...e, planoVisto: true, previewVisto: true }));
+    destacarPlanoAtualizado();
+    adicionarMensagem(
+      "sistema",
+      `Plano restaurado (${new Date(versao.ts).toLocaleString("pt-BR")}).`
     );
   }
 
@@ -1788,6 +1903,25 @@ export function ChatMinutaPage({
                 />
               </div>
             )}
+            {sugereConfirmarArea && (
+              <div className="mt-2">
+                <ChatConfirmarArea
+                  inferencia={estado.areaInferida}
+                  areaAtual={estado.areaId}
+                  onConfirmar={confirmarArea}
+                  onDispensar={() => {
+                    setAreaSugestaoDispensada(true);
+                    setEstado((e) => confirmarAreaChat(e, e.areaId));
+                    adicionarMensagem(
+                      "sistema",
+                      `Seguindo com **${rotuloAreaChat(estado.areaId)}**.`
+                    );
+                  }}
+                  apenasSugestao
+                  compacto={modoWorkspace}
+                />
+              </div>
+            )}
             {podeMontarPlano && alertasFatosPedidos.length > 0 && (
               <div className="mt-2">
                 <AlertaFatosPedidosChips alertas={alertasFatosPedidos} />
@@ -1872,25 +2006,18 @@ export function ChatMinutaPage({
               type="button"
               disabled={
                 redigindo ||
-                !podeMontarPlano ||
-                !estado.areaConfirmada ||
+                (casoJaOrganizado && !podeMontarPlano) ||
                 planoLoading
               }
               onClick={() => void handleIniciarRedacao()}
-              title="Redigir: confirma o plano à direita e gera a peça completa (1 peça da cota)."
+              title="Continua o fluxo: monta/atualiza o plano ou redige a peça (1 cota)."
               className={
                 modoWorkspace
                   ? "rounded-md border border-facto-gold/40 bg-facto-gold/20 px-2.5 py-1 text-[11px] font-semibold text-facto-gold transition hover:bg-facto-gold/30 disabled:opacity-50"
                   : "rounded-md bg-stone-800 px-2.5 py-1 text-[11px] font-semibold text-amber-50 hover:bg-stone-700 disabled:opacity-50"
               }
             >
-              {redigindo
-                ? "Redigindo…"
-                : planoLoading
-                  ? "Plano…"
-                  : triagemPreview
-                    ? "Redigir (1 peça)"
-                    : "Montar plano"}
+              {rotuloCtaPrincipal}
             </button>
             <button
               type="button"
@@ -2180,10 +2307,15 @@ export function ChatMinutaPage({
               triagem={triagemPreview}
               carregando={planoLoading}
               confirmando={redigindo}
+              planoAtualizado={planoHighlight}
+              versoes={versoesPlano}
+              alertasFatosPedidos={alertasFatosPedidos}
               onConfirmarRedacao={() => void confirmarRedacao()}
               onAtualizarPlano={() =>
                 void executarPlano({ forcar: true, silencioso: false })
               }
+              onPedidosChange={handlePedidosPlano}
+              onRestaurarVersao={restaurarVersaoPlano}
             />
           )}
         </div>

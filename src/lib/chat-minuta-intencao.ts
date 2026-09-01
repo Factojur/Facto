@@ -70,21 +70,21 @@ export function classificarIntencaoChat(input: {
 export function respostaMetaLeiJuris(): string {
   return [
     "Não consulto a web nem invento ementa neste chat.",
-    "Se você **já tem** a lei municipal ou um acórdão/súmula do caso, abra **Provas / lei e juris** (abaixo ou no menu) e cole/anexe — isso entra só nesta peça.",
-    "Citar só o **número da lei** no chat ajuda a organizar o caso; o **texto integral** precisa ir em Provas / lei e juris para fundamentar a redação.",
-    "Na **redação**, a base curada FACTO busca julgados semelhantes aos fatos e favoráveis ao polo. O preview à direita já monta a forma; a fundamentação completa vem ao confirmar **Redigir**.",
+    "Se você **já tem** a lei municipal ou um acórdão/súmula do caso, abra **Provas / lei e juris** e cole/anexe — entra só nesta peça.",
+    "Citar só o **número da lei** no chat ajuda a organizar o caso; o **texto integral** vai em Provas / lei e juris.",
+    "O **plano à direita** mostra teses e lastro sugerido; a fundamentação completa vem ao **Redigir (1 peça)**.",
   ].join("\n\n");
 }
 
 export function respostaMetaAjuda(): string {
   return [
     "Fluxo rápido:",
-    "1. Descreva o caso (ou anexe PDF) — o **Analista** organiza.",
-    "2. A **pré-visualização** à direita atualiza sozinha (sem cota).",
+    "1. Descreva o caso (ou anexe PDF) — organizo o entendimento.",
+    "2. O **plano estratégico** à direita atualiza enquanto você conversa (sem cota).",
     "3. Lei municipal / juris do caso → **Provas / lei e juris**.",
-    "4. Escolha até **3 tribunais** para priorizar juris (ou informe a comarca/UF).",
-    "5. Complemente do seu jeito no chat — pedidos, tutela, fatos extras.",
-    "6. Quando estiver ok → **Redigir (1 peça)**; depois peça **ajustes** na conversa.",
+    "4. Comarca/UF no relato prioriza o TJ; ou escolha até **3 tribunais**.",
+    "5. Ajuste pedidos no chat ou edite no plano.",
+    "6. Quando estiver bom → **Redigir (1 peça)**; depois peça **ajustes** na conversa.",
   ].join("\n");
 }
 

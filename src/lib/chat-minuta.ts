@@ -283,12 +283,22 @@ export function inferirAreaChat(params: {
   };
 }
 
-/** Inferência média/baixa exige confirmação antes de plano ou redação. */
+/** Inferência baixa pede chip de confirmação; média/alta seguem com sugestão. */
 export function areaExigeConfirmacao(
   inferencia: InferenciaAreaChat | null | undefined
 ): boolean {
-  if (!inferencia) return true;
-  return inferencia.confianca !== "alta";
+  if (!inferencia) return false;
+  return inferencia.confianca === "baixa";
+}
+
+/** Chip de sugestão (média) — não bloqueia plano nem redação. */
+export function areaSugereConfirmacao(
+  inferencia: InferenciaAreaChat | null | undefined,
+  areaConfirmada: boolean
+): boolean {
+  if (areaConfirmada) return false;
+  if (!inferencia) return false;
+  return inferencia.confianca === "media";
 }
 
 export function opcoesAreaParaConfirmacao(
@@ -306,7 +316,10 @@ export function aplicarInferenciaAreaAoEstado(
   inferencia: InferenciaAreaChat,
   opts?: { manual?: boolean }
 ): EstadoCasoChat {
-  const autoConfirma = Boolean(opts?.manual) || inferencia.confianca === "alta";
+  const autoConfirma =
+    Boolean(opts?.manual) ||
+    inferencia.confianca === "alta" ||
+    inferencia.confianca === "media";
   return {
     ...estado,
     areaId: inferencia.areaId,
@@ -332,11 +345,24 @@ export function confirmarAreaChat(
 }
 
 export function podeMontarPlanoChat(estado: EstadoCasoChat): boolean {
+  const temArea =
+    estado.areaConfirmada ||
+    Boolean(estado.areaInferida?.areaId) ||
+    Boolean(estado.areaId);
   return (
     estado.fatos.trim().length >= 40 &&
     estado.tipoAcao.trim().length > 0 &&
-    estado.areaConfirmada
+    temArea
   );
+}
+
+/** Confirma área sugerida antes de redigir se ainda pendente (baixa confiança). */
+export function garantirAreaParaRedacao(
+  estado: EstadoCasoChat
+): EstadoCasoChat {
+  if (estado.areaConfirmada) return estado;
+  const sugerida = estado.areaInferida?.areaId ?? estado.areaId;
+  return confirmarAreaChat(estado, sugerida);
 }
 
 export function montarResumoEntendimentoChat(estado: EstadoCasoChat): {
@@ -860,8 +886,20 @@ export function poloExigeConfirmacaoChat(
 export function validarPoloChat(estado: EstadoCasoChat): string | null {
   const especie = especieResolvidaChat(estado);
   if (!poloExigeConfirmacaoChat(estado.areaId, especie)) return null;
-  if (!estado.poloConfirmado || !estado.poloAdvocacia) {
-    return "Confirme o polo (ativo ou passivo) antes de continuar — esta peça cabe nos dois lados.";
-  }
-  return null;
+  if (estado.poloAdvocacia) return null;
+  return "Informe o polo (ativo ou passivo) — ou descreva quem você representa no relato.";
+}
+
+/** Infere polo do relato quando a espécie aceita ambos os lados. */
+export function aplicarPoloInferidoChat(estado: EstadoCasoChat): EstadoCasoChat {
+  const especie = especieResolvidaChat(estado);
+  if (!poloExigeConfirmacaoChat(estado.areaId, especie)) return estado;
+  if (estado.poloConfirmado && estado.poloAdvocacia) return estado;
+  const inferido = inferirPoloDoRelato(estado.fatos);
+  if (!inferido) return estado;
+  return {
+    ...estado,
+    poloAdvocacia: inferido,
+    poloConfirmado: true,
+  };
 }
