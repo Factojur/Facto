@@ -68,7 +68,7 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] **HC / Penal** — sem `em face de` civil; remove Enel/energia/multa CPC; payload sem réu concessionária
 - [x] **Anti-contaminação chat** — relato misto bloqueia; troca de área reinicia partes; **Novo caso** zera estado; complemento “também quero multa…” → pedidos (não qualificação)
 - [x] **Testes** — `testar-formatacao-peca` ok; `testar-chat-minuta` 77 ok; `testar-chat-fluidez` ok; `tsc --noEmit` ok
-- [ ] **Deploy produção** — aguarda push lote chat Fase 1 · reteste E2E JEC + Penal chat (Novo caso)
+- [ ] **Deploy produção** — **no ar** `dpl_5p4jsS66iBNtkgz1emMrs7mKg8b5` (commit `0dc24f4`) · reteste E2E JEC + Penal chat (Novo caso)
 
 ### Feito nesta rodada (01/09 tarde — chat Fase 1 + UX workspace)
 
