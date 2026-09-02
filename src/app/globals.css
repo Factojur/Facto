@@ -9,12 +9,11 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-facto-gold: #908b6a;
-  --color-facto-gold-ia: #c4bf9a;
+  --color-facto-gold-ia: color-mix(in srgb, #908b6a 58%, transparent);
   --color-facto-dark: #1c1c16;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-facto: var(--font-montserrat);
-  --font-facto-ia: var(--font-space-grotesk);
 }
 
 @media (prefers-color-scheme: dark) {

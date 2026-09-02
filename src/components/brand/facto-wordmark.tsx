@@ -1,27 +1,52 @@
-import type { HTMLAttributes } from "react";
+import type { HTMLAttributes, SVGAttributes } from "react";
 
 /**
  * Wordmark e logo completo da FACTO — recortados a partir da arte oficial
- * enviada em 31/07/2026, com fundo removido (canal alfa real). Antes disso a
- * imagem tinha um fundo escuro sólido embutido no PNG e dependia de um hack
- * de CSS (`mix-blend-mode: lighten`) pra disfarçar o retângulo sobre o header
- * escuro — funcionava só quando o fundo por trás era exatamente da mesma cor,
- * e ficava visivelmente errado em qualquer outro fundo (cards claros, seções
- * da landing, etc.). Com transparência de verdade isso não é mais necessário
- * e a imagem fica correta sobre qualquer fundo.
+ * enviada em 31/07/2026, com fundo removido (canal alfa real).
  */
 export const FACTO_WORDMARK_SRC = "/brand/facto-wordmark.png";
 
 export type FactoWordmarkIaSize = "chat" | "xs" | "watermark";
 
 const SIZE_EM: Record<FactoWordmarkIaSize, string> = {
-  /** Título Chat FACTO no assistente. */
   chat: "text-[1.35rem] md:text-[1.7rem]",
-  /** Topbar / horizontal compacto. */
   xs: "text-[18px]",
-  /** Marca d'água no workspace (mesma escala visual do título, maior no painel). */
   watermark: "text-[2.75rem] sm:text-[3.5rem]",
 };
+
+/** IA no mesmo desenho da logo: I = traço; A = chevron sem barra. */
+function WordmarkIaSuffix({
+  className,
+  ...props
+}: SVGAttributes<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 96 100"
+      fill="currentColor"
+      className={`h-[0.58em] w-auto shrink-0 ${className ?? ""}`}
+      aria-hidden
+      {...props}
+    >
+      {/* I — barra vertical */}
+      <rect x="0" y="6" width="18" height="88" rx="1" />
+      {/* A — duas hastes em V, sem travessão */}
+      <path
+        d="M 36 94 L 52 6"
+        stroke="currentColor"
+        strokeWidth="18"
+        strokeLinecap="square"
+        fill="none"
+      />
+      <path
+        d="M 52 6 L 80 94"
+        stroke="currentColor"
+        strokeWidth="18"
+        strokeLinecap="square"
+        fill="none"
+      />
+    </svg>
+  );
+}
 
 export function FactoWordmark({
   className,
@@ -41,7 +66,7 @@ export function FactoWordmark({
   );
 }
 
-/** FACTO (PNG oficial) + IA (Space Grotesk, ouro claro). */
+/** FACTO (PNG oficial) + IA (SVG no traço da logo, ouro mais suave). */
 export function FactoWordmarkIa({
   size = "chat",
   className,
@@ -65,10 +90,10 @@ export function FactoWordmarkIa({
     >
       <FactoWordmark className="h-[1em] w-auto shrink-0" alt="" aria-hidden />
       <span
-        className="ml-[0.06em] shrink-0 font-facto-ia text-[0.58em] font-semibold tracking-[0.08em] text-facto-gold-ia"
+        className="ml-[0.04em] inline-flex shrink-0 items-baseline text-facto-gold-ia"
         aria-hidden
       >
-        IA
+        <WordmarkIaSuffix />
       </span>
     </span>
   );

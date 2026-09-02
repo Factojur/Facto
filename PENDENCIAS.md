@@ -73,7 +73,7 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 - [x] **Preview folhas A4** — toggle Folhas/Contínuo em `PecaDocumentoView`; chat inicia em folhas
 - [x] **Checklist protocolo no chat** — `ProtocoloDocsChecklist` compartilhado (área + foro + tribunal inferido)
 - [x] **Word/PDF polish** — PDF com numeração Folha X de Y; copy alinhado ao preview paginado
-- [x] **Marca FACTOIA** — `FactoWordmarkIa` (FACTO PNG + IA Space Grotesk `#c4bf9a`) no título do chat e marca d'água workspace; topbar horizontal
+- [x] **Marca FACTOIA** — `FactoWordmarkIa` (FACTO PNG + IA em SVG no traço da logo, ouro ~58% opacidade) só no título do chat e marca d'água do workspace; logo do site inalterada
 
 ### Feito nesta rodada (02/09 — inspector lastro pacote 4)
 

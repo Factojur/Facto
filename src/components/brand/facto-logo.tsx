@@ -1,5 +1,5 @@
 import { FactoIcon, FactoIconBrain } from "./facto-icon";
-import { FactoLogoCompleto, FactoWordmarkIa } from "./facto-wordmark";
+import { FactoLogoCompleto, FactoWordmark } from "./facto-wordmark";
 
 export const FACTO_TAGLINE = "Inteligência Jurídica";
 
@@ -74,7 +74,7 @@ export function FactoLogo({
         <FactoIcon className={`shrink-0 ${iconSizes[size]}`} />
         <div className="min-w-0 leading-none">
           <div className={wordmarkSizes[size]}>
-            <FactoWordmarkIa size="xs" />
+            <FactoWordmark className="h-full w-auto" />
           </div>
           {showTagline && (
             <p className="mt-1.5 font-sans text-[9px] font-medium uppercase tracking-[0.28em] text-stone-500">
