@@ -57,7 +57,7 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] **PlanoLastroHint** — ícone i dourado por tópico no plano; hover desktop
 - [x] **Lastro tópico A+B** — prompt `LASTRO:`/`ENCAIXE:`; parser estruturado; hint com encaixe + fontes clicáveis (`fls.`)
 - [x] **Testes** — `test:inferir-area` 5/5; `test:plano-lastro` 6/6; `test:comparativo-paridade` 8/8; `test:chat-minuta` 77/77; `tsc --noEmit` ok
-- [ ] **Deploy** — commit + push pendente (Jefferson)
+- [x] **Deploy produção** — `6f027dd` · Vercel Ready · [factoia.com.br](https://factoia.com.br)
 
 **Juris / seed:** depois de cada lote ou dia de cota, atualizar a seção **Lacunas da base (áreas falhas)** abaixo — tribunal errado, 0 insert, ou API sem aquele tribunal. Não deixar falha só no chat.
 
