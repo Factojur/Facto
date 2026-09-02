@@ -34,6 +34,11 @@ import {
   enriquecerPartesComViaCep,
   extrairQualificacaoDoRelato,
 } from "@/lib/extrair-qualificacao-relato";
+import {
+  candidatasParaRefinoArea,
+  motivoAreaAposOrganizacao,
+  precisaRefinoAreaIa,
+} from "@/lib/inferir-area-refino";
 import { organizarCasoLocal } from "@/lib/organizar-caso-local";
 import type { LeituraRelato } from "@/lib/entrada-caso-types";
 import { formatarBalaoLeituraAnexo } from "@/lib/peca-cabivel-autos";
@@ -61,6 +66,7 @@ import {
   estadoCasoChatVazio,
   idMensagemChat,
   inferirAreaChat,
+  inferirAreaChatDetalhado,
   montarPayloadGeracaoChat,
   podeMontarPlanoChat,
   poloExigeConfirmacaoChat,
@@ -540,6 +546,9 @@ export function ChatMinutaPage({
       : especieAtual
         ? `${rotuloAreaChat(estado.areaId)} · ${especieAtual.replace(/-/g, " ")}`
         : rotuloAreaChat(estado.areaId);
+  const tituloAreaHeader = estado.areaMotivo
+    ? `${rotuloAreaCaso} — ${estado.areaMotivo}`
+    : rotuloAreaCaso;
   const precisaConfirmarArea =
     casoJaOrganizado &&
     !estado.areaConfirmada &&
@@ -1518,11 +1527,41 @@ export function ChatMinutaPage({
         return;
       }
 
-      let inferencia = inferirAreaChat({
+      let inferenciaDet = inferirAreaChatDetalhado({
         texto: relato,
         preferida: areaUrl,
         leigo,
       });
+      let inferencia = inferenciaDet.inferencia;
+      let areaMotivo: string | null = null;
+
+      if (!areaManual && precisaRefinoAreaIa(inferenciaDet)) {
+        try {
+          const resIa = await fetch("/api/inferir-area", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              relato,
+              candidatas: candidatasParaRefinoArea(inferenciaDet),
+            }),
+            signal: ac.signal,
+          });
+          if (resIa.ok) {
+            const dataIa = (await resIa.json()) as {
+              inferencia?: typeof inferencia;
+              motivo?: string;
+            };
+            if (dataIa.inferencia?.areaId) {
+              inferencia = dataIa.inferencia;
+              areaMotivo = dataIa.motivo?.trim() || "Área definida com apoio da IA.";
+            }
+          }
+        } catch {
+          /* mantém regex local */
+        }
+      }
+
+      const areaInferidaInicial = inferencia.areaId;
       const areaParaOrg = areaManual ? estado.areaId : inferencia.areaId;
       const estadoAntes = estadoAnteriorRef.current;
       const trocaArea =
@@ -1548,11 +1587,20 @@ export function ChatMinutaPage({
           confianca: "alta",
           alternativas: [],
         };
+        areaMotivo =
+          motivoAreaAposOrganizacao({
+            areaInferida: areaInferidaInicial,
+            areaResolvida: orgLocal.areaIdResolvida as AreaIdMinuta,
+            especiePeca: preenchimentoLocal.especiePeca ?? undefined,
+            ultimoAto: preenchimentoLocal.ultimoAto,
+          }) ?? areaMotivo;
       }
 
       let nextEstado = areaManual
         ? { ...baseEstado, areaConfirmada: true }
-        : aplicarInferenciaAreaAoEstado(baseEstado, inferencia);
+        : aplicarInferenciaAreaAoEstado(baseEstado, inferencia, {
+            motivo: areaMotivo,
+          });
       nextEstado = aplicarOrganizacaoAoEstadoChat(nextEstado, preenchimentoLocal, {
         areaId: orgLocal.areaIdResolvida,
         relato,
@@ -2143,7 +2191,7 @@ export function ChatMinutaPage({
                 type="button"
                 onClick={() => setMostrarTrocarArea((v) => !v)}
                 className="max-w-[min(100%,20rem)] truncate bg-transparent p-0 text-left text-xs font-semibold tracking-tight text-facto-gold sm:text-sm hover:text-[#c4bf9a] hover:underline hover:underline-offset-2"
-                title="Área do caso. Clique para escolher ou mudar (JEC, Cível, Trabalhista…). Também pode deixar o assistente sugerir pela conversa."
+                title={tituloAreaHeader}
               >
                 {rotuloAreaCaso}
               </button>

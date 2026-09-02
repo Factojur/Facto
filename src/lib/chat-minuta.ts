@@ -131,6 +131,8 @@ export type EstadoCasoChat = {
   areaConfirmada: boolean;
   /** Última inferência automática — desambiguação no chat. */
   areaInferida: InferenciaAreaChat | null;
+  /** Por que a área foi escolhida (IA ou remédio cabível). */
+  areaMotivo: string | null;
   /** Plano estratégico (triagem) conferido pelo usuário. */
   planoVisto: boolean;
   /** @deprecated use planoVisto — mantido para sessões antigas. */
@@ -177,6 +179,7 @@ export function estadoCasoChatVazio(
     replicaContestacao: null,
     areaConfirmada: false,
     areaInferida: null,
+    areaMotivo: null,
     planoVisto: false,
     previewVisto: false,
     provasCaso: [],
@@ -225,16 +228,19 @@ export type InferenciaAreaChat = {
   alternativas: AreaIdMinuta[];
 };
 
-export function inferirAreaChat(params: {
+export function inferirAreaChatDetalhado(params: {
   texto: string;
   preferida?: string | null;
   leigo?: boolean;
-}): InferenciaAreaChat {
+}): InferenciaAreaDetalhada {
   const pref = params.preferida?.trim()
     ? normalizarAreaIdMinuta(params.preferida)
     : null;
   if (pref && chatMinutaAreaHabilitada(pref)) {
-    return { areaId: pref, confianca: "alta", alternativas: [] };
+    return {
+      inferencia: { areaId: pref, confianca: "alta", alternativas: [] },
+      ordenado: [{ areaId: pref, score: 99 }],
+    };
   }
 
   const scores = new Map<AreaIdMinuta, number>();
@@ -245,22 +251,29 @@ export function inferirAreaChat(params: {
     }
   }
 
-  const ordenado = [...scores.entries()].sort((a, b) => b[1] - a[1]);
+  const ordenado = [...scores.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([areaId, score]) => ({ areaId, score }));
+
   if (ordenado.length === 0) {
     const fallback: AreaIdMinuta = params.leigo ? "jec" : "civil";
     return {
-      areaId: fallback,
-      confianca: "baixa",
-      alternativas: CHAT_MINUTA_AREAS_FASE1.filter((a) => a !== fallback).slice(
-        0,
-        3
-      ),
+      inferencia: {
+        areaId: fallback,
+        confianca: "baixa",
+        alternativas: CHAT_MINUTA_AREAS_FASE1.filter((a) => a !== fallback).slice(
+          0,
+          3
+        ),
+      },
+      ordenado: [],
     };
   }
 
-  let [topId, topScore] = ordenado[0]!;
-  const segundoId = ordenado[1]?.[0];
-  const segundo = ordenado[1]?.[1] ?? 0;
+  let topId = ordenado[0]!.areaId;
+  let topScore = ordenado[0]!.score;
+  const segundoId = ordenado[1]?.areaId;
+  const segundo = ordenado[1]?.score ?? 0;
 
   if (
     topId === "familia" &&
@@ -293,10 +306,26 @@ export function inferirAreaChat(params: {
         : "baixa";
 
   return {
-    areaId: topId,
-    confianca,
-    alternativas: ordenado.slice(1, 4).map(([id]) => id),
+    inferencia: {
+      areaId: topId,
+      confianca,
+      alternativas: ordenado.slice(1, 4).map((o) => o.areaId),
+    },
+    ordenado,
   };
+}
+
+export type InferenciaAreaDetalhada = {
+  inferencia: InferenciaAreaChat;
+  ordenado: { areaId: AreaIdMinuta; score: number }[];
+};
+
+export function inferirAreaChat(params: {
+  texto: string;
+  preferida?: string | null;
+  leigo?: boolean;
+}): InferenciaAreaChat {
+  return inferirAreaChatDetalhado(params).inferencia;
 }
 
 /** Inferência baixa pede chip de confirmação; média/alta seguem com sugestão. */
@@ -328,7 +357,7 @@ export function opcoesAreaParaConfirmacao(
 export function aplicarInferenciaAreaAoEstado(
   estado: EstadoCasoChat,
   inferencia: InferenciaAreaChat,
-  opts?: { manual?: boolean }
+  opts?: { manual?: boolean; motivo?: string | null }
 ): EstadoCasoChat {
   const autoConfirma =
     Boolean(opts?.manual) ||
@@ -338,6 +367,7 @@ export function aplicarInferenciaAreaAoEstado(
     ...estado,
     areaId: inferencia.areaId,
     areaInferida: inferencia,
+    areaMotivo: opts?.motivo ?? estado.areaMotivo,
     areaConfirmada: autoConfirma,
     planoVisto: false,
     previewVisto: false,
@@ -689,6 +719,8 @@ export function normalizarEstadoCasoChat(
       bruto.areaInferida && typeof bruto.areaInferida === "object"
         ? (bruto.areaInferida as InferenciaAreaChat)
         : null,
+    areaMotivo:
+      typeof bruto.areaMotivo === "string" ? bruto.areaMotivo : base.areaMotivo,
     planoVisto: Boolean(bruto.planoVisto ?? bruto.previewVisto),
     previewVisto: Boolean(bruto.previewVisto ?? bruto.planoVisto),
   };

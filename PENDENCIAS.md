@@ -45,7 +45,19 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] **Deploy produção** — `8771fd4` no ar · fix polo exequente×executada (0006509) · [factoia.com.br](https://factoia.com.br)
 - [x] **Reteste manual 0006509** — E2E browser prod 6/6 (Jefferson, exequente, MS, constitucional, sem agravo executada)
 - [x] **Alerta fatos×pedidos (chat)** — removido do thread; só painel plano; regras MS/HC/cumprimento + “sem prejuízo de”
-- [ ] **Comparativo FACTO × MinutaIA** — 5–10 cenários iguais nos dois (após deploy ou local)
+- [x] **Área auto ~95%** — refino Flash-Lite só em ambíguo (`inferir-area-refino`, `/api/inferir-area`, sem cota de peça); motivo no header; `test:inferir-area` 5/5
+- [x] **Lastro no plano (preview)** — `PlanoLastroHint` (ícone i dourado por tópico; hover desktop); texto derivado de cobertura + estratégia (`plano-lastro-hint.ts`)
+- [x] **Lastro por tópico A+B** — `LASTRO:`/`ENCAIXE:` na triagem + parser (`plano-topicos-peca`); complemento local fls./lei/juris (`plano-lastro-topico.ts`); `test:plano-lastro` 6/6
+- [x] **Comparativo FACTO (automático)** — `npm run test:comparativo-paridade` 8 cenários · relatório `scripts/comparativo-paridade-minutaia.md`
+- [ ] **Comparativo MinutaIA (manual)** — mesmos 8 relatos no app deles; preencher coluna MinutaIA no relatório
+
+### Feito nesta rodada (02/09 — área auto + lastro plano)
+
+- [x] **Refino área IA** — `inferir-area-refino.ts` + `/api/inferir-area` (Flash-Lite, ~R$0,01/turno ambíguo, sem cota de peça); motivo no header (`areaMotivo`)
+- [x] **PlanoLastroHint** — ícone i dourado por tópico no plano; hover desktop
+- [x] **Lastro tópico A+B** — prompt `LASTRO:`/`ENCAIXE:`; parser estruturado; hint com encaixe + fontes clicáveis (`fls.`)
+- [x] **Testes** — `test:inferir-area` 5/5; `test:plano-lastro` 6/6; `test:comparativo-paridade` 8/8; `test:chat-minuta` 77/77; `tsc --noEmit` ok
+- [ ] **Deploy** — commit + push pendente (Jefferson)
 
 **Juris / seed:** depois de cada lote ou dia de cota, atualizar a seção **Lacunas da base (áreas falhas)** abaixo — tribunal errado, 0 insert, ou API sem aquele tribunal. Não deixar falha só no chat.
 
@@ -345,6 +357,28 @@ Ordem sugerida para o agente/Jefferson. **Grátis** = implementar quando fizer s
 3. Amostra manual: 1 JEC (Flash) · 1 Completo/Pro com gatilho Sonnet · 1 área densa (Const/Prev/Trab).
 4. Conferir: lastro na peça, endereçamento, Auditor, export Word/PDF.
 5. Anotar custo ~R$/peça no chat (Flash **~R$ 0,11** medido; Sonnet **~R$ 0,69**; ver **Decisão margem 01/09**).
+
+### Scorecard FACTO vs MinutaIA (02/09 — pós lastro tópico A+B + área auto)
+
+| Critério | MinutaIA | FACTO 30/08 | FACTO 02/09 | Δ vs Minuta |
+|----------|----------|-------------|------------|-------------|
+| Iteração (chat, versões) | 9,0 | 7,5 | **8,0** | −1,0 |
+| Lastro / fundamentação | 7,0 | 5,2 | **6,4** | −0,6 |
+| Formato forense e rito | 6,0 | 7,8 | **8,2** | +2,2 |
+| Preço / custo por peça | 5,0 | 8,0 | **8,0** | +3,0 |
+| Gestão + continuidade | 7,0 | 7,2 | **7,2** | +0,2 |
+
+**O que subiu (02/09):**
+- **Iteração +0,5** — thread enxuto; área auto ~95% (refino Flash-Lite só ambíguo); polo 0006509; memória anexo smoke OK.
+- **Lastro +1,2** — `fls.` clicável; balão único PDF; **lastro por tópico** (encaixe + `LASTRO:` estruturado + fallback local fls./lei/juris); ícone i no plano.
+- **Formato +0,4** — calibração MS/HC/cumprimento; espécie×polo; alerta fatos×pedidos só no painel.
+
+**Ainda falta para lastro ≈ MinutaIA (−0,6):**
+- Inspector lateral por fonte (badges → painel) — P1
+- Juris do caso linkada linha a linha na peça redigida — P1
+- Acervo 100k / seed 788 fechado — G1
+
+**Generalista (pesos iguais):** FACTO **≈ 7,56** vs MinutaIA **≈ 6,80** (+0,22 vs scorecard 30/08).
 
 ### Scorecard FACTO vs MinutaIA (30/08 — pós-testes PDF)
 

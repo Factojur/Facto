@@ -31,6 +31,7 @@ import {
   avaliarCoberturaNoPlano,
   type ItemCoberturaTese,
 } from "@/lib/ia/cobertura-teses-peca";
+import { complementarLastroTopicos } from "@/lib/ia/plano-lastro-topico";
 import type { BlocoJurisCaso } from "@/lib/juris-caso-types";
 import { topicosComoLista } from "@/lib/ia/plano-topicos-peca";
 
@@ -242,12 +243,18 @@ export async function executarTriagemCaso(params: {
   }
 
   const analiseEstrategica = parseEstrategiaJuridica(estrategiaJuridica);
-  const topicos = extrairPlanoTopicos(estrategiaJuridica);
+  const topicosBrutos = extrairPlanoTopicos(estrategiaJuridica);
   const cobertura = avaliarCoberturaNoPlano({
     estrategia: estrategiaJuridica,
-    topicos,
+    topicos: topicosBrutos,
     teses: params.teses,
     pedidosFormulario: params.instrucoes?.pedidosUsuario,
+  });
+  const topicos = complementarLastroTopicos({
+    topicos: topicosBrutos,
+    estrategiaJuridica,
+    cobertura,
+    jurisTitulos: params.jurisDoCaso?.map((j) => j.titulo ?? "").filter(Boolean),
   });
 
   return {

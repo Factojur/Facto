@@ -236,7 +236,14 @@ export function PlanoCasoPainel({
         )}
 
         <PlanoEstrategicoCorpo
-          triagem={triagem}
+          triagem={{
+            ...triagem,
+            jurisTitulos:
+              triagem.jurisTitulos ??
+              estado.jurisCaso
+                .filter((j) => j.titulo?.trim() || j.texto?.trim())
+                .map((j) => j.titulo.trim() || j.nomeArquivo || "Juris do caso"),
+          }}
           onIncluirCobertura={onIncluirCobertura}
           onAbrirFls={onAbrirFls}
         />

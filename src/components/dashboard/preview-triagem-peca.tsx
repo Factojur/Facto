@@ -4,6 +4,9 @@ import type { TopicoPlanejado } from "@/lib/ia/plano-topicos-peca";
 import type { ItemCoberturaTese } from "@/lib/ia/cobertura-teses-peca";
 import type { AnaliseEstrategica } from "@/lib/ia/triagem-caso-peca";
 import { TextoJuridicoInline } from "@/components/dashboard/texto-juridico-inline";
+import { PlanoLastroHint } from "@/components/dashboard/plano-lastro-hint";
+import { complementarLastroTopicos } from "@/lib/plano-lastro-hint";
+import { useMemo } from "react";
 
 export type PreviewTriagemData = {
   estrategiaJuridica: string;
@@ -14,6 +17,8 @@ export type PreviewTriagemData = {
   modelo?: string;
   /** Pedidos digitados pelo advogado no formulário. */
   pedidosFormulario?: string[];
+  /** Títulos da juris do caso (para lastro por tópico). */
+  jurisTitulos?: string[];
 };
 
 /** Corpo reutilizável do plano (chat + formulário). */
@@ -32,6 +37,22 @@ export function PlanoEstrategicoCorpo({
   const pedidosForm = (triagem.pedidosFormulario ?? [])
     .map((p) => p.trim())
     .filter(Boolean);
+
+  const topicosComLastro = useMemo(
+    () =>
+      complementarLastroTopicos({
+        topicos: triagem.topicos,
+        estrategiaJuridica: triagem.estrategiaJuridica,
+        cobertura: triagem.cobertura,
+        jurisTitulos: triagem.jurisTitulos,
+      }),
+    [
+      triagem.topicos,
+      triagem.estrategiaJuridica,
+      triagem.cobertura,
+      triagem.jurisTitulos,
+    ]
+  );
 
   return (
     <>
@@ -65,13 +86,21 @@ export function PlanoEstrategicoCorpo({
             Plano de tópicos
           </h3>
           <ol className="mt-2 space-y-2">
-            {triagem.topicos.map((t) => (
+            {topicosComLastro.map((t) => (
               <li
                 key={`${t.romano}-${t.titulo}`}
                 className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm"
               >
                 <span className="font-medium text-stone-900">
                   {t.romano}. {t.titulo}
+                  <PlanoLastroHint
+                    topico={t}
+                    todosTopicos={topicosComLastro}
+                    estrategiaJuridica={triagem.estrategiaJuridica}
+                    cobertura={triagem.cobertura}
+                    jurisTitulos={triagem.jurisTitulos}
+                    onAbrirFls={onAbrirFls}
+                  />
                 </span>
                 {t.subtitulos.length > 0 && (
                   <ul className="mt-1 list-inside list-disc text-stone-600">

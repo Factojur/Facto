@@ -2,11 +2,112 @@
  * Plano de tópicos da triagem estratégica — títulos obrigatórios para o Redator.
  */
 
+export type TipoLastroTopico =
+  | "relato"
+  | "anexo"
+  | "tese"
+  | "juris"
+  | "rito"
+  | "lei"
+  | "pedido";
+
+export type LastroTopicoItem = {
+  tipo: TipoLastroTopico;
+  ref: string;
+};
+
 export type TopicoPlanejado = {
   romano: string;
   titulo: string;
   subtitulos: string[];
+  /** Encaixe ao caso (fato + consequência jurídica). */
+  encaixe?: string;
+  /** Fontes estruturadas — camada B (LASTRO: na triagem) + complemento local. */
+  lastro?: LastroTopicoItem[];
 };
+
+const RE_LASTRO_LINHA = /^lastro\s*:\s*(.+)$/i;
+const RE_ENCAIXE_LINHA = /^encaixe\s*:\s*(.+)$/i;
+
+function inferirTipoLastro(token: string): TipoLastroTopico {
+  const t = token.toLowerCase().trim();
+  if (/^fls?\.?\s*\d/i.test(t) || t.includes("anexo") || t.includes("folha")) {
+    return "anexo";
+  }
+  if (t === "relato" || t.includes("narrativa") || t.includes("fatos do")) {
+    return "relato";
+  }
+  if (
+    t.includes("juris") ||
+    /tjsp|stj|stf|tj[a-z]{2}/i.test(t) ||
+    t.includes("acordao") ||
+    t.includes("acórdão") ||
+    t.includes("sumula") ||
+    t.includes("súmula")
+  ) {
+    return "juris";
+  }
+  if (/art\.|lei\s|cdc|cpc|cf|clt|§/i.test(t)) {
+    return "lei";
+  }
+  if (t.startsWith("pedido")) {
+    return "pedido";
+  }
+  if (t.startsWith("tese") || t.length >= 8) {
+    return "tese";
+  }
+  return "rito";
+}
+
+/** Parseia linha LASTRO: relato | fls. 12 | tese X | juris Y */
+export function parseLastroLinha(linha: string): LastroTopicoItem[] {
+  const m = linha.trim().match(RE_LASTRO_LINHA);
+  if (!m?.[1]) return [];
+  return m[1]
+    .split(/[|]/)
+    .map((s) => s.trim())
+    .filter((s) => s.length >= 2)
+    .map((ref) => ({
+      tipo: inferirTipoLastro(ref),
+      ref,
+    }));
+}
+
+function mesclarLastro(
+  atual: LastroTopicoItem[] | undefined,
+  novos: LastroTopicoItem[]
+): LastroTopicoItem[] {
+  const vistos = new Set<string>();
+  const out: LastroTopicoItem[] = [];
+  for (const item of [...(atual ?? []), ...novos]) {
+    const k = `${item.tipo}:${item.ref.toLowerCase()}`;
+    if (vistos.has(k)) continue;
+    vistos.add(k);
+    out.push(item);
+  }
+  return out;
+}
+
+function processarLinhaAuxiliar(
+  linha: string,
+  atual: TopicoPlanejado | null
+): boolean {
+  if (!atual) return false;
+
+  const enc = linha.match(RE_ENCAIXE_LINHA);
+  if (enc?.[1]) {
+    atual.encaixe = enc[1].trim();
+    return true;
+  }
+
+  const lastro = parseLastroLinha(linha);
+  if (lastro.length) {
+    atual.lastro = mesclarLastro(atual.lastro, lastro);
+    return true;
+  }
+
+  return false;
+}
 
 const RE_SECAO_PLANO =
   /(?:^|\n)\s*(?:\d+\.\s*)?PLANO\s+DE\s+T[ÓO]PICOS[^\n]*\n([\s\S]*?)(?=\n\s*\d+\.\s|\n\s*PEDIDOS\s+ESSENCIAIS|\n\s*RISCOS|\n\s*S[ÚU]MULAS|\n\s*VALORES|\Z)/i;
@@ -31,9 +132,17 @@ export function extrairPlanoTopicos(textoEstrategia: string): TopicoPlanejado[] 
   let atual: TopicoPlanejado | null = null;
 
   for (const linha of linhas) {
+    if (processarLinhaAuxiliar(linha, atual)) continue;
+
     const sub = linha.match(RE_SUBTOPICO);
     if (sub && atual) {
-      atual.subtitulos.push(sub[2].trim());
+      const textoSub = sub[2].trim();
+      const encInline = textoSub.match(/^encaixe\s*:\s*(.+)$/i);
+      if (encInline?.[1]) {
+        atual.encaixe = encInline[1].trim();
+      } else {
+        atual.subtitulos.push(textoSub);
+      }
       continue;
     }
 
@@ -52,7 +161,10 @@ export function extrairPlanoTopicos(textoEstrategia: string): TopicoPlanejado[] 
       linha.length >= 6 &&
       linha === linha.toUpperCase() &&
       /[A-ZÁÉÍÓÚÃÕÇ]/.test(linha) &&
-      !linha.startsWith("PLANO");
+      !linha.startsWith("PLANO") &&
+      !/^\d+\.\s/.test(linha) &&
+      !/^lastro\s*:/i.test(linha) &&
+      !/^encaixe\s*:/i.test(linha);
     if (tituloMaiusculo) {
       if (atual) topicos.push(atual);
       const rom = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"][
