@@ -66,7 +66,10 @@ function pipelineLocal() {
     poloAdvocacia: "ativo",
   });
   assert(org.areaIdResolvida === "constitucional", `área ${org.areaIdResolvida}`);
-  assert(org.preenchimento.especiePeca === "mandado-seguranca", org.preenchimento.especiePeca);
+  assert(
+    org.preenchimento.especiePeca === "mandado-seguranca",
+    org.preenchimento.especiePeca ?? "—"
+  );
   assert(
     org.preenchimento.autoresNomes.some((n) => /jefferson/i.test(n)) ||
       /jefferson/i.test(relato),
