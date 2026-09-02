@@ -14,9 +14,9 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 
 | Dimensão | MinutaIA (referência) | FACTO hoje | Alvo |
 |----------|----------------------|------------|------|
-| **Entendimento autônomo** | Lê PDF, infere partes, polo, remédio (ex.: MS no cumprimento) | Calibrado local (`calibracao-area-especie`, polo+espécie); reteste 0006509 pendente | P0 — inferência + confirmação só quando ambíguo |
-| **Conversa fluida** | Poucas perguntas; plano direcionado | Polo no thread; área auto; plano após confirmar | P0 — um fluxo: relato/anexo → entendimento → plano → redigir |
-| **Confiança no texto** | Ícones `fls.` no corpo; ✓ em lei/juris | `TextoJuridicoInline` no chat e plano; clique abre anexos | P0 — rastreio visível antes de gastar cota |
+| **Entendimento autônomo** | Lê PDF, infere partes, polo, remédio (ex.: MS no cumprimento) | Calibrado + fix polo capa 0006509 no ar (`8771fd4`); reteste manual Jefferson | P0 — inferência + confirmação só quando ambíguo |
+| **Conversa fluida** | Poucas perguntas; plano direcionado | Thread enxuto; área média/alta auto; conferências no painel plano | P0 — um fluxo: relato/anexo → entendimento → plano → redigir |
+| **Confiança no texto** | Ícones `fls.` no corpo; ✓ em lei/juris | `TextoJuridicoInline` + visualizador PDF na folha (`ChatVisualizadorAnexo`) | P0 — rastreio visível antes de gastar cota |
 | **Sidebar de fontes** | Badges (anexos, juris, plugins) | `ChatFontesFlutuante` na coluna documento | P1 — validar em browser |
 | **Memória de anexo** | Não reexplica PDF a cada turno | Memória sessão (commit `3bc7641`); validar em prod | P0 — smoke 2º turno com mesmo PDF |
 | **Modos** | Instantâneo / Planejado | Toggle no ar | Manter |
@@ -40,8 +40,11 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] **Sidebar fontes** — `ChatFontesFlutuante` na coluna documento (badges anexos/juris/teses)
 - [x] **Testes automáticos** — `npm run test:calibracao` (17) + `test:chat-minuta` (77); `tsc --noEmit` ok
 - [x] **Reteste 0006509** — `npm run test:caso-0006509 -- --browser` (11 pipeline + 6 checks browser); fix polo capa Exequente×Executada
-- [ ] **Smoke memória anexo** — 2º turno sem re-OCR em prod
-- [ ] **Deploy produção** — commit `8c7076e` no ar · reteste 0006509 em [factoia.com.br](https://factoia.com.br)
+- [x] **Smoke memória anexo** — `npm run test:smoke-memoria-anexo -- --browser` prod 4/4 (2º turno sem nova entrada-caso)
+- [x] **Paridade P0 chat** — visualizador `fls.`; balão único leitura PDF; thread sem prazo/chip área/complementos; alerta fatos×pedidos refinado
+- [x] **Deploy produção** — `8771fd4` no ar · fix polo exequente×executada (0006509) · [factoia.com.br](https://factoia.com.br)
+- [x] **Reteste manual 0006509** — E2E browser prod 6/6 (Jefferson, exequente, MS, constitucional, sem agravo executada)
+- [x] **Alerta fatos×pedidos (chat)** — removido do thread; só painel plano; regras MS/HC/cumprimento + “sem prejuízo de”
 - [ ] **Comparativo FACTO × MinutaIA** — 5–10 cenários iguais nos dois (após deploy ou local)
 
 **Juris / seed:** depois de cada lote ou dia de cota, atualizar a seção **Lacunas da base (áreas falhas)** abaixo — tribunal errado, 0 insert, ou API sem aquele tribunal. Não deixar falha só no chat.
@@ -144,6 +147,9 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] **Smoke browser 20 áreas** — `npm run test:smoke-chat-browser` (20 ok local); auth OTP + plano visível por área
 - [x] **Deploy produção (02/09)** — `dpl_DH8NhVYLLXrxBhYbz7p6rnBfnpaH` · commit `8c7076e` · paridade chat fase A+B
 - [x] **Deploy produção (02/09 smoke)** — `dpl_BwsoGcNymnqUk2x7SD66WVFQbzRS` · commit `365799f` · smoke 20 áreas + fixes calibração · [factoia.com.br](https://factoia.com.br)
+- [x] **Fix 0006509 polo capa** — `inferirPoloDoRelato` prioriza exequente sobre executada; `npm run test:caso-0006509` (11+6 browser); deploy `8771fd4`
+- [x] **Alerta fatos×pedidos** — fora do thread do chat; regras afinadas (MS/HC/cumprimento, astreintes, “sem prejuízo de”)
+- [x] **Smoke memória anexo prod** — `test:smoke-memoria-anexo --browser` · 2º turno sem re-OCR
 
 ### Feito nesta rodada (01/09 noite — melhorias objetivo)
 
@@ -285,10 +291,15 @@ Ordem sugerida para o agente/Jefferson. **Grátis** = implementar quando fizer s
 
 | Gap MinutaIA | Resposta FACTO | Prioridade |
 |--------------|----------------|------------|
-| Entendimento sem microgerenciar | Polo/espécie ainda falham em autos reais | **P0** |
-| `fls.` e ✓ inline no texto | Só painel pós-redação | **P0** |
-| Chat ultra-fluido / streaming | Camadas 1–3 no ar; falta streaming redação | P1 |
-| Sidebar fontes do caso | Lastro no plano apenas | P1 |
+| Entendimento sem microgerenciar | Calibrado (20 áreas + 0006509); chip área só confiança baixa | **P0** |
+| `fls.` clicável abre PDF na página | `ChatVisualizadorAnexo` no ar | **Feito** |
+| Balão “o que li do PDF” após anexo | `formatarBalaoLeituraAnexo` — 1× no chat + painel plano | **Feito** |
+| Thread sem ruído (prazo, chips, conferências) | Prazo/complementos no plano; área média auto; alerta só no plano | **Feito** |
+| Memória de anexo (2º turno) | Smoke prod OK | **Feito** |
+| Chat ultra-fluido / streaming turno | Resposta em bloco; stream só em `/api/chat-conversa/stream` parcial | **P1** |
+| Sidebar fontes do caso | `ChatFontesFlutuante` no ar; falta validação visual e paridade de badges | **P1** |
+| Streaming redação no documento | Redigir em bloco | **P1** (Fase D adjacente) |
+| Comparativo lado a lado 5–10 casos | Não rodado | **P0** validação |
 | Skills / modelo anexado | **Não clonar** — estilo escritório + peças modelo no Perfil | P2 |
 | Juris ao vivo tribunais | **Diferencial:** base curada + anexos (sem custo live) | Manter |
 | Processo 6k páginas | Cap 180k chars + último ato | R7 |

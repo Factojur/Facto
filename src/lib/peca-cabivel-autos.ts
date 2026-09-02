@@ -133,6 +133,34 @@ export function resumoLeituraRelato(opcoes: {
   return partes.join(" ");
 }
 
+export type LeituraRelatoBalao = {
+  truncado: boolean;
+  encontrouDecisoes: boolean;
+  fonte: "texto" | "ocr" | "texto_e_ocr" | "relato";
+  resumo?: string | null;
+  trecho?: string | null;
+};
+
+/** Balão único pós-anexo (chat e painel). */
+export function formatarBalaoLeituraAnexo(lr: LeituraRelatoBalao): string {
+  const resumo = resumoLeituraRelato({
+    truncado: lr.truncado,
+    encontrouDecisoes: lr.encontrouDecisoes,
+    fonte: lr.fonte,
+  });
+  const trecho =
+    lr.resumo?.trim() ||
+    lr.trecho?.trim().slice(0, 480) ||
+    "";
+  return [
+    "**O que li do material anexado**",
+    resumo,
+    trecho ? `Trecho: ${trecho}${trecho.length >= 480 ? "…" : ""}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+}
+
 function normalizarBlob(texto: string): string {
   return texto
     .normalize("NFD")

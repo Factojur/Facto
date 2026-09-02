@@ -95,6 +95,9 @@ export function PlanoCasoPainel({
   planoAtualizado,
   versoes,
   alertasFatosPedidos,
+  leituraAnexo,
+  dicaPrazo,
+  avisoComplementosLastro,
   onConfirmarRedacao,
   onAtualizarPlano,
   onPedidosChange,
@@ -109,6 +112,9 @@ export function PlanoCasoPainel({
   planoAtualizado?: boolean;
   versoes?: VersaoPlanoChat[];
   alertasFatosPedidos?: AlertaFatosPedidos[];
+  leituraAnexo?: string | null;
+  dicaPrazo?: string | null;
+  avisoComplementosLastro?: string | null;
   onConfirmarRedacao: () => void;
   onAtualizarPlano?: () => void;
   onPedidosChange?: (pedidos: string[]) => void;
@@ -205,6 +211,23 @@ export function PlanoCasoPainel({
           Edite pedidos abaixo se precisar. A redação completa debita 1 peça ao
           confirmar.
         </p>
+
+        {leituraAnexo && (
+          <div className="mt-4 rounded-lg border border-sky-200 bg-sky-50/90 px-3 py-2.5 text-sm text-sky-950 whitespace-pre-wrap">
+            {leituraAnexo.replace(/\*\*/g, "")}
+          </div>
+        )}
+
+        {dicaPrazo && (
+          <div className="mt-3 rounded-lg border border-sky-200 bg-sky-50/80 px-3 py-2 text-xs text-sky-950">
+            <p className="font-semibold">Prazo estimado (conferência)</p>
+            <p className="mt-0.5 leading-relaxed">{dicaPrazo}</p>
+          </div>
+        )}
+
+        {avisoComplementosLastro && (
+          <p className="mt-3 text-xs text-stone-500">{avisoComplementosLastro}</p>
+        )}
 
         {alertasFatosPedidos && alertasFatosPedidos.length > 0 && (
           <div className="mt-4">

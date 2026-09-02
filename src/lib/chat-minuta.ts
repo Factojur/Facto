@@ -307,14 +307,12 @@ export function areaExigeConfirmacao(
   return inferencia.confianca === "baixa";
 }
 
-/** Chip de sugestão (média) — não bloqueia plano nem redação. */
+/** Chip de sugestão (média) — desligado: área média/alta segue automática (paridade MinutaIA). */
 export function areaSugereConfirmacao(
-  inferencia: InferenciaAreaChat | null | undefined,
-  areaConfirmada: boolean
+  _inferencia: InferenciaAreaChat | null | undefined,
+  _areaConfirmada: boolean
 ): boolean {
-  if (areaConfirmada) return false;
-  if (!inferencia) return false;
-  return inferencia.confianca === "media";
+  return false;
 }
 
 export function opcoesAreaParaConfirmacao(

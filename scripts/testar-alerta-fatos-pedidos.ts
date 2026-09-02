@@ -85,6 +85,41 @@ function main() {
     "HC com liminar não gera alerta de tutela CPC"
   );
 
+  const semPrejuizoDe = detectarAlertasFatosPedidos({
+    fatos:
+      "Decisão reduziu astreintes sem prejuízo de outras medidas. Multa diária de R$ 100.",
+    pedidos: ["Concessão da ordem de mandado de segurança"],
+    totalValorCentavos: 60_000,
+    especiePeca: "mandado-seguranca",
+  });
+  assert(
+    !semPrejuizoDe.some((a) => a.id === "valor-fatos-nega"),
+    "sem prejuízo de (locução) + MS/astreintes não gera alerta"
+  );
+
+  const msAstreintes = detectarAlertasFatosPedidos({
+    fatos:
+      "Cumprimento de sentença. Juiz reduziu multa diária (astreintes) para R$ 600 no total.",
+    pedidos: ["Concessão de mandado de segurança"],
+    totalValorCentavos: 60_000,
+    especiePeca: "mandado-seguranca",
+  });
+  assert(
+    !msAstreintes.some((a) => a.id === "valor-fatos-nega"),
+    "MS com astreintes não gera alerta indenizatório"
+  );
+
+  const valorReal = detectarAlertasFatosPedidos({
+    fatos: "O autor não sofreu prejuízo material.",
+    pedidos: ["Condenação em danos materiais de R$ 5.000"],
+    totalValorCentavos: 500_000,
+    especiePeca: "peticao-inicial",
+  });
+  assert(
+    valorReal.some((a) => a.id === "valor-fatos-nega"),
+    "contradição real de prejuízo material ainda alerta"
+  );
+
   const { oks, falhas } = stats();
   console.log(`\nAlerta fatos×pedidos: ${oks} ok, ${falhas} falha(s).`);
   if (falhas > 0) process.exit(1);

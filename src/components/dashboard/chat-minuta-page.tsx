@@ -5,7 +5,6 @@ import { createPortal } from "react-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { PecaDocumentoView } from "@/components/dashboard/peca-documento";
-import { AlertaFatosPedidosChips } from "@/components/dashboard/alerta-fatos-pedidos-chips";
 import { CitacoesRastreaveisPanel } from "@/components/dashboard/citacoes-rastreaveis-panel";
 import { ChatConfirmarArea } from "@/components/dashboard/chat-confirmar-area";
 import { PlanoCasoPainel } from "@/components/dashboard/plano-caso-painel";
@@ -37,8 +36,9 @@ import {
 } from "@/lib/extrair-qualificacao-relato";
 import { organizarCasoLocal } from "@/lib/organizar-caso-local";
 import type { LeituraRelato } from "@/lib/entrada-caso-types";
-import { resumoLeituraRelato } from "@/lib/peca-cabivel-autos";
+import { formatarBalaoLeituraAnexo } from "@/lib/peca-cabivel-autos";
 import { ChatConfirmacaoPolo } from "@/components/dashboard/chat-confirmacao-polo";
+import { ChatVisualizadorAnexo } from "@/components/dashboard/chat-visualizador-anexo";
 import {
   ChatFontesFlutuante,
   type AbaFontesChat,
@@ -55,7 +55,6 @@ import {
   aplicarPreenchimentoAoEstado,
   aplicarOrganizacaoAoEstadoChat,
   areaExigeConfirmacao,
-  areaSugereConfirmacao,
   chatMinutaAreaHabilitada,
   casoChatTemConteudo,
   confirmarAreaChat,
@@ -332,6 +331,14 @@ export function ChatMinutaPage({
   );
   const [anexosMemoria, setAnexosMemoria] = useState<AnexoMemoriaItem[]>([]);
   const anexosMemoriaRef = useRef<AnexoMemoriaItem[]>([]);
+  const [leituraAnexoPainel, setLeituraAnexoPainel] = useState<string | null>(
+    null
+  );
+  const leituraAnexoExibidaRef = useRef<string | null>(null);
+  const [visualizadorAnexo, setVisualizadorAnexo] = useState<{
+    pagina: number | null;
+    trecho: string;
+  } | null>(null);
   const [processandoDocumentos, setProcessandoDocumentos] = useState(false);
   const [sessaoId, setSessaoId] = useState<string | null>(null);
   const [mostrarSessoes, setMostrarSessoes] = useState(false);
@@ -467,8 +474,9 @@ export function ChatMinutaPage({
     [abrirComplementos]
   );
 
-  const abrirFlsNoAnexo = useCallback((_pagina: number | null, _trecho: string) => {
-    setContextoPainelAberto(true);
+  const abrirFlsNoAnexo = useCallback((pagina: number | null, trecho: string) => {
+    setVisualizadorAnexo({ pagina, trecho });
+    setContextoPainelAberto(false);
   }, []);
 
   useEffect(() => {
@@ -537,11 +545,6 @@ export function ChatMinutaPage({
     !estado.areaConfirmada &&
     !areaSugestaoDispensada &&
     areaExigeConfirmacao(estado.areaInferida);
-  const sugereConfirmarArea =
-    casoJaOrganizado &&
-    !estado.areaConfirmada &&
-    !areaSugestaoDispensada &&
-    areaSugereConfirmacao(estado.areaInferida, estado.areaConfirmada);
 
   const resumoValores = useMemo(
     () => calcularResumoValorCausa(estado.valoresCausa),
@@ -885,6 +888,9 @@ export function ChatMinutaPage({
     setInput("");
     setPedidoAjuste("");
     setAnexosMemoria([]);
+    setLeituraAnexoPainel(null);
+    leituraAnexoExibidaRef.current = null;
+    setVisualizadorAnexo(null);
     planoUltimoFingerprintRef.current = null;
     setVersoesPlano([]);
     const estadoZerado = estadoCasoChatVazio(area);
@@ -1724,22 +1730,14 @@ export function ChatMinutaPage({
               }
               if (data.leituraRelato) {
                 const lr = data.leituraRelato;
-                const resumo = resumoLeituraRelato({
-                  truncado: lr.truncado,
-                  encontrouDecisoes: lr.encontrouDecisoes,
-                  fonte: lr.fonte,
-                });
-                const trecho = lr.resumo?.trim() || lr.trecho?.trim().slice(0, 480);
-                adicionarMensagem(
-                  "sistema",
-                  [
-                    "**O que li do material anexado**",
-                    resumo,
-                    trecho ? `Trecho: ${trecho}${trecho.length >= 480 ? "…" : ""}` : null,
-                  ]
-                    .filter(Boolean)
-                    .join("\n\n")
-                );
+                const balao = formatarBalaoLeituraAnexo(lr);
+                setLeituraAnexoPainel(balao);
+                const fpLeitura =
+                  fingerprintsEnviadosServidor.join("|") || "relato";
+                if (leituraAnexoExibidaRef.current !== fpLeitura) {
+                  leituraAnexoExibidaRef.current = fpLeitura;
+                  adicionarMensagem("sistema", balao);
+                }
               }
             }
           )
@@ -2409,61 +2407,6 @@ export function ChatMinutaPage({
                 />
               </div>
             )}
-            {sugereConfirmarArea && (
-              <div className="mt-2">
-                <ChatConfirmarArea
-                  inferencia={estado.areaInferida}
-                  areaAtual={estado.areaId}
-                  onConfirmar={confirmarArea}
-                  onDispensar={() => {
-                    setAreaSugestaoDispensada(true);
-                    setEstado((e) => confirmarAreaChat(e, e.areaId));
-                    adicionarMensagem(
-                      "sistema",
-                      `Seguindo com **${rotuloAreaChat(estado.areaId)}**.`
-                    );
-                  }}
-                  apenasSugestao
-                  compacto={modoWorkspace}
-                />
-              </div>
-            )}
-            {podeMontarPlano && alertasFatosPedidos.length > 0 && (
-              <div className="mt-2">
-                <AlertaFatosPedidosChips alertas={alertasFatosPedidos} />
-              </div>
-            )}
-            {dicaPrazo && (
-              <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-950">
-                <p className="font-semibold">Prazo estimado (conferência)</p>
-                <p className="mt-0.5 leading-relaxed">{dicaPrazo.aviso}</p>
-              </div>
-            )}
-            {precisaComplementosLastro && (
-              <div
-                className={
-                  modoWorkspace
-                    ? "mt-2 rounded-lg border border-white/15 bg-white/[0.05] px-3 py-2 text-xs text-stone-400 backdrop-blur-sm"
-                    : "mt-2 rounded-lg border border-stone-300 bg-white/90 px-3 py-2 text-xs text-stone-700"
-                }
-              >
-                <p>
-                  Sem lei municipal nem jurisprudência do caso ainda. Se tiver,
-                  abra{" "}
-                  <button
-                    type="button"
-                    className="font-semibold underline underline-offset-2"
-                    onClick={() => {
-                      setDrawerAba("complementos");
-                      setDrawerAberto(true);
-                    }}
-                  >
-                    Provas / lei e juris
-                  </button>
-                  . A base FACTO continua disponível na redação.
-                </p>
-              </div>
-            )}
             <div ref={fimChatRef} />
           </div>
         </div>
@@ -2759,6 +2702,13 @@ export function ChatMinutaPage({
               planoAtualizado={planoHighlight}
               versoes={versoesPlano}
               alertasFatosPedidos={alertasFatosPedidos}
+              leituraAnexo={leituraAnexoPainel}
+              dicaPrazo={dicaPrazo?.aviso ?? null}
+              avisoComplementosLastro={
+                precisaComplementosLastro
+                  ? "Sem lei municipal nem jurisprudência do caso ainda. Use a coluna de fontes (ícones à direita) para anexar provas, lei ou juris. A base FACTO continua disponível na redação."
+                  : null
+              }
               onConfirmarRedacao={() => void confirmarRedacao()}
               onAtualizarPlano={() =>
                 void executarPlano({ forcar: true, silencioso: false })
@@ -2772,6 +2722,17 @@ export function ChatMinutaPage({
         </div>
         </div>
       </div>
+
+      {visualizadorAnexo && (
+        <ChatVisualizadorAnexo
+          arquivos={arquivos}
+          anexosMemoria={anexosMemoria}
+          pagina={visualizadorAnexo.pagina}
+          trecho={visualizadorAnexo.trecho}
+          modoWorkspace={modoWorkspace}
+          onFechar={() => setVisualizadorAnexo(null)}
+        />
+      )}
 
       {contextoPainelAberto && (
         <ChatAnexosBanner

@@ -18,6 +18,34 @@ function norm(texto: string): string {
     .toLowerCase();
 }
 
+/** Espécies em que valor/multa não é pedido indenizatório clássico. */
+function especieDispensaAlertaIndenizatorio(especie: string): boolean {
+  return /mandado-seguranca|habeas-corpus|cumprimento|execucao|embargos.*execucao|impugnacao.*cumprimento/.test(
+    especie
+  );
+}
+
+/** "Sem prejuízo de…" (locução jurídica) ≠ ausência de dano material. */
+function negaPrejuizoMaterialNosFatos(fatos: string): boolean {
+  return (
+    /nao houve prejuizo|inexistencia de dano material|nao ha dano material|nao sofreu prejuizo/.test(
+      fatos
+    ) || /sem prejuizo(?! de\b)/.test(fatos)
+  );
+}
+
+function fatosEnvolvemAstreintesOuMultaProcessual(fatos: string): boolean {
+  return /astreint|multa diaria|multa por ato|cumprimento de sentenca|execucao de sentenca|titulo judicial/.test(
+    fatos
+  );
+}
+
+function pedidoIndenizatorioMaterial(pedidosTexto: string): boolean {
+  return /dano material|danos materiais|indenizacao por dano|reparacao de dano|lucros cessantes/.test(
+    pedidosTexto
+  );
+}
+
 export function detectarAlertasFatosPedidos(input: {
   fatos: string;
   pedidos?: string[];
@@ -47,14 +75,15 @@ export function detectarAlertasFatosPedidos(input: {
     });
   }
 
+  const dispensaIndenizatorio =
+    especieDispensaAlertaIndenizatorio(especie) ||
+    fatosEnvolvemAstreintesOuMultaProcessual(fatos);
   if (
-    /sem prejuizo|nao houve prejuizo|inexistencia de dano material|nao ha dano material|nao sofreu prejuizo/.test(
-      fatos
-    ) &&
-    ((input.totalValorCentavos ?? 0) > 0 ||
-      /dano material|danos materiais|indenizacao|condenacao.*pagamento/.test(
-        pedidosTexto
-      ))
+    !dispensaIndenizatorio &&
+    negaPrejuizoMaterialNosFatos(fatos) &&
+    (pedidoIndenizatorioMaterial(pedidosTexto) ||
+      ((input.totalValorCentavos ?? 0) > 0 &&
+        /indenizacao|danos morais|dano moral/.test(pedidosTexto)))
   ) {
     alertas.push({
       id: "valor-fatos-nega",

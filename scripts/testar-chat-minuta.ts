@@ -347,7 +347,7 @@ function main() {
     assert(areaExigeConfirmacao(infAmb), "caso ambíguo baixa exige chip");
   }
   if (infAmb.confianca === "media") {
-    assert(areaSugereConfirmacao(infAmb, false), "média sugere chip");
+    assert(!areaSugereConfirmacao(infAmb, false), "média não exibe chip (auto)");
     const estadoMed = aplicarInferenciaAreaAoEstado(estadoCasoChatVazio("jec"), infAmb);
     assert(estadoMed.areaConfirmada === true, "média auto-confirma para plano");
   }

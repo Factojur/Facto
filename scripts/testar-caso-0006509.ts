@@ -157,13 +157,13 @@ async function autenticar(base: string) {
   const page = await context.newPage();
   const sessao = await page.request.post(`${base}/api/auth/sessao`);
   if (!sessao.ok()) throw new Error(`sessão ${sessao.status()}`);
-  await page.goto(`${base}/dashboard?nova=1`, {
+  await page.goto(`${base}/dashboard`, {
     waitUntil: "networkidle",
     timeout: TIMEOUT,
   });
   if (page.url().includes("/login")) {
     await page.request.post(`${base}/api/auth/sessao`);
-    await page.goto(`${base}/dashboard?nova=1`, {
+    await page.goto(`${base}/dashboard`, {
       waitUntil: "networkidle",
       timeout: TIMEOUT,
     });
