@@ -41,7 +41,7 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] **Testes automáticos** — `npm run test:calibracao` (17) + `test:chat-minuta` (77); `tsc --noEmit` ok
 - [ ] **Reteste 0006509** — PDF → Exequente → MS ou manifestação coerente → plano → redigir (browser)
 - [ ] **Smoke memória anexo** — 2º turno sem re-OCR em prod
-- [ ] **Deploy produção** — alterações só locais; subir quando Jefferson pedir
+- [ ] **Deploy produção** — commit `8c7076e` no ar · reteste 0006509 em [factoia.com.br](https://factoia.com.br)
 - [ ] **Comparativo FACTO × MinutaIA** — 5–10 cenários iguais nos dois (após deploy ou local)
 
 **Juris / seed:** depois de cada lote ou dia de cota, atualizar a seção **Lacunas da base (áreas falhas)** abaixo — tribunal errado, 0 insert, ou API sem aquele tribunal. Não deixar falha só no chat.
@@ -140,6 +140,7 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] **Sidebar fontes** — `ChatFontesFlutuante` na coluna documento
 - [x] **entrada-caso** — usa `areaIdResolvida` da organização local (não área bruta do relato)
 - [x] **Testes** — `npm run test:calibracao` (17 ok) + `test:chat-minuta` (77 ok); `tsc --noEmit` limpo
+- [x] **Deploy produção (02/09)** — `dpl_DH8NhVYLLXrxBhYbz7p6rnBfnpaH` · commit `8c7076e` · [factoia.com.br](https://factoia.com.br)
 
 ### Feito nesta rodada (01/09 noite — melhorias objetivo)
 
