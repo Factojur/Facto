@@ -29,7 +29,7 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 | **Entendimento autônomo** | Lê PDF, infere partes, polo, remédio | IA-first + chat livre (sem travas de área/polo) | P0 — manter; calibrar remédio |
 | **Conversa fluida** | Poucas perguntas; plano direcionado | Thread enxuto; área/polo auto; avisos só banner | P0 — um fluxo: relato/anexo → entendimento → plano → redigir |
 | **Confiança no texto** | Ícones `fls.` no corpo; ✓ em lei/juris | `TextoJuridicoInline` + visualizador PDF na folha (`ChatVisualizadorAnexo`) | P0 — rastreio visível antes de gastar cota |
-| **Sidebar de fontes** | Badges (anexos, juris, plugins) | `ChatFontesFlutuante` na coluna documento | P1 — validar em browser |
+| **Sidebar de fontes** | Badges (anexos, juris, plugins) | `ChatFontesFlutuante` — tooltips, ativo, pulse, lei municipal | P1 — validar em browser |
 | **Memória de anexo** | Não reexplica PDF a cada turno | Memória sessão (commit `3bc7641`); validar em prod | P0 — smoke 2º turno com mesmo PDF |
 | **Modos** | Instantâneo / Planejado | Toggle no ar | Manter |
 | **Redação** | Streaming no documento | NDJSON `/api/gerar-peca` (`stream: true`) | **Feito** (02/09) |
@@ -49,7 +49,7 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 - [x] **Polo no thread** — `ChatConfirmacaoPolo` no corpo do chat; após confirmar → plano automático
 - [x] **Espécie × polo** — calibração transversal (`calibracao-area-especie`, `peca-cabivel-autos`, `polo-advocacia`); MS antes de agravo; exequente ≠ agravo da executada
 - [x] **Rastreio inline** — `TextoJuridicoInline` (fls. + ✓ lei) no chat e plano; clique em fls. abre painel de anexos
-- [x] **Sidebar fontes** — `ChatFontesFlutuante` na coluna documento (badges anexos/juris/teses)
+- [x] **Sidebar fontes** — `ChatFontesFlutuante`: tooltips com nomes, ícone ativo, pulse em novo anexo, lei municipal separada
 - [x] **Testes automáticos** — `npm run test:calibracao` (17) + `test:chat-minuta` (77); `tsc --noEmit` ok
 - [x] **Reteste 0006509** — `npm run test:caso-0006509 -- --browser` (11 pipeline + 6 checks browser); fix polo capa Exequente×Executada
 - [x] **Smoke memória anexo** — `npm run test:smoke-memoria-anexo -- --browser` prod 4/4 (2º turno sem nova entrada-caso)
@@ -67,6 +67,13 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 - [x] **`fls.` clicáveis na peça redigida** — `PecaDocumentoView` + `TextoJuridicoInline` no painel documento (chat)
 - [x] **Streaming redação no documento** — `stream: true` em `/api/gerar-peca` (NDJSON); redator Gemini com `onRedacaoDelta`; chat mostra texto crescendo
 - [x] **Chat livre (desacoplado das travas de área)** — área/polo não bloqueiam; IA autoridade; payload com polo default; prompts conversa/inferência MinutaIA-style
+
+### Feito nesta rodada (02/09 — sidebar fontes pacote 3)
+
+- [x] **Tooltips** — nomes de anexos/juris/lei/teses no hover (não só contagem)
+- [x] **Estado ativo** — ícone destacado quando painel/drawer correspondente aberto
+- [x] **Pulse** — badge pulsa ao entrar novo arquivo ou item (anexos, juris, lei, teses)
+- [x] **Lei municipal** — ícone próprio na coluna; abre complementos na seção lei
 
 ### Feito nesta rodada (02/09 — fluidez + E2E harness)
 
@@ -366,7 +373,7 @@ Ordem sugerida para o agente/Jefferson. **Grátis** = implementar quando fizer s
 | Thread sem ruído (prazo, chips, conferências) | Prazo/complementos no plano; área média auto; alerta só no plano | **Feito** |
 | Memória de anexo (2º turno) | Smoke prod OK | **Feito** |
 | Chat ultra-fluido / streaming turno | Stream ativo + typing até 1º token; debounce plano 600ms | **P1** — polish sidebar |
-| Sidebar fontes do caso | `ChatFontesFlutuante` no ar; falta validação visual e paridade de badges | **P1** |
+| Sidebar fontes do caso | Tooltips, estado ativo, pulse, ícone lei municipal | **Feito** (02/09) — validar visual em browser |
 | Streaming redação no documento | NDJSON em `/api/gerar-peca` (`stream: true`) | **Feito** (02/09) |
 | Comparativo lado a lado 5–10 casos | Não rodado | **P0** validação |
 | Skills / modelo anexado | **Não clonar** — estilo escritório + peças modelo no Perfil | P2 |

@@ -431,6 +431,7 @@ export function ChatMinutaPage({
       anexos: arquivos.length + anexosMemoria.length,
       provas: provasUtilCount,
       juris: estado.jurisCaso.length,
+      lei: estado.leiMunicipalTexto?.trim() ? 1 : 0,
       teses:
         estado.tesesIds.length +
         (estado.replicaContestacao?.detectada ? 1 : 0) +
@@ -441,11 +442,106 @@ export function ChatMinutaPage({
       anexosMemoria.length,
       provasUtilCount,
       estado.jurisCaso.length,
+      estado.leiMunicipalTexto,
       estado.tesesIds.length,
       estado.replicaContestacao?.detectada,
       triagemPreview?.cobertura?.length,
     ]
   );
+
+  const fontesTooltips = useMemo(() => {
+    const nomesAnexos = [
+      ...arquivos.map((f) => f.name),
+      ...anexosMemoria.map((a) => a.nome),
+    ];
+    const anexosTip =
+      nomesAnexos.length > 0
+        ? nomesAnexos.slice(0, 4).join(", ") +
+          (nomesAnexos.length > 4 ? ` +${nomesAnexos.length - 4}` : "")
+        : provasUtilCount > 0
+          ? `${provasUtilCount} prova(s) do fato preenchida(s)`
+          : "Nenhum documento anexado ainda";
+
+    const jurisTip =
+      estado.jurisCaso.length > 0
+        ? estado.jurisCaso
+            .map((j) => j.titulo.trim())
+            .filter(Boolean)
+            .slice(0, 3)
+            .join("; ") +
+          (estado.jurisCaso.length > 3
+            ? ` +${estado.jurisCaso.length - 3}`
+            : "")
+        : "Jurisprudência do caso (cole ementa ou PDF)";
+
+    const leiTip = estado.leiMunicipalTexto?.trim()
+      ? estado.leiMunicipalTitulo?.trim() || "Lei municipal preenchida"
+      : "Lei municipal (opcional)";
+
+    const partesTeses: string[] = [];
+    if (estado.tesesIds.length > 0) {
+      partesTeses.push(`${estado.tesesIds.length} tese(s)`);
+    }
+    if (estado.replicaContestacao?.detectada) {
+      partesTeses.push("réplica à contestação");
+    }
+    if ((triagemPreview?.cobertura?.length ?? 0) > 0) {
+      partesTeses.push(`${triagemPreview!.cobertura!.length} ponto(s) do plano`);
+    }
+    const tesesTip =
+      partesTeses.length > 0
+        ? partesTeses.join(" · ")
+        : "Teses e complementos do caso";
+
+    return {
+      chat: "Voltar ao chat",
+      anexos: anexosTip,
+      lei: leiTip,
+      juris: jurisTip,
+      teses: tesesTip,
+    };
+  }, [
+    arquivos,
+    anexosMemoria,
+    provasUtilCount,
+    estado.jurisCaso,
+    estado.leiMunicipalTexto,
+    estado.leiMunicipalTitulo,
+    estado.tesesIds.length,
+    estado.replicaContestacao?.detectada,
+    triagemPreview?.cobertura?.length,
+  ]);
+
+  const abaFontesAtiva = useMemo((): AbaFontesChat | null => {
+    if (contextoPainelAberto) return "anexos";
+    if (drawerAberto && drawerAba === "complementos") {
+      if (complementosFoco === "juris") return "juris";
+      if (complementosFoco === "lei") return "lei";
+      if (complementosFoco === "provas") return "teses";
+    }
+    return null;
+  }, [contextoPainelAberto, drawerAberto, drawerAba, complementosFoco]);
+
+  const prevFontesContagensRef = useRef(fontesContagens);
+  const [pulseFontes, setPulseFontes] = useState<
+    Partial<Record<AbaFontesChat, boolean>>
+  >({});
+
+  useEffect(() => {
+    const prev = prevFontesContagensRef.current;
+    const next: Partial<Record<AbaFontesChat, boolean>> = {};
+    const totalAnexos = fontesContagens.anexos + fontesContagens.provas;
+    const prevTotalAnexos = prev.anexos + prev.provas;
+    if (totalAnexos > prevTotalAnexos) next.anexos = true;
+    if (fontesContagens.juris > prev.juris) next.juris = true;
+    if (fontesContagens.lei > prev.lei) next.lei = true;
+    if (fontesContagens.teses > prev.teses) next.teses = true;
+    prevFontesContagensRef.current = fontesContagens;
+    if (Object.keys(next).length === 0) return;
+    setPulseFontes((p) => ({ ...p, ...next }));
+    const t = window.setTimeout(() => setPulseFontes({}), 2600);
+    return () => window.clearTimeout(t);
+  }, [fontesContagens]);
 
   const abrirComplementos = useCallback(
     (foco: "provas" | "juris" | "lei") => {
@@ -471,6 +567,10 @@ export function ChatMinutaPage({
       }
       if (aba === "juris") {
         abrirComplementos("juris");
+        return;
+      }
+      if (aba === "lei") {
+        abrirComplementos("lei");
         return;
       }
       abrirComplementos("provas");
@@ -2777,6 +2877,9 @@ export function ChatMinutaPage({
             contagens={fontesContagens}
             onAbrir={abrirFontesChat}
             modoWorkspace={modoWorkspace}
+            abaAtiva={abaFontesAtiva}
+            tooltips={fontesTooltips}
+            pulse={pulseFontes}
           />
           {modoWorkspace && workspaceFixado && (
             <div
