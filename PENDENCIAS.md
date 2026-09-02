@@ -140,6 +140,8 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] **Sidebar fontes** — `ChatFontesFlutuante` na coluna documento
 - [x] **entrada-caso** — usa `areaIdResolvida` da organização local (não área bruta do relato)
 - [x] **Testes** — `npm run test:calibracao` (17 ok) + `test:chat-minuta` (77 ok); `tsc --noEmit` limpo
+- [x] **Smoke 20 áreas** — `npm run test:smoke-chat-areas` (240 ok); bugs corrigidos: família (partilha×compartilhada), ACP ambiental, eleitoral representação, previdenciário polo
+- [x] **Smoke browser 20 áreas** — `npm run test:smoke-chat-browser` (20 ok local); auth OTP + plano visível por área
 - [x] **Deploy produção (02/09)** — `dpl_DH8NhVYLLXrxBhYbz7p6rnBfnpaH` · commit `8c7076e` · [factoia.com.br](https://factoia.com.br)
 
 ### Feito nesta rodada (01/09 noite — melhorias objetivo)

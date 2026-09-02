@@ -198,7 +198,7 @@ export const MATRIZ_POLO_POR_AREA: Record<AreaComPoloAdvocacia, MatrizPoloArea> 
       ]
     ),
     previdenciario: m(
-      ["peticao-inicial", "replica"],
+      ["peticao-inicial", "peticao-inicial-previdenciaria", "replica"],
       ["contestacao"],
       [
         "embargos-declaracao",

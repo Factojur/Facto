@@ -294,7 +294,7 @@ export function inferirEspecieFamilia(
   const explicita = normalizarEspecieFamilia(especieExplicita);
   if (explicita) return explicita;
   const t = `${tipoAcao ?? ""} ${fatos ?? ""}`.toLowerCase();
-  if (/invent[aá]rio|arrolamento|partilha|esp[oó]lio/.test(t)) return "inventario";
+  if (/\binvent[aá]rio\b|arrolamento|\bpartilha\b|esp[oó]lio/.test(t)) return "inventario";
   if (/agravo de instrumento/.test(t)) return "agravo-instrumento";
   if (/apela[cç][aã]o/.test(t)) return "apelacao";
   if (/embargos de declara/.test(t)) return "embargos-declaracao";

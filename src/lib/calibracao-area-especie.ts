@@ -14,6 +14,7 @@ const AREA_CANONICA_POR_ESPECIE: Partial<Record<string, AreaIdMinuta>> = {
   adc: "constitucional",
   ado: "constitucional",
   acp: "constitucional",
+  "acp-ambiental": "ambiental",
   "acao-popular": "constitucional",
   "reclamacao-constitucional": "constitucional",
   "recurso-ordinario-constitucional": "constitucional",
@@ -68,7 +69,10 @@ export function especieExplicitaNoRelato(
   if (/\badi\b|acao direta de inconstitucionalidade/.test(t)) return "adi";
   if (/\badpf\b/.test(t)) return "adpf";
   if (/\badc\b|declaratoria de constitucionalidade/.test(t)) return "adc";
-  if (/\bacp\b|acao civil publica/.test(t)) return "acp";
+  if (/\bacp\b/.test(t)) return "acp";
+  if (/acao civil publica/.test(t)) {
+    return /ambient/.test(t) ? "acp-ambiental" : "acp";
+  }
 
   if (/reclamacao trabalhista|reclamante.*verbas|justica do trabalho/.test(t)) {
     return "reclamacao";

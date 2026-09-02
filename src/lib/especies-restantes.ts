@@ -886,10 +886,10 @@ export const KIT_ELEITORAL = kit(
   ],
   (t) => {
     if (/\baije\b|investiga[cç][aã]o judicial eleitoral/.test(t)) return "aije";
+    if (/representa|propaganda/.test(t)) return "representacao";
     if (/registro|candidat/.test(t)) return "registro-candidatura";
     if (/recurso/.test(t)) return "recurso-eleitoral";
     if (/defesa/.test(t)) return "defesa";
-    if (/representa|propaganda/.test(t)) return "representacao";
     return null;
   },
   {

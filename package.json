@@ -25,6 +25,8 @@
     "test:gestao-local": "npx tsx scripts/testar-gestao-local.ts",
     "test:chat-minuta": "npx tsx scripts/testar-chat-minuta.ts",
     "test:calibracao": "npx tsx scripts/testar-calibracao-paridade.ts",
+    "test:smoke-chat-areas": "npx tsx scripts/testar-smoke-chat-areas.ts",
+    "test:smoke-chat-browser": "npx tsx scripts/smoke-chat-browser.ts",
     "test:chat-fluidez": "npx tsx scripts/testar-chat-fluidez.ts",
     "test:alerta-fatos-pedidos": "npx tsx scripts/testar-alerta-fatos-pedidos.ts",
     "test:chat-areas": "npx tsx scripts/testar-chat-areas-pendentes.ts",
