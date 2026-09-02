@@ -4,13 +4,16 @@ import {
   chatMinutaAreaHabilitada,
   type InferenciaAreaChat,
 } from "@/lib/chat-minuta";
-import { inferirAreaComGemini } from "@/lib/ia/inferir-area-gemini";
+import { inferirCasoComGemini } from "@/lib/ia/inferir-area-gemini";
 import { geminiConfigurado } from "@/lib/ia/gemini-client";
 import type { AreaIdMinuta } from "@/lib/minuta-modulo";
 
 export const maxDuration = 30;
 
-/** POST — refino de área (Flash-Lite) em casos ambíguos. Não consome cota de peça. */
+/**
+ * POST — interpretação de área + espécie (Flash-Lite).
+ * Não consome cota de peça. Heurística local é só pista opcional.
+ */
 export async function POST(request: Request) {
   const gate = await exigirAcessoAreaMinuta("jec");
   if (!gate.ok) return gate.response;
@@ -22,6 +25,7 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as {
     relato?: string;
     candidatas?: string[];
+    pistaLocal?: { areaId?: string; especiePeca?: string | null } | null;
   } | null;
 
   const relato = String(body?.relato ?? "").trim();
@@ -31,14 +35,20 @@ export async function POST(request: Request) {
 
   const candidatas = (body?.candidatas ?? CHAT_MINUTA_AREAS_FASE1)
     .map((id) => id.trim())
-    .filter((id): id is AreaIdMinuta => chatMinutaAreaHabilitada(id as AreaIdMinuta))
-    .slice(0, 6);
+    .filter((id): id is AreaIdMinuta =>
+      chatMinutaAreaHabilitada(id as AreaIdMinuta)
+    )
+    .slice(0, 8);
 
   if (candidatas.length === 0) {
     return Response.json({ erro: "Sem candidatas válidas." }, { status: 400 });
   }
 
-  const resultado = await inferirAreaComGemini({ relato, candidatas });
+  const resultado = await inferirCasoComGemini({
+    relato,
+    candidatas,
+    pistaLocal: body?.pistaLocal ?? null,
+  });
   if (!resultado) {
     return Response.json({ erro: "Falha na classificação." }, { status: 502 });
   }
@@ -51,6 +61,7 @@ export async function POST(request: Request) {
 
   return Response.json({
     inferencia,
+    especiePeca: resultado.especiePeca,
     motivo: resultado.motivo,
     modelo: resultado.modelo,
   });

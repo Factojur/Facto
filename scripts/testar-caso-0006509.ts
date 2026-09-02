@@ -42,7 +42,7 @@ fixando multa de R$ 100,00 por ato de descumprimento, no importe total de R$ 600
 `.trim();
 
 const RELATO_ADV =
-  "Sou advogado do exequente Jefferson. Impetrar mandado de segurança contra decisão manifestamente ilegal do juiz que reduziu as astreintes.";
+  "Sou advogado do exequente Jefferson. A decisão do juiz reduziu indevidamente as astreintes — preciso da peça cabível contra essa interlocutória.";
 
 const BASE =
   process.argv.find((a) => a.startsWith("--base="))?.split("=")[1] ??
@@ -54,10 +54,16 @@ function pipelineLocal() {
   const { assert, stats } = createSuite();
 
   assert(inferirPoloDoRelato(AUTOS_0006509) === "ativo", "polo exequente só nos autos (capa)");
-  assert(sugereMandadoSegurancaAutos(AUTOS_0006509, "ativo"), "sugere MS exequente nos autos");
+  assert(
+    !sugereMandadoSegurancaAutos(AUTOS_0006509, "ativo"),
+    "autos sozinhos não forçam MS"
+  );
 
   const relato = `${AUTOS_0006509}\n\n${RELATO_ADV}`;
-  assert(sugereMandadoSegurancaAutos(relato, "ativo"), "sugere MS com relato adv");
+  assert(
+    !sugereMandadoSegurancaAutos(relato, "ativo"),
+    "sem pedido explícito de MS"
+  );
   assert(inferirPoloDoRelato(relato) === "ativo", "polo exequente com relato adv");
 
   const org = organizarCasoLocal({
@@ -65,10 +71,9 @@ function pipelineLocal() {
     relato,
     poloAdvocacia: "ativo",
   });
-  assert(org.areaIdResolvida === "constitucional", `área ${org.areaIdResolvida}`);
   assert(
-    org.preenchimento.especiePeca === "mandado-seguranca",
-    org.preenchimento.especiePeca ?? "—"
+    org.preenchimento.especiePeca === "agravo-instrumento",
+    `espécie ${org.preenchimento.especiePeca}`
   );
   assert(
     org.preenchimento.autoresNomes.some((n) => /jefferson/i.test(n)) ||
@@ -88,9 +93,9 @@ function pipelineLocal() {
   }
 
   assert(estado.poloAdvocacia === "ativo", "polo ativo confirmado");
-  assert(estado.especiePeca === "mandado-seguranca", `espécie ${estado.especiePeca}`);
+  assert(estado.especiePeca === "agravo-instrumento", `espécie ${estado.especiePeca}`);
   assert(validarPoloEspecieChat(estado) === null, "polo×espécie ok");
-  assert(!/agravo/.test(estado.especiePeca), "não agravo da executada");
+  assert(!/agravo.*executad|voz da executada/i.test(estado.fatos), "não voz da executada");
 
   const { oks, falhas } = stats();
   console.log(`Pipeline 0006509: ${oks} ok · ${falhas} falha(s)`);
@@ -211,7 +216,7 @@ async function browserE2E(page: Page, base: string) {
   let body = "";
   while (Date.now() < deadline) {
     body = await page.locator("body").innerText();
-    if (/entendimento do caso|plano de tópicos|mandado de segurança/i.test(body)) {
+    if (/entendimento do caso|plano de tópicos|agravo/i.test(body)) {
       break;
     }
     await page.waitForTimeout(2000);
@@ -219,9 +224,9 @@ async function browserE2E(page: Page, base: string) {
 
   const checks = {
     jefferson: /jefferson/i.test(body),
-    exequente: /exequente|impetrante/i.test(body),
-    ms: /mandado de segurança|mandado-seguranca/i.test(body),
-    constitucional: /constitucional/i.test(body),
+    exequente: /exequente|agravante|ativo/i.test(body),
+    agravo: /agravo/i.test(body),
+    semMsForcado: !/mandado de segurança/i.test(body) || /agravo/i.test(body),
     semAgravoExecutada: !/agravo.*fmu|voz da executada/i.test(body),
     semBloqueioPolo: !/não combina com o polo passivo/i.test(body),
   };

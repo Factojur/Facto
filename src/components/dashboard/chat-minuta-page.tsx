@@ -37,7 +37,7 @@ import {
 import {
   candidatasParaRefinoArea,
   motivoAreaAposOrganizacao,
-  precisaRefinoAreaIa,
+  precisaInterpretacaoCasoIa,
 } from "@/lib/inferir-area-refino";
 import { organizarCasoLocal } from "@/lib/organizar-caso-local";
 import type { LeituraRelato } from "@/lib/entrada-caso-types";
@@ -1534,8 +1534,17 @@ export function ChatMinutaPage({
       });
       let inferencia = inferenciaDet.inferencia;
       let areaMotivo: string | null = null;
+      let especieIa: string | null = null;
 
-      if (!areaManual && precisaRefinoAreaIa(inferenciaDet)) {
+      const areaParaOrgPista = areaManual ? estado.areaId : inferencia.areaId;
+      const orgPista = organizarCasoLocal({
+        relato,
+        areaId: areaParaOrgPista,
+        poloAdvocacia: estadoAnteriorRef.current.poloAdvocacia,
+      });
+
+      // MinutaIA-style: IA interpreta área + espécie; local só pista / extração.
+      if (!areaManual && precisaInterpretacaoCasoIa(inferenciaDet)) {
         try {
           const resIa = await fetch("/api/inferir-area", {
             method: "POST",
@@ -1543,21 +1552,30 @@ export function ChatMinutaPage({
             body: JSON.stringify({
               relato,
               candidatas: candidatasParaRefinoArea(inferenciaDet),
+              pistaLocal: {
+                areaId: orgPista.areaIdResolvida,
+                especiePeca: orgPista.preenchimento.especiePeca,
+              },
             }),
             signal: ac.signal,
           });
           if (resIa.ok) {
             const dataIa = (await resIa.json()) as {
               inferencia?: typeof inferencia;
+              especiePeca?: string | null;
               motivo?: string;
             };
             if (dataIa.inferencia?.areaId) {
               inferencia = dataIa.inferencia;
-              areaMotivo = dataIa.motivo?.trim() || "Área definida com apoio da IA.";
+              areaMotivo =
+                dataIa.motivo?.trim() || "Interpretação do caso pela IA.";
+            }
+            if (dataIa.especiePeca?.trim()) {
+              especieIa = dataIa.especiePeca.trim();
             }
           }
         } catch {
-          /* mantém regex local */
+          /* mantém pista local */
         }
       }
 
@@ -1570,21 +1588,33 @@ export function ChatMinutaPage({
       const baseEstado = trocaArea
         ? prepararEstadoTrocaArea(inferencia, texto || relato)
         : estadoAntes;
-      const orgLocal = organizarCasoLocal({
-        relato,
-        areaId: areaParaOrg,
-        poloAdvocacia: baseEstado.poloAdvocacia,
-      });
-      const preenchimentoLocal = orgLocal.preenchimento;
+      const orgLocal =
+        areaParaOrg === areaParaOrgPista
+          ? orgPista
+          : organizarCasoLocal({
+              relato,
+              areaId: areaParaOrg,
+              poloAdvocacia: baseEstado.poloAdvocacia,
+            });
+      let preenchimentoLocal = orgLocal.preenchimento;
 
+      if (especieIa && !areaManual) {
+        preenchimentoLocal = {
+          ...preenchimentoLocal,
+          especiePeca: especieIa,
+        };
+      }
+
+      // Local NÃO sobrescreve área/espécie da IA (só completa se IA falhou).
       if (
         !areaManual &&
+        !areaMotivo &&
         orgLocal.areaIdResolvida !== areaParaOrg &&
         chatMinutaAreaHabilitada(orgLocal.areaIdResolvida as AreaIdMinuta)
       ) {
         inferencia = {
           areaId: orgLocal.areaIdResolvida as AreaIdMinuta,
-          confianca: "alta",
+          confianca: "media",
           alternativas: [],
         };
         areaMotivo =

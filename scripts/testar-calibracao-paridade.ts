@@ -1,11 +1,12 @@
 /**
- * Calibração área × espécie × polo — paridade MinutaIA (0 tokens).
+ * Calibração área × espécie × polo — pista local fraca; remédio por interpretação do caso.
  * Uso: npx tsx scripts/testar-calibracao-paridade.ts
  */
 import { areaIdParaEspecieCabivel, especieExplicitaNoRelato } from "../src/lib/calibracao-area-especie";
 import { organizarCasoLocal } from "../src/lib/organizar-caso-local";
 import {
   ajustarCabivelAoPolo,
+  pecaCabivelAposUltimoAto,
   resolverAreaEspecieOrganizacao,
   sugereMandadoSegurancaAutos,
 } from "../src/lib/peca-cabivel-autos";
@@ -34,16 +35,32 @@ function main() {
     "MS → constitucional"
   );
 
-  const cumprimentoMs =
-    "Cumprimento de sentença nº 0006509. Exequente Jefferson. Decisão ilegal do juiz que reduziu astreintes de R$ 22.200 para R$ 600. Ato coator manifestamente ilegal.";
-  assert(sugereMandadoSegurancaAutos(cumprimentoMs, "ativo"), "MS cumprimento exequente");
-  const orgMs = organizarCasoLocal({
+  const cumprimentoInterloc =
+    "Cumprimento de sentença nº 0006509. Exequente Jefferson. Decisão ilegal do juiz que reduziu astreintes de R$ 22.200 para R$ 600.";
+  assert(
+    !sugereMandadoSegurancaAutos(cumprimentoInterloc, "ativo"),
+    "interlocutória sem pedido explícito de MS → não força MS"
+  );
+  assert(
+    pecaCabivelAposUltimoAto("jec", cumprimentoInterloc) === "agravo-instrumento",
+    "cumprimento + interlocutória → agravo"
+  );
+  const orgAgravo = organizarCasoLocal({
     areaId: "jec",
-    relato: cumprimentoMs,
+    relato: cumprimentoInterloc,
     poloAdvocacia: "ativo",
   });
-  assert(orgMs.areaIdResolvida === "constitucional", "org MS → constitucional");
-  assert(orgMs.preenchimento.especiePeca === "mandado-seguranca", "org MS espécie");
+  assert(
+    orgAgravo.preenchimento.especiePeca === "agravo-instrumento",
+    `org espécie ${orgAgravo.preenchimento.especiePeca}`
+  );
+
+  const cumprimentoMsExplicito =
+    cumprimentoInterloc + " Impetrar mandado de segurança contra ato do juiz.";
+  assert(
+    sugereMandadoSegurancaAutos(cumprimentoMsExplicito, "ativo"),
+    "MS só com pedido explícito"
+  );
 
   assert(
     inferirPoloDoRelato("Sou advogado da parte exequente Jefferson") === "ativo",
@@ -59,9 +76,9 @@ function main() {
     "jec",
     "agravo-instrumento",
     "ativo",
-    cumprimentoMs
+    cumprimentoInterloc
   );
-  assert(agravoExec === "mandado-seguranca", "exequente não fica com agravo");
+  assert(agravoExec === "agravo-instrumento", "exequente mantém agravo (não força MS)");
 
   assert(
     especieExplicitaNoRelato("Reclamação trabalhista verbas rescisórias", "trabalhista") ===

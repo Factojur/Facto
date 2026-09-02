@@ -169,7 +169,7 @@ function normalizarBlob(texto: string): string {
     .replace(/\s+/g, " ");
 }
 
-/** Ataque à legalidade de ato judicial (não só erro material) — MS. */
+/** MS só com sinais explícitos — não inferir de “ilegal/astreintes” (isso é agravo em regra). */
 export function sugereMandadoSegurancaAutos(
   texto: string,
   polo?: PoloAdvocacia | null
@@ -177,24 +177,8 @@ export function sugereMandadoSegurancaAutos(
   if (polo === "passivo") return false;
   const t = normalizarBlob(texto);
   if (!t) return false;
-  if (
-    /mandado de seguranca|ato coator|autoridade coatora|impetrante|contra\s+ato\s+do\s+juiz/.test(
-      t
-    )
-  ) {
-    return true;
-  }
-  if (!incidenteExecucaoJaAberto(texto)) return false;
-  return (
-    /(ilegal|manifestamente ilegal|abuso de poder|ato coator|autoridade coatora)/.test(
-      t
-    ) ||
-    /(alterou|reduziu|homologou|fixou|determinou|reconheceu).{0,180}(astreinte|multa diaria|calculo|debito|valor da multa)/.test(
-      t
-    ) ||
-    /(astreinte|multa diaria).{0,140}(art\.?\s*494|ilegal|retroativ|nao em seu valor)/.test(
-      t
-    )
+  return /mandado de seguranca|impetrante|autoridade coatora|ato coator|contra\s+ato\s+(do\s+)?juiz|impetrar\s+ms\b/.test(
+    t
   );
 }
 
@@ -267,12 +251,17 @@ export function pecaCabivelAposUltimoAto(
   }
 
   const vicio =
-    /omissao|contradicao|obscuridade|erro material/.test(t);
+    /omissao|contradicao|obscuridade/.test(t) &&
+    !/decisao.{0,120}(reduziu|alterou|majorou)|reduziu.{0,60}astreinte/.test(t);
   const interlocutoria =
-    /decisao (interlocutoria|que (alterou|reduziu|majorou|fixou|reconheceu))|alter(ou|acao) (d[ao]s )?astreintes|multa (diaria|cominatoria).{0,80}(alter|reduz|fixad|erro material)/.test(
+    /decisao\b.{0,100}(interlocutor|reduziu|alterou|majorou|fixou|reconheceu)/.test(
       t
     ) ||
-    (/astreinte|multa diaria/.test(t) && /erro material|nao em seu valor|forma de aplicacao/.test(t));
+    /alter(ou|acao)\s+(d[ao]s\s+)?astreintes/.test(t) ||
+    /reduziu.{0,80}astreinte/.test(t) ||
+    /multa (diaria|cominatoria).{0,80}(alter|reduz|fixad)/.test(t) ||
+    (/astreinte|multa diaria/.test(t) &&
+      /erro material|nao em seu valor|forma de aplicacao/.test(t));
 
   if (!incidenteExecucaoJaAberto(texto) && !interlocutoria && !vicio) {
     return null;
@@ -282,18 +271,11 @@ export function pecaCabivelAposUltimoAto(
     return "mandado-seguranca";
   }
 
-  if (vicio) return especieEmbargosDaArea(areaId);
-  if (interlocutoria) {
-    if (areaId === "jec" || areaId === "jecr") {
-      return especieEmbargosDaArea(areaId);
-    }
+  // Interlocutória / decisão sobre astreintes em cumprimento → agravo (prevalece sobre "erro material").
+  if (interlocutoria || (incidenteExecucaoJaAberto(texto) && /\bdecisao\b/.test(t))) {
     return especieAgravoDaArea(areaId);
   }
-  if (incidenteExecucaoJaAberto(texto) && /\bdecisao\b/.test(t)) {
-    return areaId === "jec" || areaId === "jecr"
-      ? especieEmbargosDaArea(areaId)
-      : especieAgravoDaArea(areaId);
-  }
+  if (vicio) return especieEmbargosDaArea(areaId);
   return null;
 }
 
@@ -328,11 +310,11 @@ export function ajustarCabivelAoPolo(
 
   if (!incidenteExecucaoJaAberto(texto)) return cabivel;
 
-  const ataquePassivo = /agravo-instrumento|embargos/.test(e);
-  if (polo === "ativo" && ataquePassivo) {
+  // Exequente em cumprimento: interlocutória → agravo (não forçar MS nem reabrir incidente).
+  if (polo === "ativo" && /agravo-instrumento|embargos/.test(e)) {
     if (sugereMandadoSegurancaAutos(texto, polo)) return "mandado-seguranca";
-    if (areaId === "jec" || areaId === "jecr") return "execucao";
-    return "cumprimento-sentenca";
+    if (/agravo-instrumento/.test(e)) return cabivel;
+    return especieAgravoDaArea(areaId);
   }
 
   if (
@@ -409,6 +391,7 @@ export function resolverAreaEspecieOrganizacao(params: {
     poloAdvocacia: params.poloAdvocacia,
   });
   let areaId = areaIdParaEspecieCabivel(params.areaId, especie);
+  // MS só se explícito no relato — não sobrescrever agravo por heurística.
   if (
     especie !== "mandado-seguranca" &&
     sugereMandadoSegurancaAutos(params.relato, params.poloAdvocacia)

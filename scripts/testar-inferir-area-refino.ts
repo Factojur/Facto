@@ -1,5 +1,5 @@
 /**
- * Refino de área — casos determinísticos.
+ * Interpretação IA — sempre preferida; local = pista.
  * Uso: npx tsx scripts/testar-inferir-area-refino.ts
  */
 import {
@@ -9,7 +9,7 @@ import {
 import {
   candidatasParaRefinoArea,
   motivoAreaAposOrganizacao,
-  precisaRefinoAreaIa,
+  precisaInterpretacaoCasoIa,
 } from "../src/lib/inferir-area-refino";
 import { createSuite } from "./casos-ouro/suite";
 
@@ -21,7 +21,10 @@ function main() {
       "Reclamação trabalhista. Reclamante contra Empresa XYZ. Horas extras e FGTS.",
   });
   assert(claro.inferencia.areaId === "trabalhista", "trabalhista claro");
-  assert(!precisaRefinoAreaIa(claro), "trabalhista claro não pede IA");
+  assert(
+    precisaInterpretacaoCasoIa(claro),
+    "mesmo claro: IA interpreta (MinutaIA-style)"
+  );
 
   const ambiguo: InferenciaAreaDetalhada = {
     inferencia: {
@@ -34,19 +37,23 @@ function main() {
       { areaId: "civil", score: 2 },
     ],
   };
-  assert(precisaRefinoAreaIa(ambiguo), "empate pede IA");
+  assert(precisaInterpretacaoCasoIa(ambiguo), "empate pede IA");
   assert(
     candidatasParaRefinoArea(ambiguo).includes("consumidor"),
     "candidatas incluem top"
   );
+  assert(
+    candidatasParaRefinoArea(ambiguo).length >= 5,
+    "candidatas amplas (todas as áreas fase 1)"
+  );
 
   const motivo = motivoAreaAposOrganizacao({
     areaInferida: "jec",
-    areaResolvida: "constitucional",
-    especiePeca: "mandado-seguranca",
+    areaResolvida: "civil",
+    especiePeca: "agravo-instrumento",
     ultimoAto: "Decisão sobre astreintes",
   });
-  assert(Boolean(motivo?.includes("mandado")), "motivo remédio MS");
+  assert(Boolean(motivo?.includes("agravo")), "motivo remédio agravo");
 
   const { oks, falhas } = stats();
   console.log(`\nInferir área refino: ${oks} ok · ${falhas} falha(s)`);

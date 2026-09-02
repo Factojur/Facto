@@ -119,6 +119,14 @@ export function especieExplicitaNoRelato(
   }
 
   if (/cumprimento de sentenca|fase de cumprimento|fase de execucao/.test(t)) {
+    // Se há decisão interlocutória/astreintes a atacar, não fixar a espécie no incidente aberto.
+    if (
+      /decisao|interlocutor|astreinte|multa (diaria|cominatoria)|reduziu|alterou|fixou/.test(
+        t
+      )
+    ) {
+      return null;
+    }
     if (/alimentos/.test(t)) return "cumprimento-alimentos";
     if (areaId === "trabalhista") return "execucao-titulo";
     if (areaId === "jec" || areaId === "jecr") return "execucao";

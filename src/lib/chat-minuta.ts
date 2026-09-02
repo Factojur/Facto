@@ -29,7 +29,7 @@ import {
 } from "@/lib/juris-provedores/tribunais-opcoes";
 import type { OpcoesBuscaConhecimento } from "@/lib/base-conhecimento";
 import { inferirPoloDoRelato, resolverPoloGeracao, especieCompativelComPolo, type PoloAdvocacia } from "@/lib/polo-advocacia";
-import { ajustarEspecieCabivel, incidenteExecucaoJaAberto, rotulosEpigrafePeca } from "@/lib/peca-cabivel-autos";
+import { ajustarEspecieCabivel, rotulosEpigrafePeca } from "@/lib/peca-cabivel-autos";
 import { tituloPecaDaArea } from "@/lib/peca-especie-area";
 import {
   areaUsaPoloAdvocacia,
@@ -1086,14 +1086,6 @@ export function validarPoloEspecieChat(estado: EstadoCasoChat): string | null {
 
   if (!especieCompativelComPolo(estado.areaId, especie, polo)) {
     return `A peça sugerida não combina com o polo ${polo === "ativo" ? "ativo (exequente/autor)" : "passivo (executado/réu)"}. Revise em Entendimento ou descreva a peça desejada.`;
-  }
-
-  if (
-    polo === "ativo" &&
-    /agravo/.test(especie) &&
-    incidenteExecucaoJaAberto(estado.fatos)
-  ) {
-    return "Agravo de instrumento em cumprimento de sentença costuma ser da parte executada. Você indicou o polo exequente — ajuste a espécie ou o relato antes de redigir.";
   }
 
   return null;

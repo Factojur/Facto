@@ -1,10 +1,10 @@
 # Comparativo FACTO × MinutaIA
 
-Gerado: 2026-09-02T15:29:28.491Z
+Gerado: 2026-09-02T16:37:02.339Z
 
 ## FACTO (automático)
 
-- [x] **0006509** — Cumprimento — exequente → MS constitucional
+- [x] **0006509** — Cumprimento — exequente → agravo (interlocutória)
 - [x] **hc-penal** — Habeas corpus — paciente
 - [x] **bpc-prev** — BPC/INSS — previdenciário
 - [x] **consumidor-enel** — Consumidor — corte de energia
@@ -18,9 +18,9 @@ Gerado: 2026-09-02T15:29:28.491Z
 | ID | Critérios a conferir | FACTO | MinutaIA | Notas |
 |----|----------------------|-------|----------|-------|
 | 0006509 | Infere exequente (não executada) como polo | ✓ auto | ☐ | |
-| 0006509 | Sugere MS (não agravo da executada) | ✓ auto | ☐ | |
-| 0006509 | Área constitucional | ✓ auto | ☐ | |
-| 0006509 | Plano com tópicos coerentes ao remédio | ✓ auto | ☐ | |
+| 0006509 | Sugere agravo de instrumento (interlocutória) | ✓ auto | ☐ | |
+| 0006509 | Não força MS sem pedido explícito | ✓ auto | ☐ | |
+| 0006509 | Plano coerente ao remédio | ✓ auto | ☐ | |
 | hc-penal | Área penal/criminal | ✓ auto | ☐ | |
 | hc-penal | Paciente não vira réu | ✓ auto | ☐ | |
 | hc-penal | HC como espécie | ✓ auto | ☐ | |

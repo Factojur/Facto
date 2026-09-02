@@ -33,14 +33,14 @@ type CenarioComparativo = {
 const CENARIOS: CenarioComparativo[] = [
   {
     id: "0006509",
-    rotulo: "Cumprimento — exequente → MS constitucional",
+    rotulo: "Cumprimento — exequente → agravo (interlocutória)",
     relato:
       "Cumprimento de sentença nº 0006509. Exequente Jefferson. Executada FACULDADES METROPOLITANAS. Decisão ilegal do juiz que reduziu astreintes de R$ 22.200 para R$ 600.",
     criteriosMinuta: [
       "Infere exequente (não executada) como polo",
-      "Sugere MS (não agravo da executada)",
-      "Área constitucional",
-      "Plano com tópicos coerentes ao remédio",
+      "Sugere agravo de instrumento (interlocutória)",
+      "Não força MS sem pedido explícito",
+      "Plano coerente ao remédio",
     ],
     run(assert) {
       assert(inferirPoloDoRelato(this.relato) === "ativo", "polo exequente");
@@ -49,8 +49,10 @@ const CENARIOS: CenarioComparativo[] = [
         relato: this.relato,
         poloAdvocacia: "ativo",
       });
-      assert(org.areaIdResolvida === "constitucional", "área constitucional");
-      assert(org.preenchimento.especiePeca === "mandado-seguranca", "espécie MS");
+      assert(
+        org.preenchimento.especiePeca === "agravo-instrumento",
+        "espécie agravo"
+      );
     },
   },
   {
@@ -87,7 +89,7 @@ const CENARIOS: CenarioComparativo[] = [
       const inf = inferirAreaChat({ texto: this.relato });
       assert(inf.areaId === "previdenciario", "área previdenciário");
       const det = inferirAreaChatDetalhado({ texto: this.relato });
-      assert(!precisaRefinoAreaIa(det), "área clara sem IA");
+      assert(precisaRefinoAreaIa(det), "interpretação IA preferida");
     },
   },
   {

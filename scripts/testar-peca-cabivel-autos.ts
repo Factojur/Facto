@@ -34,12 +34,12 @@ function main() {
   const ultimo = extrairUltimoAtoDoTexto(AUTOS_ASTREINTES);
   assert(Boolean(ultimo?.includes("DECIS")), "extrai último ato (decisão)");
   assert(
-    pecaCabivelAposUltimoAto("jec", AUTOS_ASTREINTES) === "embargos",
-    "JEC + erro material em astreintes → embargos (não reabre cumprimento)"
+    pecaCabivelAposUltimoAto("jec", AUTOS_ASTREINTES) === "agravo-instrumento",
+    "JEC + decisão sobre astreintes → agravo (não reabre cumprimento)"
   );
   assert(
-    pecaCabivelAposUltimoAto("civil", AUTOS_ASTREINTES) === "embargos-declaracao",
-    "justiça comum + erro material → embargos de declaração"
+    pecaCabivelAposUltimoAto("civil", AUTOS_ASTREINTES) === "agravo-instrumento",
+    "justiça comum + decisão sobre astreintes → agravo"
   );
 
   const ajustado = ajustarEspecieCabivel({
@@ -48,7 +48,7 @@ function main() {
     tipoAcao: "Cumprimento de sentença",
     fatos: AUTOS_ASTREINTES,
   });
-  assert(ajustado === "embargos", "overlay troca execução por embargos");
+  assert(ajustado === "agravo-instrumento", "overlay troca execução por agravo");
 
   const inferido = inferirEspecieDaArea(
     "jec",
@@ -56,7 +56,7 @@ function main() {
     AUTOS_ASTREINTES,
     "execucao"
   );
-  assert(inferido === "embargos", "inferirEspecieDaArea não reabre o incidente");
+  assert(inferido === "agravo-instrumento", "inferirEspecieDaArea não reabre o incidente");
 
   const meta = extrairMetadadosAutos(AUTOS_ASTREINTES);
   assert(meta.numeroProcesso === "0006509-93.2023.8.26.0016", "extrai CNJ");

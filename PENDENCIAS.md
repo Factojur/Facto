@@ -46,10 +46,19 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] **Reteste manual 0006509** — E2E browser prod 6/6 (Jefferson, exequente, MS, constitucional, sem agravo executada)
 - [x] **Alerta fatos×pedidos (chat)** — removido do thread; só painel plano; regras MS/HC/cumprimento + “sem prejuízo de”
 - [x] **Área auto ~95%** — refino Flash-Lite só em ambíguo (`inferir-area-refino`, `/api/inferir-area`, sem cota de peça); motivo no header; `test:inferir-area` 5/5
+- [x] **Interpretação IA (MinutaIA-style)** — área + espécie via Flash-Lite em todo caso; local = pista/extração; cumprimento+interlocutória → agravo (não força MS); 0006509 recalibrado
 - [x] **Lastro no plano (preview)** — `PlanoLastroHint` (ícone i dourado por tópico; hover desktop); texto derivado de cobertura + estratégia (`plano-lastro-hint.ts`)
 - [x] **Lastro por tópico A+B** — `LASTRO:`/`ENCAIXE:` na triagem + parser (`plano-topicos-peca`); complemento local fls./lei/juris (`plano-lastro-topico.ts`); `test:plano-lastro` 6/6
 - [x] **Comparativo FACTO (automático)** — `npm run test:comparativo-paridade` 8 cenários · relatório `scripts/comparativo-paridade-minutaia.md`
 - [ ] **Comparativo MinutaIA (manual)** — mesmos 8 relatos no app deles; preencher coluna MinutaIA no relatório
+- [ ] **Pontos finais (após ok Jefferson)** — juris/`fls.` clicáveis na peça; inspector no ícone i (camada C)
+
+### Feito nesta rodada (02/09 — interpretação IA MinutaIA-style)
+
+- [x] **IA na frente** — `/api/inferir-area` devolve área + espécie; chat chama em todo caso (não só ambíguo); local = pista
+- [x] **0006509 → agravo** — MS só explícito; interlocutória em cumprimento = agravo; removido bloqueio “agravo só da executada”
+- [x] **Testes** — calibracao 19; caso-0006509 10; peca-cabivel 37; chat-minuta 77; comparativo 8
+- [ ] **Deploy** — commit + push
 
 ### Feito nesta rodada (02/09 — área auto + lastro plano)
 

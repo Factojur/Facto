@@ -1,29 +1,39 @@
 /**
- * Refino de área — quando regex local é ambíguo, IA (Flash-Lite) desempata.
+ * Interpretação IA — área + espécie (MinutaIA-style).
+ * Heurística local = pista fraca; não substitui interpretação do caso.
  */
 
 import type { AreaIdMinuta } from "@/lib/minuta-modulo";
-import type { InferenciaAreaDetalhada } from "@/lib/chat-minuta";
+import { CHAT_MINUTA_AREAS_FASE1, type InferenciaAreaDetalhada } from "@/lib/chat-minuta";
 
-/** IA só quando confiança baixa ou top-2 empatados (diferença ≤ 1 ponto). */
+/**
+ * Preferir IA na organização do caso (advogado).
+ * Só pula se a área foi travada manualmente (tratado no caller).
+ */
+export function precisaInterpretacaoCasoIa(det: InferenciaAreaDetalhada): boolean {
+  // Sempre interpreta: área “alta” por regex ainda pode errar o remédio (ex.: cumprimento × MS).
+  return det.inferencia.confianca !== "alta" || det.ordenado.length >= 1;
+}
+
+/** @deprecated use precisaInterpretacaoCasoIa */
 export function precisaRefinoAreaIa(det: InferenciaAreaDetalhada): boolean {
-  const { inferencia, ordenado } = det;
-  if (inferencia.confianca === "baixa") return true;
-  if (ordenado.length >= 2) {
-    const top = ordenado[0]!.score;
-    const segundo = ordenado[1]!.score;
-    if (top > 0 && top - segundo <= 1) return true;
-  }
-  return false;
+  return precisaInterpretacaoCasoIa(det);
 }
 
 export function candidatasParaRefinoArea(
   det: InferenciaAreaDetalhada,
-  max = 5
+  max = 8
 ): AreaIdMinuta[] {
   const ids = det.ordenado.map((o) => o.areaId);
   const alt = det.inferencia.alternativas ?? [];
-  return [...new Set([...ids, ...alt, det.inferencia.areaId])].slice(0, max);
+  return [
+    ...new Set([
+      ...ids,
+      ...alt,
+      det.inferencia.areaId,
+      ...CHAT_MINUTA_AREAS_FASE1,
+    ]),
+  ].slice(0, max);
 }
 
 export function motivoAreaAposOrganizacao(params: {
