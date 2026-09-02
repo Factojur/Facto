@@ -71,6 +71,7 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 - [x] **8 cenários no MinutaIA** — 0006509 agravo; HC; BPC; Enel; trabalhista; JEC; contestação; lastro (texto)
 - [x] **Veredito** — interpretação ≈ paridade FACTO×MinutaIA; lastro FACTO com UI estruturada (eles: inline sem badge/clique)
 - [x] Relatório atualizado em `scripts/comparativo-paridade-minutaia.md`
+- [x] **Deploy produção** — `27489ef` · `dpl_EGV2J3m6U6iSaWU7jagp7hKNzn7q` · Ready · [factoia.com.br](https://factoia.com.br)
 
 ### Feito nesta rodada (02/09 — chat livre MinutaIA)
 
