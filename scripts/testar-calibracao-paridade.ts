@@ -10,6 +10,7 @@ import {
   sugereMandadoSegurancaAutos,
 } from "../src/lib/peca-cabivel-autos";
 import { inferirPoloDoRelato } from "../src/lib/polo-advocacia";
+import { createSuite } from "./casos-ouro/suite";
 
 function main() {
   const { assert, stats } = createSuite();
