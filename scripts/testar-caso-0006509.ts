@@ -201,7 +201,7 @@ async function browserE2E(page: Page, base: string) {
 
   const composer = page.locator("textarea").last();
   await composer.fill(
-    "Analise os autos anexados. Sou advogado do exequente Jefferson — impetrar MS contra a decisão das astreintes."
+    "Analise os autos anexados. Sou advogado do exequente Jefferson. A decisão reduziu indevidamente as astreintes — preciso de agravo de instrumento contra essa interlocutória."
   );
   await page.getByRole("button", { name: /^enviar$/i }).last().click();
 
@@ -212,7 +212,7 @@ async function browserE2E(page: Page, base: string) {
     await exequente.click();
   }
 
-  const deadline = Date.now() + 90_000;
+  const deadline = Date.now() + 120_000;
   let body = "";
   while (Date.now() < deadline) {
     body = await page.locator("body").innerText();

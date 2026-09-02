@@ -72,6 +72,6 @@ export function configModoConversa(modo: ModoConversaChat): ConfigModoConversa {
       "Uma pergunta objetiva no fim, se faltar dado crítico.",
     ],
     forcarPlanoAposTurno: false,
-    debouncePlanoMs: 1400,
+    debouncePlanoMs: 600,
   };
 }

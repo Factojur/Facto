@@ -61,7 +61,12 @@ const AREAS = Object.keys(RELATOS) as AreaIdMinuta[];
 
 type Resultado = { area: string; ok: boolean; detalhe: string };
 
-async function autenticar(base: string): Promise<{ browser: Awaited<ReturnType<typeof chromium.launch>>; context: BrowserContext; page: Page }> {
+async function autenticar(
+  base: string
+): Promise<{
+  browser: Awaited<ReturnType<typeof chromium.launch>>;
+  context: BrowserContext;
+}> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -116,14 +121,24 @@ async function autenticar(base: string): Promise<{ browser: Awaited<ReturnType<t
       sameSite: "Lax" as const,
     }))
   );
+  return { browser, context };
+}
+
+async function abrirDashboard(
+  context: BrowserContext,
+  base: string
+): Promise<Page> {
   const page = await context.newPage();
   const sessao = await page.request.post(`${base}/api/auth/sessao`);
   if (!sessao.ok()) throw new Error(`POST /api/auth/sessao → ${sessao.status()}`);
-  await page.goto(`${base}/dashboard`, { waitUntil: "networkidle", timeout: TIMEOUT_MS });
+  await page.goto(`${base}/dashboard`, {
+    waitUntil: "networkidle",
+    timeout: TIMEOUT_MS,
+  });
   if (!page.url().includes("/dashboard")) {
     throw new Error(`dashboard inacessível: ${page.url()}`);
   }
-  return { browser, context, page };
+  return page;
 }
 
 async function novoCaso(page: Page): Promise<void> {
@@ -136,7 +151,7 @@ async function novoCaso(page: Page): Promise<void> {
 
 async function enviarRelato(page: Page, relato: string): Promise<void> {
   const composer = page.locator("textarea").last();
-  await composer.waitFor({ state: "visible", timeout: 15_000 });
+  await composer.waitFor({ state: "visible", timeout: 25_000 });
   await composer.fill(relato);
   const enviar = page.getByRole("button", { name: /^enviar$/i }).last();
   await enviar.click();
@@ -170,9 +185,14 @@ async function aguardarPlano(page: Page): Promise<boolean> {
   return false;
 }
 
-async function smokeArea(page: Page, area: AreaIdMinuta): Promise<Resultado> {
+async function smokeArea(
+  context: BrowserContext,
+  base: string,
+  area: AreaIdMinuta
+): Promise<Resultado> {
+  const page = await abrirDashboard(context, base);
   try {
-    await page.goto(`${BASE}/dashboard?area=${area}&nova=1`, {
+    await page.goto(`${base}/dashboard?area=${area}&nova=1`, {
       waitUntil: "networkidle",
       timeout: TIMEOUT_MS,
     });
@@ -191,6 +211,8 @@ async function smokeArea(page: Page, area: AreaIdMinuta): Promise<Resultado> {
       ok: false,
       detalhe: e instanceof Error ? e.message : String(e),
     };
+  } finally {
+    await page.close();
   }
 }
 
@@ -198,11 +220,11 @@ async function main() {
   console.log(`Smoke browser · ${AREAS.length} áreas · ${BASE}\n`);
 
   let browser: Awaited<ReturnType<typeof chromium.launch>>;
-  let page: Page;
+  let context: BrowserContext;
   try {
     const auth = await autenticar(BASE);
     browser = auth.browser;
-    page = auth.page;
+    context = auth.context;
     console.log("Auth OK\n");
   } catch (e) {
     console.error("Falha auth:", e instanceof Error ? e.message : e);
@@ -212,7 +234,7 @@ async function main() {
   const resultados: Resultado[] = [];
   for (const area of AREAS) {
     process.stdout.write(`▸ ${area.padEnd(24)} `);
-    const r = await smokeArea(page, area);
+    const r = await smokeArea(context, BASE, area);
     resultados.push(r);
     console.log(r.ok ? `OK — ${r.detalhe}` : `FALHA — ${r.detalhe}`);
   }

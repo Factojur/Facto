@@ -1,6 +1,8 @@
 import { exigirAcessoAreaMinuta } from "@/lib/acesso-minuta-api";
 import type { EstadoCasoChat, MensagemChat } from "@/lib/chat-minuta";
 import type { PreviewTriagemData } from "@/components/dashboard/preview-triagem-peca";
+import { obterEstiloEscritorioDoPerfil } from "@/lib/estilo-escritorio-server";
+import { createClient } from "@/lib/supabase/server";
 import {
   geminiConfigurado,
   MODELOS_TRIAGEM,
@@ -52,6 +54,12 @@ export async function POST(request: Request) {
     });
   }
 
+  const supabase = await createClient();
+  const estiloEscritorio = await obterEstiloEscritorioDoPerfil(
+    supabase,
+    gate.user.id
+  );
+
   const { system, user, maxOutputTokens, temperature } = montarPromptsConversaStream({
     mensagem,
     estado,
@@ -59,6 +67,7 @@ export async function POST(request: Request) {
     mensagens: Array.isArray(body?.mensagens) ? body!.mensagens! : [],
     avisoExtra: body?.avisoExtra ?? null,
     modo: normalizarModoConversa(body?.modo),
+    estiloEscritorio,
   });
 
   const stream = streamTextoGeminiNdjson({

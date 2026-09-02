@@ -42,8 +42,21 @@ export type PromptsConversaFase1 = {
   temperature: number;
 };
 
-function blocoBaseSistemaConversa(modo: ModoConversaChat): string[] {
+function blocoEstiloConversa(resumo: string | null | undefined): string {
+  const t = String(resumo ?? "").trim();
+  if (!t) return "";
+  return [
+    "Estilo do escritório (tom nas respostas do chat — não redija a peça inteira):",
+    t.slice(0, 900),
+  ].join("\n");
+}
+
+function blocoBaseSistemaConversa(
+  modo: ModoConversaChat,
+  estiloEscritorio?: string | null
+): string[] {
   const cfg = configModoConversa(modo);
+  const estilo = blocoEstiloConversa(estiloEscritorio);
   return [
     "Você é o assistente jurídico FACTO — conversa fluida com advogado ou leigo, no mesmo espírito do MinutaIA.",
     "Objetivo: entender o caso, interpretar fatos, sugerir teses e pedidos, organizar ideias.",
@@ -52,6 +65,7 @@ function blocoBaseSistemaConversa(modo: ModoConversaChat): string[] {
     "Tom: profissional, direto, acolhedor — como um colega experiente no chat.",
     "Pode usar listas curtas e **negrito** em termos-chave.",
     ...cfg.instrucoesSistema,
+    ...(estilo ? [estilo] : []),
     "A redação formal da peça só ocorre quando o usuário clicar Redigir (1 crédito).",
   ];
 }
@@ -99,12 +113,13 @@ export function montarPromptsConversaStream(input: {
   mensagens: MensagemChat[];
   avisoExtra?: string | null;
   modo?: ModoConversaChat;
+  estiloEscritorio?: string | null;
 }): PromptsConversaFase1 {
   const modo = normalizarModoConversa(input.modo ?? MODO_CONVERSA_PADRAO);
   const cfg = configModoConversa(modo);
 
   const system = [
-    ...blocoBaseSistemaConversa(modo),
+    ...blocoBaseSistemaConversa(modo, input.estiloEscritorio),
     "Responda APENAS com o texto markdown para o chat — sem JSON, sem blocos de código.",
   ].join("\n");
 
@@ -195,6 +210,7 @@ export async function conversarAssistenteFase1(input: {
   primeiroRelato?: boolean;
   avisoExtra?: string | null;
   modo?: ModoConversaChat;
+  estiloEscritorio?: string | null;
 }): Promise<ResultadoRefinarPlano> {
   const primeiroRelato = input.primeiroRelato ?? false;
   const modo = normalizarModoConversa(input.modo ?? MODO_CONVERSA_PADRAO);
@@ -209,7 +225,7 @@ export async function conversarAssistenteFase1(input: {
     });
   }
 
-  const system = blocoBaseSistemaConversa(modo).join("\n");
+  const system = blocoBaseSistemaConversa(modo, input.estiloEscritorio).join("\n");
 
   const user = [
     montarUserConversa({

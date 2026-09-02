@@ -68,6 +68,14 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 - [x] **Streaming redação no documento** — `stream: true` em `/api/gerar-peca` (NDJSON); redator Gemini com `onRedacaoDelta`; chat mostra texto crescendo
 - [x] **Chat livre (desacoplado das travas de área)** — área/polo não bloqueiam; IA autoridade; payload com polo default; prompts conversa/inferência MinutaIA-style
 
+### Feito nesta rodada (02/09 — fluidez + E2E harness)
+
+- [x] **Indicador digitando** — visível até o 1º token do stream (não some ao abrir conexão NDJSON)
+- [x] **Debounce plano** — modo instantâneo 1400→600 ms (plano sobe mais cedo)
+- [x] **Estilo no chat** — `estilo_resumo` do Perfil injetado em `/api/chat-conversa` e `/stream` (custo zero extra/turno)
+- [x] **Smoke browser** — nova página por área (evita textarea sumir na 10ª área)
+- [x] **0006509 browser** — relato pede agravo (não MS); timeout 120s
+
 ### Feito nesta rodada (02/09 — fls. na peça + streaming redação)
 
 - [x] **`fls.` na peça** — `PecaDocumentoView` com `onAbrirFls` + `TextoJuridicoInline` (export Word/PDF inalterado)
@@ -355,7 +363,7 @@ Ordem sugerida para o agente/Jefferson. **Grátis** = implementar quando fizer s
 | Balão “o que li do PDF” após anexo | `formatarBalaoLeituraAnexo` — 1× no chat + painel plano | **Feito** |
 | Thread sem ruído (prazo, chips, conferências) | Prazo/complementos no plano; área média auto; alerta só no plano | **Feito** |
 | Memória de anexo (2º turno) | Smoke prod OK | **Feito** |
-| Chat ultra-fluido / streaming turno | Resposta em bloco; stream só em `/api/chat-conversa/stream` parcial | **P1** |
+| Chat ultra-fluido / streaming turno | Stream ativo + typing até 1º token; debounce plano 600ms | **P1** — polish sidebar |
 | Sidebar fontes do caso | `ChatFontesFlutuante` no ar; falta validação visual e paridade de badges | **P1** |
 | Streaming redação no documento | NDJSON em `/api/gerar-peca` (`stream: true`) | **Feito** (02/09) |
 | Comparativo lado a lado 5–10 casos | Não rodado | **P0** validação |

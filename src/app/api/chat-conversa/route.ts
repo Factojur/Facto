@@ -7,6 +7,8 @@ import {
   conversarAssistenteFase1,
 } from "@/lib/ia/chat-conversa-assistente";
 import { mensagemErroIaParaCliente } from "@/lib/erro-ia-cliente";
+import { obterEstiloEscritorioDoPerfil } from "@/lib/estilo-escritorio-server";
+import { createClient } from "@/lib/supabase/server";
 import { normalizarModoConversa } from "@/lib/modo-conversa-chat";
 
 export const maxDuration = 30;
@@ -30,6 +32,12 @@ export async function POST(request: Request) {
     const areaId = body?.estado?.areaId;
     const gate = await exigirAcessoAreaMinuta(areaId);
     if (!gate.ok) return gate.response;
+
+    const supabase = await createClient();
+    const estiloEscritorio = await obterEstiloEscritorioDoPerfil(
+      supabase,
+      gate.user.id
+    );
 
     const mensagem = String(body?.mensagem ?? "").trim();
     if (mensagem.length < 2) {
@@ -62,6 +70,7 @@ export async function POST(request: Request) {
       primeiroRelato: Boolean(body?.primeiroRelato),
       avisoExtra: body?.avisoExtra ?? null,
       modo: normalizarModoConversa(body?.modo),
+      estiloEscritorio,
     });
 
     let estadoAtualizado: EstadoCasoChat | undefined;

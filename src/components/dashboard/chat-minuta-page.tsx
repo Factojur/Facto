@@ -2455,7 +2455,9 @@ export function ChatMinutaPage({
                 </div>
               </div>
             ))}
-            {enviando && !msgStreamId && (
+            {enviando &&
+              (!msgStreamId ||
+                !mensagens.find((m) => m.id === msgStreamId)?.texto.trim()) && (
               <ChatIndicadorDigitando temaAssistente={tema.msgAssistente} />
             )}
             {exigePolo && (
