@@ -75,6 +75,8 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 - [x] **Estilo no chat** — `estilo_resumo` do Perfil injetado em `/api/chat-conversa` e `/stream` (custo zero extra/turno)
 - [x] **Smoke browser** — nova página por área (evita textarea sumir na 10ª área)
 - [x] **0006509 browser** — relato pede agravo (não MS); timeout 120s
+- [x] **Smoke browser prod pós-harness** — 20/20 áreas · 0006509 browser 6/6
+- [x] **Deploy produção** — `8ef97f4` · `dpl_GW6p9CZpPJh51jAzcrLmUe46MgQx` · Ready · [factoia.com.br](https://factoia.com.br)
 
 ### Feito nesta rodada (02/09 — fls. na peça + streaming redação)
 
