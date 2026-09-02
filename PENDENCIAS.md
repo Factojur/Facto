@@ -39,7 +39,7 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] **Rastreio inline** — `TextoJuridicoInline` (fls. + ✓ lei) no chat e plano; clique em fls. abre painel de anexos
 - [x] **Sidebar fontes** — `ChatFontesFlutuante` na coluna documento (badges anexos/juris/teses)
 - [x] **Testes automáticos** — `npm run test:calibracao` (17) + `test:chat-minuta` (77); `tsc --noEmit` ok
-- [ ] **Reteste 0006509** — PDF → Exequente → MS ou manifestação coerente → plano → redigir (browser)
+- [x] **Reteste 0006509** — `npm run test:caso-0006509 -- --browser` (11 pipeline + 6 checks browser); fix polo capa Exequente×Executada
 - [ ] **Smoke memória anexo** — 2º turno sem re-OCR em prod
 - [ ] **Deploy produção** — commit `8c7076e` no ar · reteste 0006509 em [factoia.com.br](https://factoia.com.br)
 - [ ] **Comparativo FACTO × MinutaIA** — 5–10 cenários iguais nos dois (após deploy ou local)

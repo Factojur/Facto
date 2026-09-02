@@ -10,7 +10,6 @@ import {
   sugereMandadoSegurancaAutos,
 } from "../src/lib/peca-cabivel-autos";
 import { inferirPoloDoRelato } from "../src/lib/polo-advocacia";
-import { createSuite } from "./casos-ouro/suite";
 
 function main() {
   const { assert, stats } = createSuite();
@@ -48,6 +47,12 @@ function main() {
   assert(
     inferirPoloDoRelato("Sou advogado da parte exequente Jefferson") === "ativo",
     "polo exequente no relato"
+  );
+  assert(
+    inferirPoloDoRelato(
+      "Exequente: JEFFERSON DA SILVA RIBEIRO\nExecutada: FACULDADES METROPOLITANAS UNIDAS"
+    ) === "ativo",
+    "capa 0006509: exequente antes de executada"
   );
   const agravoExec = ajustarCabivelAoPolo(
     "jec",
