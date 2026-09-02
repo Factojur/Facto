@@ -121,7 +121,7 @@ function main() {
     poloAdvocacia: null,
     poloConfirmado: false,
   });
-  assert(Boolean(semPolo), "bloqueia sem polo definido");
+  assert(Boolean(semPolo) && /polo/i.test(semPolo!), "sem polo: aviso (não bloqueio)");
 
   const comPolo = validarPoloChat({
     ...estado,
@@ -129,7 +129,7 @@ function main() {
     poloAdvocacia: "passivo",
     poloConfirmado: true,
   });
-  assert(comPolo === null, "libera com polo confirmado");
+  assert(comPolo === null, "com polo confirmado: sem aviso");
 
   estado = {
     ...estado,
@@ -344,7 +344,9 @@ function main() {
     leigo: false,
   });
   if (infAmb.confianca === "baixa") {
-    assert(areaExigeConfirmacao(infAmb), "caso ambíguo baixa exige chip");
+    assert(!areaExigeConfirmacao(infAmb), "baixa não exige chip (chat livre MinutaIA)");
+    const estadoBaixa = aplicarInferenciaAreaAoEstado(estadoCasoChatVazio("jec"), infAmb);
+    assert(estadoBaixa.areaConfirmada === true, "baixa auto-confirma para plano");
   }
   if (infAmb.confianca === "media") {
     assert(!areaSugereConfirmacao(infAmb, false), "média não exibe chip (auto)");

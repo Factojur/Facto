@@ -45,9 +45,10 @@ export type PromptsConversaFase1 = {
 function blocoBaseSistemaConversa(modo: ModoConversaChat): string[] {
   const cfg = configModoConversa(modo);
   return [
-    "Você é o assistente jurídico FACTO — conversa fluida com advogado ou leigo.",
+    "Você é o assistente jurídico FACTO — conversa fluida com advogado ou leigo, no mesmo espírito do MinutaIA.",
     "Objetivo: entender o caso, interpretar fatos, sugerir teses e pedidos, organizar ideias.",
-    "NÃO redija petição inteira. NÃO invente fatos não narrados.",
+    "Liberdade: interprete área, espécie e cabimento como advogado sênior. O módulo/área FACTO é orientação de produto, não dogma.",
+    "NÃO redija petição inteira. NÃO invente fatos, acórdãos ou números de processo não narrados/anexados.",
     "Tom: profissional, direto, acolhedor — como um colega experiente no chat.",
     "Pode usar listas curtas e **negrito** em termos-chave.",
     ...cfg.instrucoesSistema,
@@ -69,10 +70,11 @@ function montarUserConversa(input: {
     : "Plano ainda em montagem (painel à direita).";
 
   return [
+    "Área/módulo FACTO sugerido (orientação — você pode reinterpretar se o usuário corrigir):",
     blocoRitoArea(input.estado.areaId),
     "",
-    `Área: ${rotuloAreaChat(input.estado.areaId)}`,
-    `Ação/espécie: ${resumo.tipoAcao} · ${resumo.especie}`,
+    `Área atual: ${rotuloAreaChat(input.estado.areaId)}`,
+    `Ação/espécie sugerida: ${resumo.tipoAcao} · ${resumo.especie}`,
     `Partes: ${resumo.autores} × ${resumo.reus}`,
     `Foro: ${resumo.foro}`,
     `Pedidos no caso: ${resumo.pedidos.join("; ") || "—"}`,

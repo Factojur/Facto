@@ -10,12 +10,24 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 
 **Jefferson:** o chat FACTO deve funcionar **igual ao MinutaIA em tudo, exceto layout e cores**. O usuário **não** deve precisar microgerenciar polo, espécie, área e detalhes do caso. **Formatação e entrega da peça pronta** ficam para **depois** de fechar este épico.
 
+### Decisão (02/09) — chat livre; áreas manuais desacopladas
+
+**Produto principal = chat.** Dashboards manuais por área (`/dashboard/jec`, etc.) **permanecem** (rito, espécies, formulário 3 etapas) mas **não travam** o chat: sem chip obrigatório de área/polo, sem bloqueio de Redigir por incoerência leve, IA interpreta o caso como no MinutaIA.
+
+| Camada | Papel |
+|--------|--------|
+| **Chat** | Intake + interpretação + plano + redação (sensação MinutaIA) |
+| **Áreas / módulos** | Catálogo de acesso + esqueleto de rito **depois** da IA escolher; allowlist de produto |
+| **Únicas diferenças vs MinutaIA** | Lastro (base FACTO + anexos, sem inventar acórdão) e aparência (glass FACTO) |
+
+Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração remédio — pontos em que o MinutaIA falha ou inventa.
+
 ### Checklist paridade (chat = MinutaIA; visual = FACTO)
 
 | Dimensão | MinutaIA (referência) | FACTO hoje | Alvo |
 |----------|----------------------|------------|------|
-| **Entendimento autônomo** | Lê PDF, infere partes, polo, remédio (ex.: MS no cumprimento) | Calibrado + fix polo capa 0006509 no ar (`8771fd4`); reteste manual Jefferson | P0 — inferência + confirmação só quando ambíguo |
-| **Conversa fluida** | Poucas perguntas; plano direcionado | Thread enxuto; área média/alta auto; conferências no painel plano | P0 — um fluxo: relato/anexo → entendimento → plano → redigir |
+| **Entendimento autônomo** | Lê PDF, infere partes, polo, remédio | IA-first + chat livre (sem travas de área/polo) | P0 — manter; calibrar remédio |
+| **Conversa fluida** | Poucas perguntas; plano direcionado | Thread enxuto; área/polo auto; avisos só banner | P0 — um fluxo: relato/anexo → entendimento → plano → redigir |
 | **Confiança no texto** | Ícones `fls.` no corpo; ✓ em lei/juris | `TextoJuridicoInline` + visualizador PDF na folha (`ChatVisualizadorAnexo`) | P0 — rastreio visível antes de gastar cota |
 | **Sidebar de fontes** | Badges (anexos, juris, plugins) | `ChatFontesFlutuante` na coluna documento | P1 — validar em browser |
 | **Memória de anexo** | Não reexplica PDF a cada turno | Memória sessão (commit `3bc7641`); validar em prod | P0 — smoke 2º turno com mesmo PDF |
@@ -25,12 +37,12 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 
 ### Fases (ordem fechada)
 
-1. **A — Entendimento e segurança (P0)** — polo confirmado no thread; espécie/remédio por último ato + polo (MS ≠ agravo da executada); área auto; bloqueio redigir se incoerente; reteste caso 0006509.
+1. **A — Entendimento e segurança (P0)** — IA interpreta; avisos soft (não bloqueiam); remédio por último ato; área/polo auto; reteste 0006509.
 2. **B — Rastreabilidade visível (P0)** — citações `fls.` e ✓ lei inline no plano e na prévia (reusar `pagina-anexo-pdf` + base FACTO); “o que li do PDF” em 1 balão após anexo.
 3. **C — Fluidez e fontes (P1)** — streaming turno/plano; coluna fontes (anexos, juris do caso, teses); menos chips no header, mais no fluxo natural do chat.
 4. **D — Formatação/entrega da peça** — **adiado** por decisão Jefferson (protocolo, Word/PDF, tipografia final).
 
-**Não fazer neste épico:** clone visual, skills 2k, juris live, reprocessar PDF inteiro a cada turno (margem 35–40%).
+**Não fazer neste épico:** clone visual, skills 2k, juris live, reprocessar PDF inteiro a cada turno (margem 35–40%). **Não** religar confirmação obrigatória de área/polo no chat.
 
 ### Em andamento (épico paridade)
 
@@ -52,13 +64,22 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] **Comparativo FACTO (automático)** — `npm run test:comparativo-paridade` 8 cenários · relatório `scripts/comparativo-paridade-minutaia.md`
 - [ ] **Comparativo MinutaIA (manual)** — mesmos 8 relatos no app deles; preencher coluna MinutaIA no relatório
 - [ ] **Pontos finais (após ok Jefferson)** — juris/`fls.` clicáveis na peça; inspector no ícone i (camada C)
+- [x] **Chat livre (desacoplado das travas de área)** — área/polo não bloqueiam; IA autoridade; payload com polo default; prompts conversa/inferência MinutaIA-style
+
+### Feito nesta rodada (02/09 — chat livre MinutaIA)
+
+- [x] **Sem trava de área/polo** — `areaExigeConfirmacao` / `precisaConfirmarPoloAdvogado` = false; Redigir segue com aviso âmbar
+- [x] **IA autoridade** — espécie da inferência respeitada (`respeitarEspecieIa`); rito da área só orientação no prompt
+- [x] **Payload** — polo ambíguo → relato ou default ativo (não 400 no chat)
+- [x] **Decisão produto** — chat = produto principal; dashboards manuais desacoplados (não deletados)
+- [x] **Testes** — `test:chat-minuta` 77; `test:calibracao` 19; `test:caso-0006509` 10; `tsc --noEmit` ok
 
 ### Feito nesta rodada (02/09 — interpretação IA MinutaIA-style)
 
 - [x] **IA na frente** — `/api/inferir-area` devolve área + espécie; chat chama em todo caso (não só ambíguo); local = pista
 - [x] **0006509 → agravo** — MS só explícito; interlocutória em cumprimento = agravo; removido bloqueio “agravo só da executada”
 - [x] **Testes** — calibracao 19; caso-0006509 10; peca-cabivel 37; chat-minuta 77; comparativo 8
-- [ ] **Deploy** — commit + push
+- [x] **Deploy** — `bad7986` push · aguardar Vercel Ready
 
 ### Feito nesta rodada (02/09 — área auto + lastro plano)
 

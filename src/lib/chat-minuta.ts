@@ -328,12 +328,11 @@ export function inferirAreaChat(params: {
   return inferirAreaChatDetalhado(params).inferencia;
 }
 
-/** Inferência baixa pede chip de confirmação; média/alta seguem com sugestão. */
+/** MinutaIA-style: área segue automática — usuário troca no header se quiser. */
 export function areaExigeConfirmacao(
-  inferencia: InferenciaAreaChat | null | undefined
+  _inferencia: InferenciaAreaChat | null | undefined
 ): boolean {
-  if (!inferencia) return false;
-  return inferencia.confianca === "baixa";
+  return false;
 }
 
 /** Chip de sugestão (média) — desligado: área média/alta segue automática (paridade MinutaIA). */
@@ -359,16 +358,12 @@ export function aplicarInferenciaAreaAoEstado(
   inferencia: InferenciaAreaChat,
   opts?: { manual?: boolean; motivo?: string | null }
 ): EstadoCasoChat {
-  const autoConfirma =
-    Boolean(opts?.manual) ||
-    inferencia.confianca === "alta" ||
-    inferencia.confianca === "media";
   return {
     ...estado,
     areaId: inferencia.areaId,
     areaInferida: inferencia,
     areaMotivo: opts?.motivo ?? estado.areaMotivo,
-    areaConfirmada: autoConfirma,
+    areaConfirmada: true,
     planoVisto: false,
     previewVisto: false,
   };
@@ -569,7 +564,11 @@ export function montarPayloadGeracaoChat(
     estado.especiePeca
   );
   const pedidosUsuario = estado.pedidos.filter(Boolean);
-  const polo = resolverPoloGeracao(areaId, especie, estado.poloAdvocacia);
+  let polo = resolverPoloGeracao(areaId, especie, estado.poloAdvocacia);
+  if (!polo) {
+    // Ambíguo: relato → senão polo ativo (não bloqueia Redigir — paridade MinutaIA)
+    polo = inferirPoloDoRelato(estado.fatos) ?? "ativo";
+  }
   const valoresCausa = formularioValoresEstaVazio(estado.valoresCausa)
     ? undefined
     : estado.valoresCausa;
@@ -1017,16 +1016,6 @@ export function poloExigeConfirmacaoChat(
   return ladoPoloDaEspecie(areaId, especiePeca) === "ambos";
 }
 
-export function validarPoloChat(estado: EstadoCasoChat): string | null {
-  if (precisaConfirmarPoloAdvogado(estado)) {
-    return "Confirme para qual parte você advoga — use os botões no chat.";
-  }
-  const especie = especieResolvidaChat(estado);
-  if (!poloExigeConfirmacaoChat(estado.areaId, especie)) return null;
-  if (estado.poloAdvocacia) return null;
-  return "Informe o polo (ativo ou passivo) — ou descreva quem você representa no relato.";
-}
-
 /** Infere polo do relato quando a espécie aceita ambos os lados. */
 export function aplicarPoloInferidoChat(
   estado: EstadoCasoChat,
@@ -1059,8 +1048,17 @@ export function aplicarPoloInferidoChat(
   };
 }
 
-/** Reajusta espécie após polo confirmado (cumprimento × agravo). */
-export function reajustarEspeciePoloChat(estado: EstadoCasoChat): EstadoCasoChat {
+/**
+ * Reajusta espécie após polo — só quando a IA ainda não fixou o remédio.
+ * Com `respeitarEspecieIa`, não sobrescreve a interpretação.
+ */
+export function reajustarEspeciePoloChat(
+  estado: EstadoCasoChat,
+  opts?: { respeitarEspecieIa?: boolean }
+): EstadoCasoChat {
+  if (opts?.respeitarEspecieIa && estado.especiePeca?.trim()) {
+    return estado;
+  }
   const especieAtual = especieResolvidaChat(estado);
   const ajustada = ajustarEspecieCabivel({
     areaId: estado.areaId,
@@ -1075,20 +1073,37 @@ export function reajustarEspeciePoloChat(estado: EstadoCasoChat): EstadoCasoChat
   return { ...estado, especiePeca: ajustada, tipoAcao };
 }
 
-/** Bloqueia redação quando espécie e polo são incompatíveis. */
-export function validarPoloEspecieChat(estado: EstadoCasoChat): string | null {
-  const poloMsg = validarPoloChat(estado);
-  if (poloMsg) return poloMsg;
-
+/**
+ * Aviso de conferência (não bloqueia Redigir — paridade MinutaIA).
+ * Retorna texto para banner âmbar; null se ok.
+ */
+export function avisosPoloEspecieChat(estado: EstadoCasoChat): string | null {
   const especie = especieResolvidaChat(estado);
-  const polo = resolverPoloGeracao(estado.areaId, especie, estado.poloAdvocacia);
-  if (!polo) return null;
-
-  if (!especieCompativelComPolo(estado.areaId, especie, polo)) {
-    return `A peça sugerida não combina com o polo ${polo === "ativo" ? "ativo (exequente/autor)" : "passivo (executado/réu)"}. Revise em Entendimento ou descreva a peça desejada.`;
+  if (
+    poloExigeConfirmacaoChat(estado.areaId, especie) &&
+    !estado.poloAdvocacia
+  ) {
+    return "Confirme o polo no chat se puder — a peça seguirá com a melhor leitura do caso.";
   }
 
+  const polo = resolverPoloGeracao(estado.areaId, especie, estado.poloAdvocacia);
+  if (
+    polo &&
+    !especieCompativelComPolo(estado.areaId, especie, polo)
+  ) {
+    return `Conferência: a espécie sugerida pode não combinar com o polo ${polo === "ativo" ? "ativo" : "passivo"}. Ajuste no entendimento se necessário — a redação não fica bloqueada.`;
+  }
   return null;
+}
+
+/** @deprecated Preferir avisosPoloEspecieChat — não bloqueia mais. */
+export function validarPoloEspecieChat(estado: EstadoCasoChat): string | null {
+  return avisosPoloEspecieChat(estado);
+}
+
+/** @deprecated Preferir avisos — polo não bloqueia plano. */
+export function validarPoloChat(estado: EstadoCasoChat): string | null {
+  return avisosPoloEspecieChat(estado);
 }
 
 export type OpcaoPoloAdvogado = {
@@ -1114,22 +1129,14 @@ export function mensagemConfirmacaoPoloChat(): string {
   return "Analisei o material do caso. **Você é advogado(a) de qual parte?** Isso direciona o plano e a peça.";
 }
 
-/** Pergunta só se relato/documentos não indicam o polo e a espécie não fixa o lado. */
-export function precisaConfirmarPoloAdvogado(estado: EstadoCasoChat): boolean {
-  if (!areaUsaPoloAdvocacia(estado.areaId)) return false;
-  if (estado.poloConfirmado && estado.poloAdvocacia) return false;
-  if ((estado.fatos ?? "").trim().length < 40) return false;
-  if (inferirPoloDoRelato(estado.fatos)) return false;
-
-  const especie = especieResolvidaChat(estado);
-  const ladoFixo =
-    inferirPoloPorEspecie(estado.areaId, especie) ??
-    (ladoPoloDaEspecie(estado.areaId, especie) !== "ambos"
-      ? ladoPoloDaEspecie(estado.areaId, especie)
-      : null);
-  if (ladoFixo === "ativo" || ladoFixo === "passivo") return false;
-
-  return poloExigeConfirmacaoChat(estado.areaId, especie);
+/**
+ * MinutaIA-style: polo não trava o fluxo.
+ * Continua disponível para chips opcionais; preferir avisosPoloEspecieChat.
+ */
+export function precisaConfirmarPoloAdvogado(
+  _estado: EstadoCasoChat
+): boolean {
+  return false;
 }
 
 export function sincronizarPoloAutomaticoChat(

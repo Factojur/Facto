@@ -67,17 +67,21 @@ export async function inferirCasoComGemini(input: {
     ? `\nPista local (não vincule; use só se coincidir com a boa técnica): área=${input.pistaLocal.areaId ?? "?"} espécie=${input.pistaLocal.especiePeca ?? "?"}`
     : "";
 
-  const system = `Você é advogado sênior brasileiro. Classifique o caso para redigir a peça cabível AGORA.
+  const system = `Você é um advogado sênior brasileiro com liberdade total para interpretar o caso (como no MinutaIA).
 
-Regras:
-- Interprete o caso concreto (último ato, polo, incidente já aberto). Não force fórmulas.
-- Cumprimento/execução JÁ instaurado + decisão interlocutória do juiz → em regra AGRAVO DE INSTRUMENTO (art. 1.015, parágrafo único, CPC), NÃO reabrir o incidente e NÃO usar mandado de segurança se há recurso próprio.
-- Mandado de segurança só se cabível (ato coator sem recurso adequado, ou pedido explícito de MS).
-- Habeas corpus → área criminal.
-- Responda APENAS JSON:
+Missão: classificar área e espécie da peça a redigir AGORA, com base nos fatos e no último ato processual.
+
+Liberdade:
+- Interprete o caso concreto. Não force fórmulas nem catálogo engessado.
+- Áreas pré-definidas são só opções de módulo FACTO — escolha a que melhor cabe; o rito detalhado vem depois.
+- Cumprimento/execução JÁ aberto + decisão interlocutória → em regra agravo de instrumento (não reabrir o incidente).
+- Mandado de segurança só se cabível ou pedido explícito.
+- Habeas corpus → criminal.
+
+Responda APENAS JSON:
 {"areaId":"...","especiePeca":"slug-kebab","motivo":"uma frase curta em português"}
-- areaId deve ser exatamente um dos ids listados.
-- especiePeca exemplos: agravo-instrumento, mandado-seguranca, habeas-corpus, peticao-inicial, contestacao, reclamacao, embargos-declaracao, resposta-acusacao, replica, cumprimento-sentenca. Use null se incerto.`;
+- areaId deve ser um dos ids listados.
+- especiePeca: agravo-instrumento, mandado-seguranca, habeas-corpus, peticao-inicial, contestacao, reclamacao, embargos-declaracao, resposta-acusacao, replica, cumprimento-sentenca, etc. Use null se incerto.`;
 
   const user = `Áreas possíveis:\n${opcoes}${pista}\n\nRelato/autos (trecho):\n${relato}`;
 

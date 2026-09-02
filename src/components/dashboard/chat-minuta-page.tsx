@@ -36,7 +36,6 @@ import {
 } from "@/lib/extrair-qualificacao-relato";
 import {
   candidatasParaRefinoArea,
-  motivoAreaAposOrganizacao,
   precisaInterpretacaoCasoIa,
 } from "@/lib/inferir-area-refino";
 import { organizarCasoLocal } from "@/lib/organizar-caso-local";
@@ -56,7 +55,7 @@ import {
   opcoesPoloAdvogadoChat,
   sincronizarPoloAutomaticoChat,
   reajustarEspeciePoloChat,
-  validarPoloEspecieChat,
+  avisosPoloEspecieChat,
   aplicarPreenchimentoAoEstado,
   aplicarOrganizacaoAoEstadoChat,
   areaExigeConfirmacao,
@@ -75,7 +74,6 @@ import {
   sincronizarTribunaisComarca,
   rotuloAreaChat,
   especieResolvidaChat,
-  validarPoloChat,
   type EstadoCasoChat,
   type MensagemChat,
 } from "@/lib/chat-minuta";
@@ -541,11 +539,9 @@ export function ChatMinutaPage({
 
   const rotuloAreaCaso = areaAindaIndefinida
     ? "Área a definir"
-    : !estado.areaConfirmada
-      ? "Confirmar área"
-      : especieAtual
-        ? `${rotuloAreaChat(estado.areaId)} · ${especieAtual.replace(/-/g, " ")}`
-        : rotuloAreaChat(estado.areaId);
+    : especieAtual
+      ? `${rotuloAreaChat(estado.areaId)} · ${especieAtual.replace(/-/g, " ")}`
+      : rotuloAreaChat(estado.areaId);
   const tituloAreaHeader = estado.areaMotivo
     ? `${rotuloAreaCaso} — ${estado.areaMotivo}`
     : rotuloAreaCaso;
@@ -1038,11 +1034,8 @@ export function ChatMinutaPage({
       setEstado(comPolo);
       estadoRef.current = comPolo;
     }
-    const msg = validarPoloChat(comPolo);
-    if (msg) {
-      setAvisos(msg);
-      return false;
-    }
+    const msg = avisosPoloEspecieChat(comPolo);
+    if (msg) setAvisos(msg);
     return true;
   }
 
@@ -1214,7 +1207,10 @@ export function ChatMinutaPage({
 
       if (!podeMontarPlanoChat(e)) return null;
       const ePolo = sincronizarPoloAutomaticoChat(e);
-      if (validarPoloChat(ePolo)) return null;
+      const avisoPolo = avisosPoloEspecieChat(ePolo);
+      if (avisoPolo && !opts?.silencioso) {
+        setAvisos(avisoPolo);
+      }
 
       planoAbortRef.current?.abort();
       const ac = new AbortController();
@@ -1313,8 +1309,7 @@ export function ChatMinutaPage({
   useEffect(() => {
     if (geradoPorIA || enviando || redigindo) return;
     if (!podeMontarPlanoChat(estado)) return;
-    if (precisaConfirmarPoloAdvogado(estado)) return;
-    if (validarPoloChat(sincronizarPoloAutomaticoChat(estado))) return;
+    // MinutaIA-style: plano sobe sem esperar chip de polo.
 
     if (previewAutoTimerRef.current) clearTimeout(previewAutoTimerRef.current);
     const debounceMs = configModoConversa(modoConversa).debouncePlanoMs;
@@ -1579,7 +1574,6 @@ export function ChatMinutaPage({
         }
       }
 
-      const areaInferidaInicial = inferencia.areaId;
       const areaParaOrg = areaManual ? estado.areaId : inferencia.areaId;
       const estadoAntes = estadoAnteriorRef.current;
       const trocaArea =
@@ -1605,26 +1599,10 @@ export function ChatMinutaPage({
         };
       }
 
-      // Local NÃO sobrescreve área/espécie da IA (só completa se IA falhou).
-      if (
-        !areaManual &&
-        !areaMotivo &&
-        orgLocal.areaIdResolvida !== areaParaOrg &&
-        chatMinutaAreaHabilitada(orgLocal.areaIdResolvida as AreaIdMinuta)
-      ) {
-        inferencia = {
-          areaId: orgLocal.areaIdResolvida as AreaIdMinuta,
-          confianca: "media",
-          alternativas: [],
-        };
-        areaMotivo =
-          motivoAreaAposOrganizacao({
-            areaInferida: areaInferidaInicial,
-            areaResolvida: orgLocal.areaIdResolvida as AreaIdMinuta,
-            especiePeca: preenchimentoLocal.especiePeca ?? undefined,
-            ultimoAto: preenchimentoLocal.ultimoAto,
-          }) ?? areaMotivo;
-      }
+      // IA manda em área; local só extrai partes/fatos/pedidos (não remapeia área).
+      const areaAutoridade = areaManual
+        ? estado.areaId
+        : (inferencia.areaId as AreaIdMinuta);
 
       let nextEstado = areaManual
         ? { ...baseEstado, areaConfirmada: true }
@@ -1632,11 +1610,14 @@ export function ChatMinutaPage({
             motivo: areaMotivo,
           });
       nextEstado = aplicarOrganizacaoAoEstadoChat(nextEstado, preenchimentoLocal, {
-        areaId: orgLocal.areaIdResolvida,
+        areaId: areaAutoridade,
         relato,
       });
       nextEstado = sincronizarPoloAutomaticoChat(nextEstado, texto);
-      nextEstado = reajustarEspeciePoloChat(nextEstado);
+      // Não sobrescrever espécie da IA com heurística local.
+      nextEstado = reajustarEspeciePoloChat(nextEstado, {
+        respeitarEspecieIa: Boolean(especieIa && !areaManual),
+      });
       nextEstado = { ...nextEstado, planoVisto: false, previewVisto: false };
 
       const primeiroRelato =
@@ -1744,8 +1725,7 @@ export function ChatMinutaPage({
 
       if (
         configModoConversa(modoConversa).forcarPlanoAposTurno &&
-        podeMontarPlanoChat(estadoRef.current) &&
-        !precisaConfirmarPoloAdvogado(estadoRef.current)
+        podeMontarPlanoChat(estadoRef.current)
       ) {
         void executarPlano({ silencioso: false, forcar: true });
       }
@@ -1784,17 +1764,20 @@ export function ChatMinutaPage({
               }
               if (!data.preenchimento) return;
               setEstado((atual) => {
-                let merged = aplicarOrganizacaoAoEstadoChat(
-                  atual,
-                  data.preenchimento!,
-                  {
-                    areaId: orgLocal.areaIdResolvida,
-                    relato,
-                    replicaContestacao: data.replicaContestacao ?? undefined,
-                  }
-                );
+                // Preserva área/espécie da IA; entrada-caso só enriquece partes/metadados.
+                const preservado = {
+                  ...data.preenchimento!,
+                  especiePeca: atual.especiePeca || data.preenchimento!.especiePeca,
+                };
+                let merged = aplicarOrganizacaoAoEstadoChat(atual, preservado, {
+                  areaId: atual.areaId,
+                  relato,
+                  replicaContestacao: data.replicaContestacao ?? undefined,
+                });
                 merged = sincronizarPoloAutomaticoChat(merged, relato);
-                merged = reajustarEspeciePoloChat(merged);
+                merged = reajustarEspeciePoloChat(merged, {
+                  respeitarEspecieIa: Boolean(atual.especiePeca?.trim()),
+                });
                 estadoRef.current = merged;
                 estadoAnteriorRef.current = merged;
                 return merged;
@@ -1837,11 +1820,11 @@ export function ChatMinutaPage({
     const payload = overrides?.payload ?? payloadPendente;
     if (!triagem || !payload) return;
 
-    const estadoAtual = estadoRef.current;
-    const avisoPolo = validarPoloEspecieChat(estadoAtual);
+    const estadoAtual = sincronizarPoloAutomaticoChat(estadoRef.current);
+    const avisoPolo = avisosPoloEspecieChat(estadoAtual);
     if (avisoPolo) {
       setAvisos(avisoPolo);
-      return;
+      // Não bloqueia — paridade MinutaIA; redação segue com melhor leitura.
     }
 
     setRedigindo(true);
