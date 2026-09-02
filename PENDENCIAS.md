@@ -73,6 +73,7 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 - [x] **`fls.` na peça** — `PecaDocumentoView` com `onAbrirFls` + `TextoJuridicoInline` (export Word/PDF inalterado)
 - [x] **Streaming redação** — `gerarTextoComGeminiStream` + `onRedacaoDelta` no redator; `/api/gerar-peca` com `stream: true` (NDJSON `{t}` + `{done}`); chat atualiza painel direito em tempo real
 - [x] **`tsc --noEmit`** ok
+- [x] **Deploy produção** — `f8649de` · `dpl_78S9UgGpP4m5E3ZJzbADuj5vKwnR` · Ready · [factoia.com.br](https://factoia.com.br)
 
 ### Feito nesta rodada (02/09 — comparativo MinutaIA browser)
 
