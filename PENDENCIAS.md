@@ -62,9 +62,15 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 - [x] **Lastro no plano (preview)** — `PlanoLastroHint` (ícone i dourado por tópico; hover desktop); texto derivado de cobertura + estratégia (`plano-lastro-hint.ts`)
 - [x] **Lastro por tópico A+B** — `LASTRO:`/`ENCAIXE:` na triagem + parser (`plano-topicos-peca`); complemento local fls./lei/juris (`plano-lastro-topico.ts`); `test:plano-lastro` 6/6
 - [x] **Comparativo FACTO (automático)** — `npm run test:comparativo-paridade` 8 cenários · relatório `scripts/comparativo-paridade-minutaia.md`
-- [ ] **Comparativo MinutaIA (manual)** — mesmos 8 relatos no app deles; preencher coluna MinutaIA no relatório
+- [x] **Comparativo MinutaIA (manual/browser)** — 8 relatos em minutaia.com.br (conta FACTO); relatório `scripts/comparativo-paridade-minutaia.md` · interpretação ≈ paridade; lastro FACTO mais estruturado
 - [ ] **Pontos finais (após ok Jefferson)** — juris/`fls.` clicáveis na peça; inspector no ícone i (camada C)
 - [x] **Chat livre (desacoplado das travas de área)** — área/polo não bloqueiam; IA autoridade; payload com polo default; prompts conversa/inferência MinutaIA-style
+
+### Feito nesta rodada (02/09 — comparativo MinutaIA browser)
+
+- [x] **8 cenários no MinutaIA** — 0006509 agravo; HC; BPC; Enel; trabalhista; JEC; contestação; lastro (texto)
+- [x] **Veredito** — interpretação ≈ paridade FACTO×MinutaIA; lastro FACTO com UI estruturada (eles: inline sem badge/clique)
+- [x] Relatório atualizado em `scripts/comparativo-paridade-minutaia.md`
 
 ### Feito nesta rodada (02/09 — chat livre MinutaIA)
 
