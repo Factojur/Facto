@@ -73,6 +73,7 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 - [x] **Payload** — polo ambíguo → relato ou default ativo (não 400 no chat)
 - [x] **Decisão produto** — chat = produto principal; dashboards manuais desacoplados (não deletados)
 - [x] **Testes** — `test:chat-minuta` 77; `test:calibracao` 19; `test:caso-0006509` 10; `tsc --noEmit` ok
+- [x] **Deploy produção** — `1b61972` · `dpl_FfQA4Swq56GYuVk57YRWmEbvBFyA` · Ready · [factoia.com.br](https://factoia.com.br)
 
 ### Feito nesta rodada (02/09 — interpretação IA MinutaIA-style)
 
