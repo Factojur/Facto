@@ -11,6 +11,9 @@ import {
 } from "@/lib/abrir-documento-nova-aba";
 import { ExportacaoTrialUpsell } from "@/components/dashboard/exportacao-trial-upsell";
 import { TextoJuridicoInline } from "@/components/dashboard/texto-juridico-inline";
+import { PecaPreviewPaginado } from "@/components/dashboard/peca-preview-paginado";
+import { ProtocoloDocsChecklist } from "@/components/dashboard/protocolo-docs-checklist";
+import type { AreaIdMinuta } from "@/lib/minuta-modulo";
 
 export function PecaDocumentoView({
   peca,
@@ -19,6 +22,10 @@ export function PecaDocumentoView({
   onCopiarTexto,
   onAbrirFls,
   exportacaoBloqueada = false,
+  areaId,
+  foro,
+  numeroProcesso,
+  previewPaginadoPadrao = false,
 }: {
   peca: string;
   pecaHtml: string;
@@ -28,10 +35,19 @@ export function PecaDocumentoView({
   onAbrirFls?: (pagina: number | null, trecho: string) => void;
   /** Trial: bloqueia Word/PDF; preview e copiar texto permanecem. */
   exportacaoBloqueada?: boolean;
+  /** Para checklist de protocolo pós-redação. */
+  areaId?: AreaIdMinuta | string;
+  foro?: string;
+  numeroProcesso?: string;
+  /** Inicia em folhas A4 (chat). */
+  previewPaginadoPadrao?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [baixando, setBaixando] = useState<"docx" | "pdf" | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [modoPreview, setModoPreview] = useState<"folhas" | "continuo">(
+    previewPaginadoPadrao ? "folhas" : "continuo"
+  );
 
   async function handleBaixarDocx() {
     if (exportacaoBloqueada) return;
@@ -111,6 +127,37 @@ export function PecaDocumentoView({
 
   return (
     <div>
+      {peca.trim() && onAbrirFls ? (
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-medium text-stone-500">Preview:</span>
+          <button
+            type="button"
+            className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition ${
+              modoPreview === "folhas"
+                ? "bg-stone-800 text-amber-50"
+                : "border border-stone-200 text-stone-600 hover:border-stone-400"
+            }`}
+            onClick={() => setModoPreview("folhas")}
+          >
+            Folhas A4
+          </button>
+          <button
+            type="button"
+            className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition ${
+              modoPreview === "continuo"
+                ? "bg-stone-800 text-amber-50"
+                : "border border-stone-200 text-stone-600 hover:border-stone-400"
+            }`}
+            onClick={() => setModoPreview("continuo")}
+          >
+            Contínuo
+          </button>
+        </div>
+      ) : null}
+
+      {modoPreview === "folhas" && onAbrirFls ? (
+        <PecaPreviewPaginado peca={peca} onAbrirFls={onAbrirFls} />
+      ) : (
       <div
         ref={ref}
         className="w-full overflow-x-hidden rounded-lg border border-slate-200 bg-white shadow-inner [&_.documento-juridico]:max-w-full"
@@ -133,6 +180,7 @@ export function PecaDocumentoView({
           <div dangerouslySetInnerHTML={{ __html: pecaHtml }} />
         )}
       </div>
+      )}
 
       {exportacaoBloqueada ? (
         <ExportacaoTrialUpsell className="mt-3" />
@@ -190,6 +238,17 @@ export function PecaDocumentoView({
       </div>
 
       {erro && <p className="mt-3 text-sm text-red-600">{erro}</p>}
+
+      {peca.trim() && areaId ? (
+        <div className="mt-4">
+          <ProtocoloDocsChecklist
+            areaId={areaId}
+            foro={foro}
+            numeroProcesso={numeroProcesso}
+            compacto
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

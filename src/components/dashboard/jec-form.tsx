@@ -29,10 +29,7 @@ import {
 } from "@/lib/jec-rascunho-storage";
 import { montarChecklistJec, podeGerarPeca } from "@/lib/jec-checklist";
 import { placeholderFatosPorArea } from "@/lib/placeholders-por-area";
-import {
-  cabecalhoConferenciaTribunal,
-  docsConferenciaComTribunal,
-} from "@/lib/docs-conferencia-protocolo";
+import { ProtocoloDocsChecklist } from "@/components/dashboard/protocolo-docs-checklist";
 import {
   ESPECIES_PECA_JEC,
   inferirEspeciePeca,
@@ -217,61 +214,6 @@ function FileField({
         multiple={multiple}
         className="block w-full cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-stone-700 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-amber-50 hover:file:bg-stone-600"
       />
-    </div>
-  );
-}
-
-function ProtocoloDocsChecklist({
-  areaId,
-  foro,
-  numeroProcesso,
-}: {
-  areaId: AreaIdMinuta;
-  foro?: string;
-  numeroProcesso?: string;
-}) {
-  const conferencia = docsConferenciaComTribunal({
-    areaId,
-    foro,
-    numeroProcesso,
-  });
-  const cabecalho = cabecalhoConferenciaTribunal(conferencia.tribunalId);
-
-  return (
-    <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-slate-800">
-        Conferência de documentos
-      </h2>
-      <p className="mt-1 text-sm text-slate-500">
-        Lembrete do que você junta no protocolo (e-proc, ESAJ ou presencial).
-        O FACTO não envia esses arquivos ao juízo e a lista não entra na
-        redação da peça.
-      </p>
-      <p className="mt-2 text-xs font-medium text-stone-700">
-        Tribunal inferido: {conferencia.tribunalRotulo}
-      </p>
-      {cabecalho ? (
-        <p className="mt-2 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs leading-relaxed text-sky-950">
-          {cabecalho}
-        </p>
-      ) : null}
-      <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-950">
-        Cada caso pode precisar de documentos próprios. Confira sempre o que a
-        peça alega e o que a unidade judiciária exige.
-      </p>
-
-      <ul className="mt-4 list-disc space-y-2.5 pl-5">
-        {conferencia.itens.map((doc) => (
-          <li key={doc.id} className="text-sm text-slate-800">
-            {doc.label}
-            {doc.nota ? (
-              <span className="mt-0.5 block text-xs font-normal text-slate-500">
-                {doc.nota}
-              </span>
-            ) : null}
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }

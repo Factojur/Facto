@@ -2903,6 +2903,10 @@ export function ChatMinutaPage({
                 escritorio={escritorio.usarTimbre ? escritorio : undefined}
                 exportacaoBloqueada={exportacaoTrial}
                 onAbrirFls={abrirFlsNoAnexo}
+                previewPaginadoPadrao
+                areaId={estado.areaId}
+                foro={estado.comarca.foro}
+                numeroProcesso={estado.comarca.numeroProcesso}
                 onCopiarTexto={() => {
                   void navigator.clipboard.writeText(peca);
                 }}

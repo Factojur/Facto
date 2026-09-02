@@ -68,9 +68,16 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 - [x] **Streaming redação no documento** — `stream: true` em `/api/gerar-peca` (NDJSON); redator Gemini com `onRedacaoDelta`; chat mostra texto crescendo
 - [x] **Chat livre (desacoplado das travas de área)** — área/polo não bloqueiam; IA autoridade; payload com polo default; prompts conversa/inferência MinutaIA-style
 
+### Feito nesta rodada (02/09 — Fase D pacote 5, fatia 1)
+
+- [x] **Preview folhas A4** — toggle Folhas/Contínuo em `PecaDocumentoView`; chat inicia em folhas
+- [x] **Checklist protocolo no chat** — `ProtocoloDocsChecklist` compartilhado (área + foro + tribunal inferido)
+- [ ] **Word/PDF polish** — próxima fatia Fase D
+
 ### Feito nesta rodada (02/09 — inspector lastro pacote 4)
 
 - [x] **Inspector no ícone i** — `PlanoLastroHint` abre `PainelLateralPortal` com ENCAIXE + LASTRO + teses; hover rápido no desktop; toque no mobile
+- [x] **Deploy produção** — `e1ee766` · [factoia.com.br](https://factoia.com.br)
 
 ### Feito nesta rodada (02/09 — sidebar fontes pacote 3)
 
