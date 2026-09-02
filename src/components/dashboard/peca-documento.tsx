@@ -186,7 +186,9 @@ export function PecaDocumentoView({
         <ExportacaoTrialUpsell className="mt-3" />
       ) : (
         <p className="mt-3 text-xs text-slate-500">
-          Abrem em nova aba. Word pode incluir timbre; PDF e cópia usam texto limpo.
+          Abrem em nova aba. Word pode incluir timbre; PDF em Times 12 com
+          numeração de folhas; cópia usa texto limpo. O preview em folhas A4
+          aproxima a paginação do export.
         </p>
       )}
 

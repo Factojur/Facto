@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef } from "react";
-import { FactoWordmark } from "@/components/brand/facto-wordmark";
+import { FactoWordmarkIa } from "@/components/brand/facto-wordmark";
 
 /** Linhas que partem das bordas e convergem no centro (wordmark FACTO). */
 const RAIOS: [number, number, number, number][] = [
@@ -188,8 +188,8 @@ export function ChatFactoTitulo() {
         <span className="text-xl font-semibold tracking-tight text-stone-400 md:text-2xl">
           Chat
         </span>
-        <span className="facto-titulo-wordmark inline-flex h-[1.35rem] items-center md:h-[1.7rem]">
-          <FactoWordmark className="h-full w-auto" />
+        <span className="facto-titulo-wordmark inline-flex items-center">
+          <FactoWordmarkIa size="chat" />
         </span>
       </h2>
     </div>

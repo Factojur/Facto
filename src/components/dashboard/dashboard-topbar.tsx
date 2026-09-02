@@ -65,7 +65,7 @@ export function DashboardTopBar({
             </button>
           )}
           <Link href="/dashboard" className="min-w-0 shrink-0">
-            <FactoLogo variant="stacked" size="xs" showTagline />
+            <FactoLogo variant="horizontal" size="xs" showTagline />
           </Link>
         </div>
 

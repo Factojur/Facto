@@ -394,6 +394,27 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
     });
   }
 
+  const totalPaginas =
+    (
+      doc as JsPdfDoc & {
+        internal: { getNumberOfPages: () => number };
+      }
+    ).internal.getNumberOfPages?.() ?? 1;
+
+  for (let pagina = 1; pagina <= totalPaginas; pagina++) {
+    (
+      doc as JsPdfDoc & { setPage: (n: number) => void }
+    ).setPage(pagina);
+    doc.setFont("times", "normal");
+    doc.setFontSize(9);
+    doc.text(
+      `Folha ${pagina} de ${totalPaginas}`,
+      pageW / 2,
+      pageH - marginBottom / 2,
+      { align: "center" }
+    );
+  }
+
   return doc;
 }
 

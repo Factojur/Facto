@@ -47,6 +47,7 @@ import {
   ChatFontesFlutuante,
   type AbaFontesChat,
 } from "@/components/dashboard/chat-fontes-flutuante";
+import { FactoWordmarkIa } from "@/components/brand/facto-wordmark";
 import {
   areasChatMinutaDisponiveis,
   aplicarInferenciaAreaAoEstado,
@@ -2886,11 +2887,10 @@ export function ChatMinutaPage({
               className="pointer-events-none absolute bottom-4 right-4 z-30 sm:bottom-6 sm:right-6"
               aria-hidden
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/brand/facto-wordmark.png"
-                alt=""
-                className="h-11 w-auto max-w-[min(44vw,12rem)] select-none opacity-[0.13] sm:h-14"
+              <FactoWordmarkIa
+                size="watermark"
+                watermarkOpacity={0.13}
+                className="max-w-[min(44vw,12rem)]"
               />
             </div>
           )}
