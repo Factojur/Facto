@@ -63,10 +63,14 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 - [x] **Lastro por tópico A+B** — `LASTRO:`/`ENCAIXE:` na triagem + parser (`plano-topicos-peca`); complemento local fls./lei/juris (`plano-lastro-topico.ts`); `test:plano-lastro` 6/6
 - [x] **Comparativo FACTO (automático)** — `npm run test:comparativo-paridade` 8 cenários · relatório `scripts/comparativo-paridade-minutaia.md`
 - [x] **Comparativo MinutaIA (manual/browser)** — 8 relatos em minutaia.com.br (conta FACTO); relatório `scripts/comparativo-paridade-minutaia.md` · interpretação ≈ paridade; lastro FACTO mais estruturado
-- [ ] **Pontos finais (após ok Jefferson)** — inspector no ícone i (camada C)
+- [x] **Inspector lastro (camada C)** — clique no ícone i abre painel lateral com ENCAIXE + LASTRO estruturado
 - [x] **`fls.` clicáveis na peça redigida** — `PecaDocumentoView` + `TextoJuridicoInline` no painel documento (chat)
 - [x] **Streaming redação no documento** — `stream: true` em `/api/gerar-peca` (NDJSON); redator Gemini com `onRedacaoDelta`; chat mostra texto crescendo
 - [x] **Chat livre (desacoplado das travas de área)** — área/polo não bloqueiam; IA autoridade; payload com polo default; prompts conversa/inferência MinutaIA-style
+
+### Feito nesta rodada (02/09 — inspector lastro pacote 4)
+
+- [x] **Inspector no ícone i** — `PlanoLastroHint` abre `PainelLateralPortal` com ENCAIXE + LASTRO + teses; hover rápido no desktop; toque no mobile
 
 ### Feito nesta rodada (02/09 — sidebar fontes pacote 3)
 
