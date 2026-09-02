@@ -253,6 +253,106 @@ export function streamTextoGeminiNdjson(params: {
   });
 }
 
+/** Gera texto com stream SSE interno; emite texto acumulado a cada chunk. */
+export async function gerarTextoComGeminiStream(params: {
+  systemPrompt: string;
+  userPrompt: string;
+  modelos?: readonly string[];
+  temperature?: number;
+  maxOutputTokens?: number;
+  onDelta?: (textoAcumulado: string) => void;
+}): Promise<ResultadoGemini> {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey) {
+    return {
+      ok: false,
+      erro: "GEMINI_API_KEY não configurada no .env.local.",
+    };
+  }
+
+  const cadeia =
+    params.modelos && params.modelos.length > 0
+      ? [...params.modelos]
+      : [...MODELOS_TRIAGEM];
+
+  const corpoBase = {
+    systemInstruction: { parts: [{ text: params.systemPrompt }] },
+    contents: [{ role: "user", parts: [{ text: params.userPrompt }] }],
+    generationConfig: {
+      temperature: params.temperature ?? 0.5,
+      maxOutputTokens: params.maxOutputTokens ?? 2400,
+    },
+  };
+
+  let ultimoErro = "Nenhum modelo respondeu.";
+  for (const modelo of cadeia) {
+    try {
+      const res = await fetch(
+        `${GEMINI_API_URL}/${modelo}:streamGenerateContent?alt=sse`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
+          },
+          body: JSON.stringify(corpoBase),
+        }
+      );
+
+      if (!res.ok || !res.body) {
+        const dados = await res.json().catch(() => null);
+        ultimoErro = dados?.error?.message ?? `Status ${res.status} em ${modelo}`;
+        if (modeloIndisponivel(res.status, ultimoErro)) continue;
+        if (modeloSobrecarregado(res.status, ultimoErro)) continue;
+        break;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let texto = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split("\n");
+        buffer = parts.pop() ?? "";
+
+        for (const line of parts) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data:")) continue;
+          const payload = trimmed.slice(5).trim();
+          if (!payload || payload === "[DONE]") continue;
+          try {
+            const json = JSON.parse(payload) as {
+              candidates?: Array<{
+                content?: { parts?: Array<{ text?: string }> };
+              }>;
+            };
+            const delta = json.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (delta) {
+              texto += delta;
+              params.onDelta?.(texto);
+            }
+          } catch {
+            /* fragmento SSE */
+          }
+        }
+      }
+
+      if (texto.trim()) {
+        return { ok: true, texto, modelo };
+      }
+      ultimoErro = `Resposta vazia (${modelo})`;
+    } catch (e) {
+      ultimoErro = e instanceof Error ? e.message : "Falha de rede";
+    }
+  }
+
+  return { ok: false, erro: ultimoErro };
+}
+
 async function chamarGemini(params: {
   systemPrompt: string;
   userPrompt: string;

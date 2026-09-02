@@ -1830,126 +1830,184 @@ export function ChatMinutaPage({
     setRedigindo(true);
     setErro(null);
     setAvisos(null);
+    setGeradoPorIA(true);
+    setPeca("");
+    setPecaHtml("");
     try {
+      const corpoGeracao = {
+        ...payload,
+        stream: true,
+        escritorio: escritorio.usarTimbre ? escritorio : undefined,
+        triagemPrecalculada: {
+          estrategiaJuridica: triagem.estrategiaJuridica,
+          topicos: triagem.topicos,
+          cobertura: triagem.cobertura,
+          modelo: triagem.modelo ?? "triagem",
+          analiseEstrategica: triagem.analiseEstrategica,
+        },
+      };
+
       const res = await fetch("/api/gerar-peca", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...payload,
-          escritorio: escritorio.usarTimbre ? escritorio : undefined,
-          triagemPrecalculada: {
-            estrategiaJuridica: triagem.estrategiaJuridica,
-            topicos: triagem.topicos,
-            cobertura: triagem.cobertura,
-            modelo: triagem.modelo ?? "triagem",
-            analiseEstrategica: triagem.analiseEstrategica,
-          },
-        }),
+        body: JSON.stringify(corpoGeracao),
       });
-      const data = (await res.json().catch(() => ({}))) as {
+
+      let data: ({
         error?: string;
         codigo?: string;
         cota?: ResumoCota;
-      } & Partial<GerarPecaJecOutput>;
+      } & Partial<GerarPecaJecOutput>) | null = null;
 
-      if (!res.ok) {
-        if (data.codigo === "COTA_ESGOTADA" && data.cota) setCota(data.cota);
-        setErro(data.error ?? "Erro ao redigir a peça.");
+      const contentType = res.headers.get("content-type") ?? "";
+      if (contentType.includes("ndjson") && res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const linhas = buffer.split("\n");
+          buffer = linhas.pop() ?? "";
+          for (const linha of linhas) {
+            if (!linha.trim()) continue;
+            const evt = JSON.parse(linha) as {
+              t?: string;
+              done?: boolean;
+              error?: string;
+              codigo?: string;
+              cota?: ResumoCota;
+            } & Partial<GerarPecaJecOutput>;
+            if (evt.error) {
+              if (evt.codigo === "COTA_ESGOTADA" && evt.cota) setCota(evt.cota);
+              setErro(evt.error);
+              setGeradoPorIA(false);
+              return;
+            }
+            if (evt.t) {
+              setPeca(evt.t);
+            }
+            if (evt.done) {
+              data = evt;
+            }
+          }
+        }
+      } else {
+        const json = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          codigo?: string;
+          cota?: ResumoCota;
+        } & Partial<GerarPecaJecOutput>;
+        if (!res.ok) {
+          if (json.codigo === "COTA_ESGOTADA" && json.cota) setCota(json.cota);
+          setErro(json.error ?? "Erro ao redigir a peça.");
+          setGeradoPorIA(false);
+          return;
+        }
+        data = json;
+        setPeca(json.peca ?? "");
+        setPecaHtml(json.pecaHtml ?? "");
+      }
+
+      if (!data?.peca || !data.pecaHtml) {
+        setErro("Redação incompleta. Tente novamente.");
+        setGeradoPorIA(false);
         return;
       }
 
-      if (data.peca && data.pecaHtml) {
-        let msgPosRedacao = exportacaoTrial
-          ? "Peça redigida. Visualize completa à direita; Word/PDF nos planos pagos. Copie o texto para conferência ou peça ajustes abaixo."
-          : "Peça redigida. Exporte Word/PDF à direita ou peça ajustes pontuais abaixo.";
-        if (data.auditoria?.achados?.length) {
-          const alertas = data.auditoria.achados
-            .filter((a) => a.gravidade !== "info")
-            .slice(0, 4)
-            .map((a) => `• ${a.titulo}: ${a.detalhe}`)
-            .join("\n");
-          if (alertas) {
-            msgPosRedacao += `\n\nAuditor — conferir antes de protocolar:\n${alertas}`;
-          }
-          const pedidoAuditor = pedidoAjusteDeAuditoria(data.auditoria);
-          if (pedidoAuditor) {
-            msgPosRedacao += `\n\nSugestão de ajuste (cole no chat): “${pedidoAuditor}”`;
-          }
+      let msgPosRedacao = exportacaoTrial
+        ? "Peça redigida. Visualize completa à direita; Word/PDF nos planos pagos. Copie o texto para conferência ou peça ajustes abaixo."
+        : "Peça redigida. Exporte Word/PDF à direita ou peça ajustes pontuais abaixo.";
+      if (data.auditoria?.achados?.length) {
+        const alertas = data.auditoria.achados
+          .filter((a) => a.gravidade !== "info")
+          .slice(0, 4)
+          .map((a) => `• ${a.titulo}: ${a.detalhe}`)
+          .join("\n");
+        if (alertas) {
+          msgPosRedacao += `\n\nAuditor — conferir antes de protocolar:\n${alertas}`;
         }
-        const msgRedacao: MensagemChat = {
-          id: idMensagemChat(),
-          papel: "assistente",
-          texto: msgPosRedacao,
-          ts: Date.now(),
-        };
-        const mensagensAtualizadas = [...mensagens, msgRedacao];
-        setPeca(data.peca);
-        setPecaHtml(data.pecaHtml);
-        setGeradoPorIA(true);
-        setLastroRedacao({
-          citacoes: data.citacoes ?? [],
-          baseConhecimentoUtilizada: data.baseConhecimentoUtilizada ?? [],
-          marcadoresNaoEncontrado: data.marcadoresNaoEncontrado ?? 0,
-          leiMunicipalUtilizada: data.leiMunicipalUtilizada ?? null,
-          jurisDoCasoUtilizada: data.jurisDoCasoUtilizada ?? [],
+        const pedidoAuditor = pedidoAjusteDeAuditoria(data.auditoria);
+        if (pedidoAuditor) {
+          msgPosRedacao += `\n\nSugestão de ajuste (cole no chat): “${pedidoAuditor}”`;
+        }
+      }
+      const msgRedacao: MensagemChat = {
+        id: idMensagemChat(),
+        papel: "assistente",
+        texto: msgPosRedacao,
+        ts: Date.now(),
+      };
+      const mensagensAtualizadas = [...mensagens, msgRedacao];
+      setPeca(data.peca);
+      setPecaHtml(data.pecaHtml);
+      setGeradoPorIA(true);
+      setLastroRedacao({
+        citacoes: data.citacoes ?? [],
+        baseConhecimentoUtilizada: data.baseConhecimentoUtilizada ?? [],
+        marcadoresNaoEncontrado: data.marcadoresNaoEncontrado ?? 0,
+        leiMunicipalUtilizada: data.leiMunicipalUtilizada ?? null,
+        jurisDoCasoUtilizada: data.jurisDoCasoUtilizada ?? [],
+      });
+      setAvisoPreview(null);
+      setAjustesFeitos(0);
+      setTriagemPreview(null);
+      setMensagens(mensagensAtualizadas);
+      const salva = salvarSessaoChat({
+        sessaoId: garantirSessaoId(),
+        snapshot: {
+          mensagens: mensagensAtualizadas,
+          estado,
+          peca: data.peca,
+          pecaHtml: data.pecaHtml,
+          geradoPorIA: true,
+          ajustesFeitos: 0,
+          avisoPreview: null,
+          anexosMemoria,
+        },
+        novaPeca: {
+          areaId: estado.areaId,
+          tipoAcao: estado.tipoAcao,
+          especiePeca: especieResolvidaChat(estado),
+          geradoPorIA: true,
+          peca: data.peca,
+        },
+      });
+      sincronizarSessaoNuvem(salva);
+      const autores = autoresAPartirDosNomes(estado.autoresNomes.join("; "));
+      const reus = reusAPartirDosNomes(estado.reusNomes.join("; "));
+      if (autores.length || reus.length) {
+        salvarPerfilClienteComSync({
+          autores,
+          reus,
+          polo: estado.poloAdvocacia ?? "ativo",
+          syncNuvem: syncNuvemOptIn,
         });
-        setAvisoPreview(null);
-        setAjustesFeitos(0);
-        setTriagemPreview(null);
-        setMensagens(mensagensAtualizadas);
-        const salva = salvarSessaoChat({
+      }
+      if (syncNuvemOptIn) {
+        void salvarMinutaNuvem({
+          areaId: estado.areaId,
+          titulo:
+            estado.tipoAcao.trim() ||
+            estado.fatos.replace(/\s+/g, " ").trim().slice(0, 72) ||
+            "Minuta",
+          especiePeca: especieResolvidaChat(estado),
+          tipoAcao: estado.tipoAcao,
+          foro: estado.comarca.foro,
+          numeroProcesso: estado.comarca.numeroProcesso,
+          pecaTexto: data.peca,
+          pecaHtml: data.pecaHtml,
+          geradoPorIA: true,
+          origem: "chat",
           sessaoId: garantirSessaoId(),
-          snapshot: {
-            mensagens: mensagensAtualizadas,
-            estado,
-            peca: data.peca,
-            pecaHtml: data.pecaHtml,
-            geradoPorIA: true,
-            ajustesFeitos: 0,
-            avisoPreview: null,
-            anexosMemoria,
-          },
-          novaPeca: {
-            areaId: estado.areaId,
-            tipoAcao: estado.tipoAcao,
-            especiePeca: especieResolvidaChat(estado),
-            geradoPorIA: true,
-            peca: data.peca,
-          },
         });
-        sincronizarSessaoNuvem(salva);
-        const autores = autoresAPartirDosNomes(estado.autoresNomes.join("; "));
-        const reus = reusAPartirDosNomes(estado.reusNomes.join("; "));
-        if (autores.length || reus.length) {
-          salvarPerfilClienteComSync({
-            autores,
-            reus,
-            polo: estado.poloAdvocacia ?? "ativo",
-            syncNuvem: syncNuvemOptIn,
-          });
-        }
-        if (syncNuvemOptIn) {
-          void salvarMinutaNuvem({
-            areaId: estado.areaId,
-            titulo:
-              estado.tipoAcao.trim() ||
-              estado.fatos.replace(/\s+/g, " ").trim().slice(0, 72) ||
-              "Minuta",
-            especiePeca: especieResolvidaChat(estado),
-            tipoAcao: estado.tipoAcao,
-            foro: estado.comarca.foro,
-            numeroProcesso: estado.comarca.numeroProcesso,
-            pecaTexto: data.peca,
-            pecaHtml: data.pecaHtml,
-            geradoPorIA: true,
-            origem: "chat",
-            sessaoId: garantirSessaoId(),
-          });
-        }
       }
       if (data.cota) setCota(data.cota);
     } catch {
       setErro("Falha de rede na redação.");
+      setGeradoPorIA(false);
     } finally {
       setRedigindo(false);
     }
@@ -2732,13 +2790,14 @@ export function ChatMinutaPage({
             </div>
           )}
         <div className={`min-h-0 flex-1 overflow-y-auto p-3 sm:p-4 ${previewBodyCls}`}>
-          {geradoPorIA && pecaHtml ? (
+          {geradoPorIA && (peca || redigindo) ? (
             <div className="w-full space-y-4">
               <PecaDocumentoView
                 peca={peca}
                 pecaHtml={pecaHtml}
                 escritorio={escritorio.usarTimbre ? escritorio : undefined}
                 exportacaoBloqueada={exportacaoTrial}
+                onAbrirFls={abrirFlsNoAnexo}
                 onCopiarTexto={() => {
                   void navigator.clipboard.writeText(peca);
                 }}

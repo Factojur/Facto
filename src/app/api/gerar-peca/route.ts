@@ -32,7 +32,7 @@ import {
   TIPOS_ARQUIVO_ACEITOS,
 } from "@/lib/base-conhecimento";
 import { opcoesLastroFromPayload } from "@/lib/chat-minuta";
-import { gerarPecaComIA } from "@/lib/ia/gerar-peca-com-ia";
+import { gerarPecaComIA, type ResultadoPecaIA } from "@/lib/ia/gerar-peca-com-ia";
 import { montarBriefingCasoLivre } from "@/lib/ia/briefing-caso-livre";
 import type { TriagemPrecalculada } from "@/lib/ia/triagem-caso-peca";
 import type { TopicoPlanejado } from "@/lib/ia/plano-topicos-peca";
@@ -132,6 +132,8 @@ type GerarPecaBody = GerarPecaJecInput & {
     analiseEstrategica?: TriagemPrecalculada["analiseEstrategica"];
   } | null;
   replicaContestacao?: ReplicaContestacaoResumo | null;
+  /** Emite NDJSON com deltas da redação e `{ done: true, ... }` ao final. */
+  stream?: boolean;
 };
 
 const LIMITE_TEXTO_LEI_MUNICIPAL = 40_000;
@@ -383,6 +385,208 @@ function finalizarTextoPeca(
       romanoSecaoValor: secaoValor?.romano,
     }
   );
+}
+
+type MontarRespostaGerarPeca =
+  | { tipo: "ok"; payload: GerarPecaJecOutput }
+  | { tipo: "erro_ia_transitivo"; detalhe: string };
+
+function montarRespostaGerarPeca(ctx: {
+  ia: ResultadoPecaIA;
+  body: GerarPecaBody;
+  areaId: string;
+  tipoResolvido: string;
+  tutelaResolvida: boolean;
+  scaffold: GerarPecaJecOutput;
+  baseConhecimento: Awaited<ReturnType<typeof buscarConhecimentoRelacionado>>;
+  leiMunicipal: { nome: string; texto: string } | null;
+  jurisMeta: { titulo: string }[] | null;
+  blocoValorDeterministico: string;
+  secaoValor: ReturnType<typeof secaoValorDaEspecie>;
+  opcoesAdvogadoQualificacao: {
+    advogadoNome: string;
+    oabQualificacao: string;
+    enderecoAdvogado: string | null;
+  };
+  inversaoOnus: ReturnType<typeof avaliarInversaoOnusProva>;
+}): MontarRespostaGerarPeca {
+  const {
+    ia,
+    body,
+    areaId,
+    tipoResolvido,
+    tutelaResolvida,
+    scaffold,
+    baseConhecimento,
+    leiMunicipal,
+    jurisMeta,
+    blocoValorDeterministico,
+    secaoValor,
+    opcoesAdvogadoQualificacao,
+    inversaoOnus,
+  } = ctx;
+
+  if (!ia.ok) {
+    if (erroGeracaoIaTransitivo(ia.erro)) {
+      return { tipo: "erro_ia_transitivo", detalhe: ia.erro };
+    }
+    const fallbackNorm = finalizarTextoPeca(
+      scaffold.peca,
+      body,
+      opcoesAdvogadoQualificacao,
+      areaId,
+      inversaoOnus
+    );
+    const { pecaHtml } = gerarDocumentoTimbrado(
+      fallbackNorm,
+      body.escritorio?.usarTimbre ? body.escritorio : undefined
+    );
+    const fallback: GerarPecaJecOutput = {
+      ...scaffold,
+      peca: fallbackNorm,
+      pecaHtml,
+      geradoPorIA: false,
+      leiMunicipalUtilizada: leiMunicipal
+        ? { nome: leiMunicipal.nome }
+        : null,
+      jurisDoCasoUtilizada: jurisMeta,
+      avisoIA:
+        "A redação por IA não foi concluída. Foi usada uma peça de reserva com estrutura forense — revise e não protocolar assim. Gere novamente.",
+    };
+    return { tipo: "ok", payload: fallback };
+  }
+
+  const pecaBrutaIa = normalizarPecaGerada(ia.textoGerado);
+
+  if (pecaTemFundamentacaoGenerica(pecaBrutaIa) && areaId === "jec") {
+    const hibrida = mesclarFatosIaComDireitoReserva({
+      pecaIa: pecaBrutaIa,
+      tipoAcao: tipoResolvido,
+      fatos: body.fatos,
+      tutelaUrgencia: tutelaResolvida,
+      pedirJusticaGratuita: Boolean(
+        body.pedirJusticaGratuita ||
+          (body.documentos?.declaracaoHipossuficiencia?.length ?? 0) > 0
+      ),
+      trechosBase: baseConhecimento.map((item) => ({
+        titulo: item.titulo,
+        categoria: item.categoria,
+        texto: item.texto,
+      })),
+      blocoValorCausa: blocoValorDeterministico || undefined,
+      tituloSecaoValor: secaoValor?.titulo,
+      romanoSecaoValor: secaoValor?.romano,
+    });
+    const peca = finalizarTextoPeca(
+      hibrida,
+      body,
+      opcoesAdvogadoQualificacao,
+      areaId,
+      inversaoOnus
+    );
+    const citacoesHibrida = ia.contextoVerificacao
+      ? verificarCitacoes(peca, ia.contextoVerificacao)
+      : ia.citacoes;
+    const pecaAnotada = ia.contextoVerificacao
+      ? anotarJurisprudenciasSemLastro(peca, citacoesHibrida)
+      : peca;
+    const { pecaHtml } = gerarDocumentoTimbrado(
+      pecaAnotada,
+      body.escritorio?.usarTimbre ? body.escritorio : undefined
+    );
+    return {
+      tipo: "ok",
+      payload: {
+        ...scaffold,
+        peca: pecaAnotada,
+        pecaHtml,
+        timbrado: Boolean(body.escritorio?.usarTimbre),
+        geradoPorIA: true,
+        modeloIA: "FACTO",
+        citacoes: citacoesHibrida,
+        marcadoresNaoEncontrado: contarMarcadoresNaoEncontrado(pecaAnotada),
+        leiMunicipalUtilizada: leiMunicipal
+          ? { nome: leiMunicipal.nome }
+          : null,
+        jurisDoCasoUtilizada: jurisMeta,
+        equipeEtapas: ia.equipeEtapas?.map((e) => ({
+          ...e,
+          modelo: undefined,
+        })),
+        avisoIA:
+          "O DO DIREITO veio genérico demais; a fundamentação foi reforçada com o modelo forense do Juizado. Revise antes de protocolar.",
+      },
+    };
+  }
+
+  const avisoFundamentosGenericos =
+    pecaTemFundamentacaoGenerica(pecaBrutaIa) && areaId !== "jec"
+      ? "A fundamentação jurídica veio genérica demais. Confira o DO DIREITO e o lastro antes de protocolar."
+      : null;
+
+  const pecaComValor =
+    secaoValor && blocoValorDeterministico
+      ? garantirSecaoValorCausa(pecaBrutaIa, blocoValorDeterministico, {
+          tituloSecao: secaoValor.titulo,
+          romano: secaoValor.romano,
+        })
+      : pecaBrutaIa;
+  const peca = finalizarTextoPeca(
+    pecaComValor,
+    body,
+    opcoesAdvogadoQualificacao,
+    areaId,
+    inversaoOnus
+  );
+  const { pecaHtml } = gerarDocumentoTimbrado(
+    peca,
+    body.escritorio?.usarTimbre ? body.escritorio : undefined
+  );
+
+  return {
+    tipo: "ok",
+    payload: {
+      ...scaffold,
+      analise: inversaoOnus?.cabivel
+        ? `${scaffold.analise}\n\nInversão do ônus da prova (${inversaoOnus.confianca}): ${inversaoOnus.motivo}\nBases: ${inversaoOnus.basesLegais.join("; ")}`
+        : scaffold.analise,
+      peca,
+      pecaHtml,
+      timbrado: Boolean(body.escritorio?.usarTimbre),
+      geradoPorIA: true,
+      modeloIA: "FACTO",
+      citacoes: ia.citacoes,
+      marcadoresNaoEncontrado: ia.marcadoresNaoEncontrado,
+      baseConhecimentoUtilizada: ia.contextoUtilizado,
+      leiMunicipalUtilizada: leiMunicipal
+        ? { nome: leiMunicipal.nome }
+        : null,
+      jurisDoCasoUtilizada: jurisMeta,
+      avisoIA: avisoFundamentosGenericos,
+      equipeEtapas: ia.equipeEtapas?.map((e) => ({
+        ...e,
+        modelo: undefined,
+      })),
+      contextoVerificacao: ia.contextoVerificacao,
+      analiseEstrategica: ia.analiseEstrategica
+        ? {
+            tesePrincipal: ia.analiseEstrategica.tesePrincipal,
+            naturezaRelacao: ia.analiseEstrategica.naturezaRelacao,
+            nomeAcao: ia.analiseEstrategica.nomeAcao,
+            direitosViolados: ia.analiseEstrategica.direitosViolados,
+            topicosPlanejados: ia.analiseEstrategica.topicosPlanejados,
+            pedidosEssenciais: ia.analiseEstrategica.pedidosEssenciais,
+            riscosOuLacunas: ia.analiseEstrategica.riscosOuLacunas,
+          }
+        : null,
+      estrategiaJuridicaBruta: body.triagemPrecalculada?.estrategiaJuridica,
+      topicosPlanejadosDetalhe: body.triagemPrecalculada?.topicos,
+      coberturaTeses: body.triagemPrecalculada?.cobertura,
+      conferenciaTitulos: body.triagemPrecalculada?.topicos?.length
+        ? auditarTopicosNaPeca(peca, body.triagemPrecalculada.topicos)
+        : undefined,
+    },
+  };
 }
 
 export async function POST(request: Request) {
@@ -872,7 +1076,7 @@ async function postGerarPeca(request: Request) {
     briefingReplica,
   });
 
-  const ia = await gerarPecaComIA({
+  const argsGerarPeca = {
     tipoAcao: tipoResolvido,
     fatos: body.fatos,
     especiePeca: especieResolvida,
@@ -967,176 +1171,80 @@ async function postGerarPeca(request: Request) {
         ?.map((p) => String(p ?? "").trim())
         .filter(Boolean),
     },
-  });
-
-  if (!ia.ok) {
-    if (erroGeracaoIaTransitivo(ia.erro)) {
-      return NextResponse.json(
-        {
-          error:
-            "A IA está temporariamente indisponível. Aguarde cerca de um minuto e tente novamente — sua cota não foi debitada.",
-          codigo: "IA_INDISPONIVEL",
-          detalhe: ia.erro,
-        },
-        { status: 503 }
-      );
-    }
-    const fallbackNorm = finalizarTextoPeca(
-      scaffold.peca,
-      body,
-      opcoesAdvogadoQualificacao,
-      areaId,
-      inversaoOnus
-    );
-    const { pecaHtml } = gerarDocumentoTimbrado(
-      fallbackNorm,
-      body.escritorio?.usarTimbre ? body.escritorio : undefined
-    );
-    const fallback: GerarPecaJecOutput = {
-      ...scaffold,
-      peca: fallbackNorm,
-      pecaHtml,
-      geradoPorIA: false,
-      leiMunicipalUtilizada: leiMunicipal
-        ? { nome: leiMunicipal.nome }
-        : null,
-      jurisDoCasoUtilizada: jurisMeta,
-      avisoIA:
-        "A redação por IA não foi concluída. Foi usada uma peça de reserva com estrutura forense — revise e não protocolar assim. Gere novamente.",
-    };
-    return debitarEResponder(anexarAuditoria(fallback, paramsAuditor));
-  }
-
-  const pecaBrutaIa = normalizarPecaGerada(ia.textoGerado);
-
-  if (pecaTemFundamentacaoGenerica(pecaBrutaIa) && areaId === "jec") {
-    const hibrida = mesclarFatosIaComDireitoReserva({
-      pecaIa: pecaBrutaIa,
-      tipoAcao: tipoResolvido,
-      fatos: body.fatos,
-      tutelaUrgencia: tutelaResolvida,
-      pedirJusticaGratuita: Boolean(
-        body.pedirJusticaGratuita ||
-          (body.documentos?.declaracaoHipossuficiencia?.length ?? 0) > 0
-      ),
-      trechosBase: baseConhecimento.map((item) => ({
-        titulo: item.titulo,
-        categoria: item.categoria,
-        texto: item.texto,
-      })),
-      blocoValorCausa: blocoValorDeterministico || undefined,
-      tituloSecaoValor: secaoValor?.titulo,
-      romanoSecaoValor: secaoValor?.romano,
-    });
-    const peca = finalizarTextoPeca(
-      hibrida,
-      body,
-      opcoesAdvogadoQualificacao,
-      areaId,
-      inversaoOnus
-    );
-    const citacoesHibrida = ia.contextoVerificacao
-      ? verificarCitacoes(peca, ia.contextoVerificacao)
-      : ia.citacoes;
-    const pecaAnotada = ia.contextoVerificacao
-      ? anotarJurisprudenciasSemLastro(peca, citacoesHibrida)
-      : peca;
-    const { pecaHtml } = gerarDocumentoTimbrado(
-      pecaAnotada,
-      body.escritorio?.usarTimbre ? body.escritorio : undefined
-    );
-    return debitarEResponder(
-      anexarAuditoria(
-        {
-          ...scaffold,
-          peca: pecaAnotada,
-          pecaHtml,
-          timbrado: Boolean(body.escritorio?.usarTimbre),
-          geradoPorIA: true,
-          modeloIA: "FACTO",
-          citacoes: citacoesHibrida,
-          marcadoresNaoEncontrado: contarMarcadoresNaoEncontrado(pecaAnotada),
-          leiMunicipalUtilizada: leiMunicipal
-            ? { nome: leiMunicipal.nome }
-            : null,
-          jurisDoCasoUtilizada: jurisMeta,
-          equipeEtapas: ia.equipeEtapas?.map((e) => ({
-            ...e,
-            modelo: undefined,
-          })),
-          avisoIA:
-            "O DO DIREITO veio genérico demais; a fundamentação foi reforçada com o modelo forense do Juizado. Revise antes de protocolar.",
-        },
-        paramsAuditor
-      )
-    );
-  }
-
-  const avisoFundamentosGenericos =
-    pecaTemFundamentacaoGenerica(pecaBrutaIa) && areaId !== "jec"
-      ? "A fundamentação jurídica veio genérica demais. Confira o DO DIREITO e o lastro antes de protocolar."
-      : null;
-
-  const pecaComValor =
-    secaoValor && blocoValorDeterministico
-      ? garantirSecaoValorCausa(pecaBrutaIa, blocoValorDeterministico, {
-          tituloSecao: secaoValor.titulo,
-          romano: secaoValor.romano,
-        })
-      : pecaBrutaIa;
-  const peca = finalizarTextoPeca(
-    pecaComValor,
-    body,
-    opcoesAdvogadoQualificacao,
-    areaId,
-    inversaoOnus
-  );
-  const { pecaHtml } = gerarDocumentoTimbrado(
-    peca,
-    body.escritorio?.usarTimbre ? body.escritorio : undefined
-  );
-
-  const resultado: GerarPecaJecOutput = {
-    ...scaffold,
-    analise: inversaoOnus?.cabivel
-      ? `${scaffold.analise}\n\nInversão do ônus da prova (${inversaoOnus.confianca}): ${inversaoOnus.motivo}\nBases: ${inversaoOnus.basesLegais.join("; ")}`
-      : scaffold.analise,
-    peca,
-    pecaHtml,
-    timbrado: Boolean(body.escritorio?.usarTimbre),
-    geradoPorIA: true,
-    modeloIA: "FACTO",
-    citacoes: ia.citacoes,
-    marcadoresNaoEncontrado: ia.marcadoresNaoEncontrado,
-    baseConhecimentoUtilizada: ia.contextoUtilizado,
-    leiMunicipalUtilizada: leiMunicipal
-      ? { nome: leiMunicipal.nome }
-      : null,
-    jurisDoCasoUtilizada: jurisMeta,
-    avisoIA: avisoFundamentosGenericos,
-    equipeEtapas: ia.equipeEtapas?.map((e) => ({
-      ...e,
-      modelo: undefined,
-    })),
-    contextoVerificacao: ia.contextoVerificacao,
-    analiseEstrategica: ia.analiseEstrategica
-      ? {
-          tesePrincipal: ia.analiseEstrategica.tesePrincipal,
-          naturezaRelacao: ia.analiseEstrategica.naturezaRelacao,
-          nomeAcao: ia.analiseEstrategica.nomeAcao,
-          direitosViolados: ia.analiseEstrategica.direitosViolados,
-          topicosPlanejados: ia.analiseEstrategica.topicosPlanejados,
-          pedidosEssenciais: ia.analiseEstrategica.pedidosEssenciais,
-          riscosOuLacunas: ia.analiseEstrategica.riscosOuLacunas,
-        }
-      : null,
-    estrategiaJuridicaBruta: body.triagemPrecalculada?.estrategiaJuridica,
-    topicosPlanejadosDetalhe: body.triagemPrecalculada?.topicos,
-    coberturaTeses: body.triagemPrecalculada?.cobertura,
-    conferenciaTitulos: body.triagemPrecalculada?.topicos?.length
-      ? auditarTopicosNaPeca(peca, body.triagemPrecalculada.topicos)
-      : undefined,
   };
 
-  return debitarEResponder(anexarAuditoria(resultado, paramsAuditor));
+  const ctxMontarResposta = {
+    body,
+    areaId,
+    tipoResolvido,
+    tutelaResolvida,
+    scaffold,
+    baseConhecimento,
+    leiMunicipal,
+    jurisMeta,
+    blocoValorDeterministico,
+    secaoValor,
+    opcoesAdvogadoQualificacao,
+    inversaoOnus,
+  };
+
+  if (body.stream) {
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        const emit = (obj: Record<string, unknown>) =>
+          controller.enqueue(encoder.encode(`${JSON.stringify(obj)}\n`));
+        try {
+          const ia = await gerarPecaComIA({
+            ...argsGerarPeca,
+            onRedacaoDelta: (t) => emit({ t }),
+          });
+          const montagem = montarRespostaGerarPeca({ ia, ...ctxMontarResposta });
+          if (montagem.tipo === "erro_ia_transitivo") {
+            emit({
+              error:
+                "A IA está temporariamente indisponível. Aguarde cerca de um minuto e tente novamente — sua cota não foi debitada.",
+              codigo: "IA_INDISPONIVEL",
+              detalhe: montagem.detalhe,
+            });
+            return;
+          }
+          const payload = anexarAuditoria(montagem.payload, paramsAuditor);
+          const consumo = await consumirUmaPeca({ userId: user.id, email });
+          const cota =
+            consumo.ok ? consumo.cota : "cota" in consumo ? consumo.cota : undefined;
+          emit({ done: true, ...payload, cota });
+        } catch (erro) {
+          emit({
+            error:
+              erro instanceof Error
+                ? erro.message
+                : "Erro ao redigir a peça.",
+          });
+        } finally {
+          controller.close();
+        }
+      },
+    });
+    return new Response(stream, {
+      headers: { "Content-Type": "application/x-ndjson" },
+    });
+  }
+
+  const ia = await gerarPecaComIA(argsGerarPeca);
+
+  const montagem = montarRespostaGerarPeca({ ia, ...ctxMontarResposta });
+  if (montagem.tipo === "erro_ia_transitivo") {
+    return NextResponse.json(
+      {
+        error:
+          "A IA está temporariamente indisponível. Aguarde cerca de um minuto e tente novamente — sua cota não foi debitada.",
+        codigo: "IA_INDISPONIVEL",
+        detalhe: montagem.detalhe,
+      },
+      { status: 503 }
+    );
+  }
+
+  return debitarEResponder(anexarAuditoria(montagem.payload, paramsAuditor));
 }

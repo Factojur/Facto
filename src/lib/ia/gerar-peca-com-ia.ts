@@ -21,6 +21,7 @@ import {
 import { blocoInstrucaoInversaoOnus } from "@/lib/inversao-onus-prova";
 import {
   gerarTextoComGemini,
+  gerarTextoComGeminiStream,
   geminiConfigurado,
   modelosRedacao,
 } from "@/lib/ia/gemini-client";
@@ -456,6 +457,8 @@ export async function gerarPecaComIA(params: {
   dispositivoSentenca?: string | null;
   /** Triagem já executada (preview) — pula nova chamada de triagem. */
   triagemPrecalculada?: TriagemPrecalculada | null;
+  /** Delta da redação (stream) — texto acumulado do redator. */
+  onRedacaoDelta?: (textoAcumulado: string) => void;
 }): Promise<ResultadoPecaIA> {
   if (!geminiConfigurado()) {
     return {
@@ -782,6 +785,7 @@ export async function gerarPecaComIA(params: {
     if (sonnetRes.ok) {
       textoBrutoRedacao = sonnetRes.texto;
       redacaoModelo = sonnetRes.modelo;
+      params.onRedacaoDelta?.(textoBrutoRedacao);
       if (params.roteamento?.userId) {
         await registrarUmaRedacaoSonnet({ userId: params.roteamento.userId });
       }
@@ -789,13 +793,19 @@ export async function gerarPecaComIA(params: {
   }
 
   if (!textoBrutoRedacao) {
-    const redacaoRes = await gerarTextoComGemini({
+    const redacaoOpts = {
       systemPrompt: systemRedacao,
       userPrompt: userRedacao,
       modelos: modelosRedacao(),
       temperature: 0.35,
       maxOutputTokens: 8192,
-    });
+    };
+    const redacaoRes = params.onRedacaoDelta
+      ? await gerarTextoComGeminiStream({
+          ...redacaoOpts,
+          onDelta: params.onRedacaoDelta,
+        })
+      : await gerarTextoComGemini(redacaoOpts);
     if (!redacaoRes.ok) {
       return { ok: false, erro: `Falha na redação: ${redacaoRes.erro}` };
     }

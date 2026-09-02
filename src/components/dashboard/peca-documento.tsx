@@ -10,18 +10,22 @@ import {
   abrirPreviewHtmlEmNovaAba,
 } from "@/lib/abrir-documento-nova-aba";
 import { ExportacaoTrialUpsell } from "@/components/dashboard/exportacao-trial-upsell";
+import { TextoJuridicoInline } from "@/components/dashboard/texto-juridico-inline";
 
 export function PecaDocumentoView({
   peca,
   pecaHtml,
   escritorio,
   onCopiarTexto,
+  onAbrirFls,
   exportacaoBloqueada = false,
 }: {
   peca: string;
   pecaHtml: string;
   escritorio?: EscritorioConfig;
   onCopiarTexto: () => void;
+  /** Abre anexo na página citada (fls. clicáveis). */
+  onAbrirFls?: (pagina: number | null, trecho: string) => void;
   /** Trial: bloqueia Word/PDF; preview e copiar texto permanecem. */
   exportacaoBloqueada?: boolean;
 }) {
@@ -110,8 +114,25 @@ export function PecaDocumentoView({
       <div
         ref={ref}
         className="w-full overflow-x-hidden rounded-lg border border-slate-200 bg-white shadow-inner [&_.documento-juridico]:max-w-full"
-        dangerouslySetInnerHTML={{ __html: pecaHtml }}
-      />
+      >
+        {onAbrirFls ? (
+          <article className="documento-juridico p-6 text-[11pt] leading-relaxed text-slate-900">
+            <div className="documento-conteudo">
+              {peca.trim() ? (
+                <TextoJuridicoInline
+                  texto={peca}
+                  className="font-serif text-justify"
+                  onAbrirFls={onAbrirFls}
+                />
+              ) : (
+                <p className="text-sm text-slate-500">Redigindo peça…</p>
+              )}
+            </div>
+          </article>
+        ) : (
+          <div dangerouslySetInnerHTML={{ __html: pecaHtml }} />
+        )}
+      </div>
 
       {exportacaoBloqueada ? (
         <ExportacaoTrialUpsell className="mt-3" />

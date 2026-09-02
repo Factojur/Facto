@@ -32,7 +32,7 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 | **Sidebar de fontes** | Badges (anexos, juris, plugins) | `ChatFontesFlutuante` na coluna documento | P1 — validar em browser |
 | **Memória de anexo** | Não reexplica PDF a cada turno | Memória sessão (commit `3bc7641`); validar em prod | P0 — smoke 2º turno com mesmo PDF |
 | **Modos** | Instantâneo / Planejado | Toggle no ar | Manter |
-| **Redação** | Streaming no documento | Redigir em bloco (Fase 2) | P1 — streaming redação (fora do escopo “chat igual”) até peça |
+| **Redação** | Streaming no documento | NDJSON `/api/gerar-peca` (`stream: true`) | **Feito** (02/09) |
 | **Layout/cores** | UI azul MinutaIA | Glass FACTO | **Não copiar** — só comportamento |
 
 ### Fases (ordem fechada)
@@ -63,8 +63,16 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 - [x] **Lastro por tópico A+B** — `LASTRO:`/`ENCAIXE:` na triagem + parser (`plano-topicos-peca`); complemento local fls./lei/juris (`plano-lastro-topico.ts`); `test:plano-lastro` 6/6
 - [x] **Comparativo FACTO (automático)** — `npm run test:comparativo-paridade` 8 cenários · relatório `scripts/comparativo-paridade-minutaia.md`
 - [x] **Comparativo MinutaIA (manual/browser)** — 8 relatos em minutaia.com.br (conta FACTO); relatório `scripts/comparativo-paridade-minutaia.md` · interpretação ≈ paridade; lastro FACTO mais estruturado
-- [ ] **Pontos finais (após ok Jefferson)** — juris/`fls.` clicáveis na peça; inspector no ícone i (camada C)
+- [ ] **Pontos finais (após ok Jefferson)** — inspector no ícone i (camada C)
+- [x] **`fls.` clicáveis na peça redigida** — `PecaDocumentoView` + `TextoJuridicoInline` no painel documento (chat)
+- [x] **Streaming redação no documento** — `stream: true` em `/api/gerar-peca` (NDJSON); redator Gemini com `onRedacaoDelta`; chat mostra texto crescendo
 - [x] **Chat livre (desacoplado das travas de área)** — área/polo não bloqueiam; IA autoridade; payload com polo default; prompts conversa/inferência MinutaIA-style
+
+### Feito nesta rodada (02/09 — fls. na peça + streaming redação)
+
+- [x] **`fls.` na peça** — `PecaDocumentoView` com `onAbrirFls` + `TextoJuridicoInline` (export Word/PDF inalterado)
+- [x] **Streaming redação** — `gerarTextoComGeminiStream` + `onRedacaoDelta` no redator; `/api/gerar-peca` com `stream: true` (NDJSON `{t}` + `{done}`); chat atualiza painel direito em tempo real
+- [x] **`tsc --noEmit`** ok
 
 ### Feito nesta rodada (02/09 — comparativo MinutaIA browser)
 
@@ -180,7 +188,7 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 - [x] **Empty state chat** — tagline central “O futuro da minuta começa aqui” + chips (estilo MinutaIA, cara FACTO)
 - [x] **Indicador digitando** — bolha animada durante turno `/api/chat-conversa`
 - [x] **Conversa mais fluida** — prompt Fase 1 com 2–4 parágrafos; `maxOutputTokens` 2400
-- [ ] **Fase 2 (avaliar depois)** — streaming redação + formatação/entrega peça (pipeline atual intacto)
+- [x] **Streaming redação** — feito 02/09; formatação/entrega peça (Fase D) segue em aberto
 - [x] **Painel Anexos** — banner portal `z-[200]`; botão **Enviar** no rodapé (dispara o turno do chat); fecha ao enviar
 - [x] **Modo Instantâneo / Planejado** — toggle no header; prompts/tokens distintos; Planejado força atualização do plano a cada turno
 - [x] **Memória de anexo** — texto extraído por sessão; não re-OCR/reupload; `/api/entrada-caso` só com PDF novo
@@ -309,7 +317,7 @@ Ordem sugerida para o agente/Jefferson. **Grátis** = implementar quando fizer s
 
 | # | Melhoria | Impacto |
 |---|----------|---------|
-| R5 | **Streaming** da redação no painel (UX MinutaIA) | Sensação de fluidez |
+| R5 | **Streaming** da redação no painel (UX MinutaIA) | Sensação de fluidez | **Feito** (02/09) |
 | R6 | **Prompts por área** — rito, endereçamento, pedidos típicos (`G2`) | Menos vazamento JEC→Penal |
 | R7 | **Último ato / CNJ** em autos longos (`G3`) | Menos espécie errada (cumprimento vs ED) |
 | R8 | **Auditor → 1 ajuste focado** (`G5`) | Fecha lacunas sem re-redigir tudo |
@@ -342,13 +350,13 @@ Ordem sugerida para o agente/Jefferson. **Grátis** = implementar quando fizer s
 | Gap MinutaIA | Resposta FACTO | Prioridade |
 |--------------|----------------|------------|
 | Entendimento sem microgerenciar | Calibrado (20 áreas + 0006509); chip área só confiança baixa | **P0** |
-| `fls.` clicável abre PDF na página | `ChatVisualizadorAnexo` no ar | **Feito** |
+| `fls.` clicável abre PDF na página | Chat + plano + **peça redigida** (`PecaDocumentoView`) | **Feito** |
 | Balão “o que li do PDF” após anexo | `formatarBalaoLeituraAnexo` — 1× no chat + painel plano | **Feito** |
 | Thread sem ruído (prazo, chips, conferências) | Prazo/complementos no plano; área média auto; alerta só no plano | **Feito** |
 | Memória de anexo (2º turno) | Smoke prod OK | **Feito** |
 | Chat ultra-fluido / streaming turno | Resposta em bloco; stream só em `/api/chat-conversa/stream` parcial | **P1** |
 | Sidebar fontes do caso | `ChatFontesFlutuante` no ar; falta validação visual e paridade de badges | **P1** |
-| Streaming redação no documento | Redigir em bloco | **P1** (Fase D adjacente) |
+| Streaming redação no documento | NDJSON em `/api/gerar-peca` (`stream: true`) | **Feito** (02/09) |
 | Comparativo lado a lado 5–10 casos | Não rodado | **P0** validação |
 | Skills / modelo anexado | **Não clonar** — estilo escritório + peças modelo no Perfil | P2 |
 | Juris ao vivo tribunais | **Diferencial:** base curada + anexos (sem custo live) | Manter |
