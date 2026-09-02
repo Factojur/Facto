@@ -3,6 +3,7 @@
 import type { TopicoPlanejado } from "@/lib/ia/plano-topicos-peca";
 import type { ItemCoberturaTese } from "@/lib/ia/cobertura-teses-peca";
 import type { AnaliseEstrategica } from "@/lib/ia/triagem-caso-peca";
+import { TextoJuridicoInline } from "@/components/dashboard/texto-juridico-inline";
 
 export type PreviewTriagemData = {
   estrategiaJuridica: string;
@@ -19,10 +20,12 @@ export type PreviewTriagemData = {
 export function PlanoEstrategicoCorpo({
   triagem,
   onIncluirCobertura,
+  onAbrirFls,
 }: {
   triagem: PreviewTriagemData;
   /** 1 clique em item pendente — inclui tese/pedido no plano sem nova triagem. */
   onIncluirCobertura?: (itemId: string) => void;
+  onAbrirFls?: (pagina: number | null, trecho: string) => void;
 }) {
   const { analiseEstrategica: a } = triagem;
   const nOk = triagem.cobertura.filter((c) => c.noPlano).length;
@@ -50,7 +53,7 @@ export function PlanoEstrategicoCorpo({
           {a.tesePrincipal && (
             <p className="sm:col-span-2">
               <span className="font-medium text-stone-800">Tese:</span>{" "}
-              {a.tesePrincipal}
+              <TextoJuridicoInline texto={a.tesePrincipal} onAbrirFls={onAbrirFls} />
             </p>
           )}
         </div>
@@ -73,7 +76,9 @@ export function PlanoEstrategicoCorpo({
                 {t.subtitulos.length > 0 && (
                   <ul className="mt-1 list-inside list-disc text-stone-600">
                     {t.subtitulos.map((s) => (
-                      <li key={s}>{s}</li>
+                      <li key={s}>
+                        <TextoJuridicoInline texto={s} onAbrirFls={onAbrirFls} />
+                      </li>
                     ))}
                   </ul>
                 )}
@@ -172,9 +177,9 @@ export function PlanoEstrategicoCorpo({
         <summary className="cursor-pointer text-xs font-medium text-stone-500 hover:text-stone-700">
           Ver análise completa (texto)
         </summary>
-        <pre className="mt-2 max-h-48 overflow-auto rounded-lg border border-stone-200 bg-stone-100/80 p-3 text-xs whitespace-pre-wrap text-stone-700">
-          {triagem.estrategiaJuridica}
-        </pre>
+        <div className="mt-2 max-h-48 overflow-auto rounded-lg border border-stone-200 bg-stone-100/80 p-3 text-xs text-stone-700">
+          <TextoJuridicoInline texto={triagem.estrategiaJuridica} onAbrirFls={onAbrirFls} />
+        </div>
       </details>
     </>
   );

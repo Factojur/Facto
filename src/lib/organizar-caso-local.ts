@@ -4,11 +4,12 @@
  */
 
 import type { PreenchimentoEntradaCaso } from "@/lib/entrada-caso-types";
+import type { AreaIdMinuta } from "@/lib/minuta-modulo";
 import { extrairPartesDoRelato } from "@/lib/extrair-partes-relato";
 import {
-  ajustarEspecieCabivel,
   extrairMetadadosAutos,
   extrairUltimoAtoDoTexto,
+  resolverAreaEspecieOrganizacao,
 } from "@/lib/peca-cabivel-autos";
 import {
   especieUsaTutelaUrgenciaCpc,
@@ -120,71 +121,84 @@ function narrativaFatos(relato: string): string {
   return texto.length >= 40 ? texto : relato.trim();
 }
 
-/**
- * Preenche campos do caso a partir do relato, sem LLM.
- */
+export type ResultadoOrganizacaoLocal = {
+  preenchimento: PreenchimentoEntradaCaso;
+  areaIdResolvida: AreaIdMinuta;
+};
+
+/** Preenche campos do caso a partir do relato, sem LLM. */
 export function organizarCasoLocal(params: {
   relato: string;
   areaId: string;
-}): PreenchimentoEntradaCaso {
+  poloAdvocacia?: "ativo" | "passivo" | null;
+}): ResultadoOrganizacaoLocal {
   const relato = params.relato.trim();
   const meta = extrairMetadadosAutos(relato);
   const partes = extrairPartesDoRelato(relato);
   let especie =
     inferirEspecieDaArea(params.areaId, "Petição inicial", relato, null) ||
     "peticao-inicial";
-  const tipoAcao =
+  const tipoAcaoInicial =
     tituloPecaDaArea(params.areaId, especie, "Petição inicial") ||
     "Petição inicial";
-  especie = ajustarEspecieCabivel({
+  const resolvido = resolverAreaEspecieOrganizacao({
     areaId: params.areaId,
+    relato,
     especie,
-    tipoAcao,
-    fatos: relato,
+    tipoAcao: tipoAcaoInicial,
+    poloAdvocacia: params.poloAdvocacia,
   });
+  especie = resolvido.especie;
+  const tipoAcao = resolvido.tipoAcao;
   const ultimoAto = extrairUltimoAtoDoTexto(relato);
-  const teses = detectarTesesCanonicas(params.areaId, relato);
+  const teses = detectarTesesCanonicas(resolvido.areaId, relato);
   const pedidos = extrairPedidosDoRelato(relato, especie);
   const n = norm(relato);
 
   return {
-    especiePeca: especie,
-    tipoAcao,
-    fatos: narrativaFatos(relato),
-    autoresNomes: partes.autoresNomes,
-    reusNomes: partes.reusNomes,
-    numeroProcesso: meta.numeroProcesso,
-    foro: meta.foro,
-    cidade: meta.cidade,
-    uf: meta.uf,
-    numeroVara: meta.numeroVara,
-    especieDoProcesso: null,
-    ultimoAto,
-    pedidos,
-    pedirJusticaGratuita: /justi[cç]a\s+gratuita|gratuidade|hipossufici|jg\b/.test(n)
-      ? true
-      : null,
-    tutelaUrgencia:
-      (/tutela\s+(de\s+)?urg[eê]ncia|restabelecimento\s+imediato|corte\s+indevido/.test(
-        n
-      ) ||
-        (/liminar/.test(n) && especieUsaTutelaUrgenciaCpc(especie))) &&
-      especieUsaTutelaUrgenciaCpc(especie)
+    preenchimento: {
+      especiePeca: especie,
+      tipoAcao,
+      fatos: narrativaFatos(relato),
+      autoresNomes: partes.autoresNomes,
+      reusNomes: partes.reusNomes,
+      numeroProcesso: meta.numeroProcesso,
+      foro: meta.foro,
+      cidade: meta.cidade,
+      uf: meta.uf,
+      numeroVara: meta.numeroVara,
+      especieDoProcesso: null,
+      ultimoAto,
+      pedidos,
+      pedirJusticaGratuita: /justi[cç]a\s+gratuita|gratuidade|hipossufici|jg\b/.test(n)
         ? true
         : null,
-    danosMorais: /danos?\s*morais?/.test(n) ? true : null,
-    danosMateriais: /danos?\s*materiais|restitui[cç][aã]o/.test(n) ? true : null,
-    tesesIds: teses.map((t) => t.id),
-    camposIncertos: partes.autoresNomes.length ? [] : ["partes"],
-    resumoConferencia: [
-      "Caso organizado em modo rápido — confira partes, pedidos e comarca antes de redigir.",
-      ultimoAto ? `Último ato detectado: ${ultimoAto.slice(0, 160)}` : null,
-      especie !== "peticao-inicial"
-        ? `Espécie sugerida: ${tipoAcao}.`
-        : null,
-    ]
-      .filter(Boolean)
-      .join(" "),
+      tutelaUrgencia:
+        (/tutela\s+(de\s+)?urg[eê]ncia|restabelecimento\s+imediato|corte\s+indevido/.test(
+          n
+        ) ||
+          (/liminar/.test(n) && especieUsaTutelaUrgenciaCpc(especie))) &&
+        especieUsaTutelaUrgenciaCpc(especie)
+          ? true
+          : null,
+      danosMorais: /danos?\s*morais?/.test(n) ? true : null,
+      danosMateriais: /danos?\s*materiais|restitui[cç][aã]o/.test(n) ? true : null,
+      tesesIds: teses.map((t) => t.id),
+      camposIncertos: partes.autoresNomes.length ? [] : ["partes"],
+      resumoConferencia: [
+        "Caso organizado em modo rápido — confira partes, pedidos e comarca antes de redigir.",
+        ultimoAto ? `Último ato detectado: ${ultimoAto.slice(0, 160)}` : null,
+        especie !== "peticao-inicial"
+          ? `Espécie sugerida: ${tipoAcao}.`
+          : null,
+        resolvido.areaId !== params.areaId
+          ? `Área ajustada para ${resolvido.areaId} (remédio cabível).`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(" "),
+    },
+    areaIdResolvida: resolvido.areaId as AreaIdMinuta,
   };
 }
 

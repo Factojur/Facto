@@ -1,22 +1,13 @@
 "use client";
 
-import { Fragment } from "react";
+import { TextoJuridicoInline } from "@/components/dashboard/texto-juridico-inline";
 
-/** Markdown mínimo: **negrito** (o assistente já usa em algumas respostas). */
-export function ChatMensagemTexto({ texto }: { texto: string }) {
-  const partes = texto.split(/(\*\*[^*]+\*\*)/g);
-  return (
-    <p className="whitespace-pre-wrap">
-      {partes.map((parte, i) => {
-        if (parte.startsWith("**") && parte.endsWith("**")) {
-          return (
-            <strong key={i} className="font-semibold">
-              {parte.slice(2, -2)}
-            </strong>
-          );
-        }
-        return <Fragment key={i}>{parte}</Fragment>;
-      })}
-    </p>
-  );
+type Props = {
+  texto: string;
+  onAbrirFls?: (pagina: number | null, trecho: string) => void;
+};
+
+/** Mensagem do chat com markdown mínimo e citações inline (estilo MinutaIA). */
+export function ChatMensagemTexto({ texto, onAbrirFls }: Props) {
+  return <TextoJuridicoInline texto={texto} onAbrirFls={onAbrirFls} />;
 }

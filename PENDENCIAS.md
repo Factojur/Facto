@@ -6,6 +6,44 @@ Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou
 
 Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed/ops): [`MELHORIAS.md`](./MELHORIAS.md).
 
+## Decisão produto (01/09 noite) — paridade funcional MinutaIA no chat
+
+**Jefferson:** o chat FACTO deve funcionar **igual ao MinutaIA em tudo, exceto layout e cores**. O usuário **não** deve precisar microgerenciar polo, espécie, área e detalhes do caso. **Formatação e entrega da peça pronta** ficam para **depois** de fechar este épico.
+
+### Checklist paridade (chat = MinutaIA; visual = FACTO)
+
+| Dimensão | MinutaIA (referência) | FACTO hoje | Alvo |
+|----------|----------------------|------------|------|
+| **Entendimento autônomo** | Lê PDF, infere partes, polo, remédio (ex.: MS no cumprimento) | Calibrado local (`calibracao-area-especie`, polo+espécie); reteste 0006509 pendente | P0 — inferência + confirmação só quando ambíguo |
+| **Conversa fluida** | Poucas perguntas; plano direcionado | Polo no thread; área auto; plano após confirmar | P0 — um fluxo: relato/anexo → entendimento → plano → redigir |
+| **Confiança no texto** | Ícones `fls.` no corpo; ✓ em lei/juris | `TextoJuridicoInline` no chat e plano; clique abre anexos | P0 — rastreio visível antes de gastar cota |
+| **Sidebar de fontes** | Badges (anexos, juris, plugins) | `ChatFontesFlutuante` na coluna documento | P1 — validar em browser |
+| **Memória de anexo** | Não reexplica PDF a cada turno | Memória sessão (commit `3bc7641`); validar em prod | P0 — smoke 2º turno com mesmo PDF |
+| **Modos** | Instantâneo / Planejado | Toggle no ar | Manter |
+| **Redação** | Streaming no documento | Redigir em bloco (Fase 2) | P1 — streaming redação (fora do escopo “chat igual”) até peça |
+| **Layout/cores** | UI azul MinutaIA | Glass FACTO | **Não copiar** — só comportamento |
+
+### Fases (ordem fechada)
+
+1. **A — Entendimento e segurança (P0)** — polo confirmado no thread; espécie/remédio por último ato + polo (MS ≠ agravo da executada); área auto; bloqueio redigir se incoerente; reteste caso 0006509.
+2. **B — Rastreabilidade visível (P0)** — citações `fls.` e ✓ lei inline no plano e na prévia (reusar `pagina-anexo-pdf` + base FACTO); “o que li do PDF” em 1 balão após anexo.
+3. **C — Fluidez e fontes (P1)** — streaming turno/plano; coluna fontes (anexos, juris do caso, teses); menos chips no header, mais no fluxo natural do chat.
+4. **D — Formatação/entrega da peça** — **adiado** por decisão Jefferson (protocolo, Word/PDF, tipografia final).
+
+**Não fazer neste épico:** clone visual, skills 2k, juris live, reprocessar PDF inteiro a cada turno (margem 35–40%).
+
+### Em andamento (épico paridade)
+
+- [x] **Polo no thread** — `ChatConfirmacaoPolo` no corpo do chat; após confirmar → plano automático
+- [x] **Espécie × polo** — calibração transversal (`calibracao-area-especie`, `peca-cabivel-autos`, `polo-advocacia`); MS antes de agravo; exequente ≠ agravo da executada
+- [x] **Rastreio inline** — `TextoJuridicoInline` (fls. + ✓ lei) no chat e plano; clique em fls. abre painel de anexos
+- [x] **Sidebar fontes** — `ChatFontesFlutuante` na coluna documento (badges anexos/juris/teses)
+- [x] **Testes automáticos** — `npm run test:calibracao` (17) + `test:chat-minuta` (77); `tsc --noEmit` ok
+- [ ] **Reteste 0006509** — PDF → Exequente → MS ou manifestação coerente → plano → redigir (browser)
+- [ ] **Smoke memória anexo** — 2º turno sem re-OCR em prod
+- [ ] **Deploy produção** — alterações só locais; subir quando Jefferson pedir
+- [ ] **Comparativo FACTO × MinutaIA** — 5–10 cenários iguais nos dois (após deploy ou local)
+
 **Juris / seed:** depois de cada lote ou dia de cota, atualizar a seção **Lacunas da base (áreas falhas)** abaixo — tribunal errado, 0 insert, ou API sem aquele tribunal. Não deixar falha só no chat.
 
 ## Retomar quando voltar (30/08)
@@ -68,7 +106,9 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] **HC / Penal** — sem `em face de` civil; remove Enel/energia/multa CPC; payload sem réu concessionária
 - [x] **Anti-contaminação chat** — relato misto bloqueia; troca de área reinicia partes; **Novo caso** zera estado; complemento “também quero multa…” → pedidos (não qualificação)
 - [x] **Testes** — `testar-formatacao-peca` ok; `testar-chat-minuta` 77 ok; `testar-chat-fluidez` ok; `tsc --noEmit` ok
-- [ ] **Deploy produção** — **no ar** `dpl_5p4jsS66iBNtkgz1emMrs7mKg8b5` (commit `0dc24f4`) · reteste E2E JEC + Penal chat (Novo caso)
+- [ ] **Deploy produção** — APIs chat/anexos no ar (401, não 404) · confirmar commit `3bc7641` na Vercel · reteste E2E JEC + Penal chat (Novo caso)
+- [x] **Smoke rápido prod (01/09 noite)** — login ok; toggle Instantâneo/Planejado; banner Anexos portal + Enviar; plano HC penal ativo; APIs 401 · memória anexo (2º turno PDF) pendente teste manual
+- [x] **UX header chat** — removido botão Enviar/Continuar entre Entendimento e Timbre (redação fica no painel direito)
 
 ### Feito nesta rodada (01/09 tarde — chat Fase 1 + UX workspace)
 
@@ -91,6 +131,15 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 - [x] **Painel Anexos** — banner portal `z-[200]`; botão **Enviar** no rodapé (dispara o turno do chat); fecha ao enviar
 - [x] **Modo Instantâneo / Planejado** — toggle no header; prompts/tokens distintos; Planejado força atualização do plano a cada turno
 - [x] **Memória de anexo** — texto extraído por sessão; não re-OCR/reupload; `/api/entrada-caso` só com PDF novo
+
+### Feito nesta rodada (01/09 noite — paridade chat, calibração)
+
+- [x] **Calibração transversal** — `calibracao-area-especie.ts`; HC/MS/ADI/trab/prev/réplica/cumprimento; `resolverAreaEspecieOrganizacao` + polo
+- [x] **Polo no thread** — `ChatConfirmacaoPolo` no corpo; `sincronizarPoloAutomaticoChat` + `reajustarEspeciePoloChat`
+- [x] **Rastreio inline** — `TextoJuridicoInline` (fls. + ✓ lei) no chat e plano; clique abre painel de anexos
+- [x] **Sidebar fontes** — `ChatFontesFlutuante` na coluna documento
+- [x] **entrada-caso** — usa `areaIdResolvida` da organização local (não área bruta do relato)
+- [x] **Testes** — `npm run test:calibracao` (17 ok) + `test:chat-minuta` (77 ok); `tsc --noEmit` limpo
 
 ### Feito nesta rodada (01/09 noite — melhorias objetivo)
 
@@ -228,15 +277,18 @@ Ordem sugerida para o agente/Jefferson. **Grátis** = implementar quando fizer s
 | R20 | **Supabase Pro** ao começar a vender | Lembrete A |
 | R21 | **Trial** 2 peças JEC 7 dias (teto ~R$ 1,34/user) | Decisão aberta |
 
-#### vs MinutaIA — onde ainda perdemos (e como fechar sem clone)
+#### vs MinutaIA — onde ainda perdemos (épico paridade chat — ver seção no topo)
 
 | Gap MinutaIA | Resposta FACTO | Prioridade |
 |--------------|----------------|------------|
+| Entendimento sem microgerenciar | Polo/espécie ainda falham em autos reais | **P0** |
+| `fls.` e ✓ inline no texto | Só painel pós-redação | **P0** |
 | Chat ultra-fluido / streaming | Camadas 1–3 no ar; falta streaming redação | P1 |
+| Sidebar fontes do caso | Lastro no plano apenas | P1 |
 | Skills / modelo anexado | **Não clonar** — estilo escritório + peças modelo no Perfil | P2 |
 | Juris ao vivo tribunais | **Diferencial:** base curada + anexos (sem custo live) | Manter |
 | Processo 6k páginas | Cap 180k chars + último ato | R7 |
-| Formatação solta | **Moat:** pós-processo protocolável | R1 deploy |
+| Formatação/entrega peça | **Adiado** — depois do chat igual | Fase D |
 | Histórico infinito | Meus casos + nuvem opt-in | Feito; polish R12 |
 
 **Não fazer:** juris live, GPT em tudo, reprocessar PDF a cada turno, modo curto, web na peça — quebram margem 35–40%.

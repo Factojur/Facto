@@ -24,6 +24,7 @@
     "test:expansao-lastro": "npx tsx scripts/testar-expansao-query-lastro.ts",
     "test:gestao-local": "npx tsx scripts/testar-gestao-local.ts",
     "test:chat-minuta": "npx tsx scripts/testar-chat-minuta.ts",
+    "test:calibracao": "npx tsx scripts/testar-calibracao-paridade.ts",
     "test:chat-fluidez": "npx tsx scripts/testar-chat-fluidez.ts",
     "test:alerta-fatos-pedidos": "npx tsx scripts/testar-alerta-fatos-pedidos.ts",
     "test:chat-areas": "npx tsx scripts/testar-chat-areas-pendentes.ts",

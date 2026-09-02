@@ -67,14 +67,15 @@ async function montarPeca(caso: (typeof CASOS)[number]): Promise<string> {
       : inferirAreaChat({ texto: caso.relato, leigo: true }).areaId;
 
   const org = organizarCasoLocal({ relato: caso.relato, areaId });
+  const preenchimento = org.preenchimento;
   let estado = aplicarPreenchimentoAoEstado(
     estadoCasoChatVazio(areaId),
-    org
+    preenchimento
   );
 
   const especie =
-    org.especiePeca ||
-    inferirEspecieDaArea(areaId, org.tipoAcao ?? "Petição inicial", caso.relato, null);
+    preenchimento.especiePeca ||
+    inferirEspecieDaArea(areaId, preenchimento.tipoAcao ?? "Petição inicial", caso.relato, null);
 
   const payload = montarPayloadGeracaoChat(
     { ...estado, especiePeca: especie, fatos: caso.relato },

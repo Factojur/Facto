@@ -36,10 +36,22 @@ import {
   extrairQualificacaoDoRelato,
 } from "@/lib/extrair-qualificacao-relato";
 import { organizarCasoLocal } from "@/lib/organizar-caso-local";
+import type { LeituraRelato } from "@/lib/entrada-caso-types";
+import { resumoLeituraRelato } from "@/lib/peca-cabivel-autos";
+import { ChatConfirmacaoPolo } from "@/components/dashboard/chat-confirmacao-polo";
+import {
+  ChatFontesFlutuante,
+  type AbaFontesChat,
+} from "@/components/dashboard/chat-fontes-flutuante";
 import {
   areasChatMinutaDisponiveis,
   aplicarInferenciaAreaAoEstado,
-  aplicarPoloInferidoChat,
+  confirmarPoloAdvogadoChat,
+  precisaConfirmarPoloAdvogado,
+  opcoesPoloAdvogadoChat,
+  sincronizarPoloAutomaticoChat,
+  reajustarEspeciePoloChat,
+  validarPoloEspecieChat,
   aplicarPreenchimentoAoEstado,
   aplicarOrganizacaoAoEstadoChat,
   areaExigeConfirmacao,
@@ -48,7 +60,6 @@ import {
   casoChatTemConteudo,
   confirmarAreaChat,
   estadoCasoChatVazio,
-  garantirAreaParaRedacao,
   idMensagemChat,
   inferirAreaChat,
   montarPayloadGeracaoChat,
@@ -404,6 +415,27 @@ export function ChatMinutaPage({
     ]
   );
 
+  const fontesContagens = useMemo(
+    () => ({
+      anexos: arquivos.length + anexosMemoria.length,
+      provas: provasUtilCount,
+      juris: estado.jurisCaso.length,
+      teses:
+        estado.tesesIds.length +
+        (estado.replicaContestacao?.detectada ? 1 : 0) +
+        (triagemPreview?.cobertura?.length ?? 0),
+    }),
+    [
+      arquivos.length,
+      anexosMemoria.length,
+      provasUtilCount,
+      estado.jurisCaso.length,
+      estado.tesesIds.length,
+      estado.replicaContestacao?.detectada,
+      triagemPreview?.cobertura?.length,
+    ]
+  );
+
   const abrirComplementos = useCallback(
     (foco: "provas" | "juris" | "lei") => {
       setDrawerAba("complementos");
@@ -412,6 +444,32 @@ export function ChatMinutaPage({
     },
     []
   );
+
+  const abrirFontesChat = useCallback(
+    (aba: AbaFontesChat) => {
+      if (aba === "chat") {
+        setAbaMobile("chat");
+        document
+          .querySelector("[data-chat-mensagens-scroll]")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+      if (aba === "anexos") {
+        setContextoPainelAberto(true);
+        return;
+      }
+      if (aba === "juris") {
+        abrirComplementos("juris");
+        return;
+      }
+      abrirComplementos("provas");
+    },
+    [abrirComplementos]
+  );
+
+  const abrirFlsNoAnexo = useCallback((_pagina: number | null, _trecho: string) => {
+    setContextoPainelAberto(true);
+  }, []);
 
   useEffect(() => {
     salvarModoConversaStorage(modoConversa);
@@ -458,8 +516,8 @@ export function ChatMinutaPage({
     : "border-stone-700/40 bg-facto-dark";
   const timbreConfigurado = escritorioTemConteudoTimbre(escritorio);
   const especieAtual = especieResolvidaChat(estado);
-  const exigePolo = poloExigeConfirmacaoChat(estado.areaId, especieAtual);
-  const moduloUi = moduloDaArea(estado.areaId);
+  const exigePolo = precisaConfirmarPoloAdvogado(estado);
+  const opcoesPoloUi = opcoesPoloAdvogadoChat(estado);
   const exportacaoTrial = plano === "trial" || cota?.plano === "trial";
   const areaAindaIndefinida =
     !estado.fatos.trim() &&
@@ -484,14 +542,6 @@ export function ChatMinutaPage({
     !estado.areaConfirmada &&
     !areaSugestaoDispensada &&
     areaSugereConfirmacao(estado.areaInferida, estado.areaConfirmada);
-
-  const rotuloCtaPrincipal = useMemo(() => {
-    if (redigindo) return "Redigindo…";
-    if (planoLoading) return "Plano…";
-    if (!casoJaOrganizado) return "Enviar";
-    if (!triagemPreview) return "Continuar";
-    return "Redigir (1 peça)";
-  }, [redigindo, planoLoading, casoJaOrganizado, triagemPreview]);
 
   const resumoValores = useMemo(
     () => calcularResumoValorCausa(estado.valoresCausa),
@@ -968,7 +1018,7 @@ export function ChatMinutaPage({
   }
 
   function garantirPolo(): boolean {
-    const comPolo = aplicarPoloInferidoChat(estadoRef.current);
+    const comPolo = sincronizarPoloAutomaticoChat(estadoRef.current);
     if (comPolo !== estadoRef.current) {
       setEstado(comPolo);
       estadoRef.current = comPolo;
@@ -981,22 +1031,34 @@ export function ChatMinutaPage({
     return true;
   }
 
+  function confirmarPolo(polo: "ativo" | "passivo", rotulo?: string) {
+    const rotuloUi =
+      rotulo ??
+      opcoesPoloAdvogadoChat(estadoRef.current).find((o) => o.polo === polo)
+        ?.rotulo ??
+      polo;
+    const next = reajustarEspeciePoloChat(
+      confirmarPoloAdvogadoChat(estadoRef.current, polo)
+    );
+    setEstado(next);
+    estadoRef.current = next;
+    estadoAnteriorRef.current = next;
+    planoUltimoFingerprintRef.current = null;
+    setErro(null);
+    setAvisos(null);
+    adicionarMensagem(
+      "sistema",
+      `Polo confirmado: **${rotuloUi}**. Montando o plano direcionado…`
+    );
+    void executarPlano({ silencioso: false, forcar: true });
+  }
+
   function aplicarEspecieReplica() {
     setEstado((e) => ({
       ...e,
       especiePeca: "replica",
     }));
     adicionarMensagem("sistema", "Espécie alterada para réplica à contestação.");
-  }
-
-  function confirmarPolo(polo: "ativo" | "passivo") {
-    setEstado((e) => ({
-      ...e,
-      poloAdvocacia: polo,
-      poloConfirmado: true,
-    }));
-    setErro(null);
-    setAvisos(null);
   }
 
   const adicionarMensagem = useCallback(
@@ -1136,7 +1198,7 @@ export function ChatMinutaPage({
       }
 
       if (!podeMontarPlanoChat(e)) return null;
-      const ePolo = aplicarPoloInferidoChat(e);
+      const ePolo = sincronizarPoloAutomaticoChat(e);
       if (validarPoloChat(ePolo)) return null;
 
       planoAbortRef.current?.abort();
@@ -1236,7 +1298,8 @@ export function ChatMinutaPage({
   useEffect(() => {
     if (geradoPorIA || enviando || redigindo) return;
     if (!podeMontarPlanoChat(estado)) return;
-    if (validarPoloChat(aplicarPoloInferidoChat(estado))) return;
+    if (precisaConfirmarPoloAdvogado(estado)) return;
+    if (validarPoloChat(sincronizarPoloAutomaticoChat(estado))) return;
 
     if (previewAutoTimerRef.current) clearTimeout(previewAutoTimerRef.current);
     const debounceMs = configModoConversa(modoConversa).debouncePlanoMs;
@@ -1462,19 +1525,34 @@ export function ChatMinutaPage({
       const baseEstado = trocaArea
         ? prepararEstadoTrocaArea(inferencia, texto || relato)
         : estadoAntes;
-      const preenchimentoLocal = organizarCasoLocal({
+      const orgLocal = organizarCasoLocal({
         relato,
         areaId: areaParaOrg,
+        poloAdvocacia: baseEstado.poloAdvocacia,
       });
+      const preenchimentoLocal = orgLocal.preenchimento;
+
+      if (
+        !areaManual &&
+        orgLocal.areaIdResolvida !== areaParaOrg &&
+        chatMinutaAreaHabilitada(orgLocal.areaIdResolvida as AreaIdMinuta)
+      ) {
+        inferencia = {
+          areaId: orgLocal.areaIdResolvida as AreaIdMinuta,
+          confianca: "alta",
+          alternativas: [],
+        };
+      }
 
       let nextEstado = areaManual
         ? { ...baseEstado, areaConfirmada: true }
         : aplicarInferenciaAreaAoEstado(baseEstado, inferencia);
       nextEstado = aplicarOrganizacaoAoEstadoChat(nextEstado, preenchimentoLocal, {
-        areaId: areaParaOrg,
+        areaId: orgLocal.areaIdResolvida,
         relato,
       });
-      nextEstado = aplicarPoloInferidoChat(nextEstado);
+      nextEstado = sincronizarPoloAutomaticoChat(nextEstado, texto);
+      nextEstado = reajustarEspeciePoloChat(nextEstado);
       nextEstado = { ...nextEstado, planoVisto: false, previewVisto: false };
 
       const primeiroRelato =
@@ -1582,7 +1660,8 @@ export function ChatMinutaPage({
 
       if (
         configModoConversa(modoConversa).forcarPlanoAposTurno &&
-        podeMontarPlanoChat(estadoRef.current)
+        podeMontarPlanoChat(estadoRef.current) &&
+        !precisaConfirmarPoloAdvogado(estadoRef.current)
       ) {
         void executarPlano({ silencioso: false, forcar: true });
       }
@@ -1598,7 +1677,7 @@ export function ChatMinutaPage({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             relato,
-            areaId: areaParaOrg,
+            areaId: orgLocal.areaIdResolvida,
             arquivos: payloadArquivos,
           }),
         })
@@ -1607,6 +1686,7 @@ export function ChatMinutaPage({
             (data: {
               preenchimento?: Parameters<typeof aplicarPreenchimentoAoEstado>[1];
               replicaContestacao?: ReplicaContestacaoResumo | null;
+              leituraRelato?: LeituraRelato;
             }) => {
               if (fingerprintsEnviadosServidor.length > 0) {
                 setAnexosMemoria((atual) => {
@@ -1620,15 +1700,17 @@ export function ChatMinutaPage({
               }
               if (!data.preenchimento) return;
               setEstado((atual) => {
-                const merged = aplicarOrganizacaoAoEstadoChat(
+                let merged = aplicarOrganizacaoAoEstadoChat(
                   atual,
                   data.preenchimento!,
                   {
-                    areaId: areaParaOrg,
+                    areaId: orgLocal.areaIdResolvida,
                     relato,
                     replicaContestacao: data.replicaContestacao ?? undefined,
                   }
                 );
+                merged = sincronizarPoloAutomaticoChat(merged, relato);
+                merged = reajustarEspeciePoloChat(merged);
                 estadoRef.current = merged;
                 estadoAnteriorRef.current = merged;
                 return merged;
@@ -1638,6 +1720,25 @@ export function ChatMinutaPage({
                 adicionarMensagem(
                   "assistente",
                   "Detectei **contestação** nos autos — espécie sugerida: réplica à contestação."
+                );
+              }
+              if (data.leituraRelato) {
+                const lr = data.leituraRelato;
+                const resumo = resumoLeituraRelato({
+                  truncado: lr.truncado,
+                  encontrouDecisoes: lr.encontrouDecisoes,
+                  fonte: lr.fonte,
+                });
+                const trecho = lr.resumo?.trim() || lr.trecho?.trim().slice(0, 480);
+                adicionarMensagem(
+                  "sistema",
+                  [
+                    "**O que li do material anexado**",
+                    resumo,
+                    trecho ? `Trecho: ${trecho}${trecho.length >= 480 ? "…" : ""}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join("\n\n")
                 );
               }
             }
@@ -1652,42 +1753,6 @@ export function ChatMinutaPage({
     }
   }
 
-  async function handleIniciarRedacao() {
-    const estadoRedacao = garantirAreaParaRedacao(estado);
-    if (estadoRedacao !== estado) {
-      setEstado(estadoRedacao);
-      estadoRef.current = estadoRedacao;
-    }
-    if (!podeMontarPlano) {
-      setAvisos(
-        "Descreva um pouco mais o caso à esquerda — fatos, partes e pedidos — para eu montar o plano."
-      );
-      return;
-    }
-    if (!garantirPolo()) return;
-
-    if (triagemPreview && payloadPendente) {
-      setAbaMobile("peca");
-      void confirmarRedacao();
-      return;
-    }
-
-    setAbaMobile("peca");
-    const plano = await executarPlano({ silencioso: false });
-    const e = estadoRef.current;
-    if (!e || !podeMontarPlanoChat(e)) {
-      setAvisos("Aguarde o plano à direita ou continue conversando um instante.");
-      return;
-    }
-    const payload =
-      plano?.payload ?? montarPayloadGeracaoChat(e, { atuarLeigo: leigo });
-    const triagem =
-      plano?.triagem ?? montarPlanoFallbackLocal(e, "aguardando análise");
-    setPayloadPendente(payload);
-    setTriagemPreview(triagem);
-    await confirmarRedacao({ triagem, payload });
-  }
-
   async function confirmarRedacao(overrides?: {
     triagem?: PreviewTriagemData;
     payload?: ReturnType<typeof montarPayloadGeracaoChat>;
@@ -1695,6 +1760,14 @@ export function ChatMinutaPage({
     const triagem = overrides?.triagem ?? triagemPreview;
     const payload = overrides?.payload ?? payloadPendente;
     if (!triagem || !payload) return;
+
+    const estadoAtual = estadoRef.current;
+    const avisoPolo = validarPoloEspecieChat(estadoAtual);
+    if (avisoPolo) {
+      setAvisos(avisoPolo);
+      return;
+    }
+
     setRedigindo(true);
     setErro(null);
     setAvisos(null);
@@ -2133,23 +2206,6 @@ export function ChatMinutaPage({
               >
                 Entendimento
               </button>
-              <button
-                type="button"
-                disabled={
-                  redigindo ||
-                  (casoJaOrganizado && !podeMontarPlano) ||
-                  planoLoading
-                }
-                onClick={() => void handleIniciarRedacao()}
-                title="Monta/atualiza o plano ou redige a peça (1 cota)"
-                className={
-                  modoWorkspace
-                    ? "rounded-full border border-facto-gold/50 bg-facto-gold/15 px-2 py-0.5 text-[10px] font-semibold text-facto-gold backdrop-blur-sm transition hover:bg-facto-gold/25 disabled:opacity-50"
-                    : "rounded-full border border-facto-gold/50 bg-facto-gold/20 px-2 py-0.5 text-[10px] font-semibold text-facto-gold disabled:opacity-50"
-                }
-              >
-                {rotuloCtaPrincipal}
-              </button>
               {timbreConfigurado ? (
                 <label
                   title="Timbre: liga ou desliga cabeçalho, rodapé e marca d'água do escritório na peça. Configure as imagens em Meu perfil."
@@ -2232,28 +2288,10 @@ export function ChatMinutaPage({
             </div>
           )}
           {exigePolo && (
-            <div className="mt-1.5 flex flex-wrap items-center gap-2 rounded-lg border border-amber-600/40 bg-amber-950/30 px-2.5 py-1.5">
-              <p className="text-[11px] font-medium text-amber-100">
-                Polo — {especieAtual.replace(/-/g, " ")}
+            <div className="mt-1.5 rounded-lg border border-amber-600/25 bg-amber-950/20 px-2.5 py-1">
+              <p className="text-[11px] text-amber-100/90">
+                Confirme o polo no chat abaixo para montar o plano.
               </p>
-              {(["ativo", "passivo"] as const).map((polo) => (
-                <button
-                  key={polo}
-                  type="button"
-                  onClick={() => confirmarPolo(polo)}
-                  className={`rounded-md px-2.5 py-1 text-[11px] font-medium ${
-                    estado.poloConfirmado && estado.poloAdvocacia === polo
-                      ? "bg-facto-gold/30 text-amber-50 ring-1 ring-facto-gold/50"
-                      : "bg-stone-800 text-stone-200 hover:bg-stone-700"
-                  }`}
-                >
-                  {rotuloPoloAdvocacia(
-                    polo,
-                    moduloUi.rotuloPoloAtivo,
-                    moduloUi.rotuloPoloPassivo
-                  )}
-                </button>
-              ))}
             </div>
           )}
         </header>
@@ -2296,12 +2334,19 @@ export function ChatMinutaPage({
                         : tema.msgAssistente
                   }`}
                 >
-                  <ChatMensagemTexto texto={m.texto} />
+                  <ChatMensagemTexto texto={m.texto} onAbrirFls={abrirFlsNoAnexo} />
                 </div>
               </div>
             ))}
             {enviando && !msgStreamId && (
               <ChatIndicadorDigitando temaAssistente={tema.msgAssistente} />
+            )}
+            {exigePolo && (
+              <ChatConfirmacaoPolo
+                estado={estado}
+                modoWorkspace={modoWorkspace}
+                onConfirmar={confirmarPolo}
+              />
             )}
             {mensagens.length <= 1 && !casoJaOrganizado && (
               <div className="flex flex-col items-center px-2 py-6 text-center sm:py-10">
@@ -2453,6 +2498,14 @@ export function ChatMinutaPage({
                   setEstado((e) => ({
                     ...e,
                     tribunaisPreferidos: ids,
+                    tribunaisConfirmados: false,
+                  }));
+                  planoUltimoFingerprintRef.current = null;
+                }}
+                onConfirmar={() => {
+                  setEstado((e) => ({
+                    ...e,
+                    tribunaisConfirmados: true,
                   }));
                   planoUltimoFingerprintRef.current = null;
                 }}
@@ -2460,6 +2513,7 @@ export function ChatMinutaPage({
                   setEstado((e) => ({
                     ...e,
                     tribunaisDispensados: true,
+                    tribunaisConfirmados: true,
                     tribunaisPreferidos: e.tribunaisPreferidos ?? [],
                   }));
                 }}
@@ -2572,9 +2626,9 @@ export function ChatMinutaPage({
 
       {/* Coluna preview */}
       <div
-        className={`relative min-h-0 min-w-0 flex-1 flex-col lg:flex lg:min-h-0 ${previewColCls} ${
+        className={`relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden lg:flex ${
           abaMobile === "peca" ? "flex" : "hidden lg:flex"
-        }`}
+        } ${previewColCls}`}
       >
         <div className={`shrink-0 border-b px-4 py-2 sm:px-5 ${previewHeaderCls}`}>
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -2654,7 +2708,12 @@ export function ChatMinutaPage({
             <p className="mt-0.5 text-[11px] text-stone-500">{avisoPreview}</p>
           )}
         </div>
-        <div className="relative min-h-0 flex-1">
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+          <ChatFontesFlutuante
+            contagens={fontesContagens}
+            onAbrir={abrirFontesChat}
+            modoWorkspace={modoWorkspace}
+          />
           {modoWorkspace && workspaceFixado && (
             <div
               className="pointer-events-none absolute bottom-4 right-4 z-30 sm:bottom-6 sm:right-6"
@@ -2707,6 +2766,7 @@ export function ChatMinutaPage({
               onPedidosChange={handlePedidosPlano}
               onRestaurarVersao={restaurarVersaoPlano}
               onIncluirCobertura={incluirCoberturaNoPlano}
+              onAbrirFls={abrirFlsNoAnexo}
             />
           )}
         </div>

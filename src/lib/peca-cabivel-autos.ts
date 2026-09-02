@@ -12,6 +12,11 @@ import {
   resolverPoloClienteQualificacao,
 } from "@/lib/partes-ja-qualificadas";
 import type { PoloAdvocacia } from "@/lib/polo-especies-por-area";
+import { tituloPecaDaArea } from "@/lib/peca-especie-area";
+import {
+  areaIdParaEspecieCabivel,
+  especieExplicitaNoRelato,
+} from "@/lib/calibracao-area-especie";
 import type { AutorValue } from "@/lib/autor-types";
 import type { ReuValue } from "@/lib/reu-types";
 
@@ -136,6 +141,38 @@ function normalizarBlob(texto: string): string {
     .replace(/\s+/g, " ");
 }
 
+/** Ataque à legalidade de ato judicial (não só erro material) — MS. */
+export function sugereMandadoSegurancaAutos(
+  texto: string,
+  polo?: PoloAdvocacia | null
+): boolean {
+  if (polo === "passivo") return false;
+  const t = normalizarBlob(texto);
+  if (!t) return false;
+  if (
+    /mandado de seguranca|ato coator|autoridade coatora|impetrante|contra\s+ato\s+do\s+juiz/.test(
+      t
+    )
+  ) {
+    return true;
+  }
+  if (!incidenteExecucaoJaAberto(texto)) return false;
+  return (
+    /(ilegal|manifestamente ilegal|abuso de poder|ato coator|autoridade coatora)/.test(
+      t
+    ) ||
+    /(alterou|reduziu|homologou|fixou|determinou|reconheceu).{0,180}(astreinte|multa diaria|calculo|debito|valor da multa)/.test(
+      t
+    ) ||
+    /(astreinte|multa diaria).{0,140}(art\.?\s*494|ilegal|retroativ|nao em seu valor)/.test(
+      t
+    )
+  );
+}
+
+/** @deprecated import from calibracao-area-especie */
+export { areaIdParaEspecieCabivel } from "@/lib/calibracao-area-especie";
+
 /** Cumprimento/execução já instaurado — não é peça nova de abertura. */
 export function incidenteExecucaoJaAberto(texto: string): boolean {
   const t = normalizarBlob(texto);
@@ -191,6 +228,9 @@ export function pecaCabivelAposUltimoAto(
   const t = normalizarBlob(texto);
   if (!t) return null;
 
+  const explicita = especieExplicitaNoRelato(texto, areaId);
+  if (explicita) return explicita;
+
   if (/agravo de instrumento/.test(t) && /interpor|cabivel|recorrer/.test(t)) {
     return especieAgravoDaArea(areaId);
   }
@@ -210,6 +250,10 @@ export function pecaCabivelAposUltimoAto(
     return null;
   }
 
+  if (sugereMandadoSegurancaAutos(texto)) {
+    return "mandado-seguranca";
+  }
+
   if (vicio) return especieEmbargosDaArea(areaId);
   if (interlocutoria) {
     if (areaId === "jec" || areaId === "jecr") {
@@ -225,24 +269,130 @@ export function pecaCabivelAposUltimoAto(
   return null;
 }
 
+/** Ajusta espécie sugerida pelo último ato quando o polo do advogado é conhecido. */
+export function ajustarCabivelAoPolo(
+  areaId: string,
+  cabivel: string,
+  polo: PoloAdvocacia,
+  texto: string
+): string {
+  const e = cabivel.toLowerCase();
+  const t = normalizarBlob(texto);
+
+  if (areaId === "criminal" || areaId === "jecr") {
+    if (polo === "passivo" && /habeas-corpus|queixa-crime|peticao-inicial/.test(e)) {
+      return areaId === "jecr" ? "defesa-jecrim" : "resposta-acusacao";
+    }
+    if (polo === "ativo" && /resposta-acusacao|defesa-jecrim|contestacao/.test(e)) {
+      return areaId === "jecr" ? "queixa-crime" : "habeas-corpus";
+    }
+    return cabivel;
+  }
+
+  if (areaId === "trabalhista" && /execu[cç][aã]o|titulo executivo|cumprimento/.test(t)) {
+    if (polo === "ativo" && /embargos|agravo-instrumento|defesa/.test(e)) {
+      return "execucao-titulo";
+    }
+    if (polo === "passivo" && e === "execucao-titulo") return "defesa";
+    if (polo === "passivo" && e === "reclamacao") return "defesa";
+    return cabivel;
+  }
+
+  if (!incidenteExecucaoJaAberto(texto)) return cabivel;
+
+  const ataquePassivo = /agravo-instrumento|embargos/.test(e);
+  if (polo === "ativo" && ataquePassivo) {
+    if (sugereMandadoSegurancaAutos(texto, polo)) return "mandado-seguranca";
+    if (areaId === "jec" || areaId === "jecr") return "execucao";
+    return "cumprimento-sentenca";
+  }
+
+  if (
+    polo === "ativo" &&
+    sugereMandadoSegurancaAutos(texto, polo) &&
+    (e === "cumprimento-sentenca" || e === "execucao")
+  ) {
+    return "mandado-seguranca";
+  }
+
+  if (
+    polo === "passivo" &&
+    (e === "cumprimento-sentenca" ||
+      e === "cumprimento-alimentos" ||
+      e === "execucao" ||
+      e === "execucao-titulo")
+  ) {
+    if (areaId === "jec" || areaId === "jecr") return "embargos";
+    return "embargos-declaracao";
+  }
+
+  return cabivel;
+}
+
 /** Corrige espécie quando o relato é o processo já em curso, não a peça a redigir. */
 export function ajustarEspecieCabivel(params: {
   areaId: string;
   especie: string;
   tipoAcao?: string | null;
   fatos?: string | null;
+  poloAdvocacia?: PoloAdvocacia | null;
 }): string {
   const especie = String(params.especie ?? "")
     .trim()
     .toLowerCase()
     .replace(/\s+/g, "-");
   const blob = `${params.tipoAcao ?? ""} ${params.fatos ?? ""}`;
-  const cabivel = pecaCabivelAposUltimoAto(params.areaId, blob);
+  let cabivel = pecaCabivelAposUltimoAto(params.areaId, blob);
+  if (cabivel && params.poloAdvocacia) {
+    cabivel = ajustarCabivelAoPolo(
+      params.areaId,
+      cabivel,
+      params.poloAdvocacia,
+      blob
+    );
+  }
   if (!cabivel) return params.especie;
-  if (ehEspecieAberturaExecucao(especie) || especie === "peticao-inicial") {
+  if (
+    ehEspecieAberturaExecucao(especie) ||
+    especie === "peticao-inicial" ||
+    cabivel === "mandado-seguranca"
+  ) {
     return cabivel;
   }
   return params.especie;
+}
+
+/** Área + espécie coerentes após leitura dos autos (0 tokens). */
+export function resolverAreaEspecieOrganizacao(params: {
+  areaId: string;
+  relato: string;
+  especie: string;
+  tipoAcao?: string | null;
+  poloAdvocacia?: PoloAdvocacia | null;
+}): { areaId: string; especie: string; tipoAcao: string } {
+  const especieInicial =
+    especieExplicitaNoRelato(params.relato, params.areaId) ?? params.especie;
+
+  let especie = ajustarEspecieCabivel({
+    areaId: params.areaId,
+    especie: especieInicial,
+    tipoAcao: params.tipoAcao,
+    fatos: params.relato,
+    poloAdvocacia: params.poloAdvocacia,
+  });
+  let areaId = areaIdParaEspecieCabivel(params.areaId, especie);
+  if (
+    especie !== "mandado-seguranca" &&
+    sugereMandadoSegurancaAutos(params.relato, params.poloAdvocacia)
+  ) {
+    especie = "mandado-seguranca";
+    areaId = "constitucional";
+  }
+  const tipoAcao =
+    tituloPecaDaArea(areaId, especie, params.tipoAcao ?? "Petição inicial") ||
+    params.tipoAcao ||
+    "Petição inicial";
+  return { areaId, especie, tipoAcao };
 }
 
 function numeroVaraDoTexto(texto: string): string | null {

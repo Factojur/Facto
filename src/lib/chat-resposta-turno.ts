@@ -4,6 +4,7 @@
 
 import type { EstadoCasoChat } from "@/lib/chat-minuta";
 import { rotuloAreaChat } from "@/lib/chat-minuta";
+import { precisaConfirmarPoloAdvogado } from "@/lib/chat-minuta";
 
 export type DiffEstadoCaso = {
   pedidosNovos: string[];
@@ -82,6 +83,13 @@ export function montarRespostaTurnoLocal(input: {
   }
   if (diff.fatosCresceram && !diff.pedidosNovos.length) {
     linhas.push("Integrei os fatos complementares ao dossiê.");
+  }
+
+  if (precisaConfirmarPoloAdvogado(estado)) {
+    linhas.push(
+      "Antes de montar o plano, preciso saber: **você é advogado(a) de qual parte?** Escolha abaixo."
+    );
+    return linhas.join("\n\n");
   }
 
   linhas.push(

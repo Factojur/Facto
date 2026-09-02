@@ -316,7 +316,7 @@ function main() {
     areaId: "jec",
     relato:
       "O autor João Silva, professor, teve corte de água em 10/01/2026 contra a Companhia de Saneamento - Sabesp. Pede tutela de urgência, danos morais R$ 8.000,00 e justiça gratuita. Provas: print, nota. Lei Municipal nº 15.872/2018 (arts. 7 e 8).",
-  });
+  }).preenchimento;
   assert(casoAgua.autoresNomes[0] === "João Silva", "local extrai autor");
   assert(casoAgua.tutelaUrgencia === true, "local detecta tutela");
   assert(casoAgua.pedirJusticaGratuita === true, "local detecta JG");
@@ -326,7 +326,7 @@ function main() {
     areaId: "criminal",
     relato:
       "Meu cliente Ricardo Alves foi preso em flagrante por furto simples. Peço habeas corpus com liminar contra prisão preventiva.",
-  });
+  }).preenchimento;
   assert(casoHc.tutelaUrgencia !== true, "HC: liminar não marca tutela CPC");
 
   const infHc = inferirAreaChat({

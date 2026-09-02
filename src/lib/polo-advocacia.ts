@@ -153,7 +153,10 @@ export function resolverPoloGeracao(
 export function inferirPoloDoRelato(texto: string): PoloAdvocacia | null {
   const t = texto.toLowerCase();
   if (
-    /\b(sou o r[eé]u|represento o r[eé]u|polo passivo|intimad[oa] para contestar|contestação|contestacao|contrarraz|embargos de devedor|executad[oa]|acusad[oa])\b/i.test(
+    /\b(sou o r[eé]u|represento o r[eé]u|polo passivo|intimad[oa] para contestar|contesta[cç][aã]o|contrarraz|embargos de devedor|acusad[oa])\b/i.test(
+      t
+    ) ||
+    /\b(executad[oa]s?|parte executada|advogad[oa]\s+(da|do)\s+executad[oa]|represento\s+(a|o)\s+executad[oa]|sou\s+advogad[oa]\s+(da|do)\s+executad[oa])\b/i.test(
       t
     )
   ) {
@@ -162,7 +165,14 @@ export function inferirPoloDoRelato(texto: string): PoloAdvocacia | null {
   if (
     /\b(sou o autor|represento o autor|polo ativo|autor da a[cç][aã]o|reclamante|impetrante|querelante|vitima|v[ií]tima)\b/i.test(
       t
-    )
+    ) ||
+    /\b(exequente?s?|parte exequente|credor da execu[cç][aã]o|advogad[oa]\s+(da|do)\s+exequente|represento\s+(a|o)\s+exequente|sou\s+advogad[oa]\s+(da|do)\s+exequente)\b/i.test(
+      t
+    ) ||
+    /\b(meu cliente|constitu[íi]|represento)\s+(é\s+)?(o|a)\s+exequente\b/i.test(
+      t
+    ) ||
+    /\badvogad[oa]\s+da\s+parte\s+exequente\b/i.test(t)
   ) {
     return "ativo";
   }

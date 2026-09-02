@@ -11,6 +11,7 @@ type Props = {
   ufForo?: string | null;
   selecionados: string[];
   onChange: (ids: string[]) => void;
+  onConfirmar?: () => void;
   onDispensar?: () => void;
   compacto?: boolean;
 };
@@ -19,6 +20,7 @@ export function ChatTribunaisPicker({
   ufForo,
   selecionados,
   onChange,
+  onConfirmar,
   onDispensar,
   compacto,
 }: Props) {
@@ -80,15 +82,27 @@ export function ChatTribunaisPicker({
           );
         })}
       </div>
-      {onDispensar ? (
-        <button
-          type="button"
-          className="mt-2 text-xs text-amber-800 underline dark:text-amber-300"
-          onClick={onDispensar}
-        >
-          Seguir sem escolher tribunais
-        </button>
-      ) : null}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {onConfirmar ? (
+          <button
+            type="button"
+            disabled={selecionados.length < 1}
+            onClick={onConfirmar}
+            className="rounded-lg bg-amber-700 px-3 py-1 text-xs font-semibold text-white hover:bg-amber-800 disabled:opacity-50 dark:bg-amber-600 dark:hover:bg-amber-500"
+          >
+            Confirmar tribunais
+          </button>
+        ) : null}
+        {onDispensar ? (
+          <button
+            type="button"
+            className="text-xs text-amber-800 underline dark:text-amber-300"
+            onClick={onDispensar}
+          >
+            Seguir sem escolher tribunais
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }

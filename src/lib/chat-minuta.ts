@@ -28,9 +28,12 @@ import {
   tribunaisPadraoPorUf,
 } from "@/lib/juris-provedores/tribunais-opcoes";
 import type { OpcoesBuscaConhecimento } from "@/lib/base-conhecimento";
-import { inferirPoloDoRelato, resolverPoloGeracao } from "@/lib/polo-advocacia";
+import { inferirPoloDoRelato, resolverPoloGeracao, especieCompativelComPolo, type PoloAdvocacia } from "@/lib/polo-advocacia";
+import { ajustarEspecieCabivel, incidenteExecucaoJaAberto, rotulosEpigrafePeca } from "@/lib/peca-cabivel-autos";
+import { tituloPecaDaArea } from "@/lib/peca-especie-area";
 import {
   areaUsaPoloAdvocacia,
+  inferirPoloPorEspecie,
   ladoPoloDaEspecie,
 } from "@/lib/polo-especies-por-area";
 import type { JurisCasoItem, JurisCasoPayload } from "@/lib/juris-caso-types";
@@ -144,6 +147,8 @@ export type EstadoCasoChat = {
   tribunaisPreferidos: string[];
   /** Usuário recusou escolher tribunais sem UF. */
   tribunaisDispensados: boolean;
+  /** Tribunais escolhidos confirmados pelo usuário (picker). */
+  tribunaisConfirmados: boolean;
   /** Qualificação extraída/ViaCEP (0 tokens) — cache para o preview. */
   qualificacaoAutor: QualificacaoExtraida;
   qualificacaoReu: QualificacaoExtraida;
@@ -184,6 +189,7 @@ export function estadoCasoChatVazio(
     valoresCausa: { danosMateriais: [], danosMorais: [] },
     tribunaisPreferidos: [],
     tribunaisDispensados: false,
+    tribunaisConfirmados: false,
     qualificacaoAutor: {},
     qualificacaoReu: {},
   };
@@ -673,6 +679,7 @@ export function normalizarEstadoCasoChat(
       ? bruto.tribunaisPreferidos
       : [],
     tribunaisDispensados: Boolean(bruto.tribunaisDispensados),
+    tribunaisConfirmados: Boolean(bruto.tribunaisConfirmados),
     qualificacaoAutor: bruto.qualificacaoAutor ?? {},
     qualificacaoReu: bruto.qualificacaoReu ?? {},
     ultimoAto:
@@ -743,7 +750,7 @@ export function opcoesLastroChat(
 
 export function precisaEscolherTribunais(estado: EstadoCasoChat): boolean {
   if (estado.tribunaisDispensados) return false;
-  if ((estado.tribunaisPreferidos ?? []).length > 0) return false;
+  if (estado.tribunaisConfirmados) return false;
   if (estado.comarca?.uf?.trim()) return false;
   return (estado.fatos ?? "").trim().length >= 40;
 }
@@ -981,6 +988,9 @@ export function poloExigeConfirmacaoChat(
 }
 
 export function validarPoloChat(estado: EstadoCasoChat): string | null {
+  if (precisaConfirmarPoloAdvogado(estado)) {
+    return "Confirme para qual parte você advoga — use os botões no chat.";
+  }
   const especie = especieResolvidaChat(estado);
   if (!poloExigeConfirmacaoChat(estado.areaId, especie)) return null;
   if (estado.poloAdvocacia) return null;
@@ -988,15 +998,146 @@ export function validarPoloChat(estado: EstadoCasoChat): string | null {
 }
 
 /** Infere polo do relato quando a espécie aceita ambos os lados. */
-export function aplicarPoloInferidoChat(estado: EstadoCasoChat): EstadoCasoChat {
-  const especie = especieResolvidaChat(estado);
-  if (!poloExigeConfirmacaoChat(estado.areaId, especie)) return estado;
-  if (estado.poloConfirmado && estado.poloAdvocacia) return estado;
-  const inferido = inferirPoloDoRelato(estado.fatos);
+export function aplicarPoloInferidoChat(
+  estado: EstadoCasoChat,
+  textoExtra?: string | null
+): EstadoCasoChat {
+  const blob = [estado.fatos, textoExtra].filter(Boolean).join("\n\n");
+  const inferido = inferirPoloDoRelato(blob);
   if (!inferido) return estado;
+
+  const especie = especieResolvidaChat(estado);
+  const exigeEscolha = poloExigeConfirmacaoChat(estado.areaId, especie);
+
+  if (textoExtra?.trim() && inferirPoloDoRelato(textoExtra)) {
+    return {
+      ...estado,
+      poloAdvocacia: inferido,
+      poloConfirmado: true,
+    };
+  }
+
+  if (!exigeEscolha && estado.poloConfirmado && estado.poloAdvocacia) {
+    return estado;
+  }
+  if (estado.poloConfirmado && estado.poloAdvocacia === inferido) return estado;
+
   return {
     ...estado,
     poloAdvocacia: inferido,
     poloConfirmado: true,
   };
+}
+
+/** Reajusta espécie após polo confirmado (cumprimento × agravo). */
+export function reajustarEspeciePoloChat(estado: EstadoCasoChat): EstadoCasoChat {
+  const especieAtual = especieResolvidaChat(estado);
+  const ajustada = ajustarEspecieCabivel({
+    areaId: estado.areaId,
+    especie: especieAtual,
+    tipoAcao: estado.tipoAcao,
+    fatos: estado.fatos,
+    poloAdvocacia: estado.poloAdvocacia,
+  });
+  if (ajustada === especieAtual && ajustada === estado.especiePeca) return estado;
+  const tipoAcao =
+    tituloPecaDaArea(estado.areaId, ajustada, estado.tipoAcao) || estado.tipoAcao;
+  return { ...estado, especiePeca: ajustada, tipoAcao };
+}
+
+/** Bloqueia redação quando espécie e polo são incompatíveis. */
+export function validarPoloEspecieChat(estado: EstadoCasoChat): string | null {
+  const poloMsg = validarPoloChat(estado);
+  if (poloMsg) return poloMsg;
+
+  const especie = especieResolvidaChat(estado);
+  const polo = resolverPoloGeracao(estado.areaId, especie, estado.poloAdvocacia);
+  if (!polo) return null;
+
+  if (!especieCompativelComPolo(estado.areaId, especie, polo)) {
+    return `A peça sugerida não combina com o polo ${polo === "ativo" ? "ativo (exequente/autor)" : "passivo (executado/réu)"}. Revise em Entendimento ou descreva a peça desejada.`;
+  }
+
+  if (
+    polo === "ativo" &&
+    /agravo/.test(especie) &&
+    incidenteExecucaoJaAberto(estado.fatos)
+  ) {
+    return "Agravo de instrumento em cumprimento de sentença costuma ser da parte executada. Você indicou o polo exequente — ajuste a espécie ou o relato antes de redigir.";
+  }
+
+  return null;
+}
+
+export type OpcaoPoloAdvogado = {
+  polo: PoloAdvocacia;
+  rotulo: string;
+};
+
+export function opcoesPoloAdvogadoChat(
+  estado: EstadoCasoChat
+): OpcaoPoloAdvogado[] {
+  const rotulos = rotulosEpigrafePeca(
+    estado.areaId,
+    especieResolvidaChat(estado),
+    estado.fatos
+  );
+  return [
+    { polo: "ativo", rotulo: rotulos.ativo },
+    { polo: "passivo", rotulo: rotulos.passivo },
+  ];
+}
+
+export function mensagemConfirmacaoPoloChat(): string {
+  return "Analisei o material do caso. **Você é advogado(a) de qual parte?** Isso direciona o plano e a peça.";
+}
+
+/** Pergunta só se relato/documentos não indicam o polo e a espécie não fixa o lado. */
+export function precisaConfirmarPoloAdvogado(estado: EstadoCasoChat): boolean {
+  if (!areaUsaPoloAdvocacia(estado.areaId)) return false;
+  if (estado.poloConfirmado && estado.poloAdvocacia) return false;
+  if ((estado.fatos ?? "").trim().length < 40) return false;
+  if (inferirPoloDoRelato(estado.fatos)) return false;
+
+  const especie = especieResolvidaChat(estado);
+  const ladoFixo =
+    inferirPoloPorEspecie(estado.areaId, especie) ??
+    (ladoPoloDaEspecie(estado.areaId, especie) !== "ambos"
+      ? ladoPoloDaEspecie(estado.areaId, especie)
+      : null);
+  if (ladoFixo === "ativo" || ladoFixo === "passivo") return false;
+
+  return poloExigeConfirmacaoChat(estado.areaId, especie);
+}
+
+export function sincronizarPoloAutomaticoChat(
+  estado: EstadoCasoChat,
+  textoExtra?: string | null
+): EstadoCasoChat {
+  let next = aplicarPoloInferidoChat(estado, textoExtra);
+
+  if (!next.poloConfirmado || !next.poloAdvocacia) {
+    const especie = especieResolvidaChat(next);
+    const lado =
+      inferirPoloPorEspecie(next.areaId, especie) ??
+      (ladoPoloDaEspecie(next.areaId, especie) !== "ambos"
+        ? ladoPoloDaEspecie(next.areaId, especie)
+        : null);
+    if (lado === "ativo" || lado === "passivo") {
+      next = { ...next, poloAdvocacia: lado, poloConfirmado: true };
+    }
+  }
+
+  return reajustarEspeciePoloChat(next);
+}
+
+export function confirmarPoloAdvogadoChat(
+  estado: EstadoCasoChat,
+  polo: PoloAdvocacia
+): EstadoCasoChat {
+  return reajustarEspeciePoloChat({
+    ...estado,
+    poloAdvocacia: polo,
+    poloConfirmado: true,
+  });
 }
