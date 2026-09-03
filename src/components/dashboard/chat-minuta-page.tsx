@@ -48,6 +48,9 @@ import {
   type AbaFontesChat,
 } from "@/components/dashboard/chat-fontes-flutuante";
 import { FactoWordmarkIa } from "@/components/brand/facto-wordmark";
+import { ChatEstiloAtivoBadge } from "@/components/dashboard/chat-estilo-ativo-badge";
+import { filtrarRiscosParaRodape } from "@/lib/filtrar-riscos-plano";
+import { gerarDocumentoTimbrado } from "@/lib/formatacao-juridica";
 import {
   areasChatMinutaDisponiveis,
   aplicarInferenciaAreaAoEstado,
@@ -358,6 +361,13 @@ export function ChatMinutaPage({
   const [pecaHtml, setPecaHtml] = useState("");
   const [geradoPorIA, setGeradoPorIA] = useState(false);
   const [avisoPreview, setAvisoPreview] = useState<string | null>(null);
+  const [previewPainel, setPreviewPainel] = useState<"peca" | "plano">("peca");
+  const [scaffoldPeca, setScaffoldPeca] = useState("");
+  const [scaffoldPecaHtml, setScaffoldPecaHtml] = useState("");
+  const [scaffoldAviso, setScaffoldAviso] = useState<string | null>(null);
+  const [scaffoldLoading, setScaffoldLoading] = useState(false);
+  const [scaffoldTrechosCount, setScaffoldTrechosCount] = useState(0);
+  const [riscosPlano, setRiscosPlano] = useState<string[]>([]);
 
   const [triagemPreview, setTriagemPreview] = useState<PreviewTriagemData | null>(
     null
@@ -391,6 +401,8 @@ export function ChatMinutaPage({
   const persistirTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const previewAutoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const planoAbortRef = useRef<AbortController | null>(null);
+  const scaffoldAbortRef = useRef<AbortController | null>(null);
+  const streamHtmlTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const planoUltimoFingerprintRef = useRef<string | null>(null);
   const estadoRef = useRef(estado);
   const estadoAnteriorRef = useRef(estado);
@@ -487,7 +499,9 @@ export function ChatMinutaPage({
       partesTeses.push("réplica à contestação");
     }
     if ((triagemPreview?.cobertura?.length ?? 0) > 0) {
-      partesTeses.push(`${triagemPreview!.cobertura!.length} ponto(s) do plano`);
+      partesTeses.push(
+        `${triagemPreview!.cobertura!.length} tese(s) no plano`
+      );
     }
     const tesesTip =
       partesTeses.length > 0
@@ -613,11 +627,13 @@ export function ChatMinutaPage({
         workspace: modoWorkspace,
         previewTemPeca:
           Boolean(pecaHtml.trim()) ||
+          Boolean(scaffoldPecaHtml.trim()) ||
           Boolean(triagemPreview) ||
           planoLoading ||
+          scaffoldLoading ||
           (estado.areaConfirmada && casoJaOrganizado),
       }),
-    [temaId, modoWorkspace, pecaHtml, triagemPreview, planoLoading, estado.areaConfirmada, casoJaOrganizado]
+    [temaId, modoWorkspace, pecaHtml, scaffoldPecaHtml, triagemPreview, planoLoading, scaffoldLoading, estado.areaConfirmada, casoJaOrganizado]
   );
 
   const pillBtn = modoWorkspace
@@ -984,6 +1000,18 @@ export function ChatMinutaPage({
     setPecaHtml("");
     setGeradoPorIA(false);
     setAvisoPreview(null);
+    scaffoldAbortRef.current?.abort();
+    setScaffoldPeca("");
+    setScaffoldPecaHtml("");
+    setScaffoldAviso(null);
+    setScaffoldLoading(false);
+    setScaffoldTrechosCount(0);
+    setPreviewPainel("peca");
+    setRiscosPlano([]);
+    if (streamHtmlTimerRef.current) {
+      clearTimeout(streamHtmlTimerRef.current);
+      streamHtmlTimerRef.current = null;
+    }
     setAjustesFeitos(0);
     setTriagemPreview(null);
     setPayloadPendente(null);
@@ -1260,6 +1288,54 @@ export function ChatMinutaPage({
     []
   );
 
+  const executarScaffoldPreview = useCallback(
+    async (payload: ReturnType<typeof montarPayloadGeracaoChat>) => {
+      scaffoldAbortRef.current?.abort();
+      const ac = new AbortController();
+      scaffoldAbortRef.current = ac;
+      setScaffoldLoading(true);
+      setScaffoldPeca("");
+      setScaffoldPecaHtml("");
+      setScaffoldAviso(null);
+      setScaffoldTrechosCount(0);
+      try {
+        const esc = escritorioRef.current;
+        const res = await fetch("/api/preview-scaffold", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...payload,
+            escritorio: esc.usarTimbre ? esc : undefined,
+          }),
+          signal: ac.signal,
+        });
+        const data = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          peca?: string;
+          pecaHtml?: string;
+          avisoPreview?: string;
+          baseConhecimentoUtilizada?: unknown[];
+        };
+        if (ac.signal.aborted) return;
+        if (!res.ok || !data.peca || !data.pecaHtml) {
+          setPreviewPainel("plano");
+          return;
+        }
+        setScaffoldPeca(data.peca);
+        setScaffoldPecaHtml(data.pecaHtml);
+        setScaffoldAviso(data.avisoPreview ?? null);
+        setScaffoldTrechosCount(data.baseConhecimentoUtilizada?.length ?? 0);
+        setPreviewPainel("peca");
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") return;
+        setPreviewPainel("plano");
+      } finally {
+        if (!ac.signal.aborted) setScaffoldLoading(false);
+      }
+    },
+    []
+  );
+
   const aplicarTriagemNoPainel = useCallback(
     (
       triagemNova: PreviewTriagemData,
@@ -1270,6 +1346,11 @@ export function ChatMinutaPage({
       planoUltimoFingerprintRef.current = fp;
       setPayloadPendente(payload);
       setTriagemPreview(triagemNova);
+      setRiscosPlano(
+        filtrarRiscosParaRodape(triagemNova.analiseEstrategica?.riscosOuLacunas)
+      );
+      setPreviewPainel("peca");
+      void executarScaffoldPreview(payload);
       setVersoesPlano((v) =>
         registrarVersaoPlano(v, triagemNova, opts?.silencioso ? "auto" : "atualizado")
       );
@@ -1284,7 +1365,7 @@ export function ChatMinutaPage({
       }
       return { triagem: triagemNova, payload };
     },
-    [adicionarMensagem]
+    [adicionarMensagem, executarScaffoldPreview]
   );
 
   const executarPlano = useCallback(
@@ -1932,6 +2013,9 @@ export function ChatMinutaPage({
     setErro(null);
     setAvisos(null);
     setGeradoPorIA(true);
+    setRiscosPlano(
+      filtrarRiscosParaRodape(triagem.analiseEstrategica?.riscosOuLacunas)
+    );
     setPeca("");
     setPecaHtml("");
     try {
@@ -1988,7 +2072,19 @@ export function ChatMinutaPage({
               return;
             }
             if (evt.t) {
-              setPeca(evt.t);
+              const textoStream = evt.t;
+              setPeca(textoStream);
+              if (streamHtmlTimerRef.current) {
+                clearTimeout(streamHtmlTimerRef.current);
+              }
+              streamHtmlTimerRef.current = setTimeout(() => {
+                const esc = escritorioRef.current;
+                const { pecaHtml: html } = gerarDocumentoTimbrado(
+                  textoStream,
+                  esc.usarTimbre ? esc : undefined
+                );
+                setPecaHtml(html);
+              }, 150);
             }
             if (evt.done) {
               data = evt;
@@ -2110,6 +2206,10 @@ export function ChatMinutaPage({
       setErro("Falha de rede na redação.");
       setGeradoPorIA(false);
     } finally {
+      if (streamHtmlTimerRef.current) {
+        clearTimeout(streamHtmlTimerRef.current);
+        streamHtmlTimerRef.current = null;
+      }
       setRedigindo(false);
     }
   }
@@ -2259,10 +2359,18 @@ export function ChatMinutaPage({
 
   const painelDireitoAtivo =
     Boolean(pecaHtml) ||
+    Boolean(scaffoldPecaHtml) ||
     Boolean(triagemPreview) ||
     planoLoading ||
+    scaffoldLoading ||
     (estado.areaConfirmada && casoJaOrganizado);
   const previewTemPeca = painelDireitoAtivo;
+  const previewAbasVisiveis =
+    Boolean(triagemPreview) && !geradoPorIA && !redigindo;
+  const previewMostraScaffold =
+    !geradoPorIA &&
+    previewPainel === "peca" &&
+    (Boolean(scaffoldPecaHtml) || scaffoldLoading);
   const previewColCls = previewTemPeca ? tema.previewCol : tema.previewIdleCol;
   const previewHeaderCls = previewTemPeca
     ? tema.previewHeader
@@ -2311,7 +2419,7 @@ export function ChatMinutaPage({
         {(
           [
             ["chat", "Conversar"],
-            ["peca", previewTemPeca ? (geradoPorIA ? "Peça" : "Plano") : "Plano"],
+            ["peca", previewTemPeca ? (geradoPorIA || scaffoldPecaHtml ? "Peça" : "Plano") : "Plano"],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -2380,6 +2488,7 @@ export function ChatMinutaPage({
                 modoWorkspace={modoWorkspace}
                 compacto
               />
+              <ChatEstiloAtivoBadge modoWorkspace={modoWorkspace} />
               {!modoWorkspace && (
                 <button
                   type="button"
@@ -2804,12 +2913,40 @@ export function ChatMinutaPage({
             >
               {geradoPorIA
                 ? "Peça redigida"
-                : previewTemPeca
-                  ? "Plano do caso"
-                  : "Documento"}
+                : previewMostraScaffold
+                  ? "Pré-visualização"
+                  : previewTemPeca
+                    ? "Plano do caso"
+                    : "Documento"}
             </h2>
             <div className="flex flex-wrap items-center gap-1.5">
-              {planoLoading && !geradoPorIA && (
+              {previewAbasVisiveis ? (
+                <div className="flex rounded-full border border-stone-300/80 bg-white p-0.5 text-[10px] font-medium">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewPainel("peca")}
+                    className={`rounded-full px-2.5 py-0.5 transition ${
+                      previewPainel === "peca"
+                        ? "bg-stone-800 text-amber-50"
+                        : "text-stone-600 hover:text-stone-900"
+                    }`}
+                  >
+                    Peça
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewPainel("plano")}
+                    className={`rounded-full px-2.5 py-0.5 transition ${
+                      previewPainel === "plano"
+                        ? "bg-stone-800 text-amber-50"
+                        : "text-stone-600 hover:text-stone-900"
+                    }`}
+                  >
+                    Plano
+                  </button>
+                </div>
+              ) : null}
+              {(planoLoading || scaffoldLoading) && !geradoPorIA ? (
                 <span
                   className={`inline-flex items-center gap-1.5 text-[11px] font-medium ${
                     previewTemPeca ? "text-stone-500" : "text-stone-400"
@@ -2822,7 +2959,7 @@ export function ChatMinutaPage({
                   </span>
                   Atualizando…
                 </span>
-              )}
+              ) : null}
               <button
                 type="button"
                 onClick={() => reiniciarChatAtual()}
@@ -2907,6 +3044,10 @@ export function ChatMinutaPage({
                 areaId={estado.areaId}
                 foro={estado.comarca.foro}
                 numeroProcesso={estado.comarca.numeroProcesso}
+                riscosRodape={riscosPlano}
+                trechosBaseCount={
+                  lastroRedacao?.baseConhecimentoUtilizada?.length ?? 0
+                }
                 onCopiarTexto={() => {
                   void navigator.clipboard.writeText(peca);
                 }}
@@ -2921,6 +3062,33 @@ export function ChatMinutaPage({
                   jurisDoCasoUtilizada={lastroRedacao.jurisDoCasoUtilizada}
                 />
               )}
+            </div>
+          ) : previewMostraScaffold ? (
+            <div className="w-full space-y-4">
+              {scaffoldLoading && !scaffoldPecaHtml ? (
+                <p className="text-sm text-stone-500">
+                  Montando pré-visualização forense…
+                </p>
+              ) : null}
+              {scaffoldPecaHtml ? (
+                <PecaDocumentoView
+                  peca={scaffoldPeca}
+                  pecaHtml={scaffoldPecaHtml}
+                  escritorio={escritorio.usarTimbre ? escritorio : undefined}
+                  onAbrirFls={abrirFlsNoAnexo}
+                  previewPaginadoPadrao
+                  areaId={estado.areaId}
+                  foro={estado.comarca.foro}
+                  numeroProcesso={estado.comarca.numeroProcesso}
+                  avisoScaffold={scaffoldAviso}
+                  trechosBaseCount={scaffoldTrechosCount}
+                  riscosRodape={riscosPlano}
+                  ocultarExportacao
+                  onCopiarTexto={() => {
+                    void navigator.clipboard.writeText(scaffoldPeca);
+                  }}
+                />
+              ) : null}
             </div>
           ) : (
             <PlanoCasoPainel

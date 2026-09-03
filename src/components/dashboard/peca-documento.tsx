@@ -26,6 +26,10 @@ export function PecaDocumentoView({
   foro,
   numeroProcesso,
   previewPaginadoPadrao = false,
+  riscosRodape,
+  avisoScaffold,
+  trechosBaseCount,
+  ocultarExportacao = false,
 }: {
   peca: string;
   pecaHtml: string;
@@ -41,6 +45,14 @@ export function PecaDocumentoView({
   numeroProcesso?: string;
   /** Inicia em folhas A4 (chat). */
   previewPaginadoPadrao?: boolean;
+  /** Alertas de conferência — rodapé da peça (não no plano). */
+  riscosRodape?: string[];
+  /** Banner pré-redação (scaffold). */
+  avisoScaffold?: string | null;
+  /** Badge “base FACTO” — N trechos usados na redação. */
+  trechosBaseCount?: number;
+  /** Só visualização (prévia scaffold). */
+  ocultarExportacao?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [baixando, setBaixando] = useState<"docx" | "pdf" | null>(null);
@@ -125,8 +137,18 @@ export function PecaDocumentoView({
     setBaixando(null);
   }
 
+  const temHtml = Boolean(pecaHtml.trim());
+  const usaFolhasTextoCru =
+    modoPreview === "folhas" && onAbrirFls && !temHtml && Boolean(peca.trim());
+
   return (
     <div>
+      {avisoScaffold ? (
+        <p className="mb-3 rounded-lg border border-amber-200/80 bg-amber-50/90 px-3 py-2 text-xs leading-relaxed text-amber-950">
+          {avisoScaffold}
+        </p>
+      ) : null}
+
       {peca.trim() && onAbrirFls ? (
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <span className="text-[11px] font-medium text-stone-500">Preview:</span>
@@ -155,14 +177,16 @@ export function PecaDocumentoView({
         </div>
       ) : null}
 
-      {modoPreview === "folhas" && onAbrirFls ? (
+      {usaFolhasTextoCru ? (
         <PecaPreviewPaginado peca={peca} onAbrirFls={onAbrirFls} />
       ) : (
       <div
         ref={ref}
         className="w-full overflow-x-hidden rounded-lg border border-slate-200 bg-white shadow-inner [&_.documento-juridico]:max-w-full"
       >
-        {onAbrirFls ? (
+        {temHtml ? (
+          <div dangerouslySetInnerHTML={{ __html: pecaHtml }} />
+        ) : onAbrirFls ? (
           <article className="documento-juridico p-6 text-[11pt] leading-relaxed text-slate-900">
             <div className="documento-conteudo">
               {peca.trim() ? (
@@ -182,16 +206,38 @@ export function PecaDocumentoView({
       </div>
       )}
 
-      {exportacaoBloqueada ? (
-        <ExportacaoTrialUpsell className="mt-3" />
-      ) : (
-        <p className="mt-3 text-xs text-slate-500">
-          Abrem em nova aba. Word pode incluir timbre; PDF em Times 12 com
-          numeração de folhas; cópia usa texto limpo. O preview em folhas A4
-          aproxima a paginação do export.
+      {trechosBaseCount != null && trechosBaseCount > 0 ? (
+        <p className="mt-3 text-[11px] font-medium text-stone-500">
+          Base FACTO — {trechosBaseCount} trecho
+          {trechosBaseCount === 1 ? "" : "s"} na fundamentação
         </p>
-      )}
+      ) : null}
 
+      {riscosRodape && riscosRodape.length > 0 ? (
+        <div className="mt-4 rounded-lg border border-amber-300/80 bg-amber-50/90 px-3 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">
+            Conferir antes de protocolar
+          </p>
+          <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-amber-950/90">
+            {riscosRodape.map((r) => (
+              <li key={r}>{r}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {!ocultarExportacao &&
+        (exportacaoBloqueada ? (
+          <ExportacaoTrialUpsell className="mt-3" />
+        ) : (
+          <p className="mt-3 text-xs text-slate-500">
+            Abrem em nova aba. Word pode incluir timbre; PDF em Times 12 com
+            numeração de folhas; cópia usa texto limpo. O preview em folhas A4
+            aproxima a paginação do export.
+          </p>
+        ))}
+
+      {!ocultarExportacao ? (
       <div className="mt-4 flex flex-wrap gap-2">
         <button
           type="button"
@@ -238,6 +284,7 @@ export function PecaDocumentoView({
           </>
         )}
       </div>
+      ) : null}
 
       {erro && <p className="mt-3 text-sm text-red-600">{erro}</p>}
 

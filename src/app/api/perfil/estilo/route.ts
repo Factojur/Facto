@@ -6,6 +6,13 @@ import {
   TIPOS_ARQUIVO_ACEITOS,
 } from "@/lib/base-conhecimento";
 import { resumirEstiloEscritorio } from "@/lib/ia/resumir-estilo-escritorio";
+import {
+  codificarEstiloComPreset,
+  decodificarEstiloPerfil,
+  presetEstiloPorId,
+  rotuloEstiloAtivo,
+} from "@/lib/estilo-presets-facto";
+import { resumoEstiloParaPrompt } from "@/lib/estilo-presets-facto";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -35,10 +42,16 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  const raw = data?.estilo_resumo ?? null;
+  const optIn = Boolean(data?.estilo_opt_in);
+  const { presetId, resumo } = decodificarEstiloPerfil(raw);
+
   return NextResponse.json({
-    resumo: data?.estilo_resumo ?? null,
+    resumo: resumo || null,
+    presetId: presetId ?? null,
+    rotuloAtivo: rotuloEstiloAtivo(raw, optIn),
     atualizadoEm: data?.estilo_atualizado_em ?? null,
-    optIn: Boolean(data?.estilo_opt_in),
+    optIn,
   });
 }
 
@@ -51,7 +64,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
   }
 
-  let body: { optIn?: boolean; amostras?: AmostraIn[]; limpar?: boolean };
+  let body: {
+    optIn?: boolean;
+    amostras?: AmostraIn[];
+    limpar?: boolean;
+    presetId?: string;
+  };
   try {
     body = await request.json();
   } catch {
@@ -70,7 +88,34 @@ export async function POST(request: Request) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    return NextResponse.json({ ok: true, resumo: null });
+    return NextResponse.json({ ok: true, resumo: null, rotuloAtivo: null });
+  }
+
+  if (body.presetId) {
+    const preset = presetEstiloPorId(String(body.presetId).trim());
+    if (!preset) {
+      return NextResponse.json({ error: "Preset de estilo inválido." }, { status: 400 });
+    }
+    const agora = new Date().toISOString();
+    const encoded = codificarEstiloComPreset(preset.id, preset.resumo);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        estilo_resumo: encoded,
+        estilo_atualizado_em: agora,
+        estilo_opt_in: true,
+      })
+      .eq("id", user.id);
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json({
+      ok: true,
+      resumo: preset.resumo,
+      presetId: preset.id,
+      rotuloAtivo: preset.rotulo,
+      atualizadoEm: agora,
+    });
   }
 
   if (!body.optIn) {

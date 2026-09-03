@@ -8,6 +8,7 @@
 import {
   MARCADOR_NAO_ENCONTRADO,
 } from "@/lib/ia/verificacao-citacoes";
+import { resumoEstiloParaPrompt } from "@/lib/estilo-presets-facto";
 import { ritoDaArea } from "@/lib/area-rito";
 import {
   blocoEstruturaDaArea,
@@ -179,7 +180,7 @@ export function montarSystemPromptAnaliseEstrategica(
  * Redige a peça completa a partir de estrategiaJuridica.
  */
 export function blocoEstiloEscritorio(resumo: string | null | undefined): string {
-  const t = String(resumo ?? "").trim();
+  const t = resumoEstiloParaPrompt(resumo) ?? "";
   if (!t) return "";
   return [
     "================================================================================",

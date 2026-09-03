@@ -60,6 +60,7 @@ import { consumirUmaPeca, verificarSaldoCota } from "@/lib/cota-pecas-server";
 import { validarSessaoPecasAtiva } from "@/lib/sessao-pecas-server";
 import { formatarOabAssinatura } from "@/lib/formatar-oab";
 import { gerarDocumentoTimbrado } from "@/lib/formatacao-juridica";
+import { resumoEstiloParaPrompt } from "@/lib/estilo-presets-facto";
 import { calcularResumoValorCausa, inferirResumoValorCausaDosFatos } from "@/lib/valores-causa";
 import {
   mensagemBloqueioTetoLeigo,
@@ -724,7 +725,7 @@ async function postGerarPeca(request: Request) {
     if (profile?.tipo_usuario) tipoUsuario = profile.tipo_usuario;
     if (profile) perfilEndereco = profile;
     if (profile?.estilo_opt_in && profile.estilo_resumo?.trim()) {
-      estiloEscritorio = profile.estilo_resumo.trim();
+      estiloEscritorio = resumoEstiloParaPrompt(profile.estilo_resumo);
     }
     if (
       profile?.trial_ate &&

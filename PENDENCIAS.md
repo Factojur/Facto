@@ -68,6 +68,16 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 - [x] **Streaming redação no documento** — `stream: true` em `/api/gerar-peca` (NDJSON); redator Gemini com `onRedacaoDelta`; chat mostra texto crescendo
 - [x] **Chat livre (desacoplado das travas de área)** — área/polo não bloqueiam; IA autoridade; payload com polo default; prompts conversa/inferência MinutaIA-style
 
+### Feito nesta rodada (02/09 madrugada — paridade formato P0/P1)
+
+- [x] **Preview pré-redação** — `/api/preview-scaffold` no painel; abas Peça | Plano; scaffold 0 cota com HTML forense
+- [x] **Stream + folhas** — `pecaHtml` atualizado durante NDJSON (`gerarDocumentoTimbrado` debounce); folhas A4 preferem HTML (fix regressão Enel)
+- [x] **Riscos no rodapé** — `filtrar-riscos-plano.ts`; removidos do plano; bloco “Conferir antes de protocolar” na peça
+- [x] **Copy sidebar** — teses: “N tese(s) no plano” (sem parecer débito de cota)
+- [x] **Presets estilo (pacote 6)** — `ESTILO_PRESETS_FACTO` + grid no Perfil; badge `ChatEstiloAtivoBadge` no header; decode preset no prompt
+- [x] **Badge base FACTO** — `trechosBaseCount` no rodapé da peça (scaffold + pós-redação)
+- [x] **`tsc --noEmit`** ok
+
 ### Feito nesta rodada (02/09 — Fase D pacote 5, fatia 1)
 
 - [x] **Preview folhas A4** — toggle Folhas/Contínuo em `PecaDocumentoView`; chat inicia em folhas
@@ -459,11 +469,12 @@ Ordem sugerida para o agente/Jefferson. **Grátis** = implementar quando fizer s
 **Generalista (pesos iguais):** FACTO **≈ 7,24** vs MinutaIA **≈ 6,80** (+0,44 no agregado, mas **formato/entrega** virou risco P0).
 
 **Próximo salto de score (usuário nota na hora):**
-1. **P0** — preview pré-redação = peça formatada (scaffold/HTML), não só plano; pós-redação manter `pecaHtml` no painel folhas/PDF
-2. **P0** — qualificação determinística sempre injetada (autor/réu do relato)
-3. **P1** — riscos/lacunas como alerta no fim da peça (não no plano); copy sidebar sem parecer débito de cota
-4. **P1** — pacote estilo escritório (presets 0 token) + modelo por espécie no Perfil
-5. **P2** — acervo 100k (G1) para lastro ≈ MinutaIA
+1. ~~**P0** — preview pré-redação = peça formatada (scaffold/HTML)~~ — **feito** madrugada 02/09
+2. ~~**P0** — pós-redação manter `pecaHtml` no painel folhas/PDF~~ — **feito** (stream HTML + preferência folhas)
+3. **P0** — qualificação determinística sempre injetada (autor/réu do relato) — validar smoke Enel pós-deploy
+4. ~~**P1** — riscos/lacunas no fim da peça~~ — **feito**
+5. ~~**P1** — pacote estilo escritório (presets 0 token)~~ — **feito**; modelo por espécie no Perfil = **P2** (custo ~R$0,01/upload)
+6. **P2** — acervo 100k (G1) para lastro ≈ MinutaIA
 
 Canvas: `canvases/facto-vs-minutaia-scorecard.canvas.tsx`.
 

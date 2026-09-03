@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { ESTILO_PRESETS_FACTO } from "@/lib/estilo-presets-facto";
 
 function lerArquivoBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -19,6 +20,7 @@ export function EstiloEscritorioPanel() {
   const [carregando, setCarregando] = useState(true);
   const [processando, setProcessando] = useState(false);
   const [resumo, setResumo] = useState<string | null>(null);
+  const [presetId, setPresetId] = useState<string | null>(null);
   const [atualizadoEm, setAtualizadoEm] = useState<string | null>(null);
   const [optIn, setOptIn] = useState(false);
   const [arquivos, setArquivos] = useState<File[]>([]);
@@ -33,6 +35,7 @@ export function EstiloEscritorioPanel() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Falha ao carregar");
       setResumo(data.resumo ?? null);
+      setPresetId(data.presetId ?? null);
       setAtualizadoEm(data.atualizadoEm ?? null);
       setOptIn(Boolean(data.optIn));
     } catch (e) {
@@ -45,6 +48,31 @@ export function EstiloEscritorioPanel() {
   useEffect(() => {
     void recarregar();
   }, [recarregar]);
+
+  async function handlePreset(id: string) {
+    setErro(null);
+    setMsg(null);
+    setProcessando(true);
+    try {
+      const res = await fetch("/api/perfil/estilo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ presetId: id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Falha ao aplicar preset");
+      setResumo(data.resumo ?? null);
+      setPresetId(data.presetId ?? id);
+      setAtualizadoEm(data.atualizadoEm ?? null);
+      setOptIn(true);
+      setArquivos([]);
+      setMsg("Preset ativo nas próximas peças — o rito e o esqueleto forense permanecem fixos.");
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Erro ao aplicar preset.");
+    } finally {
+      setProcessando(false);
+    }
+  }
 
   async function handleGerar() {
     setErro(null);
@@ -74,6 +102,7 @@ export function EstiloEscritorioPanel() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Falha ao gerar perfil");
       setResumo(data.resumo ?? null);
+      setPresetId(null);
       setAtualizadoEm(data.atualizadoEm ?? null);
       setArquivos([]);
       setMsg(
@@ -100,6 +129,7 @@ export function EstiloEscritorioPanel() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Falha ao limpar");
       setResumo(null);
+      setPresetId(null);
       setAtualizadoEm(null);
       setOptIn(false);
       setArquivos([]);
@@ -120,8 +150,8 @@ export function EstiloEscritorioPanel() {
         Tom do escritório (opcional)
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-slate-600">
-        Envie até 3 peças que você já protocolou. O FACTO extrai{" "}
-        <strong>como</strong> você escreve (tom, extensão, pedidos) — não copia
+        Escolha um preset FACTO (zero custo) ou envie até 3 peças que você já
+        protocolou. O FACTO extrai <strong>como</strong> você escreve — não copia
         fatos nem textos inteiros. Nas gerações seguintes isso entra
         automaticamente; o esqueleto forense e o rito permanecem iguais.
       </p>
@@ -130,6 +160,42 @@ export function EstiloEscritorioPanel() {
         <p className="mt-4 text-sm text-slate-500">Carregando…</p>
       ) : (
         <>
+          <div className="mt-5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Presets FACTO
+            </p>
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+              {ESTILO_PRESETS_FACTO.map((preset) => {
+                const ativo = presetId === preset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    disabled={processando}
+                    onClick={() => void handlePreset(preset.id)}
+                    className={`rounded-lg border px-3 py-2.5 text-left transition disabled:opacity-50 ${
+                      ativo
+                        ? "border-emerald-500 bg-emerald-50 ring-1 ring-emerald-400"
+                        : "border-slate-200 bg-slate-50/80 hover:border-slate-300 hover:bg-white"
+                    }`}
+                  >
+                    <span className="block text-sm font-medium text-slate-800">
+                      {preset.rotulo}
+                      {ativo ? (
+                        <span className="ml-1.5 text-[10px] font-semibold uppercase text-emerald-700">
+                          Ativo
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="mt-0.5 block text-xs leading-snug text-slate-600">
+                      {preset.descricao}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {resumo ? (
             <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50/80 p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">
@@ -144,11 +210,15 @@ export function EstiloEscritorioPanel() {
             </div>
           ) : (
             <p className="mt-4 text-sm text-slate-500">
-              Nenhum perfil de estilo ainda — use o upload abaixo.
+              Nenhum estilo ativo — escolha um preset ou use o upload abaixo.
             </p>
           )}
 
-          <label className="mt-4 flex items-start gap-2 text-sm text-slate-700">
+          <p className="mt-5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Ou personalize com suas amostras
+          </p>
+
+          <label className="mt-3 flex items-start gap-2 text-sm text-slate-700">
             <input
               type="checkbox"
               checked={optIn}
@@ -193,7 +263,7 @@ export function EstiloEscritorioPanel() {
               onClick={() => void handleGerar()}
               className="rounded-lg bg-stone-800 px-4 py-2.5 text-sm font-medium text-amber-50 hover:bg-stone-700 disabled:opacity-50"
             >
-              {processando ? "Analisando…" : resumo ? "Atualizar estilo" : "Gerar meu perfil"}
+              {processando ? "Analisando…" : resumo && !presetId ? "Atualizar estilo" : "Gerar meu perfil"}
             </button>
             {resumo ? (
               <button

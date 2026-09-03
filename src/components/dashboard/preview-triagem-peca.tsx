@@ -189,19 +189,6 @@ export function PlanoEstrategicoCorpo({
         </div>
       )}
 
-      {a.riscosOuLacunas && a.riscosOuLacunas.length > 0 && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2">
-          <h3 className="text-sm font-semibold text-amber-900">
-            Riscos ou lacunas
-          </h3>
-          <ul className="mt-1 list-inside list-disc text-sm text-amber-900/90">
-            {a.riscosOuLacunas.map((r) => (
-              <li key={r}>{r}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
       <details className="mt-4">
         <summary className="cursor-pointer text-xs font-medium text-stone-500 hover:text-stone-700">
           Ver análise completa (texto)
