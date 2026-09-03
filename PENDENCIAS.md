@@ -75,6 +75,11 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 - [x] **Word/PDF polish** — PDF com numeração Folha X de Y; copy alinhado ao preview paginado
 - [x] **Marca FACTOIA** — `FactoWordmarkIa` (FACTO PNG + IA SVG: I barra + A chevron sólido alinhado, ouro ~58%) só no título do chat e marca d'água do workspace; logo do site inalterada
 
+### Feito nesta rodada (02/09 noite — FACTOIA A + scorecard)
+
+- [x] **FACTOIA A** — chevron sólido alinhado ao I (sem stroke desalinhado); deploy `2df5795`
+- [x] **Scorecard atualizado** — `PENDENCIAS.md` + canvas `facto-vs-minutaia-scorecard.canvas.tsx` (noite 02/09)
+
 ### Feito nesta rodada (02/09 — inspector lastro pacote 4)
 
 - [x] **Inspector no ícone i** — `PlanoLastroHint` abre `PainelLateralPortal` com ENCAIXE + LASTRO + teses; hover rápido no desktop; toque no mobile
@@ -433,6 +438,34 @@ Ordem sugerida para o agente/Jefferson. **Grátis** = implementar quando fizer s
 3. Amostra manual: 1 JEC (Flash) · 1 Completo/Pro com gatilho Sonnet · 1 área densa (Const/Prev/Trab).
 4. Conferir: lastro na peça, endereçamento, Auditor, export Word/PDF.
 5. Anotar custo ~R$/peça no chat (Flash **~R$ 0,11** medido; Sonnet **~R$ 0,69**; ver **Decisão margem 01/09**).
+
+### Scorecard FACTO vs MinutaIA (02/09 noite — pós pacotes 3–5 + teste peça Enel)
+
+| Critério | MinutaIA | FACTO manhã 02/09 | FACTO noite 02/09 | Δ vs Minuta |
+|----------|----------|-------------------|-------------------|-------------|
+| Iteração (chat, fluidez, preview) | 9,0 | 8,0 | **8,3** | −0,7 |
+| Lastro / fundamentação | 7,0 | 6,4 | **6,9** | −0,1 |
+| Formato forense e entrega | 6,0 | 8,2 | **5,8** | −0,2 |
+| Preço / custo por peça | 5,0 | 8,0 | **8,0** | +3,0 |
+| Gestão + continuidade | 7,0 | 7,2 | **7,2** | +0,2 |
+
+**O que subiu (noite):**
+- **Iteração +0,3** — sidebar fontes (tooltips, pulse, lei); inspector lastro no i; streaming redação; debounce plano 600ms; FACTOIA no chat/workspace.
+- **Lastro +0,5** — inspector lateral ENCAIXE+LASTRO; `fls.` na peça redigida; comparativo browser 8 cenários ≈ paridade interpretação.
+
+**O que caiu (teste real Jefferson — Enel/consumidor):**
+- **Formato −2,4** — preview folhas mostra texto cru (`[[ESPACO_*]]`, sem qualificação) após stream; PDF export sem formatação forense; gap vs MinutaIA (peça montada antes de gerar).
+
+**Generalista (pesos iguais):** FACTO **≈ 7,24** vs MinutaIA **≈ 6,80** (+0,44 no agregado, mas **formato/entrega** virou risco P0).
+
+**Próximo salto de score (usuário nota na hora):**
+1. **P0** — preview pré-redação = peça formatada (scaffold/HTML), não só plano; pós-redação manter `pecaHtml` no painel folhas/PDF
+2. **P0** — qualificação determinística sempre injetada (autor/réu do relato)
+3. **P1** — riscos/lacunas como alerta no fim da peça (não no plano); copy sidebar sem parecer débito de cota
+4. **P1** — pacote estilo escritório (presets 0 token) + modelo por espécie no Perfil
+5. **P2** — acervo 100k (G1) para lastro ≈ MinutaIA
+
+Canvas: `canvases/facto-vs-minutaia-scorecard.canvas.tsx`.
 
 ### Scorecard FACTO vs MinutaIA (02/09 — pós lastro tópico A+B + área auto)
 
