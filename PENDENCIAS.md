@@ -77,6 +77,7 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 - [x] **Presets estilo (pacote 6)** — `ESTILO_PRESETS_FACTO` + grid no Perfil; badge `ChatEstiloAtivoBadge` no header; decode preset no prompt
 - [x] **Badge base FACTO** — `trechosBaseCount` no rodapé da peça (scaffold + pós-redação)
 - [x] **`tsc --noEmit`** ok
+- [x] **Deploy produção** — `65d7997` · `dpl_7hVodwWFyHTaPAGBWXzbCZ64hVxe` · Ready · [factoia.com.br](https://factoia.com.br)
 
 ### Feito nesta rodada (02/09 — Fase D pacote 5, fatia 1)
 
