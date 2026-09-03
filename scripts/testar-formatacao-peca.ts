@@ -79,6 +79,24 @@ assert(
   !/^II - DO DIREITO[ \t]+a\)/m.test(normalizada),
   "subtítulo a) não cola no DO DIREITO"
 );
+
+const romanosNaMesmaLinha = normalizarPecaGerada(
+  "I - DOS FATOS II - DO DIREITO III - DOS PEDIDOS\nTexto."
+);
+assert(/^I - DOS FATOS$/m.test(romanosNaMesmaLinha), "romanos colados → I sozinho");
+assert(/^II - DO DIREITO$/m.test(romanosNaMesmaLinha), "romanos colados → II sozinho");
+assert(/^III - DOS PEDIDOS$/m.test(romanosNaMesmaLinha), "romanos colados → III sozinho");
+assert(
+  !/I - DOS FATOS II - DO DIREITO/.test(romanosNaMesmaLinha),
+  "não mantém I e II na mesma linha"
+);
+
+const fatosDireitoFundidos = normalizarPecaGerada(
+  "I - DOS FATOS DO DIREITO\nRelato breve."
+);
+assert(/^I - DOS FATOS$/m.test(fatosDireitoFundidos), "FATOS+DIREITO fundidos → I");
+assert(/^II - DO DIREITO$/m.test(fatosDireitoFundidos), "FATOS+DIREITO fundidos → II");
+
 assert(
   /Nestes termos,\npede deferimento\./.test(normalizada),
   "fechamento em duas linhas"

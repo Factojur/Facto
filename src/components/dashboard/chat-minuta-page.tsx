@@ -1326,6 +1326,7 @@ export function ChatMinutaPage({
         setScaffoldAviso(data.avisoPreview ?? null);
         setScaffoldTrechosCount(data.baseConhecimentoUtilizada?.length ?? 0);
         setPreviewPainel("peca");
+        setAbaMobile("peca");
       } catch (e) {
         if (e instanceof DOMException && e.name === "AbortError") return;
         setPreviewPainel("plano");
@@ -1454,11 +1455,11 @@ export function ChatMinutaPage({
               silencioso: opts?.silencioso,
               rotulo: data.fallbackLocal
                 ? undefined
-                : "Plano estratégico atualizado à direita — revise tópicos e pedidos. Quando estiver bom, confirme a redação (1 peça).",
+                : "Plano à direita atualizado. Revise e confirme a redação quando estiver bom.",
             });
             if (data.fallbackLocal && !opts?.silencioso) {
               setAvisos(
-                "Plano preliminar no painel — a análise estratégica completa será atualizada quando o serviço responder."
+                "Plano preliminar no painel — a análise completa sobe em seguida."
               );
             }
             return aplicado;
@@ -1470,7 +1471,7 @@ export function ChatMinutaPage({
         const fb = aplicarFallbackLocal("rede ou serviço indisponível");
         if (!opts?.silencioso) {
           setAvisos(
-            "Usei um plano preliminar local — você pode continuar conversando normalmente."
+            "Plano preliminar ativo — você já pode conversar; atualize o plano se quiser a versão completa."
           );
         }
         return fb;
@@ -1478,7 +1479,7 @@ export function ChatMinutaPage({
         if (err instanceof DOMException && err.name === "AbortError") return null;
         const fb = aplicarFallbackLocal("falha de rede");
         if (!opts?.silencioso) {
-          setAvisos("Plano preliminar ativo — tente **Atualizar plano** em instantes se quiser a versão completa.");
+          setAvisos("Plano preliminar ativo — tente Atualizar plano em instantes.");
         }
         return fb;
       } finally {
@@ -2013,11 +2014,19 @@ export function ChatMinutaPage({
     setErro(null);
     setAvisos(null);
     setGeradoPorIA(true);
+    setPreviewPainel("peca");
+    setAbaMobile("peca");
     setRiscosPlano(
       filtrarRiscosParaRodape(triagem.analiseEstrategica?.riscosOuLacunas)
     );
-    setPeca("");
-    setPecaHtml("");
+    // Mantém scaffold no painel até o 1º token — evita flash em branco (fluidez MinutaIA).
+    if (!scaffoldPeca.trim()) {
+      setPeca("");
+      setPecaHtml("");
+    } else {
+      setPeca(scaffoldPeca);
+      setPecaHtml(scaffoldPecaHtml);
+    }
     try {
       const corpoGeracao = {
         ...payload,
@@ -2084,7 +2093,7 @@ export function ChatMinutaPage({
                   esc.usarTimbre ? esc : undefined
                 );
                 setPecaHtml(html);
-              }, 150);
+              }, 80);
             }
             if (evt.done) {
               data = evt;
@@ -2115,8 +2124,8 @@ export function ChatMinutaPage({
       }
 
       let msgPosRedacao = exportacaoTrial
-        ? "Peça redigida. Visualize completa à direita; Word/PDF nos planos pagos. Copie o texto para conferência ou peça ajustes abaixo."
-        : "Peça redigida. Exporte Word/PDF à direita ou peça ajustes pontuais abaixo.";
+        ? "Peça pronta à direita. Word/PDF nos planos pagos — copie o texto ou peça ajustes abaixo."
+        : "Peça pronta à direita. Exporte Word/PDF ou peça ajustes abaixo.";
       if (data.auditoria?.achados?.length) {
         const alertas = data.auditoria.achados
           .filter((a) => a.gravidade !== "info")

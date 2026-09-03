@@ -56,7 +56,7 @@ export function configModoConversa(modo: ModoConversaChat): ConfigModoConversa {
         "Termine com pergunta útil ou próximo passo quando faltar dado relevante.",
       ],
       forcarPlanoAposTurno: true,
-      debouncePlanoMs: 800,
+      debouncePlanoMs: 650,
     };
   }
 
@@ -72,6 +72,6 @@ export function configModoConversa(modo: ModoConversaChat): ConfigModoConversa {
       "Uma pergunta objetiva no fim, se faltar dado crítico.",
     ],
     forcarPlanoAposTurno: false,
-    debouncePlanoMs: 600,
+    debouncePlanoMs: 400,
   };
 }

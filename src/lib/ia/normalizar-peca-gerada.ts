@@ -245,6 +245,7 @@ function limparPrefixoPeticaoInicialNoNome(texto: string): string {
 
 /**
  * Separa "II - DO DIREITO a) …" e "a) Título Corpo…" em linhas distintas.
+ * Também quebra romanos colados: "I - DOS FATOS II - DO DIREITO".
  */
 function separarTitulosESubtopicos(texto: string): string {
   const linhas = texto.replace(/\r\n/g, "\n").split("\n");
@@ -257,9 +258,53 @@ function separarTitulosESubtopicos(texto: string): string {
       continue;
     }
 
-    // II - DO DIREITO a) Da tese…
+    // I - DOS FATOS II - DO DIREITO III - DOS PEDIDOS (tudo na mesma linha)
+    const romanosColados = [
+      ...linha.matchAll(
+        /\b([IVXLCDM]+)\s*[-—–.]\s+(?=(?:DO|DA|DAS|DOS|PRELIMINAR|M[EÉ]RITO|RAZ[OÕ]ES|CABIMENTO|PEDIDO|HABEAS|NULIDADE|JUSTI[CÇ]A)\b)/gi
+      ),
+    ];
+    if (romanosColados.length >= 2) {
+      const primeiro = romanosColados[0]!.index ?? 0;
+      if (primeiro > 0) {
+        const prefixo = linha.slice(0, primeiro).trim();
+        if (prefixo) out.push(prefixo);
+      }
+      for (let i = 0; i < romanosColados.length; i++) {
+        const start = romanosColados[i]!.index ?? 0;
+        const end =
+          i + 1 < romanosColados.length
+            ? (romanosColados[i + 1]!.index ?? linha.length)
+            : linha.length;
+        const chunk = linha.slice(start, end).trim();
+        if (!chunk) continue;
+        const normalizado = chunk.replace(
+          /^([IVXLCDM]+)\s*[-—–.]\s+/i,
+          (_m, r: string) => `${String(r).toUpperCase()} - `
+        );
+        out.push(normalizado);
+      }
+      continue;
+    }
+
+    // I - DOS FATOS DO DIREITO / I - DOS FATOS E DO MÉRITO E DO DIREITO
+    const fatosDireitoColados =
+      /^([IVXLCDM]+)\s*[-—–.]\s+(DOS FATOS)\s+(?:E\s+)?(?:DO M[EÉ]RITO\s+(?:E\s+)?)?(DO DIREITO)\s*$/i.exec(
+        linha
+      );
+    if (fatosDireitoColados) {
+      out.push(
+        `${fatosDireitoColados[1]!.toUpperCase()} - ${fatosDireitoColados[2]!.toUpperCase()}`
+      );
+      out.push(`II - ${fatosDireitoColados[3]!.toUpperCase()}`);
+      continue;
+    }
+
+    // II - DO DIREITO a) Da tese…  (e variantes DOS FATOS / DO MÉRITO)
     const coladoRomano =
-      /^([IVXLCDM]+)\s*[-—–.]\s+(DO DIREITO)\s+([a-z]\))\s+(.+)$/i.exec(linha);
+      /^([IVXLCDM]+)\s*[-—–.]\s+(DOS FATOS|DO DIREITO|DO M[EÉ]RITO|DAS PROVAS|DOS PEDIDOS)\s+([a-z]\))\s+(.+)$/i.exec(
+        linha
+      );
     if (coladoRomano) {
       out.push(
         `${coladoRomano[1]!.toUpperCase()} - ${coladoRomano[2]!.toUpperCase()}`

@@ -40,7 +40,7 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 1. **A — Entendimento e segurança (P0)** — IA interpreta; avisos soft (não bloqueiam); remédio por último ato; área/polo auto; reteste 0006509.
 2. **B — Rastreabilidade visível (P0)** — citações `fls.` e ✓ lei inline no plano e na prévia (reusar `pagina-anexo-pdf` + base FACTO); “o que li do PDF” em 1 balão após anexo.
 3. **C — Fluidez e fontes (P1)** — streaming turno/plano; coluna fontes (anexos, juris do caso, teses); menos chips no header, mais no fluxo natural do chat.
-4. **D — Formatação/entrega da peça** — **adiado** por decisão Jefferson (protocolo, Word/PDF, tipografia final).
+4. **D — Formatação/entrega da peça** — **em andamento** (03/09): títulos colados corrigidos; tipografia preview≡PDF e polish forense na fila.
 
 **Não fazer neste épico:** clone visual, skills 2k, juris live, reprocessar PDF inteiro a cada turno (margem 35–40%). **Não** religar confirmação obrigatória de área/polo no chat.
 
@@ -67,6 +67,23 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 - [x] **`fls.` clicáveis na peça redigida** — `PecaDocumentoView` + `TextoJuridicoInline` no painel documento (chat)
 - [x] **Streaming redação no documento** — `stream: true` em `/api/gerar-peca` (NDJSON); redator Gemini com `onRedacaoDelta`; chat mostra texto crescendo
 - [x] **Chat livre (desacoplado das travas de área)** — área/polo não bloqueiam; IA autoridade; payload com polo default; prompts conversa/inferência MinutaIA-style
+
+### Feito nesta rodada (03/09 — fluidez + Fase D formatação)
+
+- [x] **Fluidez chat** — debounce plano 400ms (instantâneo) / 650ms (planejado); scaffold permanece no painel até o 1º token da redação; mobile abre aba Peça ao scaffold; copy mais curta pós-plano/pós-redação; stream HTML 80ms
+- [x] **Títulos romanos colados** — `normalizarPecaGerada` separa `I - DOS FATOS II - DO DIREITO…` e `I - DOS FATOS DO DIREITO`; prompt reforça 1 romano/linha; `test:formatacao-peca` ok
+- [x] **Fase D aberta** — formatação forense como prioridade; ver nota MinutaIA abaixo
+
+#### Como o MinutaIA formata (referência Fase D)
+
+Observado no uso/comparativo (não é clone visual):
+1. **Preview cedo** — documento “de tribunal” no painel antes de gastar cota (peça montada, não só plano).
+2. **Hierarquia visual** — endereçamento centralizado; tópicos romanos em linha própria + negrito; corpo justificado contínuo; pedidos numerados.
+3. **Tipografia tipo Word** — Times/serif, margens A4, pouco “chat”; a peça parece exportável.
+4. **Sem títulos fundidos** — cada seção (fatos / direito / pedidos) em bloco separado; subtítulos a)/b) na linha seguinte.
+5. **Stream no documento** — texto cresce já na forma forense.
+
+**FACTO já tem** (`formatacao-forense`, `tipografia-peca`, scaffold, stream HTML). Gap atual: normalização inconsistente (títulos colados), corpo às vezes fragmentado, PDF/Word ainda atrás do preview. Próximos fatias Fase D: (1) smoke títulos pós-deploy · (2) tipografia preview≡PDF · (3) parágrafos DOS FATOS/DIREITO contínuos · (4) qualificação/lastro/skills = conversa à parte.
 
 ### Feito nesta rodada (03/09 — FACTOIA crop A)
 
