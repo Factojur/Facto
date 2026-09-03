@@ -6,10 +6,10 @@ import type { HTMLAttributes } from "react";
  */
 export const FACTO_WORDMARK_SRC = "/brand/facto-wordmark.png";
 
-/** Proporções do PNG oficial (983×231) — letra A ≈ 20% da largura, início ~19,9%. */
+/** Proporções do PNG oficial (983×231) — A entre F e C (x≈165–342). */
 const WM_ASPECT = 983 / 231;
-const LETTER_A_X = 196 / 983;
-const LETTER_A_W = 197 / 983;
+const LETTER_A_X = 165 / 983;
+const LETTER_A_W = 177 / 983;
 const IA_SCALE = 0.58;
 
 export type FactoWordmarkIaSize = "chat" | "xs" | "watermark";
