@@ -14,36 +14,24 @@ const SIZE_EM: Record<FactoWordmarkIaSize, string> = {
   watermark: "text-[2.75rem] sm:text-[3.5rem]",
 };
 
-/** IA no mesmo desenho da logo: I = traço; A = chevron sem barra. */
+/** IA no mesmo desenho da logo: I = traço; A = chevron sólido sem barra. */
 function WordmarkIaSuffix({
   className,
   ...props
 }: SVGAttributes<SVGSVGElement>) {
   return (
     <svg
-      viewBox="0 0 96 100"
+      viewBox="0 0 78 100"
       fill="currentColor"
-      className={`h-[0.58em] w-auto shrink-0 ${className ?? ""}`}
+      className={`block h-[0.58em] w-auto shrink-0 ${className ?? ""}`}
       aria-hidden
       {...props}
     >
-      {/* I — barra vertical */}
+      {/* I — mesma altura útil do A (y 6–94) */}
       <rect x="0" y="6" width="18" height="88" rx="1" />
-      {/* A — duas hastes em V, sem travessão */}
-      <path
-        d="M 36 94 L 52 6"
-        stroke="currentColor"
-        strokeWidth="18"
-        strokeLinecap="square"
-        fill="none"
-      />
-      <path
-        d="M 52 6 L 80 94"
-        stroke="currentColor"
-        strokeWidth="18"
-        strokeLinecap="square"
-        fill="none"
-      />
+      {/* A — duas hastes sólidas (perfil do FACTO), ápice alinhado ao topo do I */}
+      <path d="M 24 94 L 42 94 L 51 6 Z" />
+      <path d="M 51 6 L 60 94 L 78 94 Z" />
     </svg>
   );
 }
@@ -84,13 +72,13 @@ export function FactoWordmarkIa({
       role={decorativo ? undefined : "img"}
       aria-label={decorativo ? undefined : "FACTOIA"}
       aria-hidden={decorativo ? true : undefined}
-      className={`inline-flex max-w-full items-baseline leading-none ${SIZE_EM[size]} ${className ?? ""}`}
+      className={`inline-flex max-w-full items-end leading-none ${SIZE_EM[size]} ${className ?? ""}`}
       style={watermarkOpacity != null ? { opacity: watermarkOpacity } : undefined}
       {...props}
     >
       <FactoWordmark className="h-[1em] w-auto shrink-0" alt="" aria-hidden />
       <span
-        className="ml-[0.04em] inline-flex shrink-0 items-baseline text-facto-gold-ia"
+        className="ml-[0.04em] inline-flex shrink-0 items-end text-facto-gold-ia"
         aria-hidden
       >
         <WordmarkIaSuffix />
