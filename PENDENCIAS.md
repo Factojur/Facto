@@ -6,7 +6,18 @@ Lista viva — itens alinhados em conversa, ainda sem implementação fechada ou
 
 Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed/ops): [`MELHORIAS.md`](./MELHORIAS.md).
 
-## Decisão produto (01/09 noite) — paridade funcional MinutaIA no chat
+## Roadmap produto (03/09 — alinhamento Jefferson)
+
+Ordem fechada — **não inverter**:
+
+1. **Chat = MinutaIA** — mesmo fluxo, fluidez, iteração, liberdade da IA. Únicas diferenças: **aparência FACTO** + **juris = base FACTO + anexos**. Configurações/travas pré-chat (áreas manuais, chips, filtros rígidos) **ficam de lado** e **não** condicionam o chat.
+2. **Preview MinutaIA-style** — peça montada cedo; diferencial FACTO = aba de **planos** planejados.
+3. **Formatação protocolável** — tipografia, títulos, PDF/Word (Fase D).
+4. **Só no final** — revisitar o trabalho pré-chat (áreas, ritos, dashboards) para aprimorar o produto voltado ao advogado.
+
+**Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
+
+### Decisão produto (01/09 noite) — paridade funcional MinutaIA no chat
 
 **Jefferson:** o chat FACTO deve funcionar **igual ao MinutaIA em tudo, exceto layout e cores**. O usuário **não** deve precisar microgerenciar polo, espécie, área e detalhes do caso. **Formatação e entrega da peça pronta** ficam para **depois** de fechar este épico.
 
@@ -67,6 +78,11 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 - [x] **`fls.` clicáveis na peça redigida** — `PecaDocumentoView` + `TextoJuridicoInline` no painel documento (chat)
 - [x] **Streaming redação no documento** — `stream: true` em `/api/gerar-peca` (NDJSON); redator Gemini com `onRedacaoDelta`; chat mostra texto crescendo
 - [x] **Chat livre (desacoplado das travas de área)** — área/polo não bloqueiam; IA autoridade; payload com polo default; prompts conversa/inferência MinutaIA-style
+
+### Feito nesta rodada (03/09 — remédio livre / caso faculdade)
+
+- [x] **Roadmap alinhado** — chat MinutaIA → preview+planos → formatação → só depois revisitar áreas pré-chat
+- [x] **Contestação fantasma (0006509)** — `especieExplicita` / `inferirEspeciePeca` não pegam mais “intimado a apresentar contestação” nos autos; `pecaCabivelAposUltimoAto` + `ajustarEspecieCabivel` priorizam agravo do último ato; `especieResolvidaChat` não re-varre PDF quando espécie já está no estado
 
 ### Feito nesta rodada (03/09 — fluidez + Fase D formatação)
 

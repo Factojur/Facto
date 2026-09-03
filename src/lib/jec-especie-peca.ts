@@ -504,7 +504,14 @@ export function inferirEspeciePeca(
     return "pedido-contraposto";
   }
   if (/r[eé]plica/.test(t)) return "replica";
-  if (/contesta[cç][aã]o/.test(t)) return "contestacao";
+  // Menção a "contestação" nos autos ≠ peça a redigir (ex.: intimação antiga).
+  if (
+    /(apresentar|opor|redigir|elaborar|preciso\s+(d[ae]\s+)?|fazer|protocolar)\s+(a\s+)?contesta[cç][aã]o/.test(
+      t
+    )
+  ) {
+    return "contestacao";
+  }
   if (
     /cumprimento de senten[cç]a|execu[cç][aã]o de t[ií]tulo|pedido de penhora|\bexecu[cç][aã]o\b/.test(
       t

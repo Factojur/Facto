@@ -241,7 +241,15 @@ export function pecaCabivelAposUltimoAto(
   if (!t) return null;
 
   const explicita = especieExplicitaNoRelato(texto, areaId);
-  if (explicita) return explicita;
+  /** Defesa/contestação/réplica explícitas não cortam remédio do último ato. */
+  const explicitaFracaDefesa =
+    explicita === "contestacao" ||
+    explicita === "defesa" ||
+    explicita === "replica" ||
+    explicita === "defesa-jecrim" ||
+    explicita === "resposta-acusacao";
+
+  if (explicita && !explicitaFracaDefesa) return explicita;
 
   if (/agravo de instrumento/.test(t) && /interpor|cabivel|recorrer/.test(t)) {
     return especieAgravoDaArea(areaId);
@@ -264,7 +272,7 @@ export function pecaCabivelAposUltimoAto(
       /erro material|nao em seu valor|forma de aplicacao/.test(t));
 
   if (!incidenteExecucaoJaAberto(texto) && !interlocutoria && !vicio) {
-    return null;
+    return explicitaFracaDefesa ? explicita : null;
   }
 
   if (sugereMandadoSegurancaAutos(texto)) {
@@ -276,7 +284,7 @@ export function pecaCabivelAposUltimoAto(
     return especieAgravoDaArea(areaId);
   }
   if (vicio) return especieEmbargosDaArea(areaId);
-  return null;
+  return explicitaFracaDefesa ? explicita : null;
 }
 
 /** Ajusta espécie sugerida pelo último ato quando o polo do advogado é conhecido. */
@@ -362,10 +370,15 @@ export function ajustarEspecieCabivel(params: {
     );
   }
   if (!cabivel) return params.especie;
+  const especieEhDefesa =
+    /^(contestacao|defesa|replica|defesa-jecrim|resposta-acusacao)$/.test(especie);
+  const cabivelEhRemedioUltimoAto =
+    /agravo|embargos|mandado-seguranca/.test(cabivel);
   if (
     ehEspecieAberturaExecucao(especie) ||
     especie === "peticao-inicial" ||
-    cabivel === "mandado-seguranca"
+    cabivel === "mandado-seguranca" ||
+    (especieEhDefesa && cabivelEhRemedioUltimoAto)
   ) {
     return cabivel;
   }

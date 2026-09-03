@@ -90,14 +90,26 @@ export function especieExplicitaNoRelato(
   if (/replica a contestacao|replica.{0,40}contestacao/.test(t)) {
     return "replica";
   }
+  // Contestação só com pedido explícito de redigir defesa — não por menção histórica nos autos
+  // (ex.: "intimado a apresentar contestação" em PDF antigo não define a peça de agora).
   if (
-    /contestacao/.test(t) &&
-    /intimad|prazo|apresentar|opor/.test(t) &&
-    !/replica/.test(t)
+    /(apresentar|opor|redigir|elaborar|preciso\s+(d[ae]\s+)?|fazer|protocolar)\s+(a\s+)?contestacao/.test(
+      t
+    ) ||
+    /\bcontestacao\b.{0,40}\b(r[eé]u|reclamad|executad|passivo)\b/.test(t)
   ) {
-    if (areaId === "trabalhista") return "defesa";
-    if (areaId === "jec" || areaId === "jecr") return "contestacao";
-    return "contestacao";
+    // Cumprimento + interlocutória / agravo: remédio do último ato prevalece.
+    if (
+      /cumprimento\s+de\s+sentenca|incidente\s+de\s+cumprimento|fase\s+de\s+execucao/.test(
+        t
+      ) &&
+      /(decisao|interlocutor|astreinte|agravo|exequente)/.test(t)
+    ) {
+      /* segue para regras abaixo / null */
+    } else {
+      if (areaId === "trabalhista") return "defesa";
+      return "contestacao";
+    }
   }
 
   if (/recurso inominado/.test(t)) return "recurso-inominado";

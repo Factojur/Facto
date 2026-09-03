@@ -1000,6 +1000,18 @@ export function sincronizarComarcaDaQualificacao(
 }
 
 export function especieResolvidaChat(estado: EstadoCasoChat): string {
+  // Chat MinutaIA-style: se a espécie do caso já está definida (IA ou organização),
+  // não re-varre o relato inteiro — PDF antigo com "contestação" não pode sobrescrever.
+  const fixa = estado.especiePeca?.trim();
+  if (fixa) {
+    return ajustarEspecieCabivel({
+      areaId: estado.areaId,
+      especie: fixa,
+      tipoAcao: estado.tipoAcao,
+      fatos: estado.fatos,
+      poloAdvocacia: estado.poloAdvocacia,
+    });
+  }
   return inferirEspecieDaArea(
     estado.areaId,
     estado.tipoAcao || "Petição",
