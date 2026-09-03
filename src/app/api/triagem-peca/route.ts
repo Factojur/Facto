@@ -163,29 +163,24 @@ export async function POST(request: Request) {
       );
     }
 
+    const especiePayload = String(body.especiePeca ?? "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "-");
     const especie = aplicarFlagReconvencao(
       areaId,
-      inferirEspecieDaArea(
-        areaId,
-        body.tipoAcao,
-        body.fatos,
-        body.especiePeca
-      ),
+      especiePayload ||
+        inferirEspecieDaArea(
+          areaId,
+          body.tipoAcao,
+          body.fatos,
+          body.especiePeca
+        ),
       body.comReconvencao
     );
-    const msgPolo = mensagemPoloObrigatorioGeracao(
-      areaId,
-      especie,
-      body.poloAdvocacia
-    );
-    if (msgPolo) {
-      return NextResponse.json(
-        { error: msgPolo, codigo: "POLO_OBRIGATORIO" },
-        { status: 400 }
-      );
-    }
-
-    const polo = resolverPoloGeracao(areaId, especie, body.poloAdvocacia);
+    mensagemPoloObrigatorioGeracao(areaId, especie, body.poloAdvocacia);
+    const polo =
+      resolverPoloGeracao(areaId, especie, body.poloAdvocacia) ?? "ativo";
     const teses = detectarTesesCanonicas(
       areaId,
       body.fatos,

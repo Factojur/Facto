@@ -79,6 +79,12 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 - [x] **Streaming redação no documento** — `stream: true` em `/api/gerar-peca` (NDJSON); redator Gemini com `onRedacaoDelta`; chat mostra texto crescendo
 - [x] **Chat livre (desacoplado das travas de área)** — área/polo não bloqueiam; IA autoridade; payload com polo default; prompts conversa/inferência MinutaIA-style
 
+### Feito nesta rodada (03/09 — IA livre estilo MinutaIA)
+
+- [x] **Como MinutaIA trabalha** — IA lê o caso e escolhe remédio; sem chip de área/polo; sem kit engessado; menção histórica nos autos não define a peça
+- [x] **Chat FACTO alinhado** — `organizarCasoLocal({ semRemedio })` no chat (só partes/metadados); espécie só da IA (fallback = último ato); sem `reajustarEspeciePoloChat` heurístico; payload/`gerar-peca` confiam em `especiePeca`; sem 400 `POLO_OBRIGATORIO`
+- [x] **Prompt `/api/inferir-area`** — reforço: não use contestação histórica do PDF
+
 ### Feito nesta rodada (03/09 — remédio livre / caso faculdade)
 
 - [x] **Roadmap alinhado** — chat MinutaIA → preview+planos → formatação → só depois revisitar áreas pré-chat

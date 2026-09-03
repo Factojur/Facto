@@ -22,6 +22,7 @@ import { areaAbertaParaCliente } from "@/lib/acesso-areas";
 import { resolverAcessoConta } from "@/lib/emails-acesso-livre";
 import { moduloDaArea, normalizarAreaIdMinuta } from "@/lib/minuta-modulo";
 import {
+  inferirPoloDoRelato,
   mensagemPoloObrigatorioGeracao,
   resolverPoloGeracao,
 } from "@/lib/polo-advocacia";
@@ -674,14 +675,19 @@ async function postGerarPeca(request: Request) {
 
   const areaId = normalizarAreaIdMinuta(body.areaId);
 
+  const especiePayload = String(body.especiePeca ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-");
   const especieValidacao = aplicarFlagReconvencao(
     areaId,
-    inferirEspecieDaArea(
-      areaId,
-      body.tipoAcao,
-      body.fatos,
-      body.especiePeca
-    ),
+    especiePayload ||
+      inferirEspecieDaArea(
+        areaId,
+        body.tipoAcao,
+        body.fatos,
+        body.especiePeca
+      ),
     body.comReconvencao
   );
   const msgPolo = mensagemPoloObrigatorioGeracao(
@@ -689,17 +695,17 @@ async function postGerarPeca(request: Request) {
     especieValidacao,
     body.poloAdvocacia
   );
+  // MinutaIA-style: polo ambíguo não bloqueia — defaulta ativo/relato.
+  const poloGeracao =
+    resolverPoloGeracao(areaId, especieValidacao, body.poloAdvocacia) ??
+    (inferirPoloDoRelato(`${body.tipoAcao ?? ""}\n${body.fatos ?? ""}`) as
+      | "ativo"
+      | "passivo"
+      | null) ??
+    "ativo";
   if (msgPolo) {
-    return NextResponse.json(
-      { error: msgPolo, codigo: "POLO_OBRIGATORIO" },
-      { status: 400 }
-    );
+    /* aviso soft desativado — geração segue */
   }
-  const poloGeracao = resolverPoloGeracao(
-    areaId,
-    especieValidacao,
-    body.poloAdvocacia
-  );
 
   let tipoUsuario =
     (user.user_metadata?.tipo_usuario as string | undefined) ?? "advogado";

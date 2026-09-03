@@ -477,12 +477,16 @@ export async function gerarPecaComIA(params: {
     polo != null
       ? { polo, atuarLeigo: Boolean(params.atuarLeigo) }
       : undefined;
-  const especie = inferirEspecieDaArea(
-    areaId,
-    params.tipoAcao,
-    params.fatos,
-    params.especiePeca
-  );
+  // MinutaIA-style: espécie do payload/IA prevalece; não re-inferir pelo kit da área.
+  const especieFixa = String(params.especiePeca ?? "").trim();
+  const especie = especieFixa
+    ? especieFixa.toLowerCase().replace(/\s+/g, "-")
+    : inferirEspecieDaArea(
+        areaId,
+        params.tipoAcao,
+        params.fatos,
+        params.especiePeca
+      );
   const teses = detectarTesesCanonicas(
     areaId,
     params.fatos,
@@ -493,6 +497,7 @@ export async function gerarPecaComIA(params: {
     especie,
     tipoAcao: params.tipoAcao,
     fatos: params.fatos,
+    confiarEspecie: Boolean(especieFixa),
   });
   const especieFinal = vinculos.especie;
   const blocoVinculos = blocoPecaCabivelPrompt(vinculos);

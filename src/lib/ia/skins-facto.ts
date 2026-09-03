@@ -27,13 +27,20 @@ export function resolverVinculosPeca(params: {
   especie: string;
   tipoAcao?: string | null;
   fatos?: string | null;
+  /** Chat MinutaIA: não sobrescrever a espécie escolhida pela IA. */
+  confiarEspecie?: boolean;
 }): VinculosPecaFacto {
-  const especie = ajustarEspecieCabivel({
-    areaId: params.areaId,
-    especie: params.especie,
-    tipoAcao: params.tipoAcao,
-    fatos: params.fatos,
-  });
+  const especie = params.confiarEspecie
+    ? String(params.especie ?? "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+    : ajustarEspecieCabivel({
+        areaId: params.areaId,
+        especie: params.especie,
+        tipoAcao: params.tipoAcao,
+        fatos: params.fatos,
+      });
   const blob = `${params.tipoAcao ?? ""} ${params.fatos ?? ""}`;
   return {
     especie,

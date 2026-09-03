@@ -5,6 +5,7 @@
 
 import type { PreenchimentoEntradaCaso } from "@/lib/entrada-caso-types";
 import type { AreaIdMinuta } from "@/lib/minuta-modulo";
+import { normalizarAreaIdMinuta } from "@/lib/minuta-modulo";
 import { extrairPartesDoRelato } from "@/lib/extrair-partes-relato";
 import {
   extrairMetadadosAutos,
@@ -131,10 +132,61 @@ export function organizarCasoLocal(params: {
   relato: string;
   areaId: string;
   poloAdvocacia?: "ativo" | "passivo" | null;
+  /**
+   * Chat MinutaIA-style: extrai partes/metadados, mas NÃO decide o remédio.
+   * Espécie fica para a IA (`/api/inferir-area`).
+   */
+  semRemedio?: boolean;
 }): ResultadoOrganizacaoLocal {
   const relato = params.relato.trim();
   const meta = extrairMetadadosAutos(relato);
   const partes = extrairPartesDoRelato(relato);
+  const ultimoAto = extrairUltimoAtoDoTexto(relato);
+  const n = norm(relato);
+
+  if (params.semRemedio) {
+    const areaId = normalizarAreaIdMinuta(params.areaId);
+    const teses = detectarTesesCanonicas(areaId, relato);
+    return {
+      areaIdResolvida: areaId,
+      preenchimento: {
+        especiePeca: "",
+        tipoAcao: "",
+        fatos: narrativaFatos(relato),
+        autoresNomes: partes.autoresNomes,
+        reusNomes: partes.reusNomes,
+        numeroProcesso: meta.numeroProcesso,
+        foro: meta.foro,
+        cidade: meta.cidade,
+        uf: meta.uf,
+        numeroVara: meta.numeroVara,
+        especieDoProcesso: null,
+        ultimoAto,
+        pedidos: extrairPedidosDoRelato(relato, "peticao-inicial"),
+        pedirJusticaGratuita: /justi[cç]a\s+gratuita|gratuidade|hipossufici|jg\b/.test(
+          n
+        )
+          ? true
+          : null,
+        tutelaUrgencia:
+          /tutela\s+(de\s+)?urg[eê]ncia|restabelecimento\s+imediato|corte\s+indevido|liminar|antecipa[cç][aã]o\s+de\s+tutela/.test(
+            n
+          )
+            ? true
+            : null,
+        danosMorais: /danos?\s*morais?/.test(n) ? true : null,
+        danosMateriais: /danos?\s*materiais|restitui[cç][aã]o/.test(n)
+          ? true
+          : null,
+        tesesIds: teses.map((t) => t.id),
+        camposIncertos: partes.autoresNomes.length ? [] : ["partes"],
+        resumoConferencia:
+          "Caso lido — a IA escolhe a peça cabível (paridade MinutaIA)." +
+          (ultimoAto ? ` Último ato: ${ultimoAto.slice(0, 120)}` : ""),
+      },
+    };
+  }
+
   let especie =
     inferirEspecieDaArea(params.areaId, "Petição inicial", relato, null) ||
     "peticao-inicial";
@@ -150,10 +202,8 @@ export function organizarCasoLocal(params: {
   });
   especie = resolvido.especie;
   const tipoAcao = resolvido.tipoAcao;
-  const ultimoAto = extrairUltimoAtoDoTexto(relato);
   const teses = detectarTesesCanonicas(resolvido.areaId, relato);
   const pedidos = extrairPedidosDoRelato(relato, especie);
-  const n = norm(relato);
 
   return {
     preenchimento: {

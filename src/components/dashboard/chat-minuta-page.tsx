@@ -81,6 +81,8 @@ import {
   type EstadoCasoChat,
   type MensagemChat,
 } from "@/lib/chat-minuta";
+import { tituloPecaDaArea } from "@/lib/peca-especie-area";
+import { pecaCabivelAposUltimoAto } from "@/lib/peca-cabivel-autos";
 import {
   configModoConversa,
   lerModoConversaStorage,
@@ -1719,6 +1721,7 @@ export function ChatMinutaPage({
         relato,
         areaId: areaParaOrgPista,
         poloAdvocacia: estadoAnteriorRef.current.poloAdvocacia,
+        semRemedio: !areaManual,
       });
 
       // MinutaIA-style: IA interpreta área + espécie; local só pista / extração.
@@ -1772,14 +1775,30 @@ export function ChatMinutaPage({
               relato,
               areaId: areaParaOrg,
               poloAdvocacia: baseEstado.poloAdvocacia,
+              semRemedio: !areaManual,
             });
       let preenchimentoLocal = orgLocal.preenchimento;
 
-      if (especieIa && !areaManual) {
-        preenchimentoLocal = {
-          ...preenchimentoLocal,
-          especiePeca: especieIa,
-        };
+      if (!areaManual) {
+        if (especieIa) {
+          preenchimentoLocal = {
+            ...preenchimentoLocal,
+            especiePeca: especieIa,
+            tipoAcao:
+              tituloPecaDaArea(areaParaOrg, especieIa, "") ||
+              especieIa.replace(/-/g, " "),
+          };
+        } else {
+          // Sem IA: só remédio do último ato (nunca kit contestação por menção nos autos).
+          const cabivel = pecaCabivelAposUltimoAto(areaParaOrg, relato);
+          preenchimentoLocal = {
+            ...preenchimentoLocal,
+            especiePeca: cabivel ?? "",
+            tipoAcao: cabivel
+              ? tituloPecaDaArea(areaParaOrg, cabivel, "") || cabivel
+              : "",
+          };
+        }
       }
 
       // IA manda em área; local só extrai partes/fatos/pedidos (não remapeia área).
@@ -1797,10 +1816,18 @@ export function ChatMinutaPage({
         relato,
       });
       nextEstado = sincronizarPoloAutomaticoChat(nextEstado, texto);
-      // Não sobrescrever espécie da IA com heurística local.
-      nextEstado = reajustarEspeciePoloChat(nextEstado, {
-        respeitarEspecieIa: Boolean(especieIa && !areaManual),
-      });
+      // Chat livre: nunca reajustar espécie com heurística de polo/kit.
+      if (areaManual) {
+        nextEstado = reajustarEspeciePoloChat(nextEstado);
+      } else if (especieIa) {
+        nextEstado = {
+          ...nextEstado,
+          especiePeca: especieIa,
+          tipoAcao:
+            tituloPecaDaArea(nextEstado.areaId, especieIa, nextEstado.tipoAcao) ||
+            nextEstado.tipoAcao,
+        };
+      }
       nextEstado = { ...nextEstado, planoVisto: false, previewVisto: false };
 
       const primeiroRelato =

@@ -67,16 +67,17 @@ export async function inferirCasoComGemini(input: {
     ? `\nPista local (não vincule; use só se coincidir com a boa técnica): área=${input.pistaLocal.areaId ?? "?"} espécie=${input.pistaLocal.especiePeca ?? "?"}`
     : "";
 
-  const system = `Você é um advogado sênior brasileiro com liberdade total para interpretar o caso (como no MinutaIA).
+  const system = `Você é um advogado sênior brasileiro com liberdade total para interpretar o caso — no mesmo espírito do MinutaIA.
 
 Missão: classificar área e espécie da peça a redigir AGORA, com base nos fatos e no último ato processual.
 
-Liberdade:
-- Interprete o caso concreto. Não force fórmulas nem catálogo engessado.
-- Áreas pré-definidas são só opções de módulo FACTO — escolha a que melhor cabe; o rito detalhado vem depois.
-- Cumprimento/execução JÁ aberto + decisão interlocutória → em regra agravo de instrumento (não reabrir o incidente).
+Liberdade (obrigatório):
+- Interprete o caso concreto. NÃO force catálogo, checklist de área nem peças históricas citadas nos autos.
+- Menção antiga a "contestação", "intimação" ou peça protocolada no PDF NÃO define a peça de agora.
+- Cumprimento/execução JÁ aberto + decisão interlocutória → em regra agravo de instrumento (não reabrir o incidente; não contestação).
 - Mandado de segurança só se cabível ou pedido explícito.
 - Habeas corpus → criminal.
+- Áreas listadas são módulos FACTO (rito depois) — escolha a que melhor cabe.
 
 Responda APENAS JSON:
 {"areaId":"...","especiePeca":"slug-kebab","motivo":"uma frase curta em português"}

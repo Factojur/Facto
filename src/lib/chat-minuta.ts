@@ -19,6 +19,7 @@ import {
 } from "@/lib/extrair-qualificacao-relato";
 import {
   analisarJanelaRelato,
+  pecaCabivelAposUltimoAto,
   resumoLeituraRelato,
 } from "@/lib/peca-cabivel-autos";
 import { extrasOrganizacaoLocal } from "@/lib/organizar-caso-local";
@@ -30,7 +31,6 @@ import {
 import type { OpcoesBuscaConhecimento } from "@/lib/base-conhecimento";
 import { inferirPoloDoRelato, resolverPoloGeracao, especieCompativelComPolo, type PoloAdvocacia } from "@/lib/polo-advocacia";
 import { ajustarEspecieCabivel, rotulosEpigrafePeca } from "@/lib/peca-cabivel-autos";
-import { tituloPecaDaArea } from "@/lib/peca-especie-area";
 import {
   areaUsaPoloAdvocacia,
   inferirPoloPorEspecie,
@@ -54,7 +54,11 @@ import {
   reusAPartirDosNomes,
   parecePessoaJuridica,
 } from "@/lib/partes-ja-qualificadas";
-import { inferirEspecieDaArea, especieUsaTutelaUrgenciaCpc } from "@/lib/peca-especie-area";
+import {
+  especieUsaTutelaUrgenciaCpc,
+  inferirEspecieDaArea,
+  tituloPecaDaArea,
+} from "@/lib/peca-especie-area";
 import { getAreaById } from "@/lib/areas-atuacao";
 
 /** Áreas no chat — Fase 1 + rollout Fase 3 (exc. Criminal, Const, JECR até smoke dedicado). */
@@ -557,12 +561,7 @@ export function montarPayloadGeracaoChat(
   }
 ): PayloadGeracaoChat {
   const areaId = estado.areaId;
-  const especie = inferirEspecieDaArea(
-    areaId,
-    estado.tipoAcao || "Petição",
-    estado.fatos,
-    estado.especiePeca
-  );
+  const especie = especieResolvidaChat(estado);
   const pedidosUsuario = estado.pedidos.filter(Boolean);
   let polo = resolverPoloGeracao(areaId, especie, estado.poloAdvocacia);
   if (!polo) {
@@ -1000,7 +999,7 @@ export function sincronizarComarcaDaQualificacao(
 }
 
 export function especieResolvidaChat(estado: EstadoCasoChat): string {
-  // Chat MinutaIA-style: se a espécie do caso já está definida (IA ou organização),
+  // Chat MinutaIA-style: se a espécie do caso já está definida (IA),
   // não re-varre o relato inteiro — PDF antigo com "contestação" não pode sobrescrever.
   const fixa = estado.especiePeca?.trim();
   if (fixa) {
@@ -1012,6 +1011,12 @@ export function especieResolvidaChat(estado: EstadoCasoChat): string {
       poloAdvocacia: estado.poloAdvocacia,
     });
   }
+  // Sem espécie ainda: só remédio do último ato (fraco) — não kit de área.
+  const cabivel = pecaCabivelAposUltimoAto(
+    estado.areaId,
+    `${estado.tipoAcao}\n${estado.fatos}`
+  );
+  if (cabivel) return cabivel;
   return inferirEspecieDaArea(
     estado.areaId,
     estado.tipoAcao || "Petição",
