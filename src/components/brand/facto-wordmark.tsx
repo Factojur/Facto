@@ -19,19 +19,19 @@ function WordmarkIaSuffix({
   className,
   ...props
 }: SVGAttributes<SVGSVGElement>) {
+  // Cap comum I/A: y 6–94. Ápice do A em y=16 (não y=6) para não “estourar” o I.
+  // Pernas simétricas, mesma largura da barra do I (~18).
   return (
     <svg
-      viewBox="0 0 78 100"
+      viewBox="0 0 80 100"
       fill="currentColor"
       className={`block h-[0.58em] w-auto shrink-0 ${className ?? ""}`}
       aria-hidden
       {...props}
     >
-      {/* I — mesma altura útil do A (y 6–94) */}
       <rect x="0" y="6" width="18" height="88" rx="1" />
-      {/* A — duas hastes sólidas (perfil do FACTO), ápice alinhado ao topo do I */}
-      <path d="M 24 94 L 42 94 L 51 6 Z" />
-      <path d="M 51 6 L 60 94 L 78 94 Z" />
+      <path d="M 20 94 L 38 94 L 50 16 L 32 16 Z" />
+      <path d="M 50 16 L 68 16 L 80 94 L 62 94 Z" />
     </svg>
   );
 }
@@ -72,13 +72,13 @@ export function FactoWordmarkIa({
       role={decorativo ? undefined : "img"}
       aria-label={decorativo ? undefined : "FACTOIA"}
       aria-hidden={decorativo ? true : undefined}
-      className={`inline-flex max-w-full items-end leading-none ${SIZE_EM[size]} ${className ?? ""}`}
+      className={`inline-flex max-w-full items-center leading-none ${SIZE_EM[size]} ${className ?? ""}`}
       style={watermarkOpacity != null ? { opacity: watermarkOpacity } : undefined}
       {...props}
     >
       <FactoWordmark className="h-[1em] w-auto shrink-0" alt="" aria-hidden />
       <span
-        className="ml-[0.04em] inline-flex shrink-0 items-end text-facto-gold-ia"
+        className="ml-[0.05em] inline-flex shrink-0 items-center text-facto-gold-ia"
         aria-hidden
       >
         <WordmarkIaSuffix />
