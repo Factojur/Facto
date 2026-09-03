@@ -68,6 +68,10 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 - [x] **Streaming redação no documento** — `stream: true` em `/api/gerar-peca` (NDJSON); redator Gemini com `onRedacaoDelta`; chat mostra texto crescendo
 - [x] **Chat livre (desacoplado das travas de área)** — área/polo não bloqueiam; IA autoridade; payload com polo default; prompts conversa/inferência MinutaIA-style
 
+### Feito nesta rodada (03/09 — FACTOIA crop A)
+
+- [x] **A do IA** — recorte apertado (x≈165–342) para excluir pedaço do C que vazava no sufixo; commit `36edaeb`
+
 ### Feito nesta rodada (02/09 madrugada — paridade formato P0/P1)
 
 - [x] **Preview pré-redação** — `/api/preview-scaffold` no painel; abas Peça | Plano; scaffold 0 cota com HTML forense
