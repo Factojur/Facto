@@ -17,6 +17,11 @@ Ordem fechada — **não inverter**:
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
 
+### Feito nesta rodada (04/09 — deploy calibração+ABNT)
+
+- [x] **Commit/push** — `f8adaef` + fix `b398644` (export `numeroVaraDoTexto`)
+- [x] **Deploy Ready** — `dpl_Dzk4ZoiiCL5oi31NQq9jUbYxk2TM` · [factoia.com.br](https://factoia.com.br)
+
 ### Feito nesta rodada (04/09 — amostra densas + ABNT + calibração)
 
 - [x] **Amostra paygo+Sonnet** — Const MS · Prev BPC · Trab reclamação → **3/3 ok** (`scripts/smoke-amostra-densas.ts`; Sonnet 6–8/20 no mês)
