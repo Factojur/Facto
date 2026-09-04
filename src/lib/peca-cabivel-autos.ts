@@ -4,7 +4,7 @@
  */
 
 import type { EscritorioConfig } from "@/lib/escritorio-types";
-import { extrairCidadeUfDoForo, ufValida } from "@/lib/endereco-comarca";
+import { extrairCidadeUfDoForo, sanearNomeCidade, ufValida } from "@/lib/endereco-comarca";
 import { moduloDaArea } from "@/lib/minuta-modulo";
 import {
   nomesAutoresCurto,
@@ -592,15 +592,19 @@ export function extrairMetadadosAutos(texto: string): MetadadosAutos {
   const cnj = t.match(CNJ)?.[1] ?? null;
   let cidadeUf = extrairCidadeUfDoForo(t);
   if (!cidadeUf.cidade || !cidadeUf.uf) {
-    const m = t.match(
-      /\b([A-Za-zÀ-ÿ']{3,}(?:\s+[A-Za-zÀ-ÿ']+){0,3})\s*[\/–-]\s*([A-Za-z]{2})\b/
-    );
-    if (m) {
-      const uf = m[2]!.toUpperCase();
-      if (ufValida(uf)) {
-        cidadeUf = { cidade: m[1]!.trim(), uf };
-      }
-    }
+    // Trecho curto com órgão + município/UF (ex.: "1ª Vara de Itararé/SP").
+    const trecho =
+      t.match(
+        /\b(?:\d{1,3}\s*[ªºo°]?\s*)?(?:vara|foro|comarca|juizado)[^.\n]{0,60}?[\/–-]\s*[A-Za-z]{2}\b/i
+      )?.[0] ?? "";
+    const retry = extrairCidadeUfDoForo(trecho);
+    if (retry.cidade && retry.uf) cidadeUf = retry;
+  }
+  if (cidadeUf.cidade) {
+    cidadeUf = {
+      ...cidadeUf,
+      cidade: sanearNomeCidade(cidadeUf.cidade) || cidadeUf.cidade,
+    };
   }
 
   const foroMatch =
@@ -628,14 +632,16 @@ export function extrairMetadadosAutos(texto: string): MetadadosAutos {
     const comarcaDe = t.match(
       /\bCOMARCA\s+DE\s+([A-Za-zÀ-ÿ']{3,}(?:\s+[A-Za-zÀ-ÿ']+){0,3})/i
     );
-    const nome = (foroDe?.[1] ?? comarcaDe?.[1])?.replace(/\s+/g, " ").trim();
+    const nome = sanearNomeCidade(
+      (foroDe?.[1] ?? comarcaDe?.[1] ?? "").replace(/\s+/g, " ").trim()
+    );
     if (nome) {
       foro = cidadeUf.uf
         ? `Foro de ${nome}/${cidadeUf.uf}`
         : `Foro de ${nome}`;
       if (
         !cidadeUf.cidade ||
-        /^(foro|vara|comarca|juizado|tribunal)\b/i.test(cidadeUf.cidade)
+        !sanearNomeCidade(cidadeUf.cidade)
       ) {
         cidadeUf = { ...cidadeUf, cidade: nome };
       }
@@ -645,7 +651,7 @@ export function extrairMetadadosAutos(texto: string): MetadadosAutos {
   return {
     numeroProcesso: cnj,
     foro,
-    cidade: cidadeUf.cidade || null,
+    cidade: sanearNomeCidade(cidadeUf.cidade || "") || cidadeUf.cidade || null,
     uf: cidadeUf.uf || null,
     numeroVara: numeroVaraDoTexto(t),
     complementoOrgao: complementoOrgaoDoTexto(t),

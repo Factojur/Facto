@@ -24,6 +24,7 @@ Ordem fechada — **não inverter**:
 - **Smoke local:** apelação família com Sonnet (`1/20`); Anthropic OK.
 - **Build fix:** fixtures com `especialidadeVara` (typecheck Vercel).
 - **Timeout Sonnet:** `gerar-peca` `maxDuration` 60→180s (504 em prod).
+- **Cidade/capa:** não mais `COMARCA DE VARA DE ITARARÉ` (sanear `Vara de X/UF` → município).
 - **Deploy:** `8b22e69` · `dpl_5giBpjB4kNgzvie6zXTUhtJg996j` · Ready · smoke prod `familia-apelacao-sentenca` **1/1** — Sonnet (`area_densa`) · ~18k chars.
 
 ### Feito nesta rodada (04/09 — qualidade perceptível + calibração sentença)

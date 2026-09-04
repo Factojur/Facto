@@ -69,6 +69,28 @@ export function rotuloAreaJudiciaria(areaId: string = "jec"): string {
   }
 }
 
+/** Prefixo orgânico que não é nome de município (ex.: "Vara de Itararé"). */
+const PREFIXO_NAO_CIDADE =
+  /^(fls|tel|cep|foro|comarca|vara|juizado|tribunal|f[oó]rum)\b/i;
+
+/**
+ * Remove "Foro/Vara/Comarca de …" se vazou para o campo cidade.
+ * Ex.: "VARA DE ITARARÉ" → "ITARARÉ".
+ */
+export function sanearNomeCidade(cidade: string): string {
+  let c = cidade.replace(/\s+/g, " ").trim();
+  if (!c) return "";
+  c = c
+    .replace(
+      /^(?:foro|comarca|vara|juizado(?:\s+especial)?|f[oó]rum|tribunal)(?:\s+(?:central|especial))?\s+(?:de\s+|da\s+|do\s+)/i,
+      ""
+    )
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!c || PREFIXO_NAO_CIDADE.test(c)) return "";
+  return c;
+}
+
 /**
  * Tenta extrair município/UF do texto do foro (ex.: "... de Campinas/SP",
  * "... de Campinas - SP") para fechamento e OAB.
@@ -81,22 +103,26 @@ export function extrairCidadeUfDoForo(foro: string | null | undefined): {
   if (!t) return { cidade: "", uf: "" };
 
   const candidatos = [
+    // Preferir município após órgão: "1ª Vara de Itararé/SP", "Foro de Itararé - SP"
     t.match(
-      /(?:de|da comarca de)\s+([A-Za-zÀ-ÿ'.\s]+?)\s*[-–/]\s*([A-Za-z]{2})\s*$/i
+      /\b(?:\d{1,3}\s*[ªºo°]?\s*)?(?:foro|comarca|vara|f[oó]rum)\s+(?:de\s+|da\s+)([A-Za-zÀ-ÿ']{3,}(?:\s+[A-Za-zÀ-ÿ']+){0,2})\s*[-–/]\s*([A-Za-z]{2})\b/i
     ),
-    t.match(/([A-Za-zÀ-ÿ'.\s]+?)\s*[-–/]\s*([A-Za-z]{2})\s*$/i),
-    t.match(/\b([A-Za-zÀ-ÿ']{3,}(?:\s+[A-Za-zÀ-ÿ']+){0,3})\s*[\/–-]\s*([A-Za-z]{2})\b/i),
+    t.match(
+      /(?:de|da comarca de)\s+([A-Za-zÀ-ÿ']{3,}(?:\s+[A-Za-zÀ-ÿ']+){0,3})\s*[-–/]\s*([A-Za-z]{2})\b/i
+    ),
+    t.match(
+      /([A-Za-zÀ-ÿ']{3,}(?:\s+[A-Za-zÀ-ÿ']+){0,3})\s*[-–/]\s*([A-Za-z]{2})\s*$/i
+    ),
+    t.match(
+      /\b([A-Za-zÀ-ÿ']{3,}(?:\s+[A-Za-zÀ-ÿ']+){0,3})\s*[\/–-]\s*([A-Za-z]{2})\b/i
+    ),
   ];
 
   for (const m of candidatos) {
     if (!m) continue;
-    const cidade = m[1]!.replace(/\s+/g, " ").trim();
+    const cidade = sanearNomeCidade(m[1]!);
     const uf = m[2]!.trim().toUpperCase();
-    if (
-      ufValida(uf) &&
-      cidade.length >= 2 &&
-      !/^(fls|tel|cep|foro|comarca|vara|juizado|tribunal)\b/i.test(cidade)
-    ) {
+    if (ufValida(uf) && cidade.length >= 2) {
       return { cidade, uf };
     }
   }
@@ -276,8 +302,15 @@ export function formatarEnderecamentoPadrao(opcoes: {
     .toUpperCase();
 
   const doForo = extrairComponentesForo(info.foro);
-  let cidade = (info.cidade ?? "").trim() || doForo.cidade;
+  let cidade =
+    sanearNomeCidade((info.cidade ?? "").trim()) ||
+    sanearNomeCidade(doForo.cidade);
   let uf = (info.uf ?? "").trim().toUpperCase() || doForo.uf;
+  if ((!cidade || !uf) && info.foro) {
+    const extra = extrairCidadeUfDoForo(info.foro);
+    if (!cidade && extra.cidade) cidade = extra.cidade;
+    if (!uf && extra.uf) uf = extra.uf;
+  }
 
   const comarcaTxt =
     cidade && uf ? `${cidade.toUpperCase()}/${uf}` : "___/__";

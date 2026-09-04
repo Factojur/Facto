@@ -298,6 +298,43 @@ Processo 1000011-77.2025.8.26.0279
   assert(metaItarare.numeroVara === "1", "vara 1");
   assert(metaItarare.especialidadeVara == null, "1ª VARA sem especialidade");
 
+  const metaVaraDe =
+    extrairMetadadosAutos(
+      "Sou advogado do requerido. Sentença na 1ª Vara de Itararé/SP — união estável."
+    );
+  assert(
+    /^Itarar/i.test(metaVaraDe.cidade ?? ""),
+    `cidade ≠ órgão (obtido: ${metaVaraDe.cidade})`
+  );
+  assert(!/vara/i.test(metaVaraDe.cidade ?? ""), "cidade sem prefixo Vara");
+  const endVaraDe = formatarEnderecamentoPadrao({
+    comarca: {
+      cidade: metaVaraDe.cidade!,
+      uf: metaVaraDe.uf || "SP",
+      numeroJuizado: metaVaraDe.numeroVara || "1",
+      foro: metaVaraDe.foro || `1ª Vara de ${metaVaraDe.cidade}/SP`,
+      especialidadeVara: null,
+    },
+    areaId: "familia",
+    especiePeca: "apelacao",
+    varaEmBranco: false,
+  });
+  assert(/COMARCA DE ITARAR/i.test(endVaraDe), "endereçamento comarca Itararé");
+  assert(!/COMARCA DE VARA/i.test(endVaraDe), "não duplica VARA na comarca");
+  assert(
+    formatarEnderecamentoPadrao({
+      comarca: {
+        cidade: "VARA DE ITARARÉ",
+        uf: "SP",
+        numeroJuizado: "1",
+        especialidadeVara: null,
+      },
+      areaId: "familia",
+      especiePeca: "apelacao",
+    }).includes("COMARCA DE ITARARÉ"),
+    "sanear cidade VARA DE ITARARÉ → ITARARÉ"
+  );
+
   const { oks, falhas } = stats();
   console.log(`\n${oks} ok, ${falhas} falhas`);
   if (falhas > 0) process.exit(1);
