@@ -561,7 +561,7 @@ export function formatarEnderecamentoPadrao(opcoes: {
     }
     return (
       `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO ` +
-      `${daNVara(vara, "VARA")} DO FÓRUM DA COMARCA DE ${comarcaTxt}`
+      `${daNVara(vara, rotuloVara("VARA"))} DO FÓRUM DA COMARCA DE ${comarcaTxt}`
     );
   }
   if (
@@ -576,9 +576,10 @@ export function formatarEnderecamentoPadrao(opcoes: {
     areaId === "propriedade-intelectual" ||
     areaId === "internacional"
   ) {
+    // Sem especialidade nos autos → só "VARA" (não inventar Cível).
     return (
       `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO ` +
-      `${daNVara(vara, rotuloVara("VARA CÍVEL"))} DO FÓRUM DA COMARCA DE ${comarcaTxt}`
+      `${daNVara(vara, rotuloVara("VARA"))} DO FÓRUM DA COMARCA DE ${comarcaTxt}`
     );
   }
 

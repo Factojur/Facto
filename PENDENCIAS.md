@@ -17,6 +17,19 @@ Ordem fechada — **não inverter**:
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
 
+### Feito nesta rodada (04/09 — amostra densas + ABNT + calibração)
+
+- [x] **Amostra paygo+Sonnet** — Const MS · Prev BPC · Trab reclamação → **3/3 ok** (`scripts/smoke-amostra-densas.ts`; Sonnet 6–8/20 no mês)
+- [x] **ABNT residual (antes do fino)** — paginação preview por linhas A4 (não só chars); tipografia no Folhas A4; rodapé central; anti-órfão de título romano; marcadores `[[ESPACO]]` expandidos
+- [x] **Calibração fina** — não inventar “Vara Cível”; strip especialidade sem lastro; constitucional usa `especialidadeVara` (Fazenda); JURIS aninhado; latin/`**` órfãos (fumus, in casu)
+- [x] **Testes** — `test:peca-paginas` · `test:fidelidade` · formatacao ampliada
+- Fora desta fatia: seed 100k · smoke pós-deploy lastro
+
+### Feito nesta rodada (04/09 — scorecard atualizado)
+
+- [x] **Scorecard 04/09** — Iteração 8,7 · Lastro 7,3 · Formato 8,0 · Preço 8,0 · Gestão 7,2 · média **≈ 7,84** vs MinutaIA **≈ 6,80** (+1,04)
+- [x] Canvas `facto-vs-minutaia-scorecard.canvas.tsx` alinhado à tabela PENDENCIAS
+
 ### Feito nesta rodada (04/09 — lastro profundidade + estabilidade peça)
 
 - [x] **Plano → Redator** — ENCAIXE/LASTRO por tópico no prompt (`blocoPlanoTopicosParaRedator`)
@@ -209,8 +222,7 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 1. **A — Entendimento e segurança (P0)** — IA interpreta; avisos soft (não bloqueiam); remédio por último ato; área/polo auto; reteste 0006509.
 2. **B — Rastreabilidade visível (P0)** — citações `fls.` e ✓ lei inline no plano e na prévia (reusar `pagina-anexo-pdf` + base FACTO); “o que li do PDF” em 1 balão após anexo.
 3. **C — Fluidez e fontes (P1)** — streaming turno/plano; coluna fontes (anexos, juris do caso, teses); menos chips no header, mais no fluxo natural do chat.
-4. **D — Formatação/entrega da peça** — **parcial** (04/09): margens/fechamento/preview≡export; tipografia ABNT detalhada + Sonnet **depois**.
-
+4. **D — Formatação/entrega da peça** — **grosso 04/09**: margens/fechamento/preview≡export + paginação por linhas A4 + tipografia Folhas; **fino** (pixel-perfect) depois.
 **Não fazer neste épico:** clone visual, skills 2k, juris live, reprocessar PDF inteiro a cada turno (margem 35–40%). **Não** religar confirmação obrigatória de área/polo no chat.
 
 ### Em andamento (épico paridade)
@@ -716,7 +728,7 @@ Ordem sugerida para o agente/Jefferson. **Grátis** = implementar quando fizer s
 - [x] **Prazos no assistente** — dica determinística (`sugerirPrazoDaPeca` + feriados/UF) no chat
 - [x] **Chat nova conversa** — CTA homepage/`hrefChatMinuta(..., { nova: true })` inicia caso limpo; sidebar Assistente retoma a sessão ativa; Conversas/Meus casos abrem a antiga
 - [x] **Chat UX** — contraste do input; scroll (`h-dvh`); rótulo **Área a definir**; Anexar visível; Provas/lei e juris; citação súmula/juris estrito teor no prompt + wrap [[JURIS]]; alerta tutela reconhece corte/saúde; chip “sem lei/juris”
-- [ ] **Peças reais** Const + Prev (manual) — **destravar com paygo** esta semana
+- [ ] **Peças reais** Const + Prev (manual) — **feito amostra densas 04/09** (MS/BPC/reclamação Sonnet 3/3); repetir em prod após deploy
 - [ ] **Testar sync nuvem** — opt-in + 1 peça + sessão · rodar `migration-chat-sessoes-nuvem.sql`
 
 **Checklist quando as chaves entrarem (Vercel Production + Preview):**
@@ -725,6 +737,31 @@ Ordem sugerida para o agente/Jefferson. **Grátis** = implementar quando fizer s
 3. Amostra manual: 1 JEC (Flash) · 1 Completo/Pro com gatilho Sonnet · 1 área densa (Const/Prev/Trab).
 4. Conferir: lastro na peça, endereçamento, Auditor, export Word/PDF.
 5. Anotar custo ~R$/peça no chat (Flash **~R$ 0,11** medido; Sonnet **~R$ 0,69**; ver **Decisão margem 01/09**).
+
+### Scorecard FACTO vs MinutaIA (04/09 — tipografia + fluidez + lastro profundidade + fatia 2)
+
+| Critério | MinutaIA | FACTO 02/09 noite | FACTO 04/09 | Δ vs Minuta |
+|----------|----------|-------------------|-------------|-------------|
+| Iteração (chat, fluidez, preview) | 9,0 | 8,3 | **8,7** | −0,3 |
+| Lastro / fundamentação | 7,0 | 6,9 | **7,3** | **+0,3** |
+| Formato forense e entrega | 6,0 | 5,8 | **8,0** | **+2,0** |
+| Preço / custo por peça | 5,0 | 8,0 | **8,0** | +3,0 |
+| Gestão + continuidade | 7,0 | 7,2 | **7,2** | +0,2 |
+
+**O que subiu (04/09):**
+- **Iteração +0,4** — stream com caret; typing até 1º token; Plano ao montar; chat = porta; copy comercial alinhada.
+- **Lastro +0,4** — inspector fontes; ementa↔CNJ; ENCAIXE/LASTRO no Redator; RAG por tópico com re-rank; diversidade retrieve; juris anexada na Pesquisa.
+- **Formato +2,2** (vs noite 02/09) — tipografia fina; fidelidade filha/filho; comarca editável; Sonnet; fechamento/Auditor; preview≡export.
+
+**Ainda abaixo / ops:**
+- Iteração −0,3 vs MinutaIA (fluidez “nativa” residual).
+- Lastro: **volume** (100k + 2ª API) — código já usa melhor o acervo atual; não inventa julgado.
+- ABNT **fino** (pixel-perfect preview≡PDF) ainda residual; **grosso** fechado 04/09 (linhas A4, tipografia folhas, anti-órfão).
+- Calibração fina: amostra densas 3/3 Sonnet ok; edge cases PDF ruim continuam sob demanda.
+
+**Generalista (pesos iguais):** FACTO **≈ 7,84** vs MinutaIA **≈ 6,80** (**+1,04**).
+
+Canvas: `canvases/facto-vs-minutaia-scorecard.canvas.tsx`.
 
 ### Scorecard FACTO vs MinutaIA (02/09 noite — pós pacotes 3–5 + teste peça Enel)
 
@@ -770,10 +807,11 @@ Canvas: `canvases/facto-vs-minutaia-scorecard.canvas.tsx`.
 - **Lastro +1,2** — `fls.` clicável; balão único PDF; **lastro por tópico** (encaixe + `LASTRO:` estruturado + fallback local fls./lei/juris); ícone i no plano.
 - **Formato +0,4** — calibração MS/HC/cumprimento; espécie×polo; alerta fatos×pedidos só no painel.
 
-**Ainda falta para lastro ≈ MinutaIA (−0,6):**
+**Ainda falta para lastro ≈ MinutaIA (volume):**
 - ~~Inspector lateral por fonte (badges → painel)~~ — **Feito** 04/09
-- ~~Juris do caso linkada linha a linha na peça redigida~~ — **Feito** 04/09 (ementa “Ver lastro” + casamento CNJ)
-- Acervo 100k / seed 788 fechado — G1
+- ~~Juris do caso linkada linha a linha na peça redigida~~ — **Feito** 04/09
+- ~~Profundidade de uso do acervo (ENCAIXE/LASTRO no Redator, RAG re-rank)~~ — **Feito** 04/09 · score **7,3** (+0,3 vs MinutaIA em rastreio/honestidade)
+- Acervo 100k / seed + 2ª API — **G1 ops** (único gap estrutural de profundidade)
 
 **Generalista (pesos iguais):** FACTO **≈ 7,56** vs MinutaIA **≈ 6,80** (+0,22 vs scorecard 30/08).
 

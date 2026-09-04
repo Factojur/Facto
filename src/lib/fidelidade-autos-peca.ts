@@ -104,6 +104,53 @@ export function aplicarFidelidadeGeneroParentesco(
   return peca;
 }
 
+/**
+ * Autos já trazem especialidade explícita da vara?
+ * Ex.: "1ª Vara Cível", "Vara de Família" — sem isso, não inventar no texto.
+ */
+export function autosTemEspecialidadeVara(
+  texto: string | null | undefined
+): boolean {
+  const t = String(texto ?? "");
+  return (
+    /\b\d{1,3}\s*[ªºo°]?\s*vara\s+(?:c[ií]vel|criminal|federal|da\s+fazenda|do\s+trabalho|de\s+fam[ií]lia)/i.test(
+      t
+    ) ||
+    /\bvara\s+(?:c[ií]vel|criminal|federal|da\s+fazenda|do\s+trabalho|de\s+fam[ií]lia)\b/i.test(
+      t
+    ) ||
+    /\bjuizado\s+especial\s+(?:c[ií]vel|criminal|federal)\b/i.test(t)
+  );
+}
+
+/**
+ * Remove especialidade inventada ("1ª Vara Cível") quando os autos só dizem "1ª Vara".
+ * Não altera Juizado Especial Cível / Justiça do Trabalho (órgãos, não especialidade vazada).
+ */
+export function aplicarFidelidadeEspecialidadeVara(
+  peca: string,
+  fatos: string | null | undefined
+): string {
+  if (autosTemEspecialidadeVara(fatos)) return peca;
+  return peca
+    .replace(
+      /(\d{1,3}\s*[ªºo°]?\s*VARA)\s+C[IÍ]VEL\b/gi,
+      "$1"
+    )
+    .replace(
+      /(\d{1,3}\s*[ªºo°]?\s*VARA)\s+DE\s+FAM[IÍ]LIA(?:\s+E\s+SUCESS[OÕ]ES)?\b/gi,
+      "$1"
+    )
+    .replace(
+      /(\d{1,3}\s*[ªºo°]?\s*VARA)\s+CRIMINAL\b/gi,
+      "$1"
+    )
+    .replace(
+      /\bDA\s+(\d{1,3})\s*[ªºo°]?\s*VARA\s+C[IÍ]VEL\b/gi,
+      "DA $1ª VARA"
+    );
+}
+
 /** Placeholders de valor que a IA deixa ilegíveis para protocolo. */
 export function limparPlaceholdersValorCausa(texto: string): string {
   return texto

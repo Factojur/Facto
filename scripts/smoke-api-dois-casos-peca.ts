@@ -99,6 +99,100 @@ const CASOS = [
       /CONTESTA[CÇ][AÃ]O\b/i,
       /\bo filho\b|\bao filho\b|\bdo filho\b|\balimentando\b/i,
     ],
+    esforco: "fundo" as const,
+  },
+  {
+    id: "constitucional-ms",
+    relato: [
+      "Sou advogado da impetrante MARIA APARECIDA SILVA, CPF 529.982.247-25, residente na Rua da Consolação 1500,",
+      "São Paulo/SP. Ato coator: Portaria nº 412/2025 da Secretária Municipal de Gestão de São Paulo que,",
+      "sem motivação idônea, excluiu a impetrante da nomeação no concurso público Edital 01/2023 para o cargo",
+      "de Analista Administrativo, apesar de aprovada em 3º lugar na lista geral e havendo vagas remanescentes",
+      "após a homologação definitiva publicada em 10/11/2025. Direito líquido e certo à nomeação na ordem",
+      "de classificação (CF art. 5º, LXIX; Lei 12.016/2009). Provas pré-constituídas: edital, homologação,",
+      "lista de classificação, portaria impugnada e certidão de vagas. Pedido: liminar para suspender os efeitos",
+      "da Portaria 412/2025 e, ao final, concessão da segurança para determinar a nomeação. Não inventar outros",
+      "atos administrativos nem outro cargo. Juízo: 1ª Vara da Fazenda Pública da Capital / SP (autos ainda sem",
+      "número — peça inaugural). Polo ativo: impetrante. Espécie: mandado de segurança.",
+    ].join(" "),
+    ajuste:
+      "Confirme em 3 linhas: área constitucional, polo da impetrante e se a peça é mandado de segurança.",
+    pedidoRedacao:
+      "Redija o mandado de segurança completo com liminar e pedidos finais.",
+    checagens: [
+      /MANDADO\s+DE\s+SEGURAN[CÇ]A|SEGURAN[CÇ]A/i,
+      /MARIA|IMPETRANT/i,
+      /12\.016|LXIX|nomea[cç]/i,
+      /Nestes termos|pede deferimento|Diante do exposto|Ante o exposto|Termos em que/i,
+    ],
+    proibidos: [
+      /habeas\s+corpus/i,
+      /reclama[cç][aã]o\s+trabalhista/i,
+      /BPC|LOAS/i,
+    ],
+    esforco: "fundo" as const,
+  },
+  {
+    id: "previdenciario-bpc",
+    relato: [
+      "Sou advogado do autor PEDRO HENRIQUE COSTA, nascido em 15/03/2018, representado pela genitora Ana Costa,",
+      "CPF 390.533.447-05, residentes na Rua das Palmeiras 45, Guarulhos/SP, CEP 07010-000. Pedido administrativo",
+      "de BPC/LOAS (benefício de prestação continuada) indeferido pelo INSS em 20/01/2026 (NB 712.345.678-0),",
+      "sob alegação de renda familiar per capita superior ao limite legal. A renda familiar comprovada é de",
+      "R$ 180,00 per capita (dois adultos e a criança com deficiência intelectual moderada — laudo CID F71,",
+      "datado de 05/12/2025, CRM/SP 123456). Há hipossuficiência e impedimento de longo prazo para a vida",
+      "independente. Quero ação previdenciária contra o INSS para conceder o BPC desde a DER (10/11/2025),",
+      "com tutela de urgência para implantação. Juízo: Juizado Especial Federal de Guarulhos/SP. Não inventar",
+      "RMI, tempo de contribuição nem aposentadoria por invalidez. Lei 8.742/93 e CF art. 203. Espécie:",
+      "petição inicial previdenciária / concessão de BPC.",
+    ].join(" "),
+    ajuste:
+      "Confirme em 3 linhas: área previdenciária, réu INSS e se o pedido é concessão de BPC/LOAS.",
+    pedidoRedacao:
+      "Redija a petição inicial previdenciária completa pedindo o BPC/LOAS com tutela.",
+    checagens: [
+      /BPC|LOAS|8\.742|presta[cç][aã]o\s+continuada/i,
+      /INSS|PEDRO|ANA/i,
+      /benef[ií]cio|defici[eê]ncia|renda/i,
+      /Nestes termos|pede deferimento|Diante do exposto|Ante o exposto|Termos em que/i,
+    ],
+    proibidos: [
+      /horas\s+extras|FGTS|CLT/i,
+      /mandado\s+de\s+seguran[cç]a/i,
+      /\bJEC\b|Juizado Especial C[ií]vel/i,
+    ],
+    esforco: "fundo" as const,
+  },
+  {
+    id: "trabalhista-reclamacao",
+    relato: [
+      "Sou advogado do reclamante JOÃO SILVA, CPF 529.982.247-25, residente na Rua Augusta 200, São Paulo/SP.",
+      "Reclamada: EMPRESA XYZ COMÉRCIO LTDA, CNPJ 12.345.678/0001-90, sede na Av. Paulista 1000, São Paulo/SP.",
+      "Contrato de 01/02/2020 a 15/01/2026, demissão sem justa causa. Função: auxiliar administrativo.",
+      "Horário contratual 08h–17h com 1h de intervalo; na prática laborava das 08h às 20h de segunda a sexta,",
+      "sem pagamento de horas extras nem adicional noturno. FGTS depositado a menor (diferença estimada",
+      "R$ 4.800,00). Verbas rescisórias pagas parcialmente — falta saldo de salário de janeiro/2026 e 40%",
+      "do FGTS sobre a multa. Pedidos: horas extras 50%/100% com reflexos, diferenças de FGTS, multa 40%,",
+      "aviso prévio proporcional, férias + 1/3 proporcionais, 13º proporcional, indenização por dano moral",
+      "R$ 5.000 e honorários. Justiça do Trabalho — 15ª Vara do Trabalho de São Paulo/SP (peça inaugural).",
+      "Não inventar acidente de trabalho nem assédio. Espécie: reclamação trabalhista.",
+    ].join(" "),
+    ajuste:
+      "Confirme em 3 linhas: área trabalhista, polo reclamante e se a peça é reclamação trabalhista.",
+    pedidoRedacao:
+      "Redija a reclamação trabalhista completa com pedidos de HE, FGTS e verbas rescisórias.",
+    checagens: [
+      /RECLAMA[CÇ]|TRABALH/i,
+      /JO[AÃ]O|XYZ|RECLAMANTE/i,
+      /horas?\s+extras?|FGTS|CLT/i,
+      /Nestes termos|pede deferimento|Diante do exposto|Ante o exposto|Termos em que/i,
+    ],
+    proibidos: [
+      /BPC|LOAS|INSS\b/i,
+      /Juizado Especial C[ií]vel|\bJEC\b/i,
+      /mandado\s+de\s+seguran[cç]a/i,
+    ],
+    esforco: "fundo" as const,
   },
 ] as const;
 
@@ -332,11 +426,18 @@ function checksLocais() {
 async function main() {
   console.log("— Checks locais —");
   checksLocais();
-  const only =
+  const onlyRaw =
     process.argv.find((a) => a.startsWith("--only="))?.split("=")[1] ?? null;
-  const casos = only ? CASOS.filter((c) => c.id === only) : [...CASOS];
-  if (only && casos.length === 0) {
-    throw new Error(`--only=${only} sem match (${CASOS.map((c) => c.id).join(", ")})`);
+  const onlyIds = onlyRaw
+    ? onlyRaw.split(",").map((s) => s.trim()).filter(Boolean)
+    : null;
+  const casos = onlyIds
+    ? CASOS.filter((c) => onlyIds.includes(c.id))
+    : [...CASOS];
+  if (onlyIds && casos.length === 0) {
+    throw new Error(
+      `--only=${onlyRaw} sem match (${CASOS.map((c) => c.id).join(", ")})`
+    );
   }
   console.log(`\nSmoke API ${casos.length} caso(s) · ${BASE}\n`);
 
@@ -389,6 +490,12 @@ async function main() {
         ts: Date.now(),
       });
 
+      const esforco =
+        "esforco" in caso && caso.esforco
+          ? caso.esforco
+          : caso.id.includes("apelacao")
+            ? "fundo"
+            : "padrao";
       const pecaRes = await gerarPeca(
         cookie,
         {
@@ -396,9 +503,7 @@ async function main() {
           // Relato original: chat pode resumir fatos e perder “filha”/números.
           fatos: caso.relato,
         },
-        {
-          esforco: caso.id.includes("apelacao") ? "fundo" : "padrao",
-        }
+        { esforco }
       );
       const peca = pecaRes.peca;
       for (const re of caso.checagens) {
@@ -415,9 +520,9 @@ async function main() {
           );
         }
       }
-      if (caso.id.includes("apelacao")) {
+      if (esforco === "fundo") {
         const sonnetHint =
-          /sonnet|claude|especie_complexa|area_densa|esforco_fundo/i.test(
+          /sonnet|claude|especie_complexa|area_densa|esforco_fundo|relato_longo/i.test(
             `${pecaRes.equipeDetalhe} ${pecaRes.modeloHint}`
           );
         console.log(
@@ -428,9 +533,13 @@ async function main() {
             "  aviso: detalhe não confirma Sonnet (API pode ocultar modelo); peça gerada mesmo assim"
           );
         }
-        if (/VARA C[IÍ]VEL/i.test(peca) && !/especialidade|C[IÍ]VEL/.test(caso.relato)) {
-          // Relato não traz especialidade — preferir só "1ª Vara"
-          console.log("  aviso: peça ainda cita VARA CÍVEL (calibrar se endereçamento determinístico cobrir)");
+        if (
+          /VARA C[IÍ]VEL/i.test(peca) &&
+          !/vara\s+c[ií]vel|especialidade/i.test(caso.relato)
+        ) {
+          console.log(
+            "  aviso: peça ainda cita VARA CÍVEL sem lastro nos autos"
+          );
         }
       }
       writeFileSync(`tmp/smoke-peca-${caso.id}.txt`, peca, "utf8");

@@ -1,14 +1,17 @@
 /**
- * Fidelidade aos autos (filho/filha, placeholders de valor).
+ * Fidelidade aos autos (filho/filha, especialidade da vara, placeholders).
  * Uso: npx tsx scripts/testar-fidelidade-autos.ts
  */
 import {
+  aplicarFidelidadeEspecialidadeVara,
   aplicarFidelidadeGeneroParentesco,
+  autosTemEspecialidadeVara,
   blocoPromptFidelidadeAutos,
   extrairSinaisFidelidadeAutos,
   limparPlaceholdersValorCausa,
 } from "../src/lib/fidelidade-autos-peca";
 import { limparPlaceholdersQualificacao } from "../src/lib/ia/pos-processar-peca-gerada";
+import { formatarEnderecamentoPadrao } from "../src/lib/endereco-comarca";
 import { createSuite } from "./casos-ouro/suite";
 
 function main() {
@@ -56,6 +59,51 @@ function main() {
     "Valor R$ ([valor por extenso]) e [VALOR DA CAUSA]."
   );
   assert(/R\$ …/.test(viaPos), "pos-process limpa valor");
+
+  assert(
+    !autosTemEspecialidadeVara("1ª Vara de Itararé/SP — união estável"),
+    "1ª Vara sem especialidade"
+  );
+  assert(
+    autosTemEspecialidadeVara("2ª Vara Cível de Santos"),
+    "detecta Vara Cível"
+  );
+
+  const semEsp = aplicarFidelidadeEspecialidadeVara(
+    "EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DE DIREITO DA 1ª VARA CÍVEL DO FÓRUM DA COMARCA DE ITARARÉ/SP\n\nAos autos da 1ª Vara Cível.",
+    "1ª Vara de Itararé/SP — filha, alimentos."
+  );
+  assert(!/VARA C[IÍ]VEL/i.test(semEsp), "remove Vara Cível inventada");
+  assert(/1ª\s*VARA\b/i.test(semEsp), "mantém 1ª Vara");
+
+  const comEsp = aplicarFidelidadeEspecialidadeVara(
+    "DA 2ª VARA CÍVEL DE SANTOS",
+    "2ª Vara Cível de Santos — cobrança."
+  );
+  assert(/VARA C[IÍ]VEL/i.test(comEsp), "preserva especialidade lastreada");
+
+  const endCivil = formatarEnderecamentoPadrao({
+    areaId: "civil",
+    comarca: { cidade: "Santos", uf: "SP", numeroJuizado: "2" },
+  });
+  assert(/2ª\s+VARA\b/i.test(endCivil), "civil com número → Nª VARA");
+  assert(
+    !/VARA C[IÍ]VEL/i.test(endCivil),
+    "civil sem especialidade não inventa Cível"
+  );
+
+  const endFazenda = formatarEnderecamentoPadrao({
+    areaId: "constitucional",
+    especiePeca: "mandado-seguranca",
+    comarca: {
+      cidade: "São Paulo",
+      uf: "SP",
+      numeroJuizado: "1",
+      especialidadeVara: "DA FAZENDA PÚBLICA",
+    },
+  });
+  assert(/FAZENDA/i.test(endFazenda), "MS com especialidade Fazenda");
+  assert(!/VARA C[IÍ]VEL/i.test(endFazenda), "MS Fazenda sem Cível");
 
   const { oks, falhas } = stats();
   console.log(`\n${oks} ok, ${falhas} falhas`);

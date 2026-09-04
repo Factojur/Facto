@@ -11,6 +11,7 @@ import {
 import { garantirSecaoValorCausa } from "@/lib/ia/mesclar-peca-hibrida";
 import { normalizarPecaGerada } from "@/lib/ia/normalizar-peca-gerada";
 import {
+  aplicarFidelidadeEspecialidadeVara,
   aplicarFidelidadeGeneroParentesco,
   extrairSinaisFidelidadeAutos,
 } from "@/lib/fidelidade-autos-peca";
@@ -218,6 +219,7 @@ export function posProcessarAntesQualificacao(
       t,
       extrairSinaisFidelidadeAutos(opcoes.fatos)
     );
+    t = aplicarFidelidadeEspecialidadeVara(t, opcoes.fatos);
   }
   if (opcoes.reinjetarQualificacao !== false) {
     t = prepararCorpoParaInjecaoQualificacao(t);
@@ -267,6 +269,7 @@ export function posProcessarDepoisQualificacao(
       t,
       extrairSinaisFidelidadeAutos(opcoes.fatos)
     );
+    t = aplicarFidelidadeEspecialidadeVara(t, opcoes.fatos);
   }
   return normalizarPecaGerada(t);
 }

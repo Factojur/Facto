@@ -296,13 +296,43 @@ export function ehCitacaoJurisprudencia(linha: string): boolean {
   return pareceEmentaOuSumulaLiteral(t);
 }
 
+/** Colapsa [[JURIS]] aninhados (IA às vezes abre de novo dentro do bloco). */
+export function desaninharMarcadoresJuris(texto: string): string {
+  let out = "";
+  let depth = 0;
+  const re = /\[\[\/?JURIS\]\]/gi;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(texto))) {
+    out += texto.slice(last, m.index);
+    const fecha = m[0].includes("/");
+    if (!fecha) {
+      if (depth === 0) out += "[[JURIS]]";
+      depth += 1;
+    } else {
+      if (depth > 0) depth -= 1;
+      if (depth === 0) out += "[[/JURIS]]";
+    }
+    last = m.index + m[0].length;
+  }
+  out += texto.slice(last);
+  while (depth > 0) {
+    out += "[[/JURIS]]";
+    depth -= 1;
+  }
+  return out;
+}
+
 /** Colapsa blocos [[JURIS]]…[[/JURIS]]; tira rótulo “Jurisprudência”; separa paráfrase da ementa. */
 export function normalizarBlocosJuris(texto: string): string {
-  return texto.replace(
+  return desaninharMarcadoresJuris(texto).replace(
     /\[\[JURIS\]\]\s*([\s\S]*?)\s*\[\[\/JURIS\]\]/gi,
     (_m, corpo: string) => {
       let c = limparPrefixoRotuloCitacao(
-        String(corpo).replace(/\s+/g, " ").trim()
+        String(corpo)
+          .replace(/\*\*/g, "")
+          .replace(/\s+/g, " ")
+          .trim()
       );
       if (!c) return "";
 

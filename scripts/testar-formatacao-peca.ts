@@ -388,4 +388,30 @@ assert(
   "localidade sem prefixo Vara de"
 );
 
+const jurisAninhado = normalizarPecaGerada(`EXCELENTÍSSIMO SENHOR DOUTOR JUIZ
+
+I - DO DIREITO
+[[JURIS]]Súmula 338 do TST. [[JURIS]]O ônus do empregador.[[/JURIS]] Mais texto.[[/JURIS]]
+Nestes termos,
+pede deferimento.
+São Paulo/SP, 4 de setembro de 2026.
+Teste
+OAB/SP 1
+`);
+assert(
+  ((jurisAninhado.match(/\[\[JURIS\]\]/gi) ?? []).length ===
+    (jurisAninhado.match(/\[\[\/JURIS\]\]/gi) ?? []).length),
+  "JURIS abre = fecha"
+);
+assert(
+  !/\[\[JURIS\]\][^\[]*\[\[JURIS\]\]/i.test(jurisAninhado),
+  "sem JURIS aninhado"
+);
+
+const fumus = normalizarPecaGerada(
+  'Requisitos do **"fumus boni iuris"* e "in casu" aplicam-se.'
+);
+assert(/\*"fumus boni iuris"\*/i.test(fumus), "fumus vira itálico");
+assert(/\*"in casu"\*/i.test(fumus), "in casu entre aspas vira itálico");
+
 console.log("\nTodas as checagens locais passaram (0 tokens Gemini).");

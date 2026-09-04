@@ -105,16 +105,28 @@ function envolverCitacoesSoltas(texto: string): string {
 
 /** `"In casu"*` / `In casu*` / `*"**"in casu"*"*` → padrão *"in casu"*. */
 function consertarLatinMarkdownOrfao(texto: string): string {
+  const termos =
+    "in casu|caput|in re ipsa|fumus boni iuris|periculum in mora|ratio decidendi|data venia|ex nunc|ex tunc|ad cautelam";
   return texto
     .replace(/\\+"/g, '"')
-    // Lixo típico: *"**"in casu"*"* / *""in casu""*
+    // Lixo típico: *"**"in casu"*"* / **"fumus…"* / *""in casu""*
     .replace(
-      /\*+"?\*+"((?:in casu|caput|in re ipsa|fumus boni iuris|periculum in mora)[^"*]{0,40})"\*+"?\*/gi,
+      new RegExp(
+        `\\*+"?\\*+"((?:${termos})[^"*]{0,40})"\\*+"?\\*`,
+        "gi"
+      ),
       '*"$1"*'
     )
-    // ***"termo"* / **"termo"* / *"termo"* → *"termo"*
     .replace(
-      /\*{1,5}\s*"\s*((?:in casu|caput|in re ipsa|fumus boni iuris|periculum in mora)[^"]{0,40})\s*"\s*\*/gi,
+      new RegExp(
+        `\\*{1,5}\\s*"\\s*((?:${termos})[^"]{0,40})\\s*"\\s*\\*`,
+        "gi"
+      ),
+      '*"$1"*'
+    )
+    // "in casu" solto → *"in casu"*
+    .replace(
+      new RegExp(`(?<!\\*)"(${termos})"(?!\\*)`, "gi"),
       '*"$1"*'
     )
     .replace(/"([A-Za-zÀ-ÿ][^"\n]{1,60})"\*(?!\*)/g, '*"$1"*')
