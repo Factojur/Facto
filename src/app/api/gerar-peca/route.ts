@@ -101,10 +101,10 @@ import type { ReplicaContestacaoResumo } from "@/lib/entrada-caso-types";
 import { resolverBriefingReplicaParaGeracao } from "@/lib/replica-contestacao";
 
 /**
- * Workflow agentic: 2 chamadas Gemini (triagem Flash-Lite + redação Flash).
- * 60s = teto típico do plano Hobby na Vercel; em Pro pode subir se precisar.
+ * Workflow agentic: triagem Flash-Lite + redação Flash ou Sonnet.
+ * 180s: Sonnet em apelação/fundo costuma passar de 60s (Hobby); Pro aguenta até 300.
  */
-export const maxDuration = 60;
+export const maxDuration = 180;
 
 type LeiMunicipalPayload = {
   nome?: string;
