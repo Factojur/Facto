@@ -16,13 +16,19 @@ export function CitacoesRastreaveisPanel({
   marcadoresNaoEncontrado = 0,
   leiMunicipal,
   jurisDoCasoUtilizada,
+  onAbrirFonte,
 }: {
   fontes?: FonteBase[];
   citacoes?: CitacaoVerificada[];
   jurisCaso?: JurisCasoSalvo[];
   marcadoresNaoEncontrado?: number;
-  leiMunicipal?: { nome: string } | null;
+  leiMunicipal?: { nome: string; texto?: string } | null;
   jurisDoCasoUtilizada?: { titulo: string }[];
+  /** Clique no chip → inspector lateral. */
+  onAbrirFonte?: (opts: {
+    tipo: "lei" | "juris_caso" | "base_facto";
+    titulo: string;
+  }) => void;
 }) {
   const jurisSem = citacoes.filter(
     (c) => c.tipo === "jurisprudencia" && !c.verificada
@@ -50,22 +56,34 @@ export function CitacoesRastreaveisPanel({
 
       {leiMunicipal && (
         <div className="mt-3">
-          <span className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-900">
+          <button
+            type="button"
+            disabled={!onAbrirFonte}
+            onClick={() =>
+              onAbrirFonte?.({ tipo: "lei", titulo: leiMunicipal.nome })
+            }
+            className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-900 enabled:hover:bg-sky-100 disabled:cursor-default"
+          >
             Lei municipal · {leiMunicipal.nome}
-          </span>
+          </button>
         </div>
       )}
 
       {jurisDoCasoUtilizada && jurisDoCasoUtilizada.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">
           {jurisDoCasoUtilizada.map((j) => (
-            <span
+            <button
               key={j.titulo}
-              className="inline-flex rounded-full border border-violet-200 bg-violet-50 px-2.5 py-0.5 text-xs text-violet-900"
+              type="button"
+              disabled={!onAbrirFonte}
+              onClick={() =>
+                onAbrirFonte?.({ tipo: "juris_caso", titulo: j.titulo })
+              }
+              className="inline-flex rounded-full border border-violet-200 bg-violet-50 px-2.5 py-0.5 text-xs text-violet-900 enabled:hover:bg-violet-100 disabled:cursor-default"
               title="Anexo do caso"
             >
               Anexo · {j.titulo}
-            </span>
+            </button>
           ))}
         </div>
       )}
@@ -77,14 +95,23 @@ export function CitacoesRastreaveisPanel({
           </p>
           <ul className="mt-2 flex flex-wrap gap-1.5">
             {fontes.map((item, i) => (
-              <li
-                key={`${item.titulo}-${i}`}
-                className="inline-flex max-w-full rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs text-emerald-900"
-                title={`${item.categoria} — ${item.titulo}`}
-              >
-                <span className="font-medium">{item.categoria}</span>
-                <span className="mx-1 opacity-50">·</span>
-                <span className="truncate">{item.titulo}</span>
+              <li key={`${item.titulo}-${i}`}>
+                <button
+                  type="button"
+                  disabled={!onAbrirFonte}
+                  onClick={() =>
+                    onAbrirFonte?.({
+                      tipo: "base_facto",
+                      titulo: item.titulo,
+                    })
+                  }
+                  className="inline-flex max-w-full rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs text-emerald-900 enabled:hover:bg-emerald-100 disabled:cursor-default"
+                  title={`${item.categoria} — ${item.titulo}`}
+                >
+                  <span className="font-medium">{item.categoria}</span>
+                  <span className="mx-1 opacity-50">·</span>
+                  <span className="truncate">{item.titulo}</span>
+                </button>
               </li>
             ))}
           </ul>

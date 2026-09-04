@@ -42,12 +42,14 @@ export function PecaDocumentoView({
   fatos,
   pedirJusticaGratuita = false,
   modoScaffold = false,
+  onAbrirEmenta,
 }: {
   peca: string;
   pecaHtml: string;
   escritorio?: EscritorioConfig;
   onCopiarTexto: () => void;
   onAbrirFls?: (pagina: number | null, trecho: string) => void;
+  onAbrirEmenta?: (textoEmenta: string) => void;
   onPecaEditada?: (texto: string) => void;
   exportacaoBloqueada?: boolean;
   areaId?: AreaIdMinuta | string;
@@ -283,6 +285,7 @@ export function PecaDocumentoView({
           ref={editorRef}
           peca={peca}
           onAbrirFls={onAbrirFls}
+          onAbrirEmenta={onAbrirEmenta}
           onPecaEditada={onPecaEditada}
           somenteLeitura={!onPecaEditada || edicaoBloqueada}
         />

@@ -6,6 +6,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { PecaDocumentoView } from "@/components/dashboard/peca-documento";
 import { CitacoesRastreaveisPanel } from "@/components/dashboard/citacoes-rastreaveis-panel";
+import {
+  InspectorFonteCaso,
+  type EstadoInspectorFonte,
+  type ItemInspectorFonte,
+} from "@/components/dashboard/inspector-fonte-caso";
+import { casarEmentaComFontes } from "@/lib/casar-juris-caso-peca";
 import { PlanoCasoPainel } from "@/components/dashboard/plano-caso-painel";
 import { ChatIndicadorDigitando } from "@/components/dashboard/chat-indicador-digitando";
 import { ChatAdicionarContexto } from "@/components/dashboard/chat-adicionar-contexto";
@@ -359,6 +365,8 @@ export function ChatMinutaPage({
     "provas" | "juris" | "lei" | null
   >(null);
   const [contextoPainelAberto, setContextoPainelAberto] = useState(false);
+  const [inspectorFonte, setInspectorFonte] =
+    useState<EstadoInspectorFonte | null>(null);
   const [modoConversa, setModoConversa] = useState<ModoConversaChat>(() =>
     lerModoConversaStorage()
   );
@@ -427,6 +435,8 @@ export function ChatMinutaPage({
   const [lastroRedacao, setLastroRedacao] = useState<LastroRedacaoChat | null>(
     null
   );
+  const lastroRedacaoRef = useRef(lastroRedacao);
+  lastroRedacaoRef.current = lastroRedacao;
   /** Sempre "papel" no SSR — localStorage só no client (evita hydration mismatch). */
   const [temaId, setTemaId] = useState<ChatMinutaTema>("papel");
   const [abaMobile, setAbaMobile] = useState<"chat" | "peca">("chat");
@@ -630,16 +640,149 @@ export function ChatMinutaPage({
         return;
       }
       if (aba === "juris") {
-        abrirComplementos("juris");
+        const itens: ItemInspectorFonte[] = estadoRef.current.jurisCaso.map(
+          (j) => ({
+            id: j.id,
+            titulo: j.titulo || j.nomeArquivo || "Juris do caso",
+            detalhe: j.texto?.trim().slice(0, 160) || undefined,
+            corpo: j.texto?.trim() || undefined,
+            badge: j.tipo,
+          })
+        );
+        setInspectorFonte({
+          modo: "lista",
+          titulo: "Jurisprudência do caso",
+          itens,
+          rodape:
+            "Fontes anexadas para esta peça. Clique para ler o texto completo.",
+        });
         return;
       }
       if (aba === "lei") {
-        abrirComplementos("lei");
+        const titulo =
+          estadoRef.current.leiMunicipalTitulo?.trim() || "Lei municipal";
+        const corpo = estadoRef.current.leiMunicipalTexto?.trim() || "";
+        setInspectorFonte({
+          modo: "detalhe",
+          titulo: "Lei municipal",
+          item: {
+            id: "lei",
+            titulo,
+            corpo: corpo || undefined,
+            badge: "lei",
+          },
+        });
+        return;
+      }
+      if (aba === "teses") {
+        const ids = estadoRef.current.tesesIds;
+        setInspectorFonte({
+          modo: "lista",
+          titulo: "Teses do caso",
+          itens: ids.map((id) => ({
+            id,
+            titulo: id,
+            badge: "tese",
+          })),
+          rodape: "Teses marcadas no plano deste caso.",
+        });
         return;
       }
       abrirComplementos("provas");
     },
     [abrirComplementos]
+  );
+
+  const abrirEmentaNoInspector = useCallback((textoEmenta: string) => {
+    const juris = estadoRef.current.jurisCaso;
+    const base = lastroRedacaoRef.current?.baseConhecimentoUtilizada ?? [];
+    const match = casarEmentaComFontes(
+      textoEmenta,
+      juris.map((j) => ({
+        id: j.id,
+        titulo: j.titulo,
+        texto: j.texto,
+      })),
+      base.map((f, i) => ({
+        id: `base-${i}`,
+        titulo: f.titulo,
+        categoria: f.categoria,
+      }))
+    );
+    if (match) {
+      const corpo =
+        match.origem === "juris_caso"
+          ? juris.find(
+              (j) =>
+                j.id === match.fonte.id ||
+                j.titulo === match.fonte.titulo
+            )?.texto
+          : undefined;
+      setInspectorFonte({
+        modo: "detalhe",
+        titulo: "Lastro da ementa",
+        ementaPeca: textoEmenta,
+        match,
+        item: {
+          id: match.fonte.id ?? match.fonte.titulo,
+          titulo: match.fonte.titulo,
+          corpo: corpo?.trim() || undefined,
+          badge:
+            match.origem === "juris_caso" ? "anexo do caso" : "base FACTO",
+          detalhe: match.motivo,
+        },
+      });
+      return;
+    }
+    setInspectorFonte({
+      modo: "detalhe",
+      titulo: "Ementa na peça",
+      ementaPeca: textoEmenta,
+      match: null,
+      item: {
+        id: "ementa",
+        titulo: "Sem casamento com anexo do caso",
+        detalhe:
+          "A ementa entrou na minuta; anexe o julgado em Complementos se quiser o texto completo ao lado.",
+        badge: "peça",
+      },
+    });
+  }, []);
+
+  const abrirChipCitacao = useCallback(
+    (opts: { tipo: "lei" | "juris_caso" | "base_facto"; titulo: string }) => {
+      if (opts.tipo === "lei") {
+        abrirFontesChat("lei");
+        return;
+      }
+      if (opts.tipo === "juris_caso") {
+        const j = estadoRef.current.jurisCaso.find(
+          (x) => x.titulo === opts.titulo
+        );
+        setInspectorFonte({
+          modo: "detalhe",
+          titulo: "Juris do caso",
+          item: {
+            id: j?.id ?? opts.titulo,
+            titulo: opts.titulo,
+            corpo: j?.texto?.trim() || undefined,
+            badge: "anexo",
+          },
+        });
+        return;
+      }
+      setInspectorFonte({
+        modo: "detalhe",
+        titulo: "Base FACTO",
+        item: {
+          id: opts.titulo,
+          titulo: opts.titulo,
+          badge: "base FACTO",
+          detalhe: "Trecho recuperado do acervo FACTO nesta redação.",
+        },
+      });
+    },
+    [abrirFontesChat]
   );
 
   const abrirFlsNoAnexo = useCallback((pagina: number | null, trecho: string) => {
@@ -3388,6 +3531,7 @@ export function ChatMinutaPage({
                 escritorio={escritorio.usarTimbre ? escritorio : undefined}
                 exportacaoBloqueada={exportacaoTrial}
                 onAbrirFls={abrirFlsNoAnexo}
+                onAbrirEmenta={abrirEmentaNoInspector}
                 editorInterativo
                 edicaoBloqueada={redigindo}
                 especiePeca={especieResolvidaChat(estado)}
@@ -3429,6 +3573,7 @@ export function ChatMinutaPage({
                   marcadoresNaoEncontrado={lastroRedacao.marcadoresNaoEncontrado}
                   leiMunicipal={lastroRedacao.leiMunicipalUtilizada}
                   jurisDoCasoUtilizada={lastroRedacao.jurisDoCasoUtilizada}
+                  onAbrirFonte={abrirChipCitacao}
                 />
               )}
             </div>
@@ -3547,6 +3692,28 @@ export function ChatMinutaPage({
         onAbrir={(s) => {
           aplicarSnapshotSessao(s);
           setMostrarSessoes(false);
+        }}
+      />
+
+      <InspectorFonteCaso
+        estado={inspectorFonte}
+        onFechar={() => setInspectorFonte(null)}
+        onSelecionarItem={(item) => {
+          setInspectorFonte({
+            modo: "detalhe",
+            titulo: inspectorFonte?.titulo ?? "Fonte",
+            item,
+          });
+        }}
+        onAbrirEdicao={() => {
+          setInspectorFonte(null);
+          const foco =
+            inspectorFonte?.titulo.toLowerCase().includes("lei")
+              ? "lei"
+              : inspectorFonte?.titulo.toLowerCase().includes("tese")
+                ? "provas"
+                : "juris";
+          abrirComplementos(foco === "provas" ? "provas" : foco);
         }}
       />
 

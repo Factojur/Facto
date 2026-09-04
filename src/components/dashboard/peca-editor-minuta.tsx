@@ -22,6 +22,8 @@ import { ESTILO_EMENTA_A4, ESTILO_FOLHA_A4 } from "@/lib/estilo-folha-a4";
 type Props = {
   peca: string;
   onAbrirFls?: (pagina: number | null, trecho: string) => void;
+  /** Clique na ementa → inspector de lastro (juris do caso / base). */
+  onAbrirEmenta?: (textoEmenta: string) => void;
   /** Persiste edição do corpo (ementas não mudam). */
   onPecaEditada?: (texto: string) => void;
   /** Stream / montagem: só leitura com ícones. */
@@ -209,9 +211,11 @@ function BlocoEspacoTipografico({
 function BlocoEmenta({
   texto,
   onAbrirFls,
+  onAbrirEmenta,
 }: {
   texto: string;
   onAbrirFls?: Props["onAbrirFls"];
+  onAbrirEmenta?: Props["onAbrirEmenta"];
 }) {
   return (
     <div
@@ -221,9 +225,20 @@ function BlocoEmenta({
       suppressContentEditableWarning
       title="Ementa da base FACTO — não editável"
     >
-      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-stone-500">
-        Ementa · só leitura
-      </p>
+      <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-500">
+          Ementa · só leitura
+        </p>
+        {onAbrirEmenta ? (
+          <button
+            type="button"
+            onClick={() => onAbrirEmenta(texto)}
+            className="rounded border border-violet-200 bg-violet-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-800 hover:bg-violet-100"
+          >
+            Ver lastro
+          </button>
+        ) : null}
+      </div>
       <TextoJuridicoInline
         texto={texto}
         onAbrirFls={onAbrirFls}
@@ -254,7 +269,7 @@ function ToolbarRefs({
 
 export const PecaEditorMinuta = forwardRef<PecaEditorMinutaHandle, Props>(
   function PecaEditorMinuta(
-    { peca, onAbrirFls, onPecaEditada, somenteLeitura = false },
+    { peca, onAbrirFls, onAbrirEmenta, onPecaEditada, somenteLeitura = false },
     ref
   ) {
     const rootRef = useRef<HTMLDivElement>(null);
@@ -306,7 +321,7 @@ export const PecaEditorMinuta = forwardRef<PecaEditorMinutaHandle, Props>(
         {!somenteLeitura ? (
           <p className="mb-3 rounded-md bg-sky-700 px-3 py-2 text-center text-[12px] font-medium leading-snug text-white sm:text-[13px]">
             Clique no parágrafo para editar · ícones fls./lei abrem o anexo.
-            Ementas da base FACTO ficam travadas.
+            Ementas da base FACTO ficam travadas · use Ver lastro.
           </p>
         ) : (
           <p className="mb-3 rounded-md border border-amber-200/80 bg-amber-50/90 px-3 py-2 text-center text-[11px] text-amber-950">
@@ -328,7 +343,12 @@ export const PecaEditorMinuta = forwardRef<PecaEditorMinutaHandle, Props>(
           <div className="documento-conteudo">
             {segsState.map((s) =>
               s.tipo === "ementa" ? (
-                <BlocoEmenta key={s.id} texto={s.texto} onAbrirFls={onAbrirFls} />
+                <BlocoEmenta
+                  key={s.id}
+                  texto={s.texto}
+                  onAbrirFls={onAbrirFls}
+                  onAbrirEmenta={onAbrirEmenta}
+                />
               ) : s.tipo === "espaco" ? (
                 <BlocoEspacoTipografico key={s.id} marcador={s.marcador} />
               ) : (

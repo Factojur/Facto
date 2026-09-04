@@ -17,6 +17,13 @@ Ordem fechada — **não inverter**:
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
 
+### Feito nesta rodada (04/09 — lastro inspector + ementa)
+
+- [x] **Inspector lateral por fonte** — badges Juris/Lei/Teses abrem painel de leitura (não só formulário); chips de citações clicáveis
+- [x] **Ementa ↔ juris do caso** — botão “Ver lastro” na ementa; casa CNJ/título/texto (`casar-juris-caso-peca`, 0 tokens)
+- [x] **Teste** — `scripts/testar-casar-juris-caso.ts`
+- Scorecard: fecha 2 gaps P1 de lastro ≈ MinutaIA (inspector + juris linkada na peça); acervo 100k continua G1
+
 ### Feito nesta rodada (04/09 — fluidez chat polish)
 
 - [x] **Stream turno** — bolha só no 1º token (typing até lá); cursor piscando na mensagem; scroll acompanha se perto do rodapé
@@ -738,8 +745,8 @@ Canvas: `canvases/facto-vs-minutaia-scorecard.canvas.tsx`.
 - **Formato +0,4** — calibração MS/HC/cumprimento; espécie×polo; alerta fatos×pedidos só no painel.
 
 **Ainda falta para lastro ≈ MinutaIA (−0,6):**
-- Inspector lateral por fonte (badges → painel) — P1
-- Juris do caso linkada linha a linha na peça redigida — P1
+- ~~Inspector lateral por fonte (badges → painel)~~ — **Feito** 04/09
+- ~~Juris do caso linkada linha a linha na peça redigida~~ — **Feito** 04/09 (ementa “Ver lastro” + casamento CNJ)
 - Acervo 100k / seed 788 fechado — G1
 
 **Generalista (pesos iguais):** FACTO **≈ 7,56** vs MinutaIA **≈ 6,80** (+0,22 vs scorecard 30/08).
