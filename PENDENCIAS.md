@@ -26,8 +26,9 @@ Ordem fechada — **não inverter**:
 - **Timeout Sonnet:** `gerar-peca` `maxDuration` 60→180s (504 em prod).
 - **Cidade/capa:** não mais `COMARCA DE VARA DE ITARARÉ` (sanear `Vara de X/UF` → município).
 - **Tipografia protocolável (fina):** CNJ sozinho ≠ `[[JURIS]]`; limpa `*"**"in casu"*"*` / `**` órfão; cola título romano partido; cerca \`\`\`markdown; localidade sem “Vara de”.
-- **Redação / fidelidade:** prompt + pós-process filho/filha; limpa `R$ ([valor por extenso])`; não inventar % alimentos / data sem lastro.
-- **Deploy:** `8b22e69` · `dpl_5giBpjB4kNgzvie6zXTUhtJg996j` · Ready · smoke prod `familia-apelacao-sentenca` **1/1** — Sonnet (`area_densa`) · ~18k chars.
+- **Redação / fidelidade:** prompt + pós-process filho/filha (ignora «não filho»); limpa `R$ ([valor por extenso])`; não inventar % alimentos / data sem lastro.
+- **Smoke prod fidelidade:** `familia-apelacao-sentenca` **1/1** — Sonnet · COMARCA DE ITARARÉ · filha/alimentanda · Nestes termos (`d682e13` · `dpl` Ready).
+- **Deploy:** tipografia + fidelidade no ar em [factoia.com.br](https://factoia.com.br).
 
 ### Feito nesta rodada (04/09 — qualidade perceptível + calibração sentença)
 - **Sentença → apelação** — `pecaCabivelAposUltimoAto` detecta JULGO/SENTENÇA de mérito (JEC→recurso inominado; trabalhista→RO).
