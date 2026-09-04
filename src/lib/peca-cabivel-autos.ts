@@ -467,7 +467,7 @@ export function resolverAreaEspecieOrganizacao(params: {
   return { areaId, especie, tipoAcao };
 }
 
-function numeroVaraDoTexto(texto: string): string | null {
+export function numeroVaraDoTexto(texto: string): string | null {
   const m =
     texto.match(
       /(\d{1,3})\s*[ªºo°]?\s*(?:vara|juizado especial|zona eleitoral)/i
