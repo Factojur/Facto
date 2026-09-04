@@ -76,7 +76,7 @@ export default function TrialPage() {
           Teste o FACTO em 7 dias
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-stone-400">
-          Uma área · {PLANO_TRIAL.pecasPorMes} peças no assistente · preview completo ·
+          Uma área · {PLANO_TRIAL.pecasPorMes} peças no assistente · plano do caso ·
           export Word/PDF nos planos pagos
           para protocolar. Sem OAB no início — informe só ao assinar.
         </p>
