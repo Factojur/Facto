@@ -23,7 +23,8 @@ Ordem fechada — **não inverter**:
 - **Sonnet:** gatilhos ampliados (área densa 3,5k / Fundo); log + fallback Flash; roteamento usa plano efetivo (Completo teste ≠ JEC DB).
 - **Smoke local:** apelação família com Sonnet (`1/20`); Anthropic OK.
 - **Build fix:** fixtures com `especialidadeVara` (typecheck Vercel).
-- **Deploy:** `ea81f47` · `dpl_AnXSbV6wVBW51gwGTZYwVayQL3Uf` · Ready; smoke prod apelação → **504 timeout 60s** → `maxDuration` gerar-peca **180s**.
+- **Timeout Sonnet:** `gerar-peca` `maxDuration` 60→180s (504 em prod).
+- **Deploy:** `8b22e69` · `dpl_5giBpjB4kNgzvie6zXTUhtJg996j` · Ready · smoke prod `familia-apelacao-sentenca` **1/1** — Sonnet (`area_densa`) · ~18k chars.
 
 ### Feito nesta rodada (04/09 — qualidade perceptível + calibração sentença)
 - **Sentença → apelação** — `pecaCabivelAposUltimoAto` detecta JULGO/SENTENÇA de mérito (JEC→recurso inominado; trabalhista→RO).
