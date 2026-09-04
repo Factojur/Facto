@@ -20,6 +20,12 @@ function main() {
   assert(soFilha.soFilha, "detecta só filha");
   assert(!soFilha.soFilho, "não marca só filho");
 
+  const negado = extrairSinaisFidelidadeAutos(
+    "Nos autos a prole é filha (não filho)."
+  );
+  assert(negado.soFilha, "ignora «não filho» na detecção");
+  assert(!negado.filho, "não filho não conta como presença");
+
   const soFilho = extrairSinaisFidelidadeAutos(
     "Alimentos ao filho menor João."
   );

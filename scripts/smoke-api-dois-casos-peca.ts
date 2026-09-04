@@ -80,7 +80,7 @@ const CASOS = [
       "excluiu o imóvel da partilha (vitória do réu), partilhou móveis/veículos/dívidas 50%,",
       "fixou guarda compartilhada da filha com residência materna e condenou o requerido a alimentos",
       "de 1/3 dos rendimentos líquidos. Quero interpor apelação impugnando alimentos e dívidas,",
-      "preservando a exclusão do imóvel. Nos autos a prole é filha (não filho).",
+      "preservando a exclusão do imóvel. Nos autos a prole é filha.",
     ].join(" "),
     ajuste:
       "Confirme em 3 linhas: área, polo (requerido) e se a peça é apelação contra a sentença.",

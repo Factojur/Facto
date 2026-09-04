@@ -14,7 +14,10 @@ export type SinaisFidelidadeAutos = {
 export function extrairSinaisFidelidadeAutos(
   texto: string | null | undefined
 ): SinaisFidelidadeAutos {
-  const t = String(texto ?? "");
+  // "não filho" / "não filha" no relato de calibração não conta como presença.
+  const t = String(texto ?? "")
+    .replace(/\bn[aã]o\s+filh[oa]s?\b/gi, " ")
+    .replace(/\bfilh[oa]s?\s*\(\s*n[aã]o\s+filh[oa]s?\s*\)/gi, " ");
   const filha = /\bfilhas?\b/i.test(t);
   const filho = /\bfilhos?\b/i.test(t);
   return {
