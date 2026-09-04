@@ -20,6 +20,7 @@ import type { TopicoPlanejado } from "@/lib/ia/plano-topicos-peca";
 import { auditarTopicosNaPeca } from "@/lib/ia/cobertura-teses-peca";
 import type { AutorValue } from "@/lib/autor-types";
 import type { ReuValue } from "@/lib/reu-types";
+import { extrairSinaisFidelidadeAutos } from "@/lib/fidelidade-autos-peca";
 
 export type GravidadeAuditor = "bloqueante" | "alerta" | "info";
 
@@ -444,6 +445,49 @@ export function auditarPecaGerada(
           : `${ok}/${topicos.length} tópicos do plano conferidos.`
       );
     }
+  }
+
+  if (
+    peca.trim().length >= 400 &&
+    !/\b(nestes termos|termos em que|ante o exposto|diante do exposto|pede deferimento)\b/i.test(
+      peca
+    )
+  ) {
+    push(
+      achados,
+      "fechamento",
+      "alerta",
+      "Fechamento forense frágil",
+      "Não ficou claro “Nestes termos” / “pede deferimento”. Confira o fechamento antes de protocolar."
+    );
+  }
+
+  const sinaisGen = extrairSinaisFidelidadeAutos(params.fatos);
+  if (
+    sinaisGen.soFilha &&
+    /\b(o\s+filho|do\s+filho|alimentando)\b/i.test(peca) &&
+    !/\ba\s+filha\b/i.test(peca)
+  ) {
+    push(
+      achados,
+      "genero-filha",
+      "alerta",
+      "Gênero inconsistente com os autos",
+      "Os autos indicam filha; a minuta generalizou no masculino. Revise alimentanda/filha."
+    );
+  }
+  if (
+    sinaisGen.soFilho &&
+    /\b(a\s+filha|da\s+filha|alimentanda)\b/i.test(peca) &&
+    !/\bo\s+filho\b/i.test(peca)
+  ) {
+    push(
+      achados,
+      "genero-filho",
+      "alerta",
+      "Gênero inconsistente com os autos",
+      "Os autos indicam filho; a minuta generalizou no feminino. Revise alimentando/filho."
+    );
   }
 
   const citOk = citacoes.filter((c) => c.verificada).length;

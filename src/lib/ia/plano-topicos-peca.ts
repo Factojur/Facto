@@ -218,6 +218,15 @@ export function blocoPlanoTopicosParaRedator(
     for (const sub of t.subtitulos) {
       linhas.push(`   → subtópico: ${sub}`);
     }
+    if (t.encaixe?.trim()) {
+      linhas.push(`   ENCAIXE: ${t.encaixe.trim().slice(0, 280)}`);
+    }
+    const lastro = (t.lastro ?? []).slice(0, 6);
+    if (lastro.length) {
+      linhas.push(
+        `   LASTRO: ${lastro.map((l) => `${l.tipo}=${l.ref}`).join(" | ")}`
+      );
+    }
   }
 
   if (estruturaEspecie?.trim()) {

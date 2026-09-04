@@ -725,6 +725,7 @@ export async function buscarConhecimentoRelacionado(
 
     candidatos.sort((a, b) => b.score - a.score);
     const vistos = new Set<string>();
+    const porDocumento = new Map<string, number>();
     const unicos: TrechoConhecimento[] = [];
     for (const c of candidatos) {
       if (descartarLastroPorArea(areaId, c.titulo, c.texto, c.categoria)) {
@@ -735,6 +736,10 @@ export async function buscarConhecimentoRelacionado(
       }
       const k = `${c.categoria}|${c.titulo}|${c.texto.slice(0, 60)}`;
       if (vistos.has(k)) continue;
+      const docKey = c.conhecimentoId ?? `titulo:${c.titulo}`;
+      const nDoc = porDocumento.get(docKey) ?? 0;
+      if (nDoc >= 2) continue;
+      porDocumento.set(docKey, nDoc + 1);
       vistos.add(k);
       unicos.push({
         titulo: c.titulo,
@@ -807,7 +812,14 @@ export function montarContextoConhecimento(itens: TrechoConhecimento[]): string 
   let restante = LIMITE_CARACTERES_TOTAL_CONTEXTO;
   const blocos: string[] = [];
 
-  for (const item of itens) {
+  // Súmulas primeiro — cabem melhor no orçamento e ancoram o lastro.
+  const ordenados = [...itens].sort((a, b) => {
+    const sa = /s[uú]mula/i.test(a.categoria) ? 1 : 0;
+    const sb = /s[uú]mula/i.test(b.categoria) ? 1 : 0;
+    return sb - sa;
+  });
+
+  for (const item of ordenados) {
     if (restante <= 0) break;
     const limiteItem = Math.min(LIMITE_CARACTERES_POR_ITEM, restante);
     const textoAjustado = truncarParaOrcamento(item.texto.trim(), limiteItem);

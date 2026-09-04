@@ -545,6 +545,7 @@ export async function gerarPecaComIA(params: {
           vinculos,
           teses,
           fatos: params.fatos,
+          jurisDoCaso: params.jurisDoCaso,
         })
       ),
       8,
@@ -913,7 +914,21 @@ export async function gerarPecaComIA(params: {
     .join("\n\n---\n\n");
 
   const textoNormalizado = normalizarPecaGerada(textoGerado);
-  const citacoes = verificarCitacoes(textoNormalizado, contextoParaVerificacao);
+  const citacoes = verificarCitacoes(
+    textoNormalizado,
+    contextoParaVerificacao,
+    [
+      ...(jurisDoCaso ?? []).map((j) => ({
+        titulo: j.titulo,
+        texto: j.texto,
+      })),
+      ...itensFinais.map((i) => ({
+        titulo: i.titulo,
+        texto: i.texto,
+        categoria: i.categoria,
+      })),
+    ]
+  );
   const textoComLastro = anotarJurisprudenciasSemLastro(
     textoNormalizado,
     citacoes
@@ -925,6 +940,10 @@ export async function gerarPecaComIA(params: {
     especie: especieFinal,
     tipoAcao: analiseEstrategica.nomeAcao || params.tipoAcao,
     fatos: params.fatos,
+    numeroProcesso:
+      params.instrucoes?.epigrafe?.find((l) =>
+        /\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/.test(l)
+      ) ?? null,
     pecaInaugural: moduloDaArea(areaId).idsPeticaoInicial.includes(especieFinal),
     pedirJusticaGratuita: params.instrucoes?.pedirJusticaGratuita,
     temMle: params.instrucoes?.temMle,

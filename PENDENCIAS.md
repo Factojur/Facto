@@ -17,6 +17,16 @@ Ordem fechada — **não inverter**:
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
 
+### Feito nesta rodada (04/09 — lastro profundidade + estabilidade peça)
+
+- [x] **Plano → Redator** — ENCAIXE/LASTRO por tópico no prompt (`blocoPlanoTopicosParaRedator`)
+- [x] **RAG por tópico** — reusa hits locais; só busca embedding se o tópico estiver fino; query com encaixe/lastro
+- [x] **Retrieve** — máx. 2 trechos por `conhecimentoId`; súmulas primeiro no orçamento de contexto
+- [x] **Juris do caso** — título+texto na Pesquisa e no lastro por tópico; citação CNJ via `casarEmentaComFontes`
+- [x] **Estabilidade** — VINCULOS com orientação de último ato (sem forçar espécie); Auditor: fechamento + gênero filha/filho
+- [x] **Teste** — `npm run test:lastro-estabilidade`
+- Acervo 100k / 2ª API juris: continua ops (não inventa ementa)
+
 ### Feito nesta rodada (04/09 — smoke memória anexo)
 
 - [x] **Smoke browser** — seletor desatualizado: `Enviar.last()` caía no banner (disabled sem fila); `input[type=file].first()` errava o input. Patch: `data-testid=chat-composer/chat-enviar` + input do banner (accept image/jpeg). Prod: pipeline 8/8 + browser OK

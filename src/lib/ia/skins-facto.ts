@@ -8,22 +8,31 @@ import { prefixoAntesDoNomePeca } from "@/lib/partes-ja-qualificadas";
 import type { TeseCanonica } from "@/lib/teses-canonicas";
 import type { EtapaEquipeFacto } from "@/lib/ia/agentes-facto";
 import type { PoloAdvocacia } from "@/lib/polo-advocacia";
+import {
+  incidenteExecucaoJaAberto,
+  pecaCabivelAposUltimoAto,
+} from "@/lib/peca-cabivel-autos";
 
 export type VinculosPecaFacto = {
   especie: string;
   tituloPeca: string;
   cabivel: string | null;
+  /** Rótulo legível do remédio sugerido pelos autos (orientação). */
+  cabivelTitulo: string | null;
   incidenteAberto: boolean;
   prefixoNome: string;
 };
 
-/** Espécie só a informada — sem remapeamento por último ato/kit. */
+/**
+ * Espécie = a informada (IA/advogado).
+ * `cabivel` = orientação do último ato — NÃO remapeia a espécie.
+ */
 export function resolverVinculosPeca(params: {
   areaId: string;
   especie: string;
   tipoAcao?: string | null;
   fatos?: string | null;
-  /** Ignorado: heurística local desligada. */
+  /** Ignorado: heurística local não força espécie. */
   confiarEspecie?: boolean;
 }): VinculosPecaFacto {
   const especie = String(params.especie ?? "")
@@ -36,11 +45,19 @@ export function resolverVinculosPeca(params: {
       : "") ||
     params.tipoAcao?.trim() ||
     "Peça";
+  const blob = `${params.tipoAcao ?? ""}\n${params.fatos ?? ""}`;
+  const sugerido = pecaCabivelAposUltimoAto(params.areaId, blob);
+  const cabivel =
+    sugerido && sugerido !== especie ? sugerido : null;
   return {
     especie,
     tituloPeca: titulo,
-    cabivel: null,
-    incidenteAberto: false,
+    cabivel,
+    cabivelTitulo: cabivel
+      ? tituloPecaDaArea(params.areaId, cabivel)
+      : null,
+    incidenteAberto:
+      incidenteExecucaoJaAberto(blob) || Boolean(cabivel),
     prefixoNome: prefixoAntesDoNomePeca(especie),
   };
 }
@@ -92,6 +109,11 @@ export function blocoPecaCabivelPrompt(v: VinculosPecaFacto): string {
     `PEÇA A PROTOCOLAR AGORA: ${v.tituloPeca} (id ${v.especie}).`,
     "Não confunda com o nome do incidente já aberto nos autos.",
   ];
+  if (v.cabivelTitulo) {
+    linhas.push(
+      `ORIENTAÇÃO DOS AUTOS (não força a espécie): o último ato sugere ${v.cabivelTitulo}. Se a peça escolhida for outra, não reabra o incidente antigo.`
+    );
+  }
   if (v.prefixoNome) {
     linhas.push(
       `Após “Vossa Excelência”, use o conectivo “${v.prefixoNome}” e só então o nome da peça em caixa alta.`
@@ -153,12 +175,23 @@ export function montarQueryPesquisa(params: {
   vinculos: VinculosPecaFacto;
   teses: TeseCanonica[];
   fatos?: string | null;
+  /** Trechos de juris anexada (título + miolo curto). */
+  jurisDoCaso?: { titulo?: string; texto?: string }[] | null;
 }): string {
+  const jurisBits = (params.jurisDoCaso ?? [])
+    .slice(0, 3)
+    .map((j) => {
+      const tit = j.titulo?.trim() ?? "";
+      const tx = (j.texto ?? "").replace(/\s+/g, " ").trim().slice(0, 400);
+      return [tit, tx].filter(Boolean).join(" ");
+    })
+    .filter(Boolean);
   return [
     params.areaId,
     params.vinculos.tituloPeca,
     params.tipoAcao,
     ...params.teses.map((t) => `${t.rotulo} ${t.artigos}`),
+    ...jurisBits,
     String(params.fatos ?? "")
       .replace(/\s+/g, " ")
       .trim()

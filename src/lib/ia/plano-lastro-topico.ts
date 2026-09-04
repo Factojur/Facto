@@ -111,16 +111,21 @@ function tesesRelacionadasAoTopico(
 
 function jurisRelacionadas(
   topico: TopicoPlanejado,
-  jurisTitulos: string[]
+  juris: { titulo: string; texto?: string }[]
 ): string[] {
   const termos = [
     ...palavrasChave(topico.titulo),
     ...topico.subtitulos.flatMap((s) => palavrasChave(s)),
+    ...(topico.encaixe ? palavrasChave(topico.encaixe) : []),
   ];
-  return jurisTitulos.filter((titulo) => {
-    const t = norm(titulo);
-    return termos.some((w) => w.length >= 5 && t.includes(w));
-  });
+  return juris
+    .filter((j) => {
+      const blob = norm(`${j.titulo}\n${(j.texto ?? "").slice(0, 500)}`);
+      if (termos.some((w) => w.length >= 5 && blob.includes(w))) return true;
+      const t = norm(j.titulo);
+      return termos.some((w) => w.length >= 5 && t.includes(w));
+    })
+    .map((j) => j.titulo);
 }
 
 /** Enriquece lastro estruturado (B) com extração local (A) quando faltar fonte. */
@@ -129,7 +134,9 @@ export function complementarLastroTopico(params: {
   estrategiaJuridica: string;
   todosTopicos: TopicoPlanejado[];
   cobertura: ItemCoberturaTese[];
+  /** @deprecated prefer jurisItens */
   jurisTitulos?: string[];
+  jurisItens?: { titulo: string; texto?: string }[];
 }): TopicoPlanejado {
   const idx = params.todosTopicos.findIndex(
     (t) => t.romano === params.topico.romano && t.titulo === params.topico.titulo
@@ -173,7 +180,11 @@ export function complementarLastroTopico(params: {
     }
   }
 
-  const juris = jurisRelacionadas(params.topico, params.jurisTitulos ?? []);
+  const juris = jurisRelacionadas(
+    params.topico,
+    params.jurisItens ??
+      (params.jurisTitulos ?? []).map((titulo) => ({ titulo }))
+  );
   for (const j of juris) {
     if (!lastroBase.some((l) => l.tipo === "juris" && norm(l.ref).includes(norm(j).slice(0, 12)))) {
       lastroBase.push({ tipo: "juris", ref: j });
@@ -206,7 +217,9 @@ export function complementarLastroTopicos(params: {
   topicos: TopicoPlanejado[];
   estrategiaJuridica: string;
   cobertura: ItemCoberturaTese[];
+  /** @deprecated prefer jurisItens */
   jurisTitulos?: string[];
+  jurisItens?: { titulo: string; texto?: string }[];
 }): TopicoPlanejado[] {
   return params.topicos.map((topico) =>
     complementarLastroTopico({
@@ -215,6 +228,7 @@ export function complementarLastroTopicos(params: {
       todosTopicos: params.topicos,
       cobertura: params.cobertura,
       jurisTitulos: params.jurisTitulos,
+      jurisItens: params.jurisItens,
     })
   );
 }

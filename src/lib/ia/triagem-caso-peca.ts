@@ -254,7 +254,12 @@ export async function executarTriagemCaso(params: {
     topicos: topicosBrutos,
     estrategiaJuridica,
     cobertura,
-    jurisTitulos: params.jurisDoCaso?.map((j) => j.titulo ?? "").filter(Boolean),
+    jurisItens: params.jurisDoCaso
+      ?.map((j) => ({
+        titulo: j.titulo?.trim() || "Jurisprudência do caso",
+        texto: j.texto,
+      }))
+      .filter((j) => j.titulo),
   });
 
   return {

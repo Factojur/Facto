@@ -4,6 +4,11 @@
  * realmente injetado no prompt (base + juris do caso + lei municipal).
  */
 
+import {
+  casarEmentaComFontes,
+  type FonteJurisCasavel,
+} from "@/lib/casar-juris-caso-peca";
+
 export type TipoCitacao = "lei" | "jurisprudencia";
 
 const PADROES_CITACAO: { tipo: TipoCitacao; regex: RegExp }[] = [
@@ -87,7 +92,8 @@ function temLastro(
   trecho: string,
   contextoNorm: string,
   tipo: TipoCitacao,
-  numeros: { cnjs: Set<string>; outros: Set<string> }
+  numeros: { cnjs: Set<string>; outros: Set<string> },
+  fontesExtras?: FonteJurisCasavel[]
 ): boolean {
   const chave = normalizar(trecho);
   const digitos = soDigitos(trecho);
@@ -96,9 +102,17 @@ function temLastro(
     /\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/.test(trecho);
 
   if (tipo === "jurisprudencia") {
-    if (ehCnj) return numeros.cnjs.has(digitos);
-    if (digitos.length >= 6) return numeros.outros.has(digitos);
+    if (ehCnj && numeros.cnjs.has(digitos)) return true;
+    if (digitos.length >= 6 && digitos.length < 20 && numeros.outros.has(digitos)) {
+      return true;
+    }
     if (chave && contextoNorm.includes(chave)) return true;
+    if (fontesExtras?.length) {
+      const match = casarEmentaComFontes(trecho, fontesExtras);
+      if (match && (match.confianca === "alta" || match.confianca === "media")) {
+        return true;
+      }
+    }
     return false;
   }
 
@@ -129,7 +143,8 @@ function temLastro(
  */
 export function verificarCitacoes(
   textoGerado: string,
-  contextoFornecido: string
+  contextoFornecido: string,
+  fontesExtras?: FonteJurisCasavel[]
 ): CitacaoVerificada[] {
   const contextoNormalizado = normalizar(contextoFornecido);
   const numeros = extrairNumerosDoContexto(contextoFornecido);
@@ -145,7 +160,13 @@ export function verificarCitacoes(
       encontradas.set(chave, {
         trecho,
         tipo,
-        verificada: temLastro(trecho, contextoNormalizado, tipo, numeros),
+        verificada: temLastro(
+          trecho,
+          contextoNormalizado,
+          tipo,
+          numeros,
+          fontesExtras
+        ),
       });
     }
   }
