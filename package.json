@@ -32,6 +32,7 @@
     "test:inferir-area": "npx tsx scripts/testar-inferir-area-refino.ts",
     "test:plano-lastro": "npx tsx scripts/testar-plano-lastro-topico.ts",
     "test:casar-juris": "npx tsx scripts/testar-casar-juris-caso.ts",
+    "test:briefing-caso": "npx tsx scripts/testar-briefing-caso-chat.ts",
     "test:comparativo-paridade": "npx tsx scripts/comparativo-paridade-minutaia.ts",
     "test:caso-0006509": "npx tsx scripts/testar-caso-0006509.ts",
     "test:chat-fluidez": "npx tsx scripts/testar-chat-fluidez.ts",

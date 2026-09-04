@@ -55,78 +55,78 @@ export type AreaModuloConfig = {
 
 export const MODULO_JEC: AreaModuloConfig = {
   id: "jec",
-  tituloDashboard: "Geração de Peça — Juizado Especial Cível",
+  tituloDashboard: "Juizado Especial Cível",
   leiResumo: "Lei nº 9.099/95",
   href: HREF_CHAT_ASSISTENTE,
   hrefCasos: "/dashboard/jec/casos",
   idsPeticaoInicial: ["peticao-inicial"],
   copyCabecalho:
-    "Peças para o Juizado Especial Cível (Lei nº 9.099/95). Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+    "Peças para o Juizado Especial Cível (Lei nº 9.099/95). Revise sempre antes de protocolar.",
   fundamentoQualificacao: "na Lei nº 9.099/95",
   rotuloPoloAtivo: "autor",
   rotuloPoloPassivo: "réu",
-  rotuloNav: "Gerar peça JEC",
+  rotuloNav: "Área JEC",
 };
 
 export const MODULO_CIVIL: AreaModuloConfig = {
   id: "civil",
-  tituloDashboard: "Geração de Peça — Direito Civil (justiça comum)",
+  tituloDashboard: "Direito Civil (justiça comum)",
   leiResumo: "Código Civil · CPC",
   href: HREF_CHAT_ASSISTENTE,
   idsPeticaoInicial: ["peticao-inicial", "execucao-titulo"],
   copyCabecalho:
-    "Peças cíveis na justiça comum (Código Civil e CPC): cobrança, indenização, obrigações. Não use para Juizado (9.099) nem para relação de consumo (módulo Consumidor). Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+    "Peças cíveis na justiça comum (Código Civil e CPC): cobrança, indenização, obrigações. Não use para Juizado (9.099) nem para relação de consumo (módulo Consumidor). Revise sempre antes de protocolar.",
   fundamentoQualificacao: "no Código Civil e no CPC",
   rotuloPoloAtivo: "autor",
   rotuloPoloPassivo: "réu",
-  rotuloNav: "Gerar peça Civil",
+  rotuloNav: "Área Civil",
 };
 
 export const MODULO_CONSUMIDOR: AreaModuloConfig = {
   id: "consumidor",
-  tituloDashboard: "Geração de Peça — Direito do Consumidor (justiça comum)",
+  tituloDashboard: "Direito do Consumidor (justiça comum)",
   leiResumo: "CDC · CPC",
   href: HREF_CHAT_ASSISTENTE,
   idsPeticaoInicial: ["peticao-inicial", "execucao-titulo"],
   copyCabecalho:
-    "Peças consumeristas na justiça comum (CDC e CPC). Não use este módulo para o Juizado — lá o rito é a Lei 9.099/95. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+    "Peças consumeristas na justiça comum (CDC e CPC). Não use este módulo para o Juizado — lá o rito é a Lei 9.099/95. Revise sempre antes de protocolar.",
   fundamentoQualificacao: "no CDC e no CPC",
   rotuloPoloAtivo: "autor",
   rotuloPoloPassivo: "réu",
-  rotuloNav: "Gerar peça Consumidor",
+  rotuloNav: "Área Consumidor",
 };
 
 export const MODULO_TRABALHISTA: AreaModuloConfig = {
   id: "trabalhista",
-  tituloDashboard: "Geração de Peça — Justiça do Trabalho",
+  tituloDashboard: "Justiça do Trabalho",
   leiResumo: "CLT · rito trabalhista",
   href: HREF_CHAT_ASSISTENTE,
   idsPeticaoInicial: ["reclamacao", "execucao-titulo"],
   copyCabecalho:
-    "Peças na Justiça do Trabalho (CLT): reclamação, defesa, recurso ordinário. Não use CPC de justiça comum nem Lei 9.099. Polos: reclamante e reclamado. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+    "Peças na Justiça do Trabalho (CLT): reclamação, defesa, recurso ordinário. Não use CPC de justiça comum nem Lei 9.099. Polos: reclamante e reclamado. Revise sempre antes de protocolar.",
   fundamentoQualificacao: "na CLT e na legislação processual trabalhista",
   rotuloPoloAtivo: "reclamante",
   rotuloPoloPassivo: "reclamado",
-  rotuloNav: "Gerar peça Trabalhista",
+  rotuloNav: "Área Trabalhista",
 };
 
 export const MODULO_FAMILIA: AreaModuloConfig = {
   id: "familia",
-  tituloDashboard: "Geração de Peça — Família e Sucessões",
+  tituloDashboard: "Família e Sucessões",
   leiResumo: "CC · CPC · rito de família",
   href: HREF_CHAT_ASSISTENTE,
   idsPeticaoInicial: ["peticao-inicial", "inventario"],
   copyCabecalho:
-    "Peças de família e sucessões (Código Civil e CPC): divórcio, guarda, alimentos, inventário. Tramitação em segredo de justiça (art. 189 do CPC) quando couber. Não use Juizado nem CLT. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+    "Peças de família e sucessões (Código Civil e CPC): divórcio, guarda, alimentos, inventário. Tramitação em segredo de justiça (art. 189 do CPC) quando couber. Não use Juizado nem CLT. Revise sempre antes de protocolar.",
   fundamentoQualificacao: "no Código Civil, no CPC e na legislação de família",
   rotuloPoloAtivo: "requerente",
   rotuloPoloPassivo: "requerido",
-  rotuloNav: "Gerar peça Família",
+  rotuloNav: "Área Família",
 };
 
 export const MODULO_IMOBILIARIO: AreaModuloConfig = {
   id: "imobiliario",
-  tituloDashboard: "Geração de Peça — Direito Imobiliário",
+  tituloDashboard: "Direito Imobiliário",
   leiResumo: "Lei 8.245 · CC · condomínio",
   href: HREF_CHAT_ASSISTENTE,
   idsPeticaoInicial: [
@@ -137,16 +137,16 @@ export const MODULO_IMOBILIARIO: AreaModuloConfig = {
     "condominio",
   ],
   copyCabecalho:
-    "Peças imobiliárias na justiça comum: despejo (Lei 8.245/91), usucapião, consignação de aluguéis e cotas de condomínio. Não use para cobrança cível genérica (Civil) nem para Juizado. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+    "Peças imobiliárias na justiça comum: despejo (Lei 8.245/91), usucapião, consignação de aluguéis e cotas de condomínio. Não use para cobrança cível genérica (Civil) nem para Juizado. Revise sempre antes de protocolar.",
   fundamentoQualificacao: "na legislação imobiliária, no Código Civil e no CPC",
   rotuloPoloAtivo: "autor",
   rotuloPoloPassivo: "réu",
-  rotuloNav: "Gerar peça Imobiliário",
+  rotuloNav: "Área Imobiliário",
 };
 
 export const MODULO_JECR: AreaModuloConfig = {
   id: "jecr",
-  tituloDashboard: "Geração de Peça — Juizado Especial Criminal",
+  tituloDashboard: "Juizado Especial Criminal",
   leiResumo: "Lei nº 9.099/95 (JECRIM)",
   href: HREF_CHAT_ASSISTENTE,
   idsPeticaoInicial: [
@@ -155,184 +155,184 @@ export const MODULO_JECR: AreaModuloConfig = {
     "transacao-penal",
   ],
   copyCabecalho:
-    "Peças no Juizado Especial Criminal (Lei 9.099/95, arts. 60 a 92): queixa-crime, composição civil, transação penal, defesa e recurso inominado. Não use para o JEC cível nem para o rito penal comum (CPP). Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+    "Peças no Juizado Especial Criminal (Lei 9.099/95, arts. 60 a 92): queixa-crime, composição civil, transação penal, defesa e recurso inominado. Não use para o JEC cível nem para o rito penal comum (CPP). Revise sempre antes de protocolar.",
   fundamentoQualificacao: "na Lei nº 9.099/95 (rito criminal)",
   rotuloPoloAtivo: "querelante",
   rotuloPoloPassivo: "acusado / querelado",
-  rotuloNav: "Gerar peça JECRIM",
+  rotuloNav: "Área JECRIM",
 };
 
 export const MODULO_CRIMINAL: AreaModuloConfig = {
   id: "criminal",
-  tituloDashboard: "Geração de Peça — Direito Penal (rito comum)",
+  tituloDashboard: "Direito Penal (rito comum)",
   leiResumo: "CP · CPP",
   href: HREF_CHAT_ASSISTENTE,
   idsPeticaoInicial: ["habeas-corpus", "revisao-criminal"],
   copyCabecalho:
-    "Peças na Justiça Penal comum (CP e CPP): habeas corpus, resposta à acusação, alegações finais, apelação criminal. Não use JECRIM (9.099) nem contestação cível. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+    "Peças na Justiça Penal comum (CP e CPP): habeas corpus, resposta à acusação, alegações finais, apelação criminal. Não use JECRIM (9.099) nem contestação cível. Revise sempre antes de protocolar.",
   fundamentoQualificacao: "no Código Penal e no Código de Processo Penal",
   rotuloPoloAtivo: "paciente / impetrante",
   rotuloPoloPassivo: "acusado",
-  rotuloNav: "Gerar peça Penal",
+  rotuloNav: "Área Penal",
 };
 
 export const MODULO_PREVIDENCIARIO: AreaModuloConfig = {
   id: "previdenciario",
-  tituloDashboard: "Geração de Peça — Direito Previdenciário",
+  tituloDashboard: "Direito Previdenciário",
   leiResumo: "Lei 8.213/91 · JEF",
   href: HREF_CHAT_ASSISTENTE,
   idsPeticaoInicial: ["peticao-inicial"],
   copyCabecalho:
-    "Peças previdenciárias (Lei 8.213/91): concessão, restabelecimento e revisão contra o INSS no JEF ou na Vara Federal. Não invente NB nem RMI. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+    "Peças previdenciárias (Lei 8.213/91): concessão, restabelecimento e revisão contra o INSS no JEF ou na Vara Federal. Não invente NB nem RMI. Revise sempre antes de protocolar.",
   fundamentoQualificacao: "na legislação previdenciária",
   rotuloPoloAtivo: "segurado / autor",
   rotuloPoloPassivo: "INSS",
-  rotuloNav: "Gerar peça Previdenciário",
+  rotuloNav: "Área Previdenciário",
 };
 
 export const MODULO_TRIBUTARIO: AreaModuloConfig = {
   id: "tributario",
-  tituloDashboard: "Geração de Peça — Direito Tributário",
+  tituloDashboard: "Direito Tributário",
   leiResumo: "CTN · Lei 6.830/80",
   href: HREF_CHAT_ASSISTENTE,
   idsPeticaoInicial: ["peticao-inicial", "mandado-seguranca"],
   copyCabecalho:
-    "Peças tributárias: embargos à execução fiscal (LEF), exceção de pré-executividade, anulatória, repetição e mandado de segurança. Não confunda com execução cível. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+    "Peças tributárias: embargos à execução fiscal (LEF), exceção de pré-executividade, anulatória, repetição e mandado de segurança. Não confunda com execução cível. Revise sempre antes de protocolar.",
   fundamentoQualificacao: "no CTN e na legislação tributária",
   rotuloPoloAtivo: "contribuinte / executado",
   rotuloPoloPassivo: "Fazenda Pública",
-  rotuloNav: "Gerar peça Tributário",
+  rotuloNav: "Área Tributário",
 };
 
 export const MODULO_ADMINISTRATIVO: AreaModuloConfig = {
   id: "administrativo",
-  tituloDashboard: "Geração de Peça — Direito Administrativo",
+  tituloDashboard: "Direito Administrativo",
   leiResumo: "Lei 12.016/09 · CPC",
   href: HREF_CHAT_ASSISTENTE,
   idsPeticaoInicial: ["mandado-seguranca", "peticao-inicial"],
   copyCabecalho:
-    "Peças de Direito Administrativo e Fazenda Pública: mandado de segurança (120 dias), anulação de ato, licitação. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+    "Peças de Direito Administrativo e Fazenda Pública: mandado de segurança (120 dias), anulação de ato, licitação. Revise sempre antes de protocolar.",
   fundamentoQualificacao: "no direito administrativo e na Lei 12.016/09",
   rotuloPoloAtivo: "impetrante / autor",
   rotuloPoloPassivo: "autoridade coatora / ente público",
-  rotuloNav: "Gerar peça Administrativo",
+  rotuloNav: "Área Administrativo",
 };
 
 export const MODULO_EMPRESARIAL: AreaModuloConfig = {
   id: "empresarial",
-  tituloDashboard: "Geração de Peça — Direito Empresarial",
+  tituloDashboard: "Direito Empresarial",
   leiResumo: "CC · Lei 6.404/76",
   href: HREF_CHAT_ASSISTENTE,
   idsPeticaoInicial: ["peticao-inicial", "notificacao-extrajudicial"],
   copyCabecalho:
-    "Peças empresariais: notificação extrajudicial, dissolução, obrigações societárias. Distinga notificação de ação. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+    "Peças empresariais: notificação extrajudicial, dissolução, obrigações societárias. Distinga notificação de ação. Revise sempre antes de protocolar.",
   fundamentoQualificacao: "no direito de empresa e no CPC",
   rotuloPoloAtivo: "autor / sócio",
   rotuloPoloPassivo: "réu / sociedade",
-  rotuloNav: "Gerar peça Empresarial",
+  rotuloNav: "Área Empresarial",
 };
 
 export const MODULO_DIGITAL: AreaModuloConfig = {
   id: "digital",
-  tituloDashboard: "Geração de Peça — Direito Digital e LGPD",
+  tituloDashboard: "Direito Digital e LGPD",
   leiResumo: "LGPD · CPC",
   href: HREF_CHAT_ASSISTENTE,
   idsPeticaoInicial: ["peticao-inicial"],
   copyCabecalho:
-    "Peças de Direito Digital e LGPD. Crimes digitais: use o módulo Penal. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+    "Peças de Direito Digital e LGPD. Crimes digitais: use o módulo Penal. Revise sempre antes de protocolar.",
   fundamentoQualificacao: "na LGPD e no CPC",
   rotuloPoloAtivo: "titular / autor",
   rotuloPoloPassivo: "controlador / réu",
-  rotuloNav: "Gerar peça Digital",
+  rotuloNav: "Área Digital",
 };
 
 export const MODULO_AMBIENTAL: AreaModuloConfig = {
   id: "ambiental",
-  tituloDashboard: "Geração de Peça — Direito Ambiental",
+  tituloDashboard: "Direito Ambiental",
   leiResumo: "Lei 6.938/81 · ACP",
   href: HREF_CHAT_ASSISTENTE,
   idsPeticaoInicial: ["acp-ambiental", "peticao-inicial"],
   copyCabecalho:
-    "Peças ambientais: ACP, defesa de auto de infração, obrigação de fazer. Não invente licença nem auto. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+    "Peças ambientais: ACP, defesa de auto de infração, obrigação de fazer. Não invente licença nem auto. Revise sempre antes de protocolar.",
   fundamentoQualificacao: "na legislação ambiental",
   rotuloPoloAtivo: "autor",
   rotuloPoloPassivo: "réu / poluidor",
-  rotuloNav: "Gerar peça Ambiental",
+  rotuloNav: "Área Ambiental",
 };
 
 export const MODULO_PI: AreaModuloConfig = {
   id: "propriedade-intelectual",
-  tituloDashboard: "Geração de Peça — Propriedade Intelectual",
+  tituloDashboard: "Propriedade Intelectual",
   leiResumo: "LPI · LDA",
   href: HREF_CHAT_ASSISTENTE,
   idsPeticaoInicial: ["abstencao-marca", "peticao-inicial"],
   copyCabecalho:
-    "Peças de marcas, patentes e direitos autorais. Não invente registro no INPI. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+    "Peças de marcas, patentes e direitos autorais. Não invente registro no INPI. Revise sempre antes de protocolar.",
   fundamentoQualificacao: "na LPI e na LDA",
   rotuloPoloAtivo: "titular / autor",
   rotuloPoloPassivo: "réu",
-  rotuloNav: "Gerar peça PI",
+  rotuloNav: "Área PI",
 };
 
 export const MODULO_INTERNACIONAL: AreaModuloConfig = {
   id: "internacional",
-  tituloDashboard: "Geração de Peça — Direito Internacional",
+  tituloDashboard: "Direito Internacional",
   leiResumo: "STJ · CPC · LINDB",
   href: HREF_CHAT_ASSISTENTE,
   idsPeticaoInicial: ["homologacao", "peticao-inicial"],
   copyCabecalho:
-    "Homologação de sentença estrangeira (STJ) e contencioso contratual internacional. Não invente tratado nem sentença. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+    "Homologação de sentença estrangeira (STJ) e contencioso contratual internacional. Não invente tratado nem sentença. Revise sempre antes de protocolar.",
   fundamentoQualificacao: "no direito internacional privado e no CPC",
   rotuloPoloAtivo: "requerente / autor",
   rotuloPoloPassivo: "requerido / réu",
-  rotuloNav: "Gerar peça Internacional",
+  rotuloNav: "Área Internacional",
 };
 
 export const MODULO_MEDICO: AreaModuloConfig = {
   id: "medico",
-  tituloDashboard: "Geração de Peça — Direito Médico e da Saúde",
+  tituloDashboard: "Direito Médico e da Saúde",
   leiResumo: "CC · CDC · conselhos",
   href: HREF_CHAT_ASSISTENTE,
   idsPeticaoInicial: ["peticao-inicial"],
   copyCabecalho:
-    "Erro médico e demandas da saúde. Distinga responsabilidade civil de cobertura de plano (CDC). Não invente prontuário. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+    "Erro médico e demandas da saúde. Distinga responsabilidade civil de cobertura de plano (CDC). Não invente prontuário. Revise sempre antes de protocolar.",
   fundamentoQualificacao: "no Código Civil e, quando couber, no CDC",
   rotuloPoloAtivo: "paciente / autor",
   rotuloPoloPassivo: "profissional / hospital / operadora",
-  rotuloNav: "Gerar peça Médico",
+  rotuloNav: "Área Médico",
 };
 
 export const MODULO_AGRARIO: AreaModuloConfig = {
   id: "agrario",
-  tituloDashboard: "Geração de Peça — Direito Agrário",
+  tituloDashboard: "Direito Agrário",
   leiResumo: "Estatuto da Terra · CC",
   href: HREF_CHAT_ASSISTENTE,
   idsPeticaoInicial: ["peticao-inicial"],
   copyCabecalho:
-    "Contratos agrários, crédito rural e regularização. Não invente matrícula rural. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+    "Contratos agrários, crédito rural e regularização. Não invente matrícula rural. Revise sempre antes de protocolar.",
   fundamentoQualificacao: "no Estatuto da Terra e no Código Civil",
   rotuloPoloAtivo: "autor",
   rotuloPoloPassivo: "réu",
-  rotuloNav: "Gerar peça Agrário",
+  rotuloNav: "Área Agrário",
 };
 
 export const MODULO_ELEITORAL: AreaModuloConfig = {
   id: "eleitoral",
-  tituloDashboard: "Geração de Peça — Direito Eleitoral",
+  tituloDashboard: "Direito Eleitoral",
   leiResumo: "Código Eleitoral · Lei 9.504/97",
   href: HREF_CHAT_ASSISTENTE,
   idsPeticaoInicial: ["representacao", "aije", "registro-candidatura"],
   copyCabecalho:
-    "Representação, AIJE, registro de candidatura e defesa na Justiça Eleitoral. A base FACTO não indexa TRE/TSE — não invente julgado. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+    "Representação, AIJE, registro de candidatura e defesa na Justiça Eleitoral. A base FACTO não indexa TRE/TSE — não invente julgado. Revise sempre antes de protocolar.",
   fundamentoQualificacao: "na legislação eleitoral",
   rotuloPoloAtivo: "representante / autor",
   rotuloPoloPassivo: "representado / réu",
-  rotuloNav: "Gerar peça Eleitoral",
+  rotuloNav: "Área Eleitoral",
 };
 
 export const MODULO_CONSTITUCIONAL: AreaModuloConfig = {
   id: "constitucional",
-  tituloDashboard: "Geração de Peça — Direito Constitucional",
+  tituloDashboard: "Direito Constitucional",
   leiResumo: "CF/88 · Leis 9.868 · 9.882 · 12.016",
   href: HREF_CHAT_ASSISTENTE,
   idsPeticaoInicial: [
@@ -348,11 +348,11 @@ export const MODULO_CONSTITUCIONAL: AreaModuloConfig = {
     "ado",
   ],
   copyCabecalho:
-    "Remédios constitucionais (ativo e passivo), RE, reclamação e controle concentrado (CF/88). Distinga do Administrativo e do Penal. Três etapas: identificação, fatos e pedidos. Revise sempre antes de protocolar.",
+    "Remédios constitucionais (ativo e passivo), RE, reclamação e controle concentrado (CF/88). Distinga do Administrativo e do Penal. Revise sempre antes de protocolar.",
   fundamentoQualificacao: "na Constituição Federal e nas leis dos remédios constitucionais",
   rotuloPoloAtivo: "impetrante / recorrente / autor",
   rotuloPoloPassivo: "autoridade / recorrido / réu",
-  rotuloNav: "Gerar peça Constitucional",
+  rotuloNav: "Área Constitucional",
 };
 
 export type AreaIdMinuta =

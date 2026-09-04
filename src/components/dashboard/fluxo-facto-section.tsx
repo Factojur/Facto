@@ -129,8 +129,8 @@ export function FluxoFactoSection({ leigo = false }: { leigo?: boolean }) {
         </h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-500 md:text-base">
           {leigo
-            ? "Chat interativo, pré-visualização automática e redação com lastro — você revisa e protocola no Juizado."
-            : "Chat interativo, pré-visualização automática e redação com lastro."}
+            ? "Chat interativo, plano do caso e minuta com lastro — você revisa e protocola no Juizado."
+            : "Chat interativo, plano do caso e minuta com lastro (1 crédito na redação)."}
         </p>
 
         {/* Trilho conectando as etapas (desktop) */}

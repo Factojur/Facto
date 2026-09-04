@@ -1,6 +1,7 @@
 /**
- * Ordem de implementação das áreas (além do JEC, já aberto).
- * Preview interno ≠ available no catálogo. Em 16/08 as áreas com rota foram abertas ao Completo/Pro+OAB.
+ * Ordem histórica de abertura das áreas (além do JEC).
+ * Porta do cliente = assistente (`HREF_CHAT_ASSISTENTE`); rotas `/dashboard/<area>`
+ * só redirecionam. Preview interno ≠ available no catálogo.
  */
 
 export type ItemAberturaArea = {

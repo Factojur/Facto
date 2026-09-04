@@ -13,9 +13,17 @@ Ordem fechada — **não inverter**:
 1. **Chat = MinutaIA** — mesmo fluxo, fluidez, iteração, liberdade da IA. Únicas diferenças: **aparência FACTO** + **juris = base FACTO + anexos**. Configurações/travas pré-chat (áreas manuais, chips, filtros rígidos) **ficam de lado** e **não** condicionam o chat.
 2. **Preview MinutaIA-style** — peça = resposta da IA no **Minuta** (1 crédito); diferencial FACTO = aba **Planos**. Sem scaffold/molde no preview.
 3. **Formatação protocolável** — entrega Word/PDF alinhada ao texto da IA/editado; tipografia fina **avançada 04/09** (higiene JURIS/latin/títulos/localidade); ABNT residual (paginação preview) **depois**.
-4. **Só no final** — revisitar o trabalho pré-chat (áreas, ritos, dashboards) para aprimorar o produto voltado ao advogado. **Fatia 1 feita (04/09):** nav/catálogo → chat; pista de área enriquecida; órfãos de confirmação removidos. Formulário 3 etapas permanece laboratório (JEC), não porta do cliente.
+4. **Só no final** — revisitar o trabalho pré-chat (áreas, ritos, dashboards) para aprimorar o produto voltado ao advogado. **Fatia 1+2 feitas (04/09):** nav→chat; CTAs Meus casos→assistente c/ briefing; copy sem “pré-visualização”; pistas `AreaModuloConfig` sem “Geração de Peça/Três etapas”; órfãos do catálogo removidos. Formulário 3 etapas permanece laboratório (JEC), não porta do cliente.
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
+
+### Feito nesta rodada (04/09 — item 4 áreas/ritos, fatia 2)
+
+- [x] **Meus casos JEC → assistente** — CTAs não caem mais em `/dashboard/jec` (redirect vazio); briefing one-shot (`briefing-caso-chat`) com fatos/espécie/foro
+- [x] **Copy** — fluxo home + landing sem “pré-visualização automática” (plano / Minuta 1 crédito)
+- [x] **Pistas de área** — `tituloDashboard` sem “Geração de Peça”; `copyCabecalho` sem “Três etapas”; `rotuloNav` = “Área X” (smoke)
+- [x] **Órfãos** — removidos `assistente-escolha-area`, `grupos-areas-section`, `area-portal-card` (não montados na home)
+- [x] **Docs** — `abertura-areas` alinhado a redirect→chat; roadmap item 4 fatia 2
 
 ### Feito nesta rodada (04/09 — lastro inspector + ementa)
 
@@ -253,7 +261,7 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 
 
 
-- [x] **Áreas → chat** — `/dashboard/<area>` e `/dashboard/jec` redirecionam para `/dashboard?area=…`; `hrefModuloArea` aponta ao chat
+- [x] **Áreas → chat** — `/dashboard/<area>` e `/dashboard/jec` → `/dashboard#assistente-workspace` (sem `?area=`); `hrefModuloArea` = `HREF_CHAT_ASSISTENTE`
 - [x] **Sem confirmação de área/polo no thread** — UI removida; fluxo não para
 - [x] **`organizarCasoLocal` sempre `semRemedio`** — local só extrai metadados; remédio é da IA
 - [x] **`confiarEspecie` default true** em `resolverVinculosPeca` / `gerarPecaComIA`

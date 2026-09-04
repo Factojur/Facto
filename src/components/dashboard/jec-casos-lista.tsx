@@ -14,6 +14,7 @@ import {
   listarCasosJec,
 } from "@/lib/jec-casos-storage";
 import { podePersistirCasosNaNuvem } from "@/lib/emails-persistencia-casos";
+import { HREF_CHAT_ASSISTENTE } from "@/lib/minuta-modulo";
 
 function mapCasoNuvem(row: Record<string, unknown>): CasoJec {
   return {
@@ -132,16 +133,16 @@ export function JecCasosLista({ emailUsuario }: { emailUsuario: string }) {
               Meus casos
             </h1>
             <p className="mt-1 text-sm text-slate-500">
-              Acompanhe o processo da pré-ação ao trânsito em julgado e gere a
-              peça de cada etapa. Esta lista é só do Juizado Especial Cível —
-              as outras áreas ainda não salvam caso aqui.
+              Acompanhe o processo da pré-ação ao trânsito em julgado. Para
+              redigir, abra o assistente (chat) — esta lista é só do Juizado
+              Especial Cível.
             </p>
           </div>
           <Link
-            href="/dashboard/jec"
+            href={HREF_CHAT_ASSISTENTE}
             className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
-            Gerar peça avulsa
+            Abrir assistente
           </Link>
         </div>
       </header>

@@ -19,6 +19,8 @@ import {
 import { podePersistirCasosNaNuvem } from "@/lib/emails-persistencia-casos";
 import { PecaDocumentoView } from "@/components/dashboard/peca-documento";
 import { gerarDocumentoTimbrado } from "@/lib/formatacao-juridica";
+import { HREF_CHAT_ASSISTENTE } from "@/lib/minuta-modulo";
+import { hrefAssistenteAposBriefing } from "@/lib/briefing-caso-chat";
 
 function mapCasoNuvem(row: Record<string, unknown>): CasoJec {
   return {
@@ -156,25 +158,30 @@ export function JecCasoDetalhe({
     }
   }
 
-  function hrefGerarPeca(especie?: string | null): string | null {
+  function montarBriefingPeca(especie?: string | null): {
+    href: string;
+    onClick: () => void;
+  } | null {
     const especieFinal = especie || faseMeta.especieSugerida;
     if (!especieFinal) return null;
-    const params = new URLSearchParams({
-      caso: casoAtual.id,
-      fase: casoAtual.faseAtual,
-      especie: especieFinal,
-    });
-    if (casoAtual.numeroProcesso) {
-      params.set("processo", casoAtual.numeroProcesso);
-    }
-    if (casoAtual.foro) params.set("foro", casoAtual.foro);
-    if (casoAtual.resumoFatos) {
-      params.set("fatos", casoAtual.resumoFatos.slice(0, 2000));
-    }
-    return `/dashboard/jec?${params.toString()}`;
+    return {
+      href: HREF_CHAT_ASSISTENTE,
+      onClick: () => {
+        hrefAssistenteAposBriefing({
+          origem: "jec_casos",
+          titulo: casoAtual.titulo,
+          areaId: "jec",
+          especie: especieFinal,
+          numeroProcesso: casoAtual.numeroProcesso || undefined,
+          foro: casoAtual.foro || undefined,
+          fatos: casoAtual.resumoFatos?.slice(0, 2000) || undefined,
+          fase: casoAtual.faseAtual,
+        });
+      },
+    };
   }
 
-  const gerarHref = hrefGerarPeca();
+  const gerarPeca = montarBriefingPeca();
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 px-4 py-8 sm:px-6">
@@ -331,8 +338,8 @@ export function JecCasoDetalhe({
                     {eventosFase.map((ev) => {
                       const pecaAberta =
                         Boolean(ev.pecaTexto) && pecaAbertaId === ev.id;
-                      const hrefDeNovo = ev.especiePeca
-                        ? hrefGerarPeca(ev.especiePeca)
+                      const gerarDeNovo = ev.especiePeca
+                        ? montarBriefingPeca(ev.especiePeca)
                         : null;
                       return (
                       <li
@@ -360,12 +367,13 @@ export function JecCasoDetalhe({
                             >
                               {pecaAberta ? "Fechar" : "Reabrir"}
                             </button>
-                            {hrefDeNovo ? (
+                            {gerarDeNovo ? (
                               <Link
-                                href={hrefDeNovo}
+                                href={gerarDeNovo.href}
+                                onClick={gerarDeNovo.onClick}
                                 className="font-medium text-stone-700 underline-offset-2 hover:underline"
                               >
-                                Gerar de novo
+                                Gerar de novo no assistente
                               </Link>
                             ) : null}
                           </div>
@@ -398,12 +406,13 @@ export function JecCasoDetalhe({
 
       {/* Ações */}
       <section className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:flex-wrap">
-        {gerarHref && (
+        {gerarPeca && (
           <Link
-            href={gerarHref}
+            href={gerarPeca.href}
+            onClick={gerarPeca.onClick}
             className="rounded-lg bg-stone-700 px-4 py-2.5 text-center text-sm font-semibold text-amber-50 hover:bg-stone-600"
           >
-            Gerar peça desta fase
+            Continuar no assistente
             {faseMeta.especieSugerida
               ? ` (${faseMeta.especieSugerida})`
               : ""}
@@ -419,10 +428,10 @@ export function JecCasoDetalhe({
           </button>
         )}
         <Link
-          href="/dashboard/jec"
+          href={HREF_CHAT_ASSISTENTE}
           className="rounded-lg border border-slate-200 px-4 py-2.5 text-center text-sm text-slate-600 hover:bg-slate-50"
         >
-          Geração avulsa
+          Abrir assistente
         </Link>
       </section>
 

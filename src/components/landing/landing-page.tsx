@@ -74,7 +74,7 @@ const PASSOS = [
     passo: "01",
     titulo: "Conte o caso no assistente",
     texto:
-      "Linguagem natural, PDF ou Word. O FACTO organiza fatos, partes e rito — e mostra a pré-visualização forense sem consumir cota.",
+      "Linguagem natural, PDF ou Word. O FACTO organiza fatos, partes e rito e monta o plano do caso — sem consumir cota. A peça completa só no Minuta (1 crédito).",
   },
   {
     passo: "02",

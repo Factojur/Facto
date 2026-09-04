@@ -12,6 +12,7 @@ import {
   type ItemInspectorFonte,
 } from "@/components/dashboard/inspector-fonte-caso";
 import { casarEmentaComFontes } from "@/lib/casar-juris-caso-peca";
+import { consumirBriefingCasoChat } from "@/lib/briefing-caso-chat";
 import { PlanoCasoPainel } from "@/components/dashboard/plano-caso-painel";
 import { ChatIndicadorDigitando } from "@/components/dashboard/chat-indicador-digitando";
 import { ChatAdicionarContexto } from "@/components/dashboard/chat-adicionar-contexto";
@@ -1071,6 +1072,7 @@ export function ChatMinutaPage({
     sessaoInicialCarregada.current = true;
 
     async function hidratarInicial() {
+      try {
       const querNova = searchParams.get("nova") === "1";
       if (querNova) {
         const pref = areaUrl
@@ -1148,10 +1150,67 @@ export function ChatMinutaPage({
         const salva = obterSessaoChat(ativa);
         if (salva) aplicarSnapshotSessao(salva);
       }
+      } finally {
+        aplicarBriefingCasoSeHouver();
+      }
     }
 
     void hidratarInicial();
   }, [searchParams]);
+
+  function aplicarBriefingCasoSeHouver() {
+    const b = consumirBriefingCasoChat();
+    if (!b) return;
+    setEstado((e) => ({
+      ...e,
+      areaId: b.areaId === "jec" ? "jec" : e.areaId,
+      areaConfirmada: b.areaId === "jec" ? true : e.areaConfirmada,
+      areaMotivo:
+        b.areaId === "jec"
+          ? "Caso carregado de Meus casos (JEC)"
+          : e.areaMotivo,
+      especiePeca: b.especie?.trim() || e.especiePeca,
+      fatos: b.fatos?.trim() ? b.fatos : e.fatos,
+      comarca: {
+        ...e.comarca,
+        numeroProcesso: b.numeroProcesso || e.comarca.numeroProcesso,
+        foro: b.foro || e.comarca.foro,
+      },
+    }));
+    setAreaManual(true);
+    const rotulo = b.titulo?.trim() || "caso JEC";
+    setMensagens((m) => [
+      ...m,
+      {
+        id: idMensagemChat(),
+        papel: "sistema",
+        texto: `Contexto de **${rotulo}** carregado dos Meus casos. Revise e diga **redija** ou use **Criar minuta** (1 crédito).`,
+        ts: Date.now(),
+      },
+    ]);
+    if (b.fatos?.trim() || b.especie) {
+      setInput(
+        b.especie
+          ? `Redija a peça (${b.especie}) com base no caso carregado.`
+          : "Redija a peça cabível com base no caso carregado."
+      );
+    }
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById("assistente-workspace")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  useEffect(() => {
+    function onHash() {
+      if (window.location.hash.includes("assistente-workspace")) {
+        aplicarBriefingCasoSeHouver();
+      }
+    }
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
 
   function aplicarSnapshotSessao(sessao: ChatSessaoSalva) {
     const snap = sessao.snapshot;
