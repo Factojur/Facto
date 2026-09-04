@@ -945,6 +945,10 @@ export function aplicarPreenchimentoAoEstado(
       uf: preenchimento.uf?.trim() || next.comarca.uf,
       numeroJuizado:
         preenchimento.numeroVara?.trim() || next.comarca.numeroJuizado,
+      especialidadeVara:
+        preenchimento.especialidadeVara?.trim() ||
+        next.comarca.especialidadeVara ||
+        null,
     };
   }
   if (preenchimento.pedidos.length) {

@@ -7,8 +7,9 @@
  * - Pro (mensal/anual) + escritórios: 26%
  *
  * Gatilhos (precisa de ≥1 + saldo do teto + ANTHROPIC_API_KEY):
- * - espécie complexa (recurso, agravo, embargos, remédios etc.)
- * - relato longo (≥ 5.500 chars)
+ * - espécie complexa (recurso, agravo, embargos, remédios, defesa densa etc.)
+ * - relato longo (≥ 5.500 chars; áreas densas ≥ 3.500)
+ * - área densa + esforço Detalhada (fundo)
  * - tutela de urgência (Pro / escritório)
  * - esforço Detalhada / Fundo (se ainda houver teto)
  */
@@ -20,10 +21,12 @@ import { anthropicConfigurado } from "@/lib/ia/anthropic-client";
 export const TETO_SONNET_COMPLETO = 0.2;
 export const TETO_SONNET_PRO = 0.26;
 export const LIMITE_CHARS_RELATO_SONNET = 5_500;
+export const LIMITE_CHARS_RELATO_SONNET_AREA_DENSA = 3_500;
 
 export type MotivoSonnet =
   | "especie_complexa"
   | "relato_longo"
+  | "area_densa"
   | "tutela_pro"
   | "esforco_fundo"
   | null;
@@ -58,6 +61,21 @@ export function tetoSonnetDoPlano(plano: PlanoCota): number {
   return Math.max(0, Math.floor(limite * frac));
 }
 
+/** Áreas em que peça densa justifica Sonnet com relato médio ou esforço Fundo. */
+export function areaDensaSonnet(areaId: string | null | undefined): boolean {
+  const a = String(areaId ?? "")
+    .toLowerCase()
+    .trim();
+  return (
+    a === "familia" ||
+    a === "constitucional" ||
+    a === "previdenciario" ||
+    a === "criminal" ||
+    a === "trabalhista" ||
+    a === "tributario"
+  );
+}
+
 /** Espécies / ids que justificam Sonnet no Redator. */
 export function especieExigeSonnet(especie: string | null | undefined): boolean {
   if (!especie?.trim()) return false;
@@ -66,7 +84,7 @@ export function especieExigeSonnet(especie: string | null | undefined): boolean 
     .normalize("NFD")
     .replace(/\p{M}/gu, "");
   return (
-    /recurso|agravo|apelac|embargo|contrarra|mandado|habeas|revisao|especial|extraordin|reclamacao-constitucional|adpf|adi\b|ms\b|seguranca|remedio|contestacao-especial|embargos-de-divergencia/.test(
+    /recurso|agravo|apelac|embargo|contrarra|mandado|habeas|revisao|especial|extraordin|reclamacao-constitucional|adpf|adi\b|ms\b|seguranca|remedio|contestacao-especial|embargos-de-divergencia|cumprimento-alimentos|inventario|resposta-acusacao|peticao-inicial-previdenciaria|recurso-ordinario|recurso-administrativo/.test(
       e
     ) ||
     e.includes("instrumento") ||
@@ -77,6 +95,7 @@ export function especieExigeSonnet(especie: string | null | undefined): boolean 
 export function decidirRedatorSonnet(opcoes: {
   plano: PlanoCota;
   especie?: string | null;
+  areaId?: string | null;
   charsRelato?: number;
   tutelaUrgencia?: boolean;
   sonnetUsadas: number;
@@ -126,11 +145,18 @@ export function decidirRedatorSonnet(opcoes: {
     };
   }
 
+  const densa = areaDensaSonnet(opcoes.areaId);
+  const limRelato = densa
+    ? LIMITE_CHARS_RELATO_SONNET_AREA_DENSA
+    : LIMITE_CHARS_RELATO_SONNET;
+
   let motivo: MotivoSonnet = null;
   if (especieExigeSonnet(opcoes.especie)) {
     motivo = "especie_complexa";
-  } else if ((opcoes.charsRelato ?? 0) >= LIMITE_CHARS_RELATO_SONNET) {
+  } else if ((opcoes.charsRelato ?? 0) >= limRelato) {
     motivo = "relato_longo";
+  } else if (densa && opcoes.esforco === "fundo") {
+    motivo = "area_densa";
   } else if (
     opcoes.tutelaUrgencia &&
     fracaoTetoSonnet(opcoes.plano) >= TETO_SONNET_PRO

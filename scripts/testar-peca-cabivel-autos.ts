@@ -256,6 +256,48 @@ Itararé, 12 de dezembro de 2025.
     "cumprimento + decisão interlocutória não vira apelação"
   );
 
+  const endFamiliaSemEsp =
+    formatarEnderecamentoPadrao({
+      comarca: {
+        cidade: "Itararé",
+        uf: "SP",
+        numeroJuizado: "1",
+        foro: "Foro de Itararé/SP",
+        especialidadeVara: null,
+      },
+      areaId: "familia",
+      especiePeca: "apelacao",
+      varaEmBranco: false,
+    });
+  assert(/1ª VARA/.test(endFamiliaSemEsp), "1ª Vara sem especialidade nos autos");
+  assert(
+    !/VARA C[IÍ]VEL|VARA DE FAM[IÍ]LIA/i.test(endFamiliaSemEsp),
+    "não inventa Cível/Família quando autos só dizem 1ª Vara"
+  );
+  const endComEsp = formatarEnderecamentoPadrao({
+    comarca: {
+      cidade: "Campinas",
+      uf: "SP",
+      numeroJuizado: "2",
+      especialidadeVara: "CÍVEL",
+    },
+    areaId: "civil",
+    especiePeca: "contestacao",
+    varaEmBranco: false,
+  });
+  assert(/VARA C[IÍ]VEL/i.test(endComEsp), "especialidade explícita Cível aparece");
+
+  const metaItarare = extrairMetadadosAutos(`
+TRIBUNAL DE JUSTIÇA DO ESTADO DE SÃO PAULO
+COMARCA DE ITARARÉ
+FORO DE ITARARÉ
+1ª VARA
+Processo 1000011-77.2025.8.26.0279
+`);
+  assert(metaItarare.cidade === "Itararé" || /Itarar/i.test(metaItarare.foro ?? ""), "foro Itararé");
+  assert(metaItarare.numeroVara === "1", "vara 1");
+  assert(metaItarare.especialidadeVara == null, "1ª VARA sem especialidade");
+
   const { oks, falhas } = stats();
   console.log(`\n${oks} ok, ${falhas} falhas`);
   if (falhas > 0) process.exit(1);

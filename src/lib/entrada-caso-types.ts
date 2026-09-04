@@ -14,6 +14,8 @@ export type PreenchimentoEntradaCaso = {
   cidade: string | null;
   uf: string | null;
   numeroVara: string | null;
+  /** Especialidade explícita (Cível, Família…) — null se os autos só dizem "1ª Vara". */
+  especialidadeVara: string | null;
   especieDoProcesso: string | null;
   ultimoAto: string | null;
   pedidos: string[];

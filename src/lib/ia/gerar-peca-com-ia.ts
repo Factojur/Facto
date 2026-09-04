@@ -796,6 +796,7 @@ export async function gerarPecaComIA(params: {
   const decisao = decidirRedatorSonnet({
     plano: params.roteamento?.plano ?? null,
     especie: especieFinal,
+    areaId,
     charsRelato: params.fatos.length,
     tutelaUrgencia: Boolean(params.instrucoes?.tutelaUrgencia),
     sonnetUsadas,
@@ -813,9 +814,16 @@ export async function gerarPecaComIA(params: {
       textoBrutoRedacao = sonnetRes.texto;
       redacaoModelo = sonnetRes.modelo;
       params.onRedacaoDelta?.(textoBrutoRedacao);
+      console.info(
+        `[redator] ${decisao.detalhe} modelo=${sonnetRes.modelo}`
+      );
       if (params.roteamento?.userId) {
         await registrarUmaRedacaoSonnet({ userId: params.roteamento.userId });
       }
+    } else {
+      console.warn(
+        `[redator] Sonnet falhou (${decisao.motivo}): ${sonnetRes.erro} — fallback Flash.`
+      );
     }
   }
 
@@ -865,10 +873,15 @@ export async function gerarPecaComIA(params: {
     skin: "Redator forense",
     titulo: "Redação da peça",
     status: "ok",
-    detalhe: detalheRedator({
-      caracteres: textoGerado.length,
-      tituloPeca: vinculos.tituloPeca,
-    }),
+    detalhe: [
+      detalheRedator({
+        caracteres: textoGerado.length,
+        tituloPeca: vinculos.tituloPeca,
+      }),
+      decisao.detalhe,
+    ]
+      .filter(Boolean)
+      .join(" · "),
     modelo: redacaoModelo,
   });
 

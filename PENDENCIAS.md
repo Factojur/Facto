@@ -17,6 +17,13 @@ Ordem fechada — **não inverter**:
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
 
+### Feito nesta rodada (04/09 — foro fiel + Sonnet)
+- **Foro/capa:** `FORO DE`/`COMARCA DE`; `especialidadeVara` só se explícita; endereçamento sem inventar Cível/Família; bug JEC-default em `formatarEnderecamentoPadrao` corrigido; cidade rejeita prefixos Foro/Vara.
+- **Prompt:** órgão = autos; preservar filho/filha.
+- **Sonnet:** gatilhos ampliados (área densa 3,5k / Fundo); log + fallback Flash; roteamento usa plano efetivo (Completo teste ≠ JEC DB).
+- **Smoke local:** apelação família com Sonnet (`1/20`); Anthropic OK.
+- **Deploy:** push desta rodada → prod + smoke prod.
+
 ### Feito nesta rodada (04/09 — qualidade perceptível + calibração sentença)
 - **Sentença → apelação** — `pecaCabivelAposUltimoAto` detecta JULGO/SENTENÇA de mérito (JEC→recurso inominado; trabalhista→RO).
 - **Anti-falso positivo** — `reclamante…verbas` solto e “em benefício do núcleo” não viram reclamação/previdenciário; trabalhista exige CLT/reclamante+reclamado; família sobe com alimentos/guarda/união.
@@ -403,7 +410,7 @@ Observado no uso/comparativo (não é clone visual):
 - [x] **Remover Papel no workspace** — toggle de tema só fora da home; na home o visual glass + folha com peça basta
 - [x] **Como funciona (copy)** — “Relate… Revise… Protocole.” + lastro sem sugerir acervo de lei municipal
 - [x] **Fila IA documentada** — “Melhorar sem gastar mais” + “Melhorar com custo” + scorecard 30/08
-- [ ] **Gemini paygo + Anthropic Sonnet** — paygo ok · chave Anthropic na Vercel ok · **Sonnet adiado 04/09** (refinar gatilhos/qualidade depois; não ampliar nesta leva) · falta amostra manual 1 peça Sonnet real quando retomar
+- [x] **Gemini paygo + Anthropic Sonnet** — paygo ok · chave Anthropic ok · **Sonnet ativo 04/09** (gatilhos ampliados; Completo 20%/Pro 26%) · amostra peça real em prod nesta rodada
 - [x] **Scaffold fora do JEC** — não cola mais placeholder interno nem ementa crua (“Com apoio no acervo FACTO…”) na peça de reserva
 - [x] **Citações compartilhadas** — sem prefixo “Jurisprudência” no bloco; paráfrase fora do recuo de citação (`tipografia-peca`, `normalizar-peca-gerada`, prompt)
 - [x] **Deploy produção 30/08** — `dpl_5dwS1uHrVMa3NjfkbudmTvfxnMJi` · [factoia.com.br](https://factoia.com.br) · paygo + citações no ar
@@ -565,7 +572,7 @@ Ordem sugerida: lastro/prompts → autos/último ato → auditor→ajuste → pa
 | # | Melhoria | Custo | Benefício | Pri | Status |
 |---|----------|-------|-----------|-----|--------|
 | C1 | OCR Gemini em PDF de RG/comprovante só para endereço | Flash-Lite ~1–3k tokens/doc (fora da cota de peça, **API Gemini**) | Qualificação completa sem digitar | P2 | Aguardando ok |
-| C2 | Claude Sonnet no Redator para mais áreas (hoje Completo/Pro c/ gatilho) | Anthropic + % teto plano | Peça mais densa em áreas complexas | P1 | **Adiado 04/09** — refinar depois; chave ok; não ampliar gatilhos agora |
+| C2 | Claude Sonnet no Redator para mais áreas (hoje Completo/Pro c/ gatilho) | Anthropic + % teto plano | Peça mais densa em áreas complexas | P1 | **Feito 04/09** — área densa + 3,5k / Fundo; apelação já dispara |
 | C3 | 2ª API juris (TRE/TSE, TRF1/2/5/6) | Assinatura nova (R$ a cotar) | Lastro eleitoral/federal fora do Juris.ai | P1 pós-788 | Aguardando ok |
 | C4 | Auto-crítica pós-redação (1 pass leve Flash) | +tokens por peça | Menos erro de coerência | P2 | Aguardando ok |
 

@@ -17,6 +17,11 @@ export type ComarcaInfo = {
   numeroJuizado?: string;
   /** Ex.: "0001234-56.2024.8.26.0224" — peças com processo em curso. */
   numeroProcesso?: string;
+  /**
+   * Especialidade explícita nos autos (ex.: "CÍVEL", "DE FAMÍLIA E SUCESSÕES").
+   * Ausente = não inventar "Vara Cível"/"Vara de Família".
+   */
+  especialidadeVara?: string | null;
 };
 
 /**
@@ -87,7 +92,11 @@ export function extrairCidadeUfDoForo(foro: string | null | undefined): {
     if (!m) continue;
     const cidade = m[1]!.replace(/\s+/g, " ").trim();
     const uf = m[2]!.trim().toUpperCase();
-    if (ufValida(uf) && cidade.length >= 2 && !/^(fls|tel|cep)$/i.test(cidade)) {
+    if (
+      ufValida(uf) &&
+      cidade.length >= 2 &&
+      !/^(fls|tel|cep|foro|comarca|vara|juizado|tribunal)\b/i.test(cidade)
+    ) {
       return { cidade, uf };
     }
   }
@@ -99,6 +108,7 @@ export type ComponentesForo = {
   uf: string;
   numeroVara: string;
   complementoOrgao: string;
+  especialidadeVara: string;
 };
 
 /** Vara, anexo, foro e município a partir do texto livre do campo Foro. */
@@ -110,6 +120,10 @@ export function extrairComponentesForo(
   const vara =
     t.match(/(\d{1,3})\s*[ªºo°]?\s*(?:vara|juizado|zona)/i)?.[1] ?? "";
   const anexo = t.match(/anexo\s+([A-Za-zÀ-ÿ]{3,40})/i)?.[1];
+  const especialidade =
+    t.match(
+      /\d{1,3}\s*[ªºo°]?\s*VARA\s+(DE\s+FAM[IÍ]LIA(?:\s+E\s+SUCESS[OÕ]ES)?|C[IÍ]VEL|CRIMINAL|DA\s+FAZENDA(?:\s+P[UÚ]BLICA)?|DO\s+TRABALHO|FEDERAL)/i
+    )?.[1] ?? "";
   const partes: string[] = [];
   if (/foro central/i.test(t)) partes.push("FORO CENTRAL");
   if (anexo) partes.push(`ANEXO ${anexo.trim().toUpperCase()}`);
@@ -118,6 +132,7 @@ export function extrairComponentesForo(
     uf,
     numeroVara: vara,
     complementoOrgao: partes.join(" "),
+    especialidadeVara: especialidade.replace(/\s+/g, " ").trim().toUpperCase(),
   };
 }
 
@@ -179,9 +194,35 @@ export function ehPeticaoInicial(tipoAcao: string | null | undefined): boolean {
 }
 
 function daNVara(vara: string, nomeVara: string): string {
-  if (vara === "___") return `DA ___ ${nomeVara}`;
+  if (vara === "___") return `DA ___ª ${nomeVara}`;
   if (!vara) return `DA ${nomeVara}`;
-  return `DA ${vara} ${nomeVara}`;
+  const n = String(vara).replace(/[ªº°]/g, "").trim();
+  if (/^VARA$/i.test(nomeVara.trim())) return `DA ${n}ª VARA`;
+  return `DA ${n}ª ${nomeVara}`;
+}
+
+/**
+ * Rótulo da vara no endereçamento.
+ * Especialidade explícita nos autos prevalece; com número mas sem especialidade
+ * → só "VARA" (não inventar Cível/Família).
+ */
+export function nomeVaraParaEnderecamento(opcoes: {
+  especialidadeVara?: string | null;
+  numeroVara?: string | null;
+  fallbackModulo: string;
+}): string {
+  const esp = String(opcoes.especialidadeVara ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, " ");
+  if (esp) {
+    return esp.startsWith("VARA") ? esp : `VARA ${esp}`;
+  }
+  const n = String(opcoes.numeroVara ?? "")
+    .replace(/[ªº°]/g, "")
+    .trim();
+  if (n && n !== "___") return "VARA";
+  return opcoes.fallbackModulo;
 }
 
 function enderecoJecPrimeiraInstancia(
@@ -225,7 +266,12 @@ export function formatarEnderecamentoPadrao(opcoes: {
   especiePeca?: string;
 }): string {
   const info = opcoes.comarca ?? {};
-  const area = (opcoes.areaJudiciaria ?? "JUIZADO ESPECIAL CÍVEL")
+  const areaId = opcoes.areaId ?? "";
+  const especie = (opcoes.especiePeca ?? "").toLowerCase();
+  const area = (
+    opcoes.areaJudiciaria ??
+    (areaId ? rotuloAreaJudiciaria(areaId) : "JUIZADO ESPECIAL CÍVEL")
+  )
     .trim()
     .toUpperCase();
 
@@ -242,9 +288,17 @@ export function formatarEnderecamentoPadrao(opcoes: {
     ? "___"
     : juizado.replace(/[ªº°]/g, "");
   const organExtra = doForo.complementoOrgao;
+  const especialidadeVara =
+    (info.especialidadeVara ?? "").trim() ||
+    doForo.especialidadeVara ||
+    null;
 
-  const areaId = opcoes.areaId ?? "";
-  const especie = (opcoes.especiePeca ?? "").toLowerCase();
+  const rotuloVara = (fallbackModulo: string) =>
+    nomeVaraParaEnderecamento({
+      especialidadeVara,
+      numeroVara: vara,
+      fallbackModulo,
+    });
 
   // Controle concentrado e RE → STF
   if (
@@ -390,7 +444,10 @@ export function formatarEnderecamentoPadrao(opcoes: {
       uf || "___"
     }`;
   }
-  if (areaId === "jec" || area === "JUIZADO ESPECIAL CÍVEL") {
+  if (
+    areaId === "jec" ||
+    (!areaId && /JUIZADO ESPECIAL C[IÍ]VEL/.test(area))
+  ) {
     return enderecoJecPrimeiraInstancia(vara, organExtra, comarcaTxt);
   }
   if (areaId === "trabalhista") {
@@ -402,7 +459,7 @@ export function formatarEnderecamentoPadrao(opcoes: {
   if (areaId === "familia") {
     return (
       `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO ` +
-      `${daNVara(vara, "VARA DE FAMÍLIA E SUCESSÕES")} DO FÓRUM DA COMARCA DE ${comarcaTxt}`
+      `${daNVara(vara, rotuloVara("VARA DE FAMÍLIA E SUCESSÕES"))} DO FÓRUM DA COMARCA DE ${comarcaTxt}`
     );
   }
   if (areaId === "jecr") {
@@ -488,13 +545,13 @@ export function formatarEnderecamentoPadrao(opcoes: {
   ) {
     return (
       `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO ` +
-      `${daNVara(vara, "VARA CÍVEL")} DO FÓRUM DA COMARCA DE ${comarcaTxt}`
+      `${daNVara(vara, rotuloVara("VARA CÍVEL"))} DO FÓRUM DA COMARCA DE ${comarcaTxt}`
     );
   }
 
   return (
     `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO ` +
-    `${daNVara(vara, "VARA")} DO ${area} DO FÓRUM DA COMARCA DE ${comarcaTxt}`
+    `${daNVara(vara, rotuloVara("VARA"))} DO ${area} DO FÓRUM DA COMARCA DE ${comarcaTxt}`
   );
 }
 

@@ -166,6 +166,7 @@ export function organizarCasoLocal(params: {
       cidade: meta.cidade,
       uf: meta.uf,
       numeroVara: meta.numeroVara,
+      especialidadeVara: meta.especialidadeVara,
       especieDoProcesso: null,
       ultimoAto,
       pedidos: extrairPedidosDoRelato(relato, especiePista),

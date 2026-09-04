@@ -1041,7 +1041,8 @@ async function postGerarPeca(request: Request) {
         : null,
     roteamento: {
       userId: user.id,
-      plano: saldo.cota.plano,
+      /** Persona efetiva (ex.: Completo de teste) — não o plano cru do DB se for JEC fantasma. */
+      plano: acesso.plano ?? saldo.cota.plano,
     },
     briefingFormulario,
     briefingReplica,

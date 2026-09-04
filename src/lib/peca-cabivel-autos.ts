@@ -30,6 +30,8 @@ export type MetadadosAutos = {
   uf: string | null;
   numeroVara: string | null;
   complementoOrgao: string | null;
+  /** Ex.: "CÍVEL", "DE FAMÍLIA E SUCESSÕES" — só se explícito nos autos. */
+  especialidadeVara: string | null;
 };
 
 /**
@@ -473,6 +475,25 @@ function numeroVaraDoTexto(texto: string): string | null {
   return m?.[1] ?? null;
 }
 
+/** Especialidade só se escrita nos autos — nunca inferir "Cível"/"Família". */
+export function especialidadeVaraDoTexto(texto: string): string | null {
+  const m = texto.match(
+    /\d{1,3}\s*[ªºo°]?\s*VARA\s+(DE\s+FAM[IÍ]LIA(?:\s+E\s+SUCESS[OÕ]ES)?|C[IÍ]VEL|CRIMINAL|DA\s+FAZENDA(?:\s+P[UÚ]BLICA)?|DO\s+TRABALHO|FEDERAL|EMPRESARIAL|DA\s+INF[AÂ]NCIA)/i
+  );
+  if (!m?.[1]) return null;
+  return m[1]
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase()
+    .replace(/\bFAMILIA\b/, "FAMÍLIA")
+    .replace(/\bCIVEL\b/, "CÍVEL")
+    .replace(/\bPUBLICA\b/, "PÚBLICA")
+    .replace(/\bINFANCIA\b/, "INFÂNCIA")
+    .replace(/\bSUCESSOES\b/, "SUCESSÕES");
+}
+
 function complementoOrgaoDoTexto(texto: string): string | null {
   const anexo = texto.match(/anexo\s+([A-Za-zÀ-ÿ]{3,40})/i);
   const partes: string[] = [];
@@ -599,6 +620,27 @@ export function extrairMetadadosAutos(texto: string): MetadadosAutos {
       foro = `Juizado Especial Cível de ${cidadeUf.cidade}/${cidadeUf.uf}`;
     }
   }
+  // ESAJ comum: "FORO DE ITARARÉ" / "COMARCA DE ITARARÉ" (sem inventar Juizado).
+  if (!foro) {
+    const foroDe = t.match(
+      /\bFORO\s+DE\s+([A-Za-zÀ-ÿ']{3,}(?:\s+[A-Za-zÀ-ÿ']+){0,3})/i
+    );
+    const comarcaDe = t.match(
+      /\bCOMARCA\s+DE\s+([A-Za-zÀ-ÿ']{3,}(?:\s+[A-Za-zÀ-ÿ']+){0,3})/i
+    );
+    const nome = (foroDe?.[1] ?? comarcaDe?.[1])?.replace(/\s+/g, " ").trim();
+    if (nome) {
+      foro = cidadeUf.uf
+        ? `Foro de ${nome}/${cidadeUf.uf}`
+        : `Foro de ${nome}`;
+      if (
+        !cidadeUf.cidade ||
+        /^(foro|vara|comarca|juizado|tribunal)\b/i.test(cidadeUf.cidade)
+      ) {
+        cidadeUf = { ...cidadeUf, cidade: nome };
+      }
+    }
+  }
 
   return {
     numeroProcesso: cnj,
@@ -607,6 +649,7 @@ export function extrairMetadadosAutos(texto: string): MetadadosAutos {
     uf: cidadeUf.uf || null,
     numeroVara: numeroVaraDoTexto(t),
     complementoOrgao: complementoOrgaoDoTexto(t),
+    especialidadeVara: especialidadeVaraDoTexto(t),
   };
 }
 

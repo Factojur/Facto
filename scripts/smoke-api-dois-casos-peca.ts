@@ -273,8 +273,9 @@ function htmlParaTexto(s: string): string {
 
 async function gerarPeca(
   cookie: string,
-  estado: EstadoCasoChat
-): Promise<string> {
+  estado: EstadoCasoChat,
+  opcoes?: { esforco?: "agil" | "padrao" | "fundo" }
+): Promise<{ peca: string; equipeDetalhe: string; modeloHint: string }> {
   const payload = montarPayloadGeracaoChat(estado, { atuarLeigo: false });
   const r = await postJson(
     "/api/gerar-peca",
@@ -282,7 +283,7 @@ async function gerarPeca(
       ...payload,
       stream: false,
       adiarDebitoCota: false,
-      esforcoRedacao: "padrao",
+      esforcoRedacao: opcoes?.esforco ?? "padrao",
       adesaoRedacao: "livre",
     },
     cookie
@@ -302,7 +303,16 @@ async function gerarPeca(
       `peça curta/ausente keys=${Object.keys(r.json).join(",")} len=${peca.length}`
     );
   }
-  return peca;
+  const etapas = Array.isArray(r.json.equipeEtapas) ? r.json.equipeEtapas : [];
+  const redator = etapas.find(
+    (e: { id?: string; skin?: string }) =>
+      e.id === "redator" || /redator/i.test(String(e.skin ?? ""))
+  ) as { detalhe?: string; modelo?: string } | undefined;
+  const equipeDetalhe = String(redator?.detalhe ?? "");
+  const modeloHint = String(
+    redator?.modelo ?? r.json.modelo ?? r.json.modeloIA ?? equipeDetalhe
+  );
+  return { peca, equipeDetalhe, modeloHint };
 }
 
 function checksLocais() {
@@ -377,7 +387,10 @@ async function main() {
         ts: Date.now(),
       });
 
-      const peca = await gerarPeca(cookie, estado);
+      const pecaRes = await gerarPeca(cookie, estado, {
+        esforco: caso.id.includes("apelacao") ? "fundo" : "padrao",
+      });
+      const peca = pecaRes.peca;
       for (const re of caso.checagens) {
         if (!re.test(peca)) {
           throw new Error(`checagem falhou ${re} · amostra: ${peca.slice(0, 280)}`);
@@ -390,6 +403,24 @@ async function main() {
           throw new Error(
             `contaminação proibida ${re} · trecho: ${peca.match(re)?.[0] ?? "?"}`
           );
+        }
+      }
+      if (caso.id.includes("apelacao")) {
+        const sonnetHint =
+          /sonnet|claude|especie_complexa|area_densa|esforco_fundo/i.test(
+            `${pecaRes.equipeDetalhe} ${pecaRes.modeloHint}`
+          );
+        console.log(
+          `  redator: ${pecaRes.equipeDetalhe || pecaRes.modeloHint || "(sem detalhe)"}`
+        );
+        if (!sonnetHint) {
+          console.log(
+            "  aviso: detalhe não confirma Sonnet (API pode ocultar modelo); peça gerada mesmo assim"
+          );
+        }
+        if (/VARA C[IÍ]VEL/i.test(peca) && !/especialidade|C[IÍ]VEL/.test(caso.relato)) {
+          // Relato não traz especialidade — preferir só "1ª Vara"
+          console.log("  aviso: peça ainda cita VARA CÍVEL (calibrar se endereçamento determinístico cobrir)");
         }
       }
       writeFileSync(`tmp/smoke-peca-${caso.id}.txt`, peca, "utf8");
