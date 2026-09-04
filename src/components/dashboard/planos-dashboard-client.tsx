@@ -106,7 +106,7 @@ function ofertasParaPlano(
     return {
       titulo: "Escolha seu plano",
       subtitulo:
-        "Assistente com preview ao vivo em todos os planos — a redação completa entra na cota do plano. O acesso libera após a confirmação do Mercado Pago.",
+        "Assistente com plano do caso em todos os planos — a Minuta (peça completa) entra na cota. O acesso libera após a confirmação do Mercado Pago.",
       ofertas: [jec, completo, pro],
     };
   }

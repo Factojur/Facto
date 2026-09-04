@@ -141,9 +141,9 @@ export function LandingPrecos() {
             Escolha o ritmo da sua bancada
           </h2>
           <p className="mt-4 text-stone-400">
-            Peças com cotas claras. Assistente com preview forense ao vivo antes
-            de gerar — a redação completa consome a cota do plano. Cancele quando
-            quiser — sem fidelidade.
+            Peças com cotas claras. Assistente com plano do caso — a Minuta
+            (peça completa) consome a cota do plano. Cancele quando quiser — sem
+            fidelidade.
           </p>
         </div>
 

@@ -6,8 +6,8 @@
  * Valores legados continuam reconhecidos em planoPorValor (assinantes antigos).
  *
  * Unidade comercial: peças (não créditos / minutas).
- * Preview forense ao vivo no assistente (antes de gerar) — não consome peça.
- * Só a redação confirmada (“Redigir”) = 1 peça.
+ * Assistente + plano do caso não consomem peça.
+ * Só a Minuta / redação confirmada = 1 peça.
  * custoPorPecaAprox = preço do ciclo ÷ peças do ciclo (anuais: preço/ano ÷ 12×cota).
  */
 
@@ -15,7 +15,7 @@ import { ESCRITORIO_VENDA_ATIVA } from "@/lib/feature-flags";
 
 /** Headline de benefício — experiência primeiro; cota fica nos detalhes do plano. */
 export const BENEFICIO_ASSISTENTE_PREVIEW =
-  "Assistente + preview forense ao vivo (antes de gerar)";
+  "Assistente + plano do caso (cota só na Minuta)";
 
 export const PLANO_JEC = {
   id: "jec" as const,
@@ -219,7 +219,7 @@ export type PlanoId =
   | "escritorio_s_anual"
   | "escritorio_m_anual";
 
-/** Teste grátis: 3 peças · 7 dias · sem cartão · preview completo. */
+/** Teste grátis: 3 peças · 7 dias · sem cartão · plano do caso incluso. */
 export const PLANO_TRIAL = {
   id: "trial" as const,
   preco: 0,
@@ -234,7 +234,7 @@ export const PLANO_TRIAL = {
     "3 peças · 7 dias · sem cartão",
     BENEFICIO_ASSISTENTE_PREVIEW,
     "Todas as áreas no período de teste",
-    "Scaffold editável antes de gastar o crédito",
+    "Plano do caso antes de gastar o crédito",
     "Exportação Word/PDF protocolável nos planos pagos",
     "Sem OAB no início — informe só ao assinar",
     "Sem compromisso — cancele não renovando",

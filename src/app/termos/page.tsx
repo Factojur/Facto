@@ -145,11 +145,11 @@ export default function TermosPage() {
             no momento da contratação.
           </li>
           <li>
-            Em regra, o <strong>assistente</strong> (relato/intake), a{" "}
-            <strong>pré-visualização forense</strong> e a{" "}
-            <strong>Entrada do caso</strong> no formulário não consomem cota de
-            peça; o débito ocorre na <strong>redação confirmada</strong>{" "}
-            (“Redigir” / “Gerar peça” ou equivalente), conforme regras do plano.
+            Em regra, o <strong>assistente</strong> (relato/anexo) e o{" "}
+            <strong>plano do caso</strong> não consomem cota de peça; o débito
+            ocorre na <strong>Minuta</strong> (redação confirmada da peça
+            completa), conforme regras do plano. A Entrada do caso no formulário
+            de laboratório, quando disponível, também não debita cota.
           </li>
           <li>
             Trial e períodos promocionais, quando oferecidos, são pessoais,

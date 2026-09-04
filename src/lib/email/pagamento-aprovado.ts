@@ -77,7 +77,7 @@ function htmlConfirmacaoCliente(opcoes: {
 }): string {
   const ano = new Date().getFullYear();
   const corpo = opcoes.temConta
-    ? `Seu plano foi liberado na conta FACTO vinculada a este e-mail. Entre em <strong style="color:#e7e5e4;">factoia.com.br/login</strong> e abra o <strong style="color:#e7e5e4;">assistente</strong> para continuar — preview ao vivo antes de gerar.`
+    ? `Seu plano foi liberado na conta FACTO vinculada a este e-mail. Entre em <strong style="color:#e7e5e4;">factoia.com.br/login</strong> e abra o <strong style="color:#e7e5e4;">assistente</strong> — plano do caso sem gastar cota; a Minuta consome 1 crédito.`
     : `Em instantes você receberá outro e-mail (remetente noreply) com o link para criar sua conta e usar o assistente de minuta no FACTO.`;
   return `<!DOCTYPE html>
 <html lang="pt-BR">

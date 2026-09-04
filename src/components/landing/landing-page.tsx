@@ -145,8 +145,8 @@ export function LandingPage() {
               <span className="text-facto-gold">redige suas peças jurídicas</span>
             </h1>
             <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-stone-400">
-              Conte o caso no assistente FACTO — preview forense ao vivo antes de
-              gerar, redação com lastro da base curada e peça em Word ou PDF para
+              Conte o caso no assistente FACTO — plano do caso sem gastar cota,
+              redação com lastro da base curada e peça em Word ou PDF para
               revisar e protocolar.
             </p>
 
@@ -166,8 +166,8 @@ export function LandingPage() {
                 </a>
               </div>
               <p className="max-w-md text-center text-xs leading-relaxed text-stone-500">
-                Teste: 1 área e {PLANO_TRIAL.pecasPorMes} peças · preview completo.
-                Export Word/PDF nos planos pagos.
+                Teste: 1 área e {PLANO_TRIAL.pecasPorMes} peças · plano do caso
+                incluso. Export Word/PDF nos planos pagos.
               </p>
             </div>
           </div>
@@ -215,8 +215,8 @@ export function LandingPage() {
                 Do relato à minuta — com assistente e lastro
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-stone-500 md:text-base">
-                Assistente primeiro: você narra o caso; o FACTO organiza, mostra
-                a forma forense e só consome cota na redação completa.
+                Assistente primeiro: você narra o caso; o FACTO monta o plano e
+                só consome cota na Minuta (peça completa).
               </p>
             </div>
 

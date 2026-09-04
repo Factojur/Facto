@@ -42,7 +42,7 @@ function montarHtmlBoasVindas(link: string): string {
                 <p style="margin:0;color:#a8a29e;font-size:15px;line-height:1.6;">
                   Bem-vindo ao FACTO. Seu acesso foi liberado. Clique no botão
                   abaixo para criar sua conta e abrir o <strong style="color:#e7e5e4;">assistente de minuta</strong>
-                  — preview forense ao vivo antes de gerar; a redação entra na cota quando você confirmar.
+                  — plano do caso sem gastar cota; a peça completa (Minuta) entra na cota.
                 </p>
               </td>
             </tr>
