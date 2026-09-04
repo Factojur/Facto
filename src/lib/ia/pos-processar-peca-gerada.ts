@@ -239,6 +239,7 @@ export type OpcoesPosProcessarDepois = {
   blocoValorCausa?: string;
   tituloSecaoValor?: string;
   romanoSecaoValor?: string;
+  fatos?: string | null;
 };
 
 /** Passagem final: título, valor da causa, normalização forense completa. */
@@ -261,5 +262,11 @@ export function posProcessarDepoisQualificacao(
     areaId: opcoes.areaId,
     especie: opcoes.especie,
   });
+  if (opcoes.fatos?.trim()) {
+    t = aplicarFidelidadeGeneroParentesco(
+      t,
+      extrairSinaisFidelidadeAutos(opcoes.fatos)
+    );
+  }
   return normalizarPecaGerada(t);
 }

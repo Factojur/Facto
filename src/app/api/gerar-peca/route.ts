@@ -326,7 +326,15 @@ function finalizarTextoPeca(
     tituloPeca,
     numeroProcesso: body.comarca?.numeroProcesso ?? null,
     reinjetarQualificacao: !pecaUsaPartesJaQualificadas(especie, idsInicial),
-    fatos: body.fatos,
+    fatos: [
+      body.fatos,
+      body.ultimoAto,
+      body.resumoEntrada,
+      body.dispositivoSentenca,
+      body.tipoAcao,
+    ]
+      .filter((x) => typeof x === "string" && x.trim())
+      .join("\n"),
   });
 
   const comProvas = injetarProvasELinkNuvem(t, {
@@ -397,6 +405,15 @@ function finalizarTextoPeca(
       blocoValorCausa: blocoValorDeterministico || undefined,
       tituloSecaoValor: secaoValor?.titulo,
       romanoSecaoValor: secaoValor?.romano,
+      fatos: [
+        body.fatos,
+        body.ultimoAto,
+        body.resumoEntrada,
+        body.dispositivoSentenca,
+        body.tipoAcao,
+      ]
+        .filter((x) => typeof x === "string" && x.trim())
+        .join("\n"),
     }
   );
 }
