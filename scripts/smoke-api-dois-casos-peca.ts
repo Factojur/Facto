@@ -389,9 +389,17 @@ async function main() {
         ts: Date.now(),
       });
 
-      const pecaRes = await gerarPeca(cookie, estado, {
-        esforco: caso.id.includes("apelacao") ? "fundo" : "padrao",
-      });
+      const pecaRes = await gerarPeca(
+        cookie,
+        {
+          ...estado,
+          // Relato original: chat pode resumir fatos e perder “filha”/números.
+          fatos: caso.relato,
+        },
+        {
+          esforco: caso.id.includes("apelacao") ? "fundo" : "padrao",
+        }
+      );
       const peca = pecaRes.peca;
       for (const re of caso.checagens) {
         if (!re.test(peca)) {
