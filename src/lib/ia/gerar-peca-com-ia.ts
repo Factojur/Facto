@@ -9,7 +9,7 @@ import {
   montarContextoConhecimento,
   type TrechoConhecimento,
 } from "@/lib/base-conhecimento";
-import { substituirEnderecamentoDeterministico, substituirNomePecaDeterministico } from "@/lib/endereco-comarca";
+import { sanearNomeCidade, substituirEnderecamentoDeterministico, substituirNomePecaDeterministico } from "@/lib/endereco-comarca";
 import {
   montarSystemPromptRedacaoTier1,
   type BlocoLeiMunicipal,
@@ -397,9 +397,15 @@ function montarUserPromptRedacao(params: {
     month: "long",
     year: "numeric",
   });
-  const cidadeUf =
+  const brutoLocal =
     params.instrucoes?.localFechamento?.replace(/\s*-\s*/, "/") ??
     "[Cidade/UF]";
+  const cidadeUf = (() => {
+    const m = /^(.+?)\s*([\/–-]\s*[A-Za-z]{2})\s*$/.exec(brutoLocal.trim());
+    if (!m) return brutoLocal;
+    const cidade = sanearNomeCidade(m[1]!) || m[1]!.trim();
+    return `${cidade}${m[2]!.replace(/\s+/g, "")}`;
+  })();
   const nomeAdv =
     params.instrucoes?.autorNome?.trim() || "[Nome do Advogado]";
   const ufFallback = cidadeUf.includes("/")

@@ -344,4 +344,48 @@ const finalHc = posProcessarDepoisQualificacao(hcSujo, {
 });
 assert(/HABEAS CORPUS/i.test(finalHc), "garante título HC");
 
+// Tipografia protocolável — higiene pós-IA (0 tokens)
+const lixoTipografia = normalizarPecaGerada(`\`\`\`markdown
+EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DE DIREITO DA 1ª VARA DO FÓRUM DA COMARCA DE ITARARÉ/SP
+[[ESPACO_6_LINHAS]]
+[[JURIS]]Processo nº: 1000011-77.2025.8.26.0279 I - DA TEMPESTIVIDADE[[/JURIS]]
+A sentença no processo 1000011-77.2025.8.26.0279 fixou alimentos.
+III - DO MÉRITO
+RECURSAL: DA NECESSIDADE DE REDUÇÃO
+A fixação *"**"in casu"*"* revela desproporção.
+a) Reformar a r. sentença recorrida** no capítulo alimentar.
+VII - DOS PEDIDOS
+Diante do exposto, requer a Vossa Excelência a procedência.
+Nestes termos,
+pede deferimento.
+Vara de Itararé/SP, 4 de setembro de 2026.
+Teste
+OAB/SP 147099
+\`\`\``);
+assert(!/^```/m.test(lixoTipografia), "remove cerca markdown");
+assert(
+  !/\[\[JURIS\]\]Processo nº/i.test(lixoTipografia),
+  "Processo nº não vira bloco JURIS"
+);
+assert(
+  !/\[\[JURIS\]\].*1000011-77\.2025/i.test(lixoTipografia),
+  "parágrafo só com CNJ não vira JURIS"
+);
+assert(
+  /III - DO MÉRITO RECURSAL/i.test(lixoTipografia),
+  "cola título romano partido"
+);
+assert(
+  /\*"in casu"\*/i.test(lixoTipografia) && !/\*"\*\*"in casu"/i.test(lixoTipografia),
+  "latin markdown limpo"
+);
+assert(
+  !/recorrida\*\*/i.test(lixoTipografia),
+  "remove ** órfão em pedidos"
+);
+assert(
+  /^Itararé\/SP,/m.test(lixoTipografia),
+  "localidade sem prefixo Vara de"
+);
+
 console.log("\nTodas as checagens locais passaram (0 tokens Gemini).");

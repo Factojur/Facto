@@ -40,7 +40,7 @@ Se alterar a dashboard JEC e **não** for específico do JEC, extrair/atualizar 
 - **Chat = linha de frente:** sem peça-reserva; default neutro; lastro FACTO + anexos.
 - **Molde forense no código:** mínimo — `normalizarPecaGerada` limpa marcadores/colas óbvias e **garante Nestes termos / pede deferimento** se a IA omitir. **Sem** scaffold no preview e **sem** passo Gemini `formatarPecaForense`. Diagramação = Redator (liberdade da IA).
 - **Peça no painel:** só no modo Minuta (1 crédito) / durante o stream da IA. Plano na aba Plano. Correções: edição inline (contenteditable) ou chat (`ajuste_peca`).
-- **Entrega:** Copiar/Word/PDF fazem flush do editor; Copiar expande [[ESPACO]] (sem marcadores no clipboard); export não força negrito de molde (respeita Markdown da IA). **Tipografia fina parcial** (margens Times 3/2 cm, fechamento Nestes termos / localidade+OAB, preview≡export via marcadores de espaço). Sonnet / polish ABNT detalhado = **depois**.
+- **Entrega:** Copiar/Word/PDF fazem flush do editor; Copiar expande [[ESPACO]] (sem marcadores no clipboard); export não força negrito de molde (respeita Markdown da IA). **Tipografia fina (04/09+):** margens Times 3/2 cm; fechamento Nestes termos; preview≡export; higiene pós-IA (CNJ≠JURIS, latin/`**` órfãos, título romano partido, localidade saneada).
 - **Operação MinutaIA no chat:** `+ Modelo`; paleta `/`; “redija” / Criar minuta; pós-peça = ajuste + chips.
 - **Formatação:** a IA define; pós-processo só higiene leve.
 - **Teto de leitura da triagem:** `LIMITE_RELATO_TRIAGEM_CHARS` (320 mil) em `peca-cabivel-autos.ts`. PDF maior: capa + decisões/sentenças do miolo + fim.

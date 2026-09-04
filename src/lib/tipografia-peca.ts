@@ -250,16 +250,35 @@ export function limparMarcadorJuris(texto: string): string {
 export function pareceEmentaOuSumulaLiteral(texto: string): boolean {
   const t = texto.trim();
   if (!t) return false;
-  if (/^A\s+jurisprud[eê]ncia\b/i.test(t) && !/\b(REsp|RE\s|AgRg|HC|ADI|ADPF)\s*n?[ºo°.]?\s*\d/i.test(t)) {
+  // Epígrafe / título / narrativa com nº dos autos ≠ citação de julgado.
+  if (/^Processo\s+n/i.test(t)) return false;
+  if (/^[IVXLCDM]+\s*[-—–.]\s+\S/i.test(t)) return false;
+  if (
+    /^A\s+jurisprud[eê]ncia\b/i.test(t) &&
+    !/\b(REsp|RE\s|AgRg|HC|ADI|ADPF)\s*n?[ºo°.]?\s*\d/i.test(t)
+  ) {
     return false;
   }
-  return (
-    /^S[uú]mula(?:\s+Vinculante)?\s*(?:n[oº°.]?\s*)?\d+/i.test(t) ||
-    /\b(STJ|STF|TJ[A-Z]{2}|TRF\s*\d*|TST|TSE)\b/.test(t) ||
-    /\b(REsp|AgRg|AgInt|ARE|RE|HC|MS|ADI|ADPF|AgR|EDcl)\s*n?[ºo°.]?\s*\d/i.test(t) ||
-    /\b\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}\b/.test(t) ||
-    /\b(EMENTA|Acórd[aã]o|Relator|Rel\.)\b/i.test(t)
-  );
+  const cnj = /\b\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}\b/.test(t);
+  const orgaoJulgador =
+    /\b(STJ|STF|TJ[A-Z]{2}|TRF\s*\d*|TST|TSE|Turma|C[aâ]mara)\b/i.test(t);
+  const pecaJulgado =
+    /\b(REsp|AgRg|AgInt|ARE|RE|HC|MS|ADI|ADPF|AgR|EDcl)\s*n?[ºo°.]?\s*\d/i.test(
+      t
+    );
+  const rotuloEmenta = /\b(EMENTA|Acórd[aã]o|Relator|Rel\.)\b/i.test(t);
+  const sumula = /^S[uú]mula(?:\s+Vinculante)?\s*(?:n[oº°.]?\s*)?\d+/i.test(t);
+
+  if (sumula) return true;
+  if (pecaJulgado && (orgaoJulgador || rotuloEmenta || t.length >= 80)) {
+    return true;
+  }
+  if (orgaoJulgador && (rotuloEmenta || pecaJulgado || t.length >= 120)) {
+    return true;
+  }
+  // CNJ sozinho (ou só “processo nº …”) não vira ementa — precisa órgão/classe.
+  if (cnj && (orgaoJulgador || pecaJulgado || rotuloEmenta)) return true;
+  return false;
 }
 
 /** Remove rótulos que não fazem parte do estrito teor (STJ, REsp, ementa…). */

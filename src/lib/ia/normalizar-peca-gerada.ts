@@ -103,10 +103,15 @@ function envolverCitacoesSoltas(texto: string): string {
   return out.join("\n");
 }
 
-/** `"In casu"*` / `In casu*` → padrão *"in casu"*. */
+/** `"In casu"*` / `In casu*` / `*"**"in casu"*"*` → padrão *"in casu"*. */
 function consertarLatinMarkdownOrfao(texto: string): string {
   return texto
     .replace(/\\+"/g, '"')
+    // Lixo típico: *"**"in casu"*"* / *""in casu""*
+    .replace(
+      /\*+"?\*+"((?:in casu|caput|in re ipsa|fumus boni iuris|periculum in mora)[^"*]{0,40})"\*+"?\*/gi,
+      '*"$1"*'
+    )
     // ***"termo"* / **"termo"* / *"termo"* → *"termo"*
     .replace(
       /\*{1,5}\s*"\s*((?:in casu|caput|in re ipsa|fumus boni iuris|periculum in mora)[^"]{0,40})\s*"\s*\*/gi,
@@ -115,6 +120,92 @@ function consertarLatinMarkdownOrfao(texto: string): string {
     .replace(/"([A-Za-zÀ-ÿ][^"\n]{1,60})"\*(?!\*)/g, '*"$1"*')
     .replace(/(?<!\*)\b([Ii]n casu)\*(?!\*)/g, '*"$1"*')
     .replace(/(?<!\*)\bIn casu\b(?!\*)/g, '*"in casu"*');
+}
+
+/**
+ * Asteriscos órfãos no meio da frase (ex.: "sentença recorrida** no capítulo").
+ * Preserva **pares** e *"itálico"*.
+ */
+function limparAsteriscosMarkdownOrfaos(texto: string): string {
+  return texto
+    .split("\n")
+    .map((linha) => {
+      let l = linha;
+      // **sem fechamento no fim da palavra
+      l = l.replace(/(\w)\*\*(?!\*)(?=\s|$|[.,;:)\]])/g, "$1");
+      // **órfão no início sem par na mesma linha
+      if ((l.match(/\*\*/g) ?? []).length % 2 === 1) {
+        l = l.replace(/\*\*/, "");
+      }
+      // *órfão simples (ímpar), sem *"…"*
+      const semItalicoCitacao = l.replace(/\*"[^"]*"\*/g, "§ITAL§");
+      if (
+        (semItalicoCitacao.match(/(?<!\*)\*(?!\*)/g) ?? []).length % 2 === 1
+      ) {
+        l = l.replace(/(?<!\*)\*(?!\*)/, "");
+      }
+      return l;
+    })
+    .join("\n");
+}
+
+/** Remove cercas ```markdown / ``` da peça (vazamento do modelo). */
+function removerCercasMarkdown(texto: string): string {
+  return texto
+    .replace(/^```(?:markdown|md|text)?\s*\n?/i, "")
+    .replace(/\n?```\s*$/i, "")
+    .trim();
+}
+
+/**
+ * Junta título romano partido em duas linhas:
+ * "III - DO MÉRITO" + "RECURSAL: DA …" → uma linha.
+ */
+function colarContinuacaoTituloRomano(texto: string): string {
+  const linhas = texto.split("\n");
+  const out: string[] = [];
+  for (let i = 0; i < linhas.length; i++) {
+    const cur = linhas[i]!.trim();
+    let j = i + 1;
+    while (j < linhas.length && !linhas[j]!.trim()) j++;
+    const next = linhas[j]?.trim() ?? "";
+    const continuaTitulo =
+      Boolean(next) &&
+      !ehMarcadorEspaco(next) &&
+      !/^[IVXLCDM]+\s*[-—–.]/i.test(next) &&
+      !/^[a-z]\)\s+/i.test(next) &&
+      !/^\d+\)\s+/i.test(next) &&
+      !/^\[\[/.test(next) &&
+      !/^(Nestes termos|Termos em que|pede deferimento)/i.test(next) &&
+      (/^(?:RECURSAL|PRELIMINAR|M[EÉ]RITO|RAZ[OÕ]ES)\b/i.test(next) ||
+        (next === next.toUpperCase() &&
+          next.length >= 8 &&
+          next.length <= 120 &&
+          !/\.\s/.test(next)));
+
+    if (/^[IVXLCDM]+\s*[-—–.]\s+\S/i.test(cur) && continuaTitulo) {
+      out.push(`${cur} ${next}`.replace(/\s+/g, " ").trim());
+      i = j;
+      continue;
+    }
+    out.push(linhas[i]!);
+  }
+  return out.join("\n");
+}
+
+/** Localidade do fechamento: "Vara de Itararé/SP" → "Itararé/SP". */
+function sanearLinhaLocalidadeData(texto: string): string {
+  return texto
+    .split("\n")
+    .map((l) => {
+      const m =
+        /^((?:foro|comarca|vara|juizado|f[oó]rum)(?:\s+de|\s+da|\s+do)?\s+)([A-Za-zÀ-ÿ'][^,/]{1,40})\s*([\/–-]\s*[A-Za-z]{2})\s*,\s*(.+)$/i.exec(
+          l.trim()
+        );
+      if (!m) return l;
+      return `${m[2]!.trim()}${m[3]!.replace(/\s+/g, "")}, ${m[4]!.trim()}`;
+    })
+    .join("\n");
 }
 
 function limparDigitosEmoji(texto: string): string {
@@ -975,10 +1066,12 @@ function negritarSubtitulosDireito(texto: string): string {
 
 /** Pipeline completo aplicado à saída da IA antes de HTML/PDF/Word. */
 export function normalizarPecaGerada(texto: string): string {
-  let t = corrigirOrtografiaForense(texto);
+  let t = removerCercasMarkdown(texto);
+  t = corrigirOrtografiaForense(t);
   t = corrigirArt22Continuidade(t);
   t = limparDigitosEmoji(t);
   t = consertarLatinMarkdownOrfao(t);
+  t = limparAsteriscosMarkdownOrfaos(t);
   t = removerSeparadoresMarkdown(t);
   t = forcarCaixaEnderecamento(t);
   t = envolverCitacoesSoltas(t);
@@ -999,10 +1092,13 @@ export function normalizarPecaGerada(texto: string): string {
   t = normalizarParagrafosDoDireito(t);
   t = normalizarCorpoDosTopicos(t);
   t = negritarSubtitulosDireito(t);
+  t = colarContinuacaoTituloRomano(t);
   t = aplicarItalicoTermosEstrangeiros(t);
+  t = limparAsteriscosMarkdownOrfaos(t);
   t = normalizarLinhaOab(t);
   t = garantirFormulaFechamento(t);
   t = normalizarFechamentoAssinatura(t);
+  t = sanearLinhaLocalidadeData(t);
   t = removerSeparadoresMarkdown(t);
   return t.trim();
 }

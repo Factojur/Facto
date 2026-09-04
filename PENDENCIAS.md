@@ -12,7 +12,7 @@ Ordem fechada — **não inverter**:
 
 1. **Chat = MinutaIA** — mesmo fluxo, fluidez, iteração, liberdade da IA. Únicas diferenças: **aparência FACTO** + **juris = base FACTO + anexos**. Configurações/travas pré-chat (áreas manuais, chips, filtros rígidos) **ficam de lado** e **não** condicionam o chat.
 2. **Preview MinutaIA-style** — peça = resposta da IA no **Minuta** (1 crédito); diferencial FACTO = aba **Planos**. Sem scaffold/molde no preview.
-3. **Formatação protocolável** — entrega Word/PDF alinhada ao texto da IA/editado; tipografia fina **parcial** (margens/fechamento 04/09); detalhe ABNT/Sonnet **depois**.
+3. **Formatação protocolável** — entrega Word/PDF alinhada ao texto da IA/editado; tipografia fina **avançada 04/09** (higiene JURIS/latin/títulos/localidade); ABNT residual (paginação preview) **depois**.
 4. **Só no final** — revisitar o trabalho pré-chat (áreas, ritos, dashboards) para aprimorar o produto voltado ao advogado. **Fatia 1 feita (04/09):** nav/catálogo → chat; pista de área enriquecida; órfãos de confirmação removidos. Formulário 3 etapas permanece laboratório (JEC), não porta do cliente.
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
@@ -25,6 +25,7 @@ Ordem fechada — **não inverter**:
 - **Build fix:** fixtures com `especialidadeVara` (typecheck Vercel).
 - **Timeout Sonnet:** `gerar-peca` `maxDuration` 60→180s (504 em prod).
 - **Cidade/capa:** não mais `COMARCA DE VARA DE ITARARÉ` (sanear `Vara de X/UF` → município).
+- **Tipografia protocolável (fina):** CNJ sozinho ≠ `[[JURIS]]`; limpa `*"**"in casu"*"*` / `**` órfão; cola título romano partido; cerca \`\`\`markdown; localidade sem “Vara de”.
 - **Deploy:** `8b22e69` · `dpl_5giBpjB4kNgzvie6zXTUhtJg996j` · Ready · smoke prod `familia-apelacao-sentenca` **1/1** — Sonnet (`area_densa`) · ~18k chars.
 
 ### Feito nesta rodada (04/09 — qualidade perceptível + calibração sentença)
