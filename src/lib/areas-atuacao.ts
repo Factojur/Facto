@@ -1,3 +1,5 @@
+import { HREF_CHAT_ASSISTENTE } from "@/lib/minuta-modulo";
+
 export type AreaAtuacao = {
   id: string;
   title: string;
@@ -23,7 +25,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     description:
       "Petições iniciais, execuções, embargos e recursos com base na Lei 9.099/95 e jurisprudência dos Juizados.",
     law: "Lei nº 9.099/95",
-    href: "/dashboard/jec",
+    href: HREF_CHAT_ASSISTENTE,
     available: true,
     icon: "⚖️",
     dicaEscolha:
@@ -35,7 +37,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     description:
       "Cobrança, indenização e obrigações na justiça comum (Código Civil e CPC) — distinto do Juizado e do módulo Consumidor.",
     law: "Código Civil · CPC",
-    href: "/dashboard/civil",
+    href: HREF_CHAT_ASSISTENTE,
     available: true,
     icon: "📜",
     dicaEscolha:
@@ -47,7 +49,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     description:
       "Reclamações, defesa e recurso ordinário na Justiça do Trabalho (CLT) — distinto da justiça comum e do Juizado.",
     law: "CLT",
-    href: "/dashboard/trabalhista",
+    href: HREF_CHAT_ASSISTENTE,
     available: true,
     icon: "👷",
     dicaEscolha: "CLT e Justiça do Trabalho. Não use JEC nem Civil.",
@@ -58,7 +60,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     description:
       "Queixa-crime, composição civil, transação penal, defesa e recurso inominado no JECRIM (Lei 9.099/95) — distinto do JEC cível e do Penal comum.",
     law: "Lei nº 9.099/95",
-    href: "/dashboard/jecr",
+    href: HREF_CHAT_ASSISTENTE,
     available: true,
     icon: "⚖️",
     dicaEscolha: "Só JECRIM. JEC é cível; Penal comum é CPP.",
@@ -69,7 +71,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     description:
       "Habeas corpus, resposta à acusação, memoriais, apelação criminal e agravo em execução (CP e CPP) — distinto do JECRIM.",
     law: "CP · CPP",
-    href: "/dashboard/criminal",
+    href: HREF_CHAT_ASSISTENTE,
     available: true,
     icon: "🛡️",
     dicaEscolha: "Rito comum (CPP). Contravenção / 9.099 criminal: JECRIM.",
@@ -80,7 +82,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     description:
       "Remédios constitucionais, recurso extraordinário, reclamação e controle concentrado (CF/88) — distinto do Administrativo e do Penal.",
     law: "CF/88 · Leis 9.868 · 9.882 · 12.016",
-    href: "/dashboard/constitucional",
+    href: HREF_CHAT_ASSISTENTE,
     available: true,
     icon: "📕",
     dicaEscolha:
@@ -92,7 +94,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     description:
       "Ações, defesas e recursos consumeristas na justiça comum (CDC e CPC) — distinto do Juizado Especial Cível.",
     law: "CDC · CPC",
-    href: "/dashboard/consumidor",
+    href: HREF_CHAT_ASSISTENTE,
     available: true,
     icon: "🛒",
     dicaEscolha:
@@ -104,7 +106,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     description:
       "Divórcio, guarda, alimentos, inventário e partilha na Vara de Família (Código Civil e CPC) — distinto do Civil genérico e do Juizado.",
     law: "Código Civil · CPC",
-    href: "/dashboard/familia",
+    href: HREF_CHAT_ASSISTENTE,
     available: true,
     icon: "👨‍👩‍👧",
     dicaEscolha: "Vara de Família — não use o Civil genérico nem o JEC.",
@@ -115,7 +117,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     description:
       "Embargos à execução fiscal (Lei 6.830/80), exceção de pré-executividade, anulatória, repetição e MS tributário.",
     law: "CTN · LEF",
-    href: "/dashboard/tributario",
+    href: HREF_CHAT_ASSISTENTE,
     available: true,
     icon: "💰",
     dicaEscolha: "Fazenda / LEF. Não é cobrança entre particulares (Civil).",
@@ -126,7 +128,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     description:
       "Concessão, restabelecimento e revisão de benefícios contra o INSS no JEF ou na Vara Federal.",
     law: "Lei nº 8.213/91",
-    href: "/dashboard/previdenciario",
+    href: HREF_CHAT_ASSISTENTE,
     available: true,
     icon: "🧓",
     dicaEscolha: "INSS / JEF. Não é acidentário trabalhista (Trabalhista).",
@@ -137,7 +139,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     description:
       "Despejo (Lei 8.245/91), usucapião, consignação de aluguéis e cotas de condomínio — distinto do Civil genérico e do Juizado.",
     law: "Lei 8.245 · CC",
-    href: "/dashboard/imobiliario",
+    href: HREF_CHAT_ASSISTENTE,
     available: true,
     icon: "🏠",
     dicaEscolha: "Despejo e usucapião. Cobrança sem locação: Civil.",
@@ -148,7 +150,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     description:
       "Notificação extrajudicial, dissolução e obrigações societárias (CC e Lei 6.404/76).",
     law: "CC · Lei 6.404/76",
-    href: "/dashboard/empresarial",
+    href: HREF_CHAT_ASSISTENTE,
     available: true,
     icon: "🏢",
     dicaEscolha:
@@ -171,7 +173,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     description:
       "Mandado de segurança (Lei 12.016/09, 120 dias), anulação de ato e contencioso da Fazenda Pública.",
     law: "Lei nº 12.016/09",
-    href: "/dashboard/administrativo",
+    href: HREF_CHAT_ASSISTENTE,
     available: true,
     icon: "🏛️",
     dicaEscolha: "MS e ato da Administração. Tributo: Tributário. Remédio CF puro: Constitucional.",
@@ -182,7 +184,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     description:
       "Erro médico e demandas da saúde — distinto de cobertura pura de plano (Consumidor) e do Penal.",
     law: "CDC · Código Civil",
-    href: "/dashboard/medico",
+    href: HREF_CHAT_ASSISTENTE,
     available: true,
     icon: "🩺",
     dicaEscolha:
@@ -194,7 +196,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     description:
       "LGPD e tutelas digitais cíveis. Crimes digitais: módulo Penal.",
     law: "LGPD",
-    href: "/dashboard/digital",
+    href: HREF_CHAT_ASSISTENTE,
     available: true,
     icon: "💻",
     dicaEscolha: "LGPD e tutelas cíveis. Crime digital: Penal.",
@@ -205,7 +207,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     description:
       "Ação civil pública ambiental, defesa de auto de infração e obrigação de fazer ambiental.",
     law: "Lei nº 6.938/81",
-    href: "/dashboard/ambiental",
+    href: HREF_CHAT_ASSISTENTE,
     available: true,
     icon: "🌿",
     dicaEscolha:
@@ -217,7 +219,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     description:
       "Abstenção de marca, contrafação, nulidade de registro e direitos autorais (LPI e LDA).",
     law: "LPI · LDA",
-    href: "/dashboard/propriedade-intelectual",
+    href: HREF_CHAT_ASSISTENTE,
     available: true,
     icon: "©️",
     dicaEscolha:
@@ -229,7 +231,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     description:
       "Contratos agrários, crédito rural e regularização fundiária.",
     law: "Estatuto da Terra",
-    href: "/dashboard/agrario",
+    href: HREF_CHAT_ASSISTENTE,
     available: true,
     icon: "🌾",
     dicaEscolha:
@@ -241,7 +243,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     description:
       "Homologação de sentença estrangeira no STJ e contencioso contratual internacional.",
     law: "CPC · tratados",
-    href: "/dashboard/internacional",
+    href: HREF_CHAT_ASSISTENTE,
     available: true,
     icon: "🌍",
     dicaEscolha:
@@ -253,7 +255,7 @@ export const AREAS_ATUACAO: AreaAtuacao[] = [
     description:
       "Representação, AIJE, registro de candidatura e defesa. Acervo FACTO em formação para esta área.",
     law: "Código Eleitoral",
-    href: "/dashboard/eleitoral",
+    href: HREF_CHAT_ASSISTENTE,
     available: true,
     icon: "🗳️",
     dicaEscolha:
@@ -271,14 +273,15 @@ export function getAreaById(id: string): AreaAtuacao | undefined {
   return AREAS_ATUACAO.find((a) => a.id === id);
 }
 
-/** Rota do módulo: catálogo público ou preview interno (admins). */
+/** Rota do módulo: produto = chat (document-first). Formulário antigo não é porta do cliente. */
 export function hrefModuloArea(
   area: AreaAtuacao,
   previewInterno: boolean
 ): string | undefined {
-  if (area.available && area.href) return area.href;
-  if (previewInterno && area.href) return area.href;
-  if (previewInterno) return `/dashboard/preview/${area.id}`;
+  if (area.available || previewInterno) {
+    // Catálogo desvinculado do chat: não passa ?area= (o assistente interpreta o caso).
+    return HREF_CHAT_ASSISTENTE;
+  }
   return undefined;
 }
 

@@ -8,6 +8,7 @@
     "start": "cross-env NODE_OPTIONS=--max-http-header-size=1048576 next start",
     "lint": "eslint",
     "test:formatacao-peca": "npx tsx scripts/testar-formatacao-peca.ts",
+    "test:ocr-scaffold": "npx tsx scripts/testar-ocr-scaffold.ts",
     "test:casos-ouro": "npx tsx scripts/casos-ouro.ts",
     "test:qualificacao-partes": "npx tsx scripts/testar-qualificacao-partes.ts",
     "test:peca-cabivel": "npx tsx scripts/testar-peca-cabivel-autos.ts",

@@ -178,7 +178,8 @@ function blocoParaParagrafo(
     return new Paragraph({
       alignment: AlignmentType.LEFT,
       spacing: { before: 240, after: 0, line: ESPACO_LINHA },
-      children: runsDeMarkdown(texto, { forcarNegrito: true }),
+      // Negrito só via Markdown da IA — sem forçar molde.
+      children: runsDeMarkdown(texto, { forcarNegrito: false }),
     });
   }
 
@@ -203,7 +204,7 @@ function blocoParaParagrafo(
       alignment: AlignmentType.LEFT,
       indent: { firstLine: RECUO_PARAGRAFO },
       spacing: { before: 0, after: 0, line: ESPACO_LINHA },
-      children: runsDeMarkdown(texto, { forcarNegrito: true }),
+      children: runsDeMarkdown(texto, { forcarNegrito: false }),
     });
   }
 

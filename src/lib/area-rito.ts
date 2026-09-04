@@ -47,7 +47,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     nomenclaturaUser:
       "Com base nos fatos (e em busca geral sobre nomenclatura forense no JEC, se disponível),",
     classificador: classif(
-      "Você é o Assistente Facto, paralegal especialista em Juizado Especial Cível brasileiro (Lei 9.099/95).",
+      "Você é Advogado Sênior FACTO. Nesta tarefa de nomenclatura, atue no rito de Juizado Especial Cível brasileiro (Lei 9.099/95).",
       [
         'Use o formato: "Ação de [NOME] c/c [Cúmulos] (JEC)" — SEM prefixo "Petição Inicial".',
         "Golpe/fraude/PIX → indenização, NÃO execução de título.",
@@ -69,7 +69,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     nomenclaturaUser:
       "Com base nos fatos (nomenclatura consumerista na justiça comum / CDC+CPC, se disponível),",
     classificador: classif(
-      "Você é o Assistente Facto, paralegal especialista em direito do consumidor na justiça comum (CDC e CPC).",
+      "Você é Advogado Sênior FACTO. Nesta tarefa de nomenclatura, atue no rito de direito do consumidor na justiça comum (CDC e CPC).",
       ["SEM (JEC). NÃO use Lei 9.099/95 nem recurso inominado."]
     ),
   },
@@ -89,7 +89,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     nomenclaturaUser:
       "Com base nos fatos (nomenclatura da justiça comum cível / CPC, se disponível),",
     classificador: classif(
-      "Você é o Assistente Facto, paralegal especialista em contencioso cível na justiça comum (Código Civil e CPC).",
+      "Você é Advogado Sênior FACTO. Nesta tarefa de nomenclatura, atue no rito de contencioso cível na justiça comum (Código Civil e CPC).",
       ["SEM (JEC). Sem CDC como tese principal — consumo é o módulo Consumidor."]
     ),
   },
@@ -107,7 +107,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     nomenclaturaUser:
       "Com base nos fatos (nomenclatura da Justiça do Trabalho / CLT, se disponível),",
     classificador: classif(
-      "Você é o Assistente Facto, paralegal especialista em Direito do Trabalho (CLT).",
+      "Você é Advogado Sênior FACTO. Nesta tarefa de nomenclatura, atue no rito de Direito do Trabalho (CLT).",
       ["Reclamação trabalhista. SEM apelação/contestação cível. Polos: reclamante e reclamado."]
     ),
   },
@@ -126,7 +126,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     nomenclaturaUser:
       "Com base nos fatos (nomenclatura de família e sucessões, se disponível),",
     classificador: classif(
-      "Você é o Assistente Facto, paralegal especialista em Direito de Família e Sucessões.",
+      "Você é Advogado Sênior FACTO. Nesta tarefa de nomenclatura, atue no rito de Direito de Família e Sucessões.",
       ["SEM (JEC). Segredo de justiça quando couber."]
     ),
   },
@@ -145,7 +145,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     nomenclaturaUser:
       "Com base nos fatos (nomenclatura imobiliária / locação / usucapião, se disponível),",
     classificador: classif(
-      "Você é o Assistente Facto, paralegal especialista em Direito Imobiliário.",
+      "Você é Advogado Sênior FACTO. Nesta tarefa de nomenclatura, atue no rito de Direito Imobiliário.",
       ["Não chame despejo de cobrança genérica. SEM 9.099."]
     ),
   },
@@ -164,7 +164,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     nomenclaturaUser:
       "Com base nos fatos (nomenclatura do JECRIM / Lei 9.099 criminal, se disponível),",
     classificador: classif(
-      "Você é o Assistente Facto, paralegal especialista em Juizado Especial Criminal.",
+      "Você é Advogado Sênior FACTO. Nesta tarefa de nomenclatura, atue no rito de Juizado Especial Criminal.",
       ["Não use contestação cível, apelação nem habeas corpus neste módulo."]
     ),
   },
@@ -181,7 +181,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     tipoAcaoDefault: "Resposta à acusação",
     nomenclaturaUser: "Com base nos fatos (nomenclatura penal / CPP, se disponível),",
     classificador: classif(
-      "Você é o Assistente Facto, paralegal especialista em Direito Penal e Processo Penal (rito comum).",
+      "Você é Advogado Sênior FACTO. Nesta tarefa de nomenclatura, atue no rito de Direito Penal e Processo Penal (rito comum).",
       [
         "Habeas corpus, resposta à acusação, memoriais, apelação criminal. SEM contestação cível. SEM JECRIM (9.099).",
       ]
@@ -201,7 +201,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     tipoAcaoDefault: "Ação de Concessão de Benefício Previdenciário",
     nomenclaturaUser: "Com base nos fatos (nomenclatura previdenciária / INSS, se disponível),",
     classificador: classif(
-      "Você é o Assistente Facto, paralegal especialista em Direito Previdenciário.",
+      "Você é Advogado Sênior FACTO. Nesta tarefa de nomenclatura, atue no rito de Direito Previdenciário.",
       ["Nomeie o benefício (aposentadoria, BPC, auxílio). Não invente NB nem valores de RMI."]
     ),
   },
@@ -219,7 +219,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     tipoAcaoDefault: "Embargos à Execução Fiscal",
     nomenclaturaUser: "Com base nos fatos (nomenclatura tributária / execução fiscal, se disponível),",
     classificador: classif(
-      "Você é o Assistente Facto, paralegal especialista em Direito Tributário.",
+      "Você é Advogado Sênior FACTO. Nesta tarefa de nomenclatura, atue no rito de Direito Tributário.",
       ["Embargos à execução fiscal, EPE, anulatória, repetição. SEM 9.099."]
     ),
   },
@@ -237,7 +237,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     tipoAcaoDefault: "Mandado de Segurança",
     nomenclaturaUser: "Com base nos fatos (nomenclatura administrativa / MS, se disponível),",
     classificador: classif(
-      "Você é o Assistente Facto, paralegal especialista em Direito Administrativo.",
+      "Você é Advogado Sênior FACTO. Nesta tarefa de nomenclatura, atue no rito de Direito Administrativo.",
       ["MS (120 dias). Não invente o ato coator."]
     ),
   },
@@ -255,7 +255,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     tipoAcaoDefault: "Ação de Obrigação de Fazer (societária)",
     nomenclaturaUser: "Com base nos fatos (nomenclatura empresarial / societária, se disponível),",
     classificador: classif(
-      "Você é o Assistente Facto, paralegal especialista em Direito Empresarial.",
+      "Você é Advogado Sênior FACTO. Nesta tarefa de nomenclatura, atue no rito de Direito Empresarial.",
       ["Notificação vs. ação. Não invente contrato social nem quotas."]
     ),
   },
@@ -271,7 +271,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     tipoAcaoDefault: "Ação de Obrigação de Fazer c/c Tutela de Dados Pessoais",
     nomenclaturaUser: "Com base nos fatos (nomenclatura LGPD / digital, se disponível),",
     classificador: classif(
-      "Você é o Assistente Facto, paralegal especialista em Direito Digital e LGPD.",
+      "Você é Advogado Sênior FACTO. Nesta tarefa de nomenclatura, atue no rito de Direito Digital e LGPD.",
       ["Não invente base legal de tratamento. Crimes: módulo Penal."]
     ),
   },
@@ -287,7 +287,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     tipoAcaoDefault: "Ação Civil Pública Ambiental",
     nomenclaturaUser: "Com base nos fatos (nomenclatura ambiental, se disponível),",
     classificador: classif(
-      "Você é o Assistente Facto, paralegal especialista em Direito Ambiental.",
+      "Você é Advogado Sênior FACTO. Nesta tarefa de nomenclatura, atue no rito de Direito Ambiental.",
       ["ACP, TAC, defesa de auto. Não invente licença ambiental."]
     ),
   },
@@ -303,7 +303,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     tipoAcaoDefault: "Ação de Abstenção de Uso de Marca c/c Perdas e Danos",
     nomenclaturaUser: "Com base nos fatos (nomenclatura de PI / INPI, se disponível),",
     classificador: classif(
-      "Você é o Assistente Facto, paralegal especialista em Propriedade Intelectual.",
+      "Você é Advogado Sênior FACTO. Nesta tarefa de nomenclatura, atue no rito de Propriedade Intelectual.",
       ["Não invente registro INPI."]
     ),
   },
@@ -321,7 +321,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     tipoAcaoDefault: "Homologação de Sentença Estrangeira",
     nomenclaturaUser: "Com base nos fatos (nomenclatura de direito internacional, se disponível),",
     classificador: classif(
-      "Você é o Assistente Facto, paralegal especialista em Direito Internacional privado.",
+      "Você é Advogado Sênior FACTO. Nesta tarefa de nomenclatura, atue no rito de Direito Internacional privado.",
       ["Homologação no STJ. Não invente sentença estrangeira."]
     ),
   },
@@ -338,7 +338,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     tipoAcaoDefault: "Ação de Indenização por Erro Médico",
     nomenclaturaUser: "Com base nos fatos (nomenclatura de direito médico, se disponível),",
     classificador: classif(
-      "Você é o Assistente Facto, paralegal especialista em Direito Médico.",
+      "Você é Advogado Sênior FACTO. Nesta tarefa de nomenclatura, atue no rito de Direito Médico.",
       ["Não invente prontuário. Distinga erro médico de negativa de cobertura."]
     ),
   },
@@ -354,7 +354,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     tipoAcaoDefault: "Ação de Cumprimento de Contrato Agrário",
     nomenclaturaUser: "Com base nos fatos (nomenclatura agrária, se disponível),",
     classificador: classif(
-      "Você é o Assistente Facto, paralegal especialista em Direito Agrário.",
+      "Você é Advogado Sênior FACTO. Nesta tarefa de nomenclatura, atue no rito de Direito Agrário.",
       ["Não invente matrícula rural."]
     ),
   },
@@ -372,7 +372,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     tipoAcaoDefault: "Representação por Propaganda Irregular",
     nomenclaturaUser: "Com base nos fatos (nomenclatura eleitoral, se disponível),",
     classificador: classif(
-      "Você é o Assistente Facto, paralegal especialista em Direito Eleitoral.",
+      "Você é Advogado Sênior FACTO. Nesta tarefa de nomenclatura, atue no rito de Direito Eleitoral.",
       ["Não invente julgado de TRE/TSE. AIJE, representação, registro."]
     ),
   },
@@ -390,7 +390,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     tipoAcaoDefault: "Mandado de Segurança",
     nomenclaturaUser: "Com base nos fatos (nomenclatura constitucional, se disponível),",
     classificador: classif(
-      "Você é o Assistente Facto, paralegal especialista em Direito Constitucional.",
+      "Você é Advogado Sênior FACTO. Nesta tarefa de nomenclatura, atue no rito de Direito Constitucional.",
       [
         "Remédios CF (ativo e passivo). Não invente paradigma STF. ADI/ADC/ADO/ADPF só com legitimidade.",
       ]
@@ -400,4 +400,19 @@ const TABELA: Record<string, AreaRitoCopy> = {
 
 export function ritoDaArea(areaId: string): AreaRitoCopy {
   return TABELA[areaId] ?? TABELA.jec!;
+}
+
+/** Remove negações rígidas de copy de rito — chat/triagem usam só pista. */
+export function suavizarTextoRito(texto: string): string {
+  return texto
+    .replace(/\s*NÃO use[^.]*\./gi, "")
+    .replace(/\s*SEM\s+[^.]*\./gi, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[.;]+$/, "");
+}
+
+/** `ritoCurto` sem travas — para lastro/análise local. */
+export function ritoCurtoSuave(areaId: string): string {
+  return suavizarTextoRito(ritoDaArea(areaId).ritoCurto) || ritoDaArea(areaId).especialidade;
 }

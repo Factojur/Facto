@@ -219,11 +219,11 @@ export type PlanoId =
   | "escritorio_s_anual"
   | "escritorio_m_anual";
 
-/** Teste grátis: 1 área · 2 peças · 7 dias · preview completo; export Word/PDF nos planos. */
+/** Teste grátis: 3 peças · 7 dias · sem cartão · preview completo. */
 export const PLANO_TRIAL = {
   id: "trial" as const,
   preco: 0,
-  pecasPorMes: 2,
+  pecasPorMes: 3,
   analisesPorMes: 0,
   diasValidade: 7,
   rotuloPreco: "Grátis",
@@ -231,9 +231,10 @@ export const PLANO_TRIAL = {
   rotulo: "Teste grátis",
   custoPorPecaAprox: "—",
   beneficios: [
-    "1 área à sua escolha · 2 peças · 7 dias",
+    "3 peças · 7 dias · sem cartão",
     BENEFICIO_ASSISTENTE_PREVIEW,
-    "Visualize a peça completa no assistente (preview ao vivo)",
+    "Todas as áreas no período de teste",
+    "Scaffold editável antes de gastar o crédito",
     "Exportação Word/PDF protocolável nos planos pagos",
     "Sem OAB no início — informe só ao assinar",
     "Sem compromisso — cancele não renovando",

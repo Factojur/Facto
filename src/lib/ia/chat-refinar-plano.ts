@@ -6,6 +6,7 @@
 import type { PreviewTriagemData } from "@/components/dashboard/preview-triagem-peca";
 import type { EstadoCasoChat, MensagemChat } from "@/lib/chat-minuta";
 import { montarResumoEntendimentoChat, rotuloAreaChat } from "@/lib/chat-minuta";
+import { PERSONA_ADVOGADO_SENIOR_FACTO } from "@/lib/ia/assistente-facto-prompt";
 import {
   gerarTextoComGemini,
   geminiConfigurado,
@@ -62,7 +63,8 @@ export async function refinarPlanoComGemini(input: {
     ? `Tópicos: ${input.triagem.topicos.map((t) => t.titulo).join("; ").slice(0, 400)}`
     : "Plano ainda não montado.";
 
-  const system = `Você é o assistente jurídico FACTO no chat. Responda em português, tom profissional e direto (2–4 frases).
+  const system = `${PERSONA_ADVOGADO_SENIOR_FACTO}
+Canal: chat FACTO. Responda em português, tom profissional e direto (2–4 frases).
 Não invente fatos. Não redija petição inteira. Ajude a refinar pedidos, teses e lacunas antes da redação (que consome 1 peça).
 Retorne APENAS JSON válido:
 {

@@ -24,27 +24,28 @@ const GRUPOS_SINAL: { id: string; re: RegExp }[] = [
   },
 ];
 
+/** Grupos só para reset por troca de rito real — civil ≠ consumidor. */
 const GRUPO_POR_AREA: Record<AreaIdMinuta, string> = {
-  jec: "consumidor",
+  jec: "jec",
   consumidor: "consumidor",
-  civil: "consumidor",
+  civil: "civil",
   familia: "familia",
   trabalhista: "trabalhista",
-  imobiliario: "civil",
+  imobiliario: "imobiliario",
   previdenciario: "previdenciario",
-  tributario: "civil",
-  administrativo: "civil",
-  digital: "civil",
-  empresarial: "civil",
-  ambiental: "civil",
-  "propriedade-intelectual": "civil",
-  medico: "civil",
-  internacional: "civil",
-  agrario: "civil",
+  tributario: "tributario",
+  administrativo: "administrativo",
+  digital: "digital",
+  empresarial: "empresarial",
+  ambiental: "ambiental",
+  "propriedade-intelectual": "pi",
+  medico: "medico",
+  internacional: "internacional",
+  agrario: "agrario",
   criminal: "criminal",
-  constitucional: "civil",
-  jecr: "criminal",
-  eleitoral: "civil",
+  constitucional: "constitucional",
+  jecr: "jecr",
+  eleitoral: "eleitoral",
 };
 
 function gruposNoTexto(texto: string): string[] {

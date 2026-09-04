@@ -49,7 +49,7 @@ import {
   posProcessarDepoisQualificacao,
   sanitizarPecaPorArea,
 } from "@/lib/ia/pos-processar-peca-gerada";
-import { mesclarFatosIaComDireitoReserva, garantirSecaoValorCausa } from "@/lib/ia/mesclar-peca-hibrida";
+import { garantirSecaoValorCausa } from "@/lib/ia/mesclar-peca-hibrida";
 import {
   anotarJurisprudenciasSemLastro,
   contarMarcadoresNaoEncontrado,
@@ -136,6 +136,17 @@ type GerarPecaBody = GerarPecaJecInput & {
   replicaContestacao?: ReplicaContestacaoResumo | null;
   /** Emite NDJSON com deltas da redação e `{ done: true, ... }` ao final. */
   stream?: boolean;
+  /**
+   * Entrega a peça no preview sem debitar cota (paridade MinutaIA no preview).
+   * Débito comercial será alinhado depois — não usar em fluxos manuais JecForm.
+   */
+  adiarDebitoCota?: boolean;
+  /** Livre | Fiel | Recorte — adesão ao modelo/estilo. */
+  adesaoRedacao?: "livre" | "fiel" | "recorte";
+  /** Expressa | Equilíbrio | Detalhada — profundidade (tokens / Sonnet). */
+  esforcoRedacao?: "agil" | "padrao" | "fundo";
+  /** Modelo de peça do advogado (só este caso). */
+  modeloPeca?: { nome: string; texto: string } | null;
 };
 
 const LIMITE_TEXTO_LEI_MUNICIPAL = 40_000;
@@ -391,7 +402,8 @@ function finalizarTextoPeca(
 
 type MontarRespostaGerarPeca =
   | { tipo: "ok"; payload: GerarPecaJecOutput }
-  | { tipo: "erro_ia_transitivo"; detalhe: string };
+  | { tipo: "erro_ia_transitivo"; detalhe: string }
+  | { tipo: "erro_ia"; detalhe: string };
 
 function montarRespostaGerarPeca(ctx: {
   ia: ResultadoPecaIA;
@@ -432,97 +444,16 @@ function montarRespostaGerarPeca(ctx: {
     if (erroGeracaoIaTransitivo(ia.erro)) {
       return { tipo: "erro_ia_transitivo", detalhe: ia.erro };
     }
-    const fallbackNorm = finalizarTextoPeca(
-      scaffold.peca,
-      body,
-      opcoesAdvogadoQualificacao,
-      areaId,
-      inversaoOnus
-    );
-    const { pecaHtml } = gerarDocumentoTimbrado(
-      fallbackNorm,
-      body.escritorio?.usarTimbre ? body.escritorio : undefined
-    );
-    const fallback: GerarPecaJecOutput = {
-      ...scaffold,
-      peca: fallbackNorm,
-      pecaHtml,
-      geradoPorIA: false,
-      leiMunicipalUtilizada: leiMunicipal
-        ? { nome: leiMunicipal.nome }
-        : null,
-      jurisDoCasoUtilizada: jurisMeta,
-      avisoIA:
-        "A redação por IA não foi concluída. Foi usada uma peça de reserva com estrutura forense — revise e não protocolar assim. Gere novamente.",
-    };
-    return { tipo: "ok", payload: fallback };
+    // Sem peça-reserva: a IA é a linha de frente; falha = erro explícito.
+    return { tipo: "erro_ia", detalhe: ia.erro };
   }
 
   const pecaBrutaIa = normalizarPecaGerada(ia.textoGerado);
 
-  if (pecaTemFundamentacaoGenerica(pecaBrutaIa) && areaId === "jec") {
-    const hibrida = mesclarFatosIaComDireitoReserva({
-      pecaIa: pecaBrutaIa,
-      tipoAcao: tipoResolvido,
-      fatos: body.fatos,
-      tutelaUrgencia: tutelaResolvida,
-      pedirJusticaGratuita: Boolean(
-        body.pedirJusticaGratuita ||
-          (body.documentos?.declaracaoHipossuficiencia?.length ?? 0) > 0
-      ),
-      trechosBase: baseConhecimento.map((item) => ({
-        titulo: item.titulo,
-        categoria: item.categoria,
-        texto: item.texto,
-      })),
-      blocoValorCausa: blocoValorDeterministico || undefined,
-      tituloSecaoValor: secaoValor?.titulo,
-      romanoSecaoValor: secaoValor?.romano,
-    });
-    const peca = finalizarTextoPeca(
-      hibrida,
-      body,
-      opcoesAdvogadoQualificacao,
-      areaId,
-      inversaoOnus
-    );
-    const citacoesHibrida = ia.contextoVerificacao
-      ? verificarCitacoes(peca, ia.contextoVerificacao)
-      : ia.citacoes;
-    const pecaAnotada = ia.contextoVerificacao
-      ? anotarJurisprudenciasSemLastro(peca, citacoesHibrida)
-      : peca;
-    const { pecaHtml } = gerarDocumentoTimbrado(
-      pecaAnotada,
-      body.escritorio?.usarTimbre ? body.escritorio : undefined
-    );
-    return {
-      tipo: "ok",
-      payload: {
-        ...scaffold,
-        peca: pecaAnotada,
-        pecaHtml,
-        timbrado: Boolean(body.escritorio?.usarTimbre),
-        geradoPorIA: true,
-        modeloIA: "FACTO",
-        citacoes: citacoesHibrida,
-        marcadoresNaoEncontrado: contarMarcadoresNaoEncontrado(pecaAnotada),
-        leiMunicipalUtilizada: leiMunicipal
-          ? { nome: leiMunicipal.nome }
-          : null,
-        jurisDoCasoUtilizada: jurisMeta,
-        equipeEtapas: ia.equipeEtapas?.map((e) => ({
-          ...e,
-          modelo: undefined,
-        })),
-        avisoIA:
-          "O DO DIREITO veio genérico demais; a fundamentação foi reforçada com o modelo forense do Juizado. Revise antes de protocolar.",
-      },
-    };
-  }
+  // Document-first: a IA mantém o DO DIREITO — sem mesclar template JEC por cima.
 
   const avisoFundamentosGenericos =
-    pecaTemFundamentacaoGenerica(pecaBrutaIa) && areaId !== "jec"
+    pecaTemFundamentacaoGenerica(pecaBrutaIa)
       ? "A fundamentação jurídica veio genérica demais. Confira o DO DIREITO e o lastro antes de protocolar."
       : null;
 
@@ -635,11 +566,27 @@ async function postGerarPeca(request: Request) {
     );
   }
 
+  let body: GerarPecaBody;
+  try {
+    body = (await request.json()) as GerarPecaBody;
+  } catch {
+    return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
+  }
+
+  if (!body.fatos?.trim()) {
+    return NextResponse.json(
+      { error: "Relato ou autos são obrigatórios." },
+      { status: 400 }
+    );
+  }
+
+  const adiarDebitoCota = Boolean(body.adiarDebitoCota);
+
   const saldo = await verificarSaldoCota({
     userId: user.id,
     email,
   });
-  if (!saldo.ok) {
+  if (!saldo.ok && !adiarDebitoCota) {
     const trialEsgotado = saldo.cota.plano === "trial";
     return NextResponse.json(
       {
@@ -654,24 +601,16 @@ async function postGerarPeca(request: Request) {
   }
 
   const debitarEResponder = async (payload: Record<string, unknown>, status = 200) => {
+    if (adiarDebitoCota) {
+      return NextResponse.json(
+        { ...payload, cota: saldo.cota, debitoAdiado: true },
+        { status }
+      );
+    }
     const consumo = await consumirUmaPeca({ userId: user.id, email });
     const cota = consumo.ok ? consumo.cota : "cota" in consumo ? consumo.cota : undefined;
     return NextResponse.json({ ...payload, cota }, { status });
   };
-
-  let body: GerarPecaBody;
-  try {
-    body = (await request.json()) as GerarPecaBody;
-  } catch {
-    return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
-  }
-
-  if (!body.tipoAcao || !body.fatos?.trim()) {
-    return NextResponse.json(
-      { error: "Tipo de ação e fatos são obrigatórios." },
-      { status: 400 }
-    );
-  }
 
   const areaId = normalizarAreaIdMinuta(body.areaId);
 
@@ -942,9 +881,13 @@ async function postGerarPeca(request: Request) {
   });
 
   const tipoResolvido =
-    scaffold.decisaoAssistente?.tipoAcao ?? body.tipoAcao;
+    body.tipoAcao?.trim() ||
+    scaffold.decisaoAssistente?.tipoAcao ||
+    "Peça";
   const tutelaResolvida =
-    scaffold.decisaoAssistente?.tutelaUrgencia ?? body.tutelaUrgencia;
+    body.tutelaUrgencia ??
+    scaffold.decisaoAssistente?.tutelaUrgencia ??
+    false;
 
   const especieParaInversao = aplicarFlagReconvencao(
     areaId,
@@ -965,30 +908,14 @@ async function postGerarPeca(request: Request) {
   });
 
   if (!geminiConfigurado()) {
-    const peca = finalizarTextoPeca(
-      scaffold.peca,
-      body,
-      opcoesAdvogadoQualificacao,
-      areaId,
-      inversaoOnus
+    return NextResponse.json(
+      {
+        error:
+          "A redação por IA está indisponível no momento. Tente novamente em instantes — nenhuma peça de reserva foi gerada.",
+        codigo: "IA_INDISPONIVEL",
+      },
+      { status: 503 }
     );
-    const { pecaHtml } = gerarDocumentoTimbrado(
-      peca,
-      body.escritorio?.usarTimbre ? body.escritorio : undefined
-    );
-    const semIa: GerarPecaJecOutput = {
-      ...scaffold,
-      peca,
-      pecaHtml,
-      geradoPorIA: false,
-      leiMunicipalUtilizada: leiMunicipal
-        ? { nome: leiMunicipal.nome }
-        : null,
-      jurisDoCasoUtilizada: jurisMeta,
-      avisoIA:
-        "A redação completa por IA está indisponível no momento. Foi gerada uma peça de reserva com estrutura forense e fundamentação-modelo — revise antes de protocolar e tente gerar novamente em instantes.",
-    };
-    return debitarEResponder(anexarAuditoria(semIa, paramsAuditor));
   }
 
   const valorCausaResumo = (() => {
@@ -1005,14 +932,19 @@ async function postGerarPeca(request: Request) {
     );
   })();
 
+  const especiePayloadLimpa = String(body.especiePeca ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-");
   const especieResolvida = aplicarFlagReconvencao(
     areaId,
-    inferirEspecieDaArea(
-      areaId,
-      tipoResolvido,
-      body.fatos,
-      body.especiePeca
-    ),
+    especiePayloadLimpa ||
+      inferirEspecieDaArea(
+        areaId,
+        tipoResolvido,
+        body.fatos,
+        body.especiePeca
+      ),
     body.comReconvencao
   );
   const enderecamento = formatarEnderecamentoPadrao({
@@ -1098,6 +1030,15 @@ async function postGerarPeca(request: Request) {
       ? body.tesesIds.map((id) => String(id)).filter(Boolean)
       : undefined,
     estiloEscritorio,
+    adesaoRedacao: body.adesaoRedacao,
+    esforcoRedacao: body.esforcoRedacao,
+    modeloPeca:
+      body.modeloPeca?.texto?.trim()
+        ? {
+            nome: body.modeloPeca.nome?.trim() || "Modelo do advogado",
+            texto: body.modeloPeca.texto.trim().slice(0, 80_000),
+          }
+        : null,
     roteamento: {
       userId: user.id,
       plano: saldo.cota.plano,
@@ -1216,11 +1157,30 @@ async function postGerarPeca(request: Request) {
             });
             return;
           }
+          if (montagem.tipo === "erro_ia") {
+            emit({
+              error:
+                montagem.detalhe ||
+                "A redação por IA não foi concluída. Nenhuma peça de reserva foi gerada — tente novamente.",
+              codigo: "IA_FALHOU",
+              detalhe: montagem.detalhe,
+            });
+            return;
+          }
           const payload = anexarAuditoria(montagem.payload, paramsAuditor);
-          const consumo = await consumirUmaPeca({ userId: user.id, email });
-          const cota =
-            consumo.ok ? consumo.cota : "cota" in consumo ? consumo.cota : undefined;
-          emit({ done: true, ...payload, cota });
+          if (adiarDebitoCota) {
+            emit({
+              done: true,
+              ...payload,
+              cota: saldo.cota,
+              debitoAdiado: true,
+            });
+          } else {
+            const consumo = await consumirUmaPeca({ userId: user.id, email });
+            const cota =
+              consumo.ok ? consumo.cota : "cota" in consumo ? consumo.cota : undefined;
+            emit({ done: true, ...payload, cota });
+          }
         } catch (erro) {
           emit({
             error:
@@ -1250,6 +1210,18 @@ async function postGerarPeca(request: Request) {
         detalhe: montagem.detalhe,
       },
       { status: 503 }
+    );
+  }
+  if (montagem.tipo === "erro_ia") {
+    return NextResponse.json(
+      {
+        error:
+          montagem.detalhe ||
+          "A redação por IA não foi concluída. Nenhuma peça de reserva foi gerada — tente novamente.",
+        codigo: "IA_FALHOU",
+        detalhe: montagem.detalhe,
+      },
+      { status: 502 }
     );
   }
 

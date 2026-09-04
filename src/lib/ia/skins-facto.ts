@@ -3,11 +3,6 @@
  * Maestro, Pesquisa e o reforço do Estrategista são determinísticos.
  */
 
-import {
-  ajustarEspecieCabivel,
-  incidenteExecucaoJaAberto,
-  pecaCabivelAposUltimoAto,
-} from "@/lib/peca-cabivel-autos";
 import { tituloPecaDaArea } from "@/lib/peca-especie-area";
 import { prefixoAntesDoNomePeca } from "@/lib/partes-ja-qualificadas";
 import type { TeseCanonica } from "@/lib/teses-canonicas";
@@ -22,31 +17,30 @@ export type VinculosPecaFacto = {
   prefixoNome: string;
 };
 
+/** Espécie só a informada — sem remapeamento por último ato/kit. */
 export function resolverVinculosPeca(params: {
   areaId: string;
   especie: string;
   tipoAcao?: string | null;
   fatos?: string | null;
-  /** Chat MinutaIA: não sobrescrever a espécie escolhida pela IA. */
+  /** Ignorado: heurística local desligada. */
   confiarEspecie?: boolean;
 }): VinculosPecaFacto {
-  const especie = params.confiarEspecie
-    ? String(params.especie ?? "")
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, "-")
-    : ajustarEspecieCabivel({
-        areaId: params.areaId,
-        especie: params.especie,
-        tipoAcao: params.tipoAcao,
-        fatos: params.fatos,
-      });
-  const blob = `${params.tipoAcao ?? ""} ${params.fatos ?? ""}`;
+  const especie = String(params.especie ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-");
+  const titulo =
+    (especie
+      ? tituloPecaDaArea(params.areaId, especie, params.tipoAcao)
+      : "") ||
+    params.tipoAcao?.trim() ||
+    "Peça";
   return {
     especie,
-    tituloPeca: tituloPecaDaArea(params.areaId, especie, params.tipoAcao),
-    cabivel: pecaCabivelAposUltimoAto(params.areaId, blob),
-    incidenteAberto: incidenteExecucaoJaAberto(blob),
+    tituloPeca: titulo,
+    cabivel: null,
+    incidenteAberto: false,
     prefixoNome: prefixoAntesDoNomePeca(especie),
   };
 }
@@ -88,20 +82,16 @@ export function montarEtapaMaestro(params: {
 }
 
 export function blocoPecaCabivelPrompt(v: VinculosPecaFacto): string {
+  if (!v.especie) {
+    return [
+      "PEÇA A PROTOCOLAR: a IA escolhe a espécie cabível pelos autos e pela instrução do advogado.",
+      "Não invente remédio por menção histórica nos autos (ex.: “cumprimento” antigo ≠ peça de agora).",
+    ].join(" ");
+  }
   const linhas = [
     `PEÇA A PROTOCOLAR AGORA: ${v.tituloPeca} (id ${v.especie}).`,
     "Não confunda com o nome do incidente já aberto nos autos.",
   ];
-  if (v.incidenteAberto) {
-    linhas.push(
-      "Cumprimento/execução JÁ está instaurado. NÃO redija abertura de cumprimento nem de execução."
-    );
-  }
-  if (v.cabivel && v.cabivel !== v.especie) {
-    linhas.push(
-      `Último ato dos autos aponta ${v.cabivel} — não reabra o incidente em curso.`
-    );
-  }
   if (v.prefixoNome) {
     linhas.push(
       `Após “Vossa Excelência”, use o conectivo “${v.prefixoNome}” e só então o nome da peça em caixa alta.`

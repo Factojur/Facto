@@ -1,23 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import {
-  COOKIE_SESSAO,
-  obterCookieSessao,
-  opcoesCookieSessao,
-} from "@/lib/sessao-unica";
+import { COOKIE_SESSAO, opcoesCookieSessao } from "@/lib/sessao-unica";
 import {
   registrarSessaoPecasAtiva,
+  statusSessaoPecasParaUi,
   validarSessaoPecasAtiva,
 } from "@/lib/sessao-pecas-server";
-
-async function obterPerfilSessao(userId: string) {
-  const supabase = await createClient();
-  return supabase
-    .from("profiles")
-    .select("sessao_ativa_id")
-    .eq("id", userId)
-    .maybeSingle();
-}
 
 /** Registra nova sessão ativa de PEÇAS (login dashboard). Gestão não usa esta rota. */
 export async function POST() {
@@ -51,27 +39,47 @@ export async function GET() {
     return NextResponse.json({ valida: false }, { status: 401 });
   }
 
-  const cookieSessao = await obterCookieSessao();
-  const { data: profile, error } = await obterPerfilSessao(user.id);
+  const status = await statusSessaoPecasParaUi(user.id);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (status.outraMaquina && !status.valida) {
+    // Cookie presente mas de outra sessão — sinaliza conflito sem forçar 401
+    // no login (a UI pergunta se assume).
+    return NextResponse.json({
+      valida: false,
+      pendente: true,
+      outraMaquina: true,
+    });
   }
 
-  if (!profile?.sessao_ativa_id) {
-    return NextResponse.json({ valida: true, pendente: true });
+  if (status.outraMaquina) {
+    return NextResponse.json({
+      valida: true,
+      pendente: true,
+      outraMaquina: true,
+    });
+  }
+
+  if (status.pendente) {
+    return NextResponse.json({
+      valida: true,
+      pendente: true,
+      outraMaquina: false,
+    });
   }
 
   const validacao = await validarSessaoPecasAtiva(user.id);
   if (!validacao.ok) {
-    return NextResponse.json({ valida: false }, { status: validacao.status });
+    return NextResponse.json(
+      { valida: false, outraMaquina: true },
+      { status: validacao.status }
+    );
   }
 
-  if (!cookieSessao) {
-    return NextResponse.json({ valida: true, pendente: true });
-  }
-
-  return NextResponse.json({ valida: true });
+  return NextResponse.json({
+    valida: true,
+    pendente: false,
+    outraMaquina: false,
+  });
 }
 
 /** Remove cookie de sessão no logout. */

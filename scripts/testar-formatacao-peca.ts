@@ -91,6 +91,20 @@ assert(
   "não mantém I e II na mesma linha"
 );
 
+const enderecamentoColado = normalizarPecaGerada(
+  "em face de BANCO EXEMPLO S.A., pelos fatos e fundamentos a seguir. I - DOS FATOS O autor teve o corte."
+);
+assert(
+  /^em face de BANCO EXEMPLO/m.test(enderecamentoColado),
+  "prefixo em face de separado do romano"
+);
+assert(/^I - DOS FATOS$/m.test(enderecamentoColado), "I - DOS FATOS sozinho após prefixo");
+assert(
+  /O autor teve o corte/i.test(enderecamentoColado) &&
+    !/^I - DOS FATOS O autor/m.test(enderecamentoColado),
+  "corpo não cola no título DOS FATOS"
+);
+
 const fatosDireitoFundidos = normalizarPecaGerada(
   "I - DOS FATOS DO DIREITO\nRelato breve."
 );
@@ -207,6 +221,34 @@ assert(
 assert(
   !/^Advogado$/im.test(fechamentoEspaco),
   "remove linha isolada Advogado no fechamento"
+);
+
+const semFechamento = normalizarPecaGerada(`EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DE DIREITO DA COMARCA DE CAMPINAS - SP
+
+AÇÃO DE INDENIZAÇÃO POR DANOS MORAIS
+
+JOÃO DA SILVA, brasileiro, vem propor a presente
+
+em face de BANCO X S.A., pelos fatos a seguir.
+
+I - DOS FATOS
+O autor sofreu cobrança indevida após quitação do contrato de financiamento veicular.
+
+II - DO DIREITO
+a) Da relação de consumo
+Aplica-se o CDC à hipótese dos autos.
+
+III - DOS PEDIDOS
+Ante o exposto, requer:
+a) A citação do réu;
+b) A procedência dos pedidos.`);
+assert(
+  /Nestes termos,\npede deferimento\./.test(semFechamento),
+  "garante Nestes termos / pede deferimento se a IA omitir"
+);
+assert(
+  /\[\[ESPACO_1_LINHA\]\]\nNestes termos,/i.test(semFechamento),
+  "1 linha antes do fechamento inserido"
 );
 
 const italicoCorpo = normalizarPecaGerada(

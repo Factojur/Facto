@@ -4,10 +4,11 @@
  * Alinhamentos:
  * - centralizado + negrito: endereçamento, nome da ação
  * - centralizado: fechamento (Nestes termos, data, assinatura)
- * - esquerda + negrito: tópicos romanos e subtítulos a)/b)/c) do DIREITO
+ * - esquerda: tópicos romanos e subtítulos a)/b)/c) do DIREITO (negrito só se Markdown da IA)
  * - justificado + peso normal: itens a)/b) em DOS PEDIDOS e 1)/2) em DAS PROVAS
  * - justificado + recuo 1ª linha 2 cm: corpo
  * - justificado + recuo esquerdo 4 cm + 10 pt: citação de jurisprudência
+ * - fechamento centralizado: Nestes termos / pede deferimento / localidade+data / nome / OAB
  *
  * Inline: **negrito**; *"latim/inglês/citação"* = itálico com aspas.
  */

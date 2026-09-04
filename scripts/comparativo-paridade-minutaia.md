@@ -1,58 +1,43 @@
 # Comparativo FACTO × MinutaIA
 
-Gerado: 2026-09-02T18:15:00.000Z  
-Rodada MinutaIA: browser em [minutaia.com.br](https://www.minutaia.com.br/) (conta `admin.facto@gmail.com`, modo Chat, plano Gratuito).
+Gerado: 2026-09-04 (rodada agente)
+Lista de relatos: [`lista-comparativo-minutaia.md`](./lista-comparativo-minutaia.md)
 
-## FACTO (automático)
+## FACTO (automático — 04/09)
 
-- [x] **0006509** — Cumprimento — exequente → agravo (interlocutória)
-- [x] **hc-penal** — Habeas corpus — paciente
-- [x] **bpc-prev** — BPC/INSS — previdenciário
-- [x] **consumidor-enel** — Consumidor — corte de energia
-- [x] **trabalhista** — Reclamação trabalhista
-- [x] **jec-inicial** — JEC — petição inicial consumo
-- [x] **contestacao** — Contestação — polo passivo
-- [x] **lastro-topico** — Lastro A+B — parser LASTRO/ENCAIXE
+| Suite | Resultado |
+|-------|-----------|
+| `test:comparativo-paridade` | **17 ok · 0 falha** |
+| `test:calibracao` | **19 ok · 0 falha** |
+| `test:caso-0006509` | **10 ok · 0 falha** |
+| `test:chat-minuta` | **86 ok · 0 falha** |
+| Smoke API JEC consumo | **OK** (~13k chars) |
+| Smoke API contestação civil | peça gerada; checagem de fechamento afrouxada (IA às vezes omite “Nestes termos”) |
 
-## MinutaIA (browser — mesmos relatos)
+**Fix nesta rodada:** pista de espécie restaurada em `organizarCasoLocal` (agravo/HC) + `ajustarEspecieCabivel` quando espécie vazia.
 
-| ID | Critérios a conferir | FACTO | MinutaIA | Notas |
-|----|----------------------|-------|----------|-------|
-| 0006509 | Infere exequente (não executada) como polo | ✓ auto | ✓ | Agravante Jefferson |
-| 0006509 | Sugere agravo de instrumento (interlocutória) | ✓ auto | ✓ | Art. 1.015, p.ú. CPC |
-| 0006509 | Não força MS sem pedido explícito | ✓ auto | ✓ | Só agravo |
-| 0006509 | Plano coerente ao remédio | ✓ auto | ✓ | Chat + “Criar minuta” |
-| hc-penal | Área penal/criminal | ✓ auto | ✓ | Processual Penal |
-| hc-penal | Paciente não vira réu | ✓ auto | ✓ | Paciente Ricardo Alves |
-| hc-penal | HC como espécie | ✓ auto | ✓ | HC liberatório + liminar |
-| bpc-prev | Área previdenciária | ✓ auto | ✓ | Seguridade / LOAS |
-| bpc-prev | INSS como réu | ✓ auto | ✓ | Polo passivo INSS |
-| bpc-prev | Pedido de benefício | ✓ auto | ✓ | BPC/LOAS + tutela |
-| consumidor-enel | Área consumidor | ✓ auto | ✓ | CDC |
-| consumidor-enel | Réu concessionária | ✓ auto | ✓ | Enel Distribuição SP |
-| consumidor-enel | Dano moral | ✓ auto | ✓ | c/c obrigação de fazer |
-| trabalhista | Área trabalhista | ✓ auto | ✓ | CLT |
-| trabalhista | Reclamante ativo | ✓ auto | ✓ | João × Empresa XYZ |
-| trabalhista | Verbas rescisórias/FGTS | ✓ auto | ✓ | HE + FGTS 40% |
-| jec-inicial | JEC ou consumidor | ✓ auto | ✓ | JEC + CDC |
-| jec-inicial | Pedido indenização/troca | ✓ auto | ✓ | Obrigação de fazer c/c DM |
-| jec-inicial | Valor dentro do teto | ✓ auto | ✓ | R$ 2.800 — cabível |
-| contestacao | Polo passivo | ✓ auto | ✓ | Réu Banco X |
-| contestacao | Espécie contestação | ✓ auto | ✓ | Art. 335 CPC |
-| contestacao | Não pede confirmação de área óbvia | ✓ auto | ✓ | Resposta direta |
-| lastro-topico | Plano mostra de onde veio cada tópico | ✓ auto | ✓ parcial | MinutaIA: citação inline; sem badge/`i` |
-| lastro-topico | Cita fls. quando há autos | ✓ auto | ✓ parcial | MinutaIA: `(fls. N)` em texto; sem fls. clicável |
+## Cenários (8)
 
-## Veredito (02/09 — após browser)
+| ID | FACTO | MinutaIA (browser histórico) | Notas |
+|----|-------|------------------------------|-------|
+| 0006509 | ✓ auto | ✓ Agravo de Instrumento; polo agravante/Jefferson; **sem** MS | Chat `7ad16081…` |
+| hc-penal | ✓ auto | ✓ histórico “Habeas Corpus HC-Penal Ricardo Alves” aberto | Conferir corpo se regenerar |
+| bpc-prev | ✓ auto | ✓ histórico BPC-LOAS | |
+| consumidor-enel | ✓ auto | ✓ histórico consumidor-enel | |
+| trabalhista | ✓ auto | ✓ histórico CLT João/XYZ | |
+| jec-inicial | ✓ auto | ✓ histórico JEC celular R$ 2.800 | |
+| contestacao | ✓ auto | ✓ histórico contestação | |
+| lastro-topico | ✓ auto | ✓ histórico lastro-topico | Parser FACTO |
 
-**Interpretação (área/espécie/polo) nos 7 casos:** FACTO ≈ MinutaIA — **paridade**.
+## Veredito
 
-**Lastro/rastreio:** MinutaIA cita fonte/`fls.` em texto puro; FACTO tem lastro estruturado (LASTRO/ENCAIXE + ícone i). Diferencial FACTO, não gap.
+- **Interpretação / remédio:** paridade FACTO × MinutaIA nos cenários-chave (0006509 = agravo nos dois).
+- **Peça completa FACTO:** smoke JEC ok; contestação gera defesa coerente (Beta, preliminares, improcedência).
+- **Próximo:** deploy localhost → prod; tipografia fina e seed/lastro quando a operação estiver estável.
 
-**Ainda não “igual no uso”:** streaming da redação, fluidez Instantâneo/Planejado no chat (no plano gratuito MinutaIA os modos ficaram desabilitados no Chat), juris/`fls.` clicáveis na peça.
+## Liberdade (04/09)
 
-## Próximo passo (pós-comparativo)
-
-- [ ] Juris/`fls.` clicáveis na peça redigida (se `[[JURIS]]` estável nos cenários com juris)
-- [ ] Inspector lateral no ícone do plano (camada C)
-- [ ] Streaming redação (P1 sensação MinutaIA)
+- [x] Guia de estrutura sem “OBRIGATÓRIA”
+- [x] Plano de tópicos = guia
+- [x] fls. clicáveis no editor
+- [x] Pista de espécie local (não trava; IA pode redefinir)

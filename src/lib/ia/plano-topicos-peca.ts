@@ -197,7 +197,7 @@ export function topicosComoLista(topicos: TopicoPlanejado[]): string[] {
   });
 }
 
-/** Bloco injetado no prompt do Redator — títulos da triagem são obrigatórios. */
+/** Bloco injetado no prompt do Redator — plano da triagem = guia (autos prevalecem). */
 export function blocoPlanoTopicosParaRedator(
   topicos: TopicoPlanejado[],
   estruturaEspecie?: string | null
@@ -205,10 +205,11 @@ export function blocoPlanoTopicosParaRedator(
   if (!topicos.length) return "";
 
   const linhas = [
-    "<PLANO_DE_TOPICOS_OBRIGATORIO>",
-    "A triagem estratégica definiu os títulos abaixo. O Redator DEVE usá-los como tópicos romanos",
-    "e subtítulos a)/b)/c) da peça — adaptando redação ao caso, sem trocar por títulos genéricos.",
-    "Pode acrescentar subtópicos em DO DIREITO se a tese exigir; não remova nem renomeie os romanos.",
+    "<PLANO_DE_TOPICOS>",
+    "A triagem sugeriu os títulos abaixo como guia de organização.",
+    "Prefira-os como tópicos romanos e subtítulos a)/b)/c) — adapte a redação ao caso.",
+    "Se os AUTOS ou o remédio pedirem outra estrutura, reorganize (não force kit genérico).",
+    "Pode acrescentar subtópicos em DO DIREITO quando a tese exigir.",
     "",
   ];
 
@@ -222,12 +223,12 @@ export function blocoPlanoTopicosParaRedator(
   if (estruturaEspecie?.trim()) {
     linhas.push(
       "",
-      "Esqueleto forense da espécie (alinhar numeração romana; títulos do plano prevalecem):",
+      "Praxe forense da espécie (orientação — títulos do plano e dos autos prevalecem):",
       estruturaEspecie.trim().slice(0, 1200)
     );
   }
 
-  linhas.push("</PLANO_DE_TOPICOS_OBRIGATORIO>");
+  linhas.push("</PLANO_DE_TOPICOS>");
   return linhas.join("\n");
 }
 

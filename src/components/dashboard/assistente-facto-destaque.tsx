@@ -246,8 +246,8 @@ export function AssistenteFactoDestaque({
         <svg
           className={`pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 overflow-visible text-facto-gold ${trailCls}`}
           viewBox="0 0 56 120"
-          fill="none"
-          aria-hidden
+      fill="none"
+      aria-hidden
         >
           <g
             data-chip-trails
@@ -278,7 +278,7 @@ export function AssistenteFactoDestaque({
             ))}
           </g>
           {DOT_PATHS_LEFT.map((p) => (
-            <path
+      <path
               key={`path-${p.id}`}
               data-chip-path={p.id}
               d={p.d}
@@ -297,9 +297,9 @@ export function AssistenteFactoDestaque({
         >
           <g
             data-chip-trails
-            stroke="currentColor"
+        stroke="currentColor"
             strokeWidth="1.2"
-            strokeLinecap="round"
+        strokeLinecap="round"
             opacity="0.55"
           >
             <path d="M0 30 H22 Q34 30 34 42 V50 Q34 58 46 58 H54" />
@@ -333,7 +333,7 @@ export function AssistenteFactoDestaque({
               visibility="hidden"
             />
           ))}
-        </svg>
+    </svg>
 
         {pinsVerticais && (
           <>
@@ -420,14 +420,14 @@ export function AssistenteFactoDestaque({
               ref={sheenRef}
               className="assistente-chip-sheen pointer-events-none absolute inset-0"
               style={{ willChange: "opacity" }}
-              aria-hidden
-            />
+          aria-hidden
+        />
 
             <div className="relative text-center">
               {!compacto && (
                 <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-facto-gold/85">
-                  Assinatura FACTO
-                </p>
+              Assinatura FACTO
+            </p>
               )}
               <p
                 className={`font-semibold leading-none text-white ${
@@ -438,7 +438,7 @@ export function AssistenteFactoDestaque({
                       : "mt-0.5 text-sm"
                 }`}
               >
-                Assistente Facto{" "}
+              Assistente Facto{" "}
                 <span className="assistente-ia-shimmer">IA</span>
               </p>
               {!compacto && (

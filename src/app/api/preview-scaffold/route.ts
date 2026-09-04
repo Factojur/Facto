@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { exigirAcessoAreaMinuta } from "@/lib/acesso-minuta-api";
 import { buscarConhecimentoRelacionado } from "@/lib/base-conhecimento";
+import { extrairDadosOcr } from "@/lib/extrair-dados-ocr";
 import {
-  gerarPecaJec,
-  type GerarPecaJecInput,
-} from "@/lib/gerar-peca-jec";
+  autoresAPartirDosNomes,
+  reusAPartirDosNomes,
+} from "@/lib/partes-ja-qualificadas";
 import { formatarOabAssinatura } from "@/lib/formatar-oab";
 import {
   aplicarFlagReconvencao,
@@ -16,8 +17,12 @@ import {
   resolverPoloGeracao,
 } from "@/lib/polo-advocacia";
 import { opcoesLastroFromPayload } from "@/lib/chat-minuta";
+import { montarScaffoldDocumentFirst } from "@/lib/scaffold-document-first";
 import type { JurisCasoPayload } from "@/lib/juris-caso-types";
 import type { ReplicaContestacaoResumo } from "@/lib/entrada-caso-types";
+import type { GerarPecaJecInput } from "@/lib/gerar-peca-jec";
+import type { TopicoPlanejado } from "@/lib/ia/plano-topicos-peca";
+import type { EscritorioConfig } from "@/lib/escritorio-types";
 
 export const maxDuration = 45;
 
@@ -26,10 +31,14 @@ type PreviewScaffoldBody = GerarPecaJecInput & {
   replicaContestacao?: ReplicaContestacaoResumo | null;
   jurisDoCaso?: JurisCasoPayload[] | null;
   tribunaisPreferidos?: string[];
+  /** Plano da triagem — preview document-first (não usa esqueleto JEC). */
+  topicos?: TopicoPlanejado[] | null;
+  escritorio?: EscritorioConfig;
 };
 
 /**
- * POST /api/preview-scaffold — peça forense na forma (scaffold), sem redação IA. Não consome cota.
+ * POST /api/preview-scaffold — forma forense document-first (0 cota).
+ * Chat: OCR + tópicos do plano. Não passa mais por gerarPecaJec (template antigo).
  */
 export async function POST(request: Request) {
   try {
@@ -51,6 +60,7 @@ export async function POST(request: Request) {
     if (!gate.ok) return gate.response;
     const { user, areaId } = gate;
 
+    // Chat MinutaIA: espécie do payload/IA prevalece — sem re-inferir pelo kit.
     const especiePayload = String(body.especiePeca ?? "")
       .trim()
       .toLowerCase()
@@ -70,10 +80,33 @@ export async function POST(request: Request) {
     const poloRag =
       resolverPoloGeracao(areaId, especie, body.poloAdvocacia) ?? "ativo";
 
+    const dadosOcr = extrairDadosOcr(body.fatos);
+
+    const comarcaEnriquecida = {
+      ...body.comarca,
+      foro: body.comarca?.foro?.trim() || dadosOcr.foro || body.comarca?.foro,
+      uf: body.comarca?.uf?.trim() || dadosOcr.uf || body.comarca?.uf,
+      numeroProcesso:
+        body.comarca?.numeroProcesso?.trim() ||
+        dadosOcr.numeroProcesso ||
+        body.comarca?.numeroProcesso,
+      numeroJuizado:
+        body.comarca?.numeroJuizado?.trim() ||
+        dadosOcr.vara ||
+        body.comarca?.numeroJuizado,
+    };
+
+    const autoresEnriquecidos = body.autores?.length
+      ? body.autores
+      : autoresAPartirDosNomes(dadosOcr.autores.join("; "));
+    const reusEnriquecidos = body.reus?.length
+      ? body.reus
+      : reusAPartirDosNomes(dadosOcr.reus.join("; "));
+
     const ufComarca =
-      body.comarca?.uf?.trim() ||
-      (body.comarca?.foro
-        ? extrairCidadeUfDoForo(body.comarca.foro).uf
+      comarcaEnriquecida.uf?.trim() ||
+      (comarcaEnriquecida.foro
+        ? extrairCidadeUfDoForo(comarcaEnriquecida.foro).uf
         : "");
     if (ufComarca && !ufValida(ufComarca)) {
       return NextResponse.json(
@@ -95,7 +128,7 @@ export async function POST(request: Request) {
       especiePeca: especie,
       poloAdvocacia: poloRag,
       tribunaisPreferidos: body.tribunaisPreferidos,
-      comarca: body.comarca,
+      comarca: comarcaEnriquecida,
     });
 
     const baseConhecimento = await buscarConhecimentoRelacionado(
@@ -106,29 +139,42 @@ export async function POST(request: Request) {
       opcoesLastro
     );
 
-    const scaffold = gerarPecaJec({
-      ...body,
+    const scaffold = montarScaffoldDocumentFirst({
+      fatos: body.fatos,
       areaId,
       especiePeca: especie,
-      baseConhecimento,
+      tipoAcao: body.tipoAcao,
+      comarca: comarcaEnriquecida,
+      autores: autoresEnriquecidos,
+      reus: reusEnriquecidos,
+      topicos: body.topicos ?? null,
+      poloAdvocacia: body.poloAdvocacia ?? null,
+      escritorio: body.escritorio,
       autorNome: user.user_metadata?.nome_completo as string | undefined,
       autorOab: oabFormatada,
-      escritorio: body.escritorio,
-      modoPreview: true,
     });
 
     return NextResponse.json({
       ok: true,
-      modo: "scaffold",
+      modo: "scaffold-document-first",
       areaId,
       especiePeca: especie,
       tipoAcao: body.tipoAcao,
       peca: scaffold.peca,
       pecaHtml: scaffold.pecaHtml,
-      valorCausaResumo: scaffold.valorCausaResumo ?? null,
-      avisoPreview:
-        "Pré-visualização forense: endereçamento, estrutura e pedidos já estão na forma final. A fundamentação completa será redigida ao confirmar (consome 1 peça).",
-      baseConhecimentoUtilizada: scaffold.baseConhecimentoUtilizada ?? [],
+      valorCausaResumo: null,
+      dadosOcrExtraidos: {
+        numeroProcesso: dadosOcr.numeroProcesso,
+        foro: dadosOcr.foro,
+        uf: dadosOcr.uf,
+        autores: dadosOcr.autores,
+        reus: dadosOcr.reus,
+        tipoAcaoInferido: dadosOcr.tipoAcaoInferido,
+        ultimoAto: dadosOcr.ultimoAto,
+        valorCausa: dadosOcr.valorCausa,
+      },
+      avisoPreview: null,
+      baseConhecimentoUtilizada: baseConhecimento ?? [],
     });
   } catch (erro) {
     console.error("[preview-scaffold]", erro);

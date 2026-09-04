@@ -33,7 +33,7 @@ function IconCheckCircle({ className }: { className?: string }) {
 /** Padrões MinutaIA-like: (fls. 34), art. 5º CF, Lei 12.016/2009. */
 const RE_FLS = /(\(?\s*fls?\.?\s*[\d]+(?:\s*\/\s*[\d]+)?(?:\s*e\s*[\d]+)?\s*\)?)/gi;
 const RE_LEI =
-  /((?:art(?:igo)?\.?\s*\d+[º°]?(?:\s*,\s*(?:inciso\s+[IVXLCDM]+|§\s*\d+[º°]?))?[^,.;]{0,40}(?:constitui[cç][aã]o federal|c[oó]digo de processo civil|c[oó]digo civil|cpc|cf|lei\s+n?[º°.]?\s*[\d./]+(?:\/\d{2,4})?))|(?:lei\s+n?[º°.]?\s*[\d./]+(?:\/\d{2,4})?))/gi;
+  /((?:art(?:igos?)?\.?\s*\d+[º°]?(?:\s*,\s*\d+[º°]?)*(?:\s*e\s*\d+[º°]?)?(?:\s*,\s*(?:inciso\s+[IVXLCDM]+|§\s*\d+[º°]?))?[^,.;]{0,48}(?:constitui[cç][aã]o federal|c[oó]digo de processo civil|c[oó]digo civil|cpc|cf|cdc|clt|lei\s+n?[º°.]?\s*[\d./]+(?:\/\d{2,4})?))|(?:lei\s+n?[º°.]?\s*[\d./]+(?:\/\d{2,4})?)|(?:constitui[cç][aã]o federal)|(?:c[oó]digo de processo civil))/gi;
 
 type Props = {
   texto: string;

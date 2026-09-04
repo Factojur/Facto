@@ -5,6 +5,7 @@
 
 import type { AreaIdMinuta } from "@/lib/minuta-modulo";
 import { rotuloAreaChat } from "@/lib/chat-minuta";
+import { PERSONA_ADVOGADO_SENIOR_FACTO } from "@/lib/ia/assistente-facto-prompt";
 import {
   gerarTextoComGemini,
   geminiConfigurado,
@@ -67,7 +68,7 @@ export async function inferirCasoComGemini(input: {
     ? `\nPista local (não vincule; use só se coincidir com a boa técnica): área=${input.pistaLocal.areaId ?? "?"} espécie=${input.pistaLocal.especiePeca ?? "?"}`
     : "";
 
-  const system = `Você é um advogado sênior brasileiro com liberdade total para interpretar o caso — no mesmo espírito do MinutaIA.
+  const system = `${PERSONA_ADVOGADO_SENIOR_FACTO}
 
 Missão: classificar área e espécie da peça a redigir AGORA, com base nos fatos e no último ato processual.
 

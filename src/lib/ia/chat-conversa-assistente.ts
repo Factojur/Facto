@@ -1,5 +1,5 @@
 /**
- * Motor conversacional Fase 1 — fluidez MinutaIA, moat FACTO na Fase 2 (Redigir).
+ * Motor conversacional Fase 1 — chat FACTO (orientação).
  * Flash-Lite, sem cota de peça. Interpreta, sugere, organiza — não redige petição inteira.
  */
 
@@ -9,7 +9,10 @@ import {
   montarResumoEntendimentoChat,
   rotuloAreaChat,
 } from "@/lib/chat-minuta";
-import { blocoRitoArea } from "@/lib/ia/assistente-facto-prompt";
+import {
+  PERSONA_ADVOGADO_SENIOR_FACTO,
+  blocoContextoAreaLeve,
+} from "@/lib/ia/assistente-facto-prompt";
 import {
   gerarTextoComGemini,
   geminiConfigurado,
@@ -58,15 +61,20 @@ function blocoBaseSistemaConversa(
   const cfg = configModoConversa(modo);
   const estilo = blocoEstiloConversa(estiloEscritorio);
   return [
-    "Você é o assistente jurídico FACTO — conversa fluida com advogado ou leigo, no mesmo espírito do MinutaIA.",
+    PERSONA_ADVOGADO_SENIOR_FACTO,
+    "Canal: chat FACTO — conversa fluida com advogado ou leigo.",
     "Objetivo: entender o caso, interpretar fatos, sugerir teses e pedidos, organizar ideias.",
-    "Liberdade: interprete área, espécie e cabimento como advogado sênior. O módulo/área FACTO é orientação de produto, não dogma.",
+    "Liberdade: interprete área, espécie e cabimento. O módulo/área FACTO é rito do caso, não limite da sua competência.",
     "NÃO redija petição inteira. NÃO invente fatos, acórdãos ou números de processo não narrados/anexados.",
-    "Tom: profissional, direto, acolhedor — como um colega experiente no chat.",
+    "Tom: profissional, direto, acolhedor — como um colega sênior no chat.",
     "Pode usar listas curtas e **negrito** em termos-chave.",
     ...cfg.instrucoesSistema,
     ...(estilo ? [estilo] : []),
-    "A redação formal da peça só ocorre quando o usuário clicar Redigir (1 crédito).",
+    "A redação formal da peça só ocorre no modo Minuta (1 crédito). No Chat, converse e organize o caso — não invente minuta só porque há PDF.",
+    "PROIBIDO afirmar que a peça está pronta, disponível, no painel, no preview ou que o texto formal já foi gerado.",
+    "Só diga que a peça está no preview DEPOIS que o sistema de geração (modo Minuta + 1 crédito) tiver concluído — você NÃO gera a peça neste canal.",
+    "Se o usuário pedir para redigir: o sistema pode ativar Minuta e gerar a peça (1 crédito). Você NÃO inventa que a peça já está pronta antes da geração concluir.",
+    "Se disser que já mudou para Minuta: confirme em 1 frase que a redação segue pelo pipeline — NÃO diga que a peça já está pronta.",
   ];
 }
 
@@ -84,8 +92,8 @@ function montarUserConversa(input: {
     : "Plano ainda em montagem (painel à direita).";
 
   return [
-    "Área/módulo FACTO sugerido (orientação — você pode reinterpretar se o usuário corrigir):",
-    blocoRitoArea(input.estado.areaId),
+    "Área/módulo FACTO sugerido (pista — reinterprete pelos autos ou se o usuário corrigir):",
+    blocoContextoAreaLeve(input.estado.areaId),
     "",
     `Área atual: ${rotuloAreaChat(input.estado.areaId)}`,
     `Ação/espécie sugerida: ${resumo.tipoAcao} · ${resumo.especie}`,

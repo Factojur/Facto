@@ -81,17 +81,19 @@ export function blocoCoberturaTesesParaRedator(
   const pedidosFaltando = itens.filter((i) => !i.noPlano && !i.exigeSubtopico);
 
   const linhas = [
-    "<COBERTURA_OBRIGATORIA>",
-    "Cada tese e pedido abaixo DEVE constar em DO DIREITO (subtópico) e/ou DOS PEDIDOS.",
-    "Não omita instituto manifestamente cabível ao relato.",
+    "<COBERTURA_SUGERIDA>",
+    "Guia de teses/pedidos — cubra o que o CASO comportar. Liberdade argumentativa total dentro do relato.",
+    "NÃO force instituto fora dos autos; NÃO omita pedido explícito do advogado.",
     "",
   ];
 
   if (teses.length) {
-    linhas.push("Teses canônicas do caso:");
+    linhas.push("Teses canônicas sugeridas:");
     for (const t of teses) {
       const ok = itens.find((i) => i.id === t.id)?.noPlano;
-      linhas.push(`- ${t.rotulo} (${t.artigos})${ok ? "" : " ← incluir subtópico no direito"}`);
+      linhas.push(
+        `- ${t.rotulo} (${t.artigos})${ok ? "" : " ← considerar subtópico no direito se cabível"}`
+      );
     }
   }
 
@@ -106,7 +108,7 @@ export function blocoCoberturaTesesParaRedator(
     return "";
   }
 
-  linhas.push("</COBERTURA_OBRIGATORIA>");
+  linhas.push("</COBERTURA_SUGERIDA>");
   return linhas.join("\n");
 }
 

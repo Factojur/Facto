@@ -47,6 +47,33 @@ export async function validarSessaoPecasAtiva(
   return { ok: true };
 }
 
+/** Status para login / UI: há sessão em outro dispositivo? */
+export async function statusSessaoPecasParaUi(userId: string): Promise<{
+  valida: boolean;
+  pendente: boolean;
+  outraMaquina: boolean;
+}> {
+  const cookieSessao = await obterCookieSessao();
+  const supabase = await createClient();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("sessao_ativa_id")
+    .eq("id", userId)
+    .maybeSingle();
+
+  const ativa = profile?.sessao_ativa_id ?? null;
+  if (!ativa) {
+    return { valida: true, pendente: !cookieSessao, outraMaquina: false };
+  }
+  if (!cookieSessao) {
+    return { valida: true, pendente: true, outraMaquina: true };
+  }
+  if (cookieSessao === ativa) {
+    return { valida: true, pendente: false, outraMaquina: false };
+  }
+  return { valida: false, pendente: true, outraMaquina: true };
+}
+
 /** Registra nova sessão ativa de peças (invalida outras máquinas no dashboard). */
 export async function registrarSessaoPecasAtiva(userId: string) {
   const supabase = await createClient();

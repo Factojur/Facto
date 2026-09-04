@@ -75,8 +75,6 @@ import {
   metaEspecieKit,
   tituloPecaKit,
 } from "@/lib/especies-restantes";
-import { ajustarEspecieCabivel } from "@/lib/peca-cabivel-autos";
-
 const ROMANOS_ESQUELETO = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"] as const;
 
 export type SecaoEsqueletoArea = {
@@ -148,36 +146,19 @@ export function idsPeticaoInicialDaArea(areaId: string): readonly string[] {
   return moduloDaArea(areaId).idsPeticaoInicial;
 }
 
+/**
+ * Espécie só se vier explícita (formulário/IA).
+ * Sem chute por kit, menção nos autos ou último ato — isso competia com Gemini/Claude.
+ */
 export function inferirEspecieDaArea(
-  areaId: string,
-  tipoAcao: string,
-  fatos?: string,
+  _areaId: string,
+  _tipoAcao: string,
+  _fatos?: string,
   especieExplicita?: string | null
 ): string {
-  let especie: string;
-  if (areaId === "consumidor") {
-    especie = inferirEspecieConsumidor(tipoAcao, fatos, especieExplicita);
-  } else if (areaId === "civil") {
-    especie = inferirEspecieCivil(tipoAcao, fatos, especieExplicita);
-  } else if (areaId === "trabalhista") {
-    especie = inferirEspecieTrabalhista(tipoAcao, fatos, especieExplicita);
-  } else if (areaId === "familia") {
-    especie = inferirEspecieFamilia(tipoAcao, fatos, especieExplicita);
-  } else if (areaId === "imobiliario") {
-    especie = inferirEspecieImobiliario(tipoAcao, fatos, especieExplicita);
-  } else if (areaId === "jecr") {
-    especie = inferirEspecieJecr(tipoAcao, fatos, especieExplicita);
-  } else if (kitDaArea(areaId)) {
-    especie = inferirEspecieKit(areaId, tipoAcao, fatos, especieExplicita);
-  } else {
-    especie = inferirEspeciePeca(tipoAcao, fatos, especieExplicita);
-  }
-  return ajustarEspecieCabivel({
-    areaId,
-    especie,
-    tipoAcao,
-    fatos,
-  });
+  const fixa = especieExplicita?.trim();
+  if (!fixa) return "";
+  return fixa.toLowerCase().replace(/\s+/g, "-");
 }
 
 export function blocoEstruturaDaArea(areaId: string, especie: string): string {
@@ -200,7 +181,45 @@ export function blocoEstruturaDaArea(areaId: string, especie: string): string {
     base = blocoEstruturaPrompt(especie as EspeciePecaJec);
   }
   const qual = extrasQualificacaoEstruturaPrompt(areaId, especie);
-  return qual.length ? `${base}\n${qual.join("\n")}` : base;
+  const bruto = qual.length ? `${base}\n${qual.join("\n")}` : base;
+  return aliviarGuiaEstruturaPrompt(bruto);
+}
+
+/**
+ * Guia de seções MinutaIA-style: tira rito pesado e tom “obrigatório/kit”.
+ * Mantém títulos romanos como praxe sugerida, não trava.
+ */
+export function aliviarGuiaEstruturaPrompt(texto: string): string {
+  return texto
+    .split("\n")
+    .map((linha) => {
+      const l = linha.trim();
+      if (/ESTRUTURA\s+OBRIGAT[OÓ]RIA/i.test(l)) {
+        return "ESTRUTURA FORENSE SUGERIDA (praxe — adapte aos autos; não é kit fechado):";
+      }
+      if (/REGRA:\s*NÃO\s+invente\s+t[oó]picos/i.test(l)) {
+        return "Prefira os tópicos abaixo; acrescente ou omita se os AUTOS exigirem outra organização.";
+      }
+      return linha;
+    })
+    .filter((linha) => {
+      const l = linha.trim();
+      if (!l) return true;
+      if (/^Rito:\s/i.test(l)) return false;
+      if (
+        /\bNÃO\s+aplique\b|\bNÃO\s+diga\b|\bNÃO\s+use\s+Lei\b|\bNÃO\s+use\s+apelação\b|\bNÃO\s+trate\s+esta\s+demanda\b|\bNÃO\s+confunda\b/i.test(
+          l
+        )
+      ) {
+        return false;
+      }
+      if (/^NÃO\s+aplique\b/i.test(l)) return false;
+      if (/NÃO\s+invente\s+t[oó]picos\s+romanos\s+fora/i.test(l)) return false;
+      return true;
+    })
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 export function metaEspecieDaArea(areaId: string, especie: string) {

@@ -1,5 +1,35 @@
-/** Modo da conversa Fase 1 — fluidez (instantâneo) vs estratégia (planejado). */
+/** Papel da barra: Chat conversa; Minuta redige a peça. */
+export type PapelInteracaoChat = "chat" | "minuta";
 
+export const PAPEL_INTERACAO_PADRAO: PapelInteracaoChat = "chat";
+
+export const STORAGE_PAPEL_INTERACAO = "facto_chat_papel_interacao";
+
+export function normalizarPapelInteracao(raw: unknown): PapelInteracaoChat {
+  return raw === "minuta" ? "minuta" : "chat";
+}
+
+export function lerPapelInteracaoStorage(): PapelInteracaoChat {
+  if (typeof window === "undefined") return PAPEL_INTERACAO_PADRAO;
+  try {
+    return normalizarPapelInteracao(
+      localStorage.getItem(STORAGE_PAPEL_INTERACAO)
+    );
+  } catch {
+    return PAPEL_INTERACAO_PADRAO;
+  }
+}
+
+export function salvarPapelInteracaoStorage(papel: PapelInteracaoChat): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_PAPEL_INTERACAO, papel);
+  } catch {
+    /* quota / privado */
+  }
+}
+
+/** Instantâneo vs Planejado — só no modo Minuta. */
 export type ModoConversaChat = "instantaneo" | "planejado";
 
 export const MODO_CONVERSA_PADRAO: ModoConversaChat = "instantaneo";
@@ -46,16 +76,17 @@ export function configModoConversa(modo: ModoConversaChat): ConfigModoConversa {
     return {
       modo,
       rotulo: "Planejado",
-      dica: "Respostas mais reflexivas e plano estratégico atualizado a cada turno.",
+      dica: "No modo Minuta: refina a estratégia e redige quando o lastro da peça estiver completo.",
       maxOutputTokens: 2400,
       temperature: 0.5,
       instrucoesSistema: [
         "Modo PLANEJADO: resposta reflexiva e estratégica.",
         "2–4 parágrafos fluidos (até 12 frases). Organize teses, riscos e próximos passos.",
         "Relacione com o plano à direita quando fizer sentido.",
+        "NÃO redija a petição inteira. A peça só nasce no modo Minuta.",
         "Termine com pergunta útil ou próximo passo quando faltar dado relevante.",
       ],
-      forcarPlanoAposTurno: true,
+      forcarPlanoAposTurno: false,
       debouncePlanoMs: 650,
     };
   }
@@ -63,13 +94,14 @@ export function configModoConversa(modo: ModoConversaChat): ConfigModoConversa {
   return {
     modo,
     rotulo: "Instantâneo",
-    dica: "Respostas curtas e rápidas — ideal para tirar dúvidas e iterar no relato.",
+    dica: "No modo Minuta: gera a peça logo após a instrução.",
     maxOutputTokens: 900,
     temperature: 0.35,
     instrucoesSistema: [
       "Modo INSTANTÂNEO: resposta curta e direta.",
       "1–2 parágrafos (até 6 frases). Priorize clareza e velocidade.",
       "Uma pergunta objetiva no fim, se faltar dado crítico.",
+      "NÃO redija a petição aqui. A peça só nasce no modo Minuta.",
     ],
     forcarPlanoAposTurno: false,
     debouncePlanoMs: 400,

@@ -69,7 +69,7 @@ export const AGENTES_FACTO = [
 export type AgenteFactoId = (typeof AGENTES_FACTO)[number]["id"];
 
 export type EtapaEquipeFacto = {
-  id: AgenteFactoId | "pesquisa_sumulas";
+  id: AgenteFactoId | "pesquisa_sumulas" | "formatador";
   skin: string;
   titulo: string;
   status: "ok" | "parcial" | "pulado" | "erro";

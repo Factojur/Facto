@@ -15,7 +15,10 @@ import {
   modelosRedacao,
   MODELOS_TRIAGEM,
 } from "@/lib/ia/gemini-client";
-import { ritoDaArea } from "@/lib/area-rito";
+import {
+  PERSONA_ADVOGADO_SENIOR_FACTO,
+  blocoContextoAreaLeve,
+} from "@/lib/ia/assistente-facto-prompt";
 
 function extrairJsonObjeto(texto: string): Record<string, unknown> | null {
   const limpo = texto
@@ -58,8 +61,26 @@ function boolField(v: unknown, fallback = false): boolean {
   return fallback;
 }
 
+const JSON_CLASSIF = [
+  "Responda SOMENTE com JSON válido (sem markdown), neste formato:",
+  "{",
+  '  "tipoAcao": "<nome forense completo>",',
+  '  "tutelaUrgencia": true|false,',
+  '  "danosMorais": true|false,',
+  '  "danosMateriais": true|false,',
+  '  "justificativa": "<texto>"',
+  "}",
+].join("\n");
+
 function systemClassificacao(areaId: string): string {
-  return ritoDaArea(areaId).classificador;
+  return [
+    PERSONA_ADVOGADO_SENIOR_FACTO,
+    "Tarefa: nomear a ação/peça cabível a partir dos FATOS (JSON).",
+    "A área abaixo é pista do sistema — reinterprete juízo e remédio pelos autos se divergir.",
+    blocoContextoAreaLeve(areaId),
+    "Não invente fatos. Se ambíguo, escolha o remédio mais fiel ao último ato e aos pedidos narrados.",
+    JSON_CLASSIF,
+  ].join("\n\n");
 }
 
 /** Modelos com melhor suporte a Google Search grounding. */
@@ -94,7 +115,7 @@ export async function analisarCaseComGemini(input: {
       fatos.slice(0, 12_000),
       "</FATOS_DO_CASO>",
       "",
-      ritoDaArea(areaId).nomenclaturaUser,
+      "Com base nos fatos (pista de área acima — reinterprete se necessário),",
       "nomeie a ação cabível e indique cúmulos.",
     ].join("\n"),
     modelos: MODELOS_ASSISTENTE_BUSCA,

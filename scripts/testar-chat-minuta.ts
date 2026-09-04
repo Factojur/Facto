@@ -17,17 +17,21 @@ import {
   precisaEscolherTribunais,
   poloExigeConfirmacaoChat,
   sanitizarPartesPayloadChat,
+  especieResolvidaChat,
   validarPoloChat,
 } from "../src/lib/chat-minuta";
 import { limiteAjustesPorPlano } from "../src/lib/ia/ajustar-trecho-peca";
 import { sanitizarEstadoChat } from "../src/lib/chat-minuta-storage";
 import {
   classificarIntencaoChat,
+  respostaMetaAjuda,
   respostaMetaLeiJuris,
 } from "../src/lib/chat-minuta-intencao";
 import { extrairPartesDoRelato } from "../src/lib/extrair-partes-relato";
 import { detectarRelatoMistoAreas } from "../src/lib/chat-anti-contaminacao";
 import { autoresAPartirDosNomes, reusAPartirDosNomes } from "../src/lib/partes-ja-qualificadas";
+import { configModoConversa } from "../src/lib/modo-conversa-chat";
+import { deveEntregarPecaAposPlano } from "../src/lib/chat-minuta-redacao";
 import { pecaUsaEmFaceDeReu } from "../src/lib/peca-especie-area";
 import {
   extrairQualificacaoDoRelato,
@@ -403,6 +407,18 @@ function main() {
     }) === "ajuste_peca",
     "intenção ajuste pós-redação"
   );
+  assert(
+    classificarIntencaoChat({
+      texto: "mude o valor da causa para R$ 12.000",
+      casoJaOrganizado: true,
+      pecaGerada: true,
+    }) === "ajuste_peca",
+    "ajuste pós-peça mesmo citando valor da causa"
+  );
+  assert(
+    respostaMetaAjuda().includes("/"),
+    "ajuda menciona atalho barra"
+  );
 
   const estadoVelho = {
     ...estadoCasoChatVazio("jec"),
@@ -453,6 +469,53 @@ function main() {
     reusAPartirDosNomes("Enel São Paulo")
   );
   assert(hcPartes.reus.length === 0, "HC remove Enel do payload");
+
+  assert(
+    configModoConversa("instantaneo").forcarPlanoAposTurno === false,
+    "instantâneo não força peça no Chat"
+  );
+  assert(
+    configModoConversa("planejado").forcarPlanoAposTurno === false,
+    "planejado não força peça no Chat"
+  );
+
+  const eVazio = estadoCasoChatVazio("jec");
+  assert(
+    !deveEntregarPecaAposPlano({
+      papel: "chat",
+      modo: "instantaneo",
+      estado: eVazio,
+    }),
+    "modo Chat nunca entrega peça"
+  );
+  const eRico = {
+    ...eVazio,
+    fatos: "A ".repeat(80) + "Autor João contra a Enel por corte indevido de energia.",
+    autoresNomes: ["João"],
+    reusNomes: ["Enel"],
+    especiePeca: "peticao-inicial",
+  };
+  assert(
+    deveEntregarPecaAposPlano({
+      papel: "minuta",
+      modo: "instantaneo",
+      estado: eRico,
+    }),
+    "modo Minuta instantâneo entrega com lastro"
+  );
+
+  assert(
+    estadoCasoChatVazio().areaId === "civil",
+    "default do chat é catálogo neutro (civil), não JEC"
+  );
+  assert(
+    estadoCasoChatVazio().poloAdvocacia === null,
+    "polo começa indefinido — IA decide"
+  );
+  assert(
+    especieResolvidaChat(estadoCasoChatVazio()) === "",
+    "sem espécie fantasma sem IA"
+  );
 
   const { oks, falhas } = stats();
   console.log(`\n${oks} ok · ${falhas} falha(s)`);

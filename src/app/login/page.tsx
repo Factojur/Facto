@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import { FactoLogo } from "@/components/brand/facto-logo";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
+import { SessaoOutraMaquinaDialog } from "@/components/auth/sessao-outra-maquina-dialog";
 import { createClient } from "@/lib/supabase/client";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { PLANO_TRIAL } from "@/lib/planos-facto";
@@ -24,6 +25,34 @@ async function registrarSessaoAtiva(): Promise<{ ok: boolean; erro?: string }> {
   }
 }
 
+type StatusSessao = {
+  valida?: boolean;
+  pendente?: boolean;
+  outraMaquina?: boolean;
+};
+
+async function lerStatusSessao(): Promise<{
+  statusHttp: number;
+  data: StatusSessao | null;
+}> {
+  const check = await fetch("/api/auth/sessao", { cache: "no-store" });
+  const data = check.ok
+    ? ((await check.json()) as StatusSessao)
+    : check.status === 200 || check.status === 401
+      ? ((await check.json().catch(() => null)) as StatusSessao | null)
+      : null;
+  return { statusHttp: check.status, data };
+}
+
+function precisaConfirmarOutraMaquina(
+  statusHttp: number,
+  data: StatusSessao | null
+): boolean {
+  if (data?.outraMaquina) return true;
+  if (statusHttp === 401) return true;
+  return false;
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -32,6 +61,9 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [conflitoSessao, setConflitoSessao] = useState(false);
+  const [assumindoSessao, setAssumindoSessao] = useState(false);
+  const [manteveOutro, setManteveOutro] = useState(false);
   const trialOk = searchParams.get("trial") === "ok";
   const sessaoEncerrada = searchParams.get("sessao") === "encerrada";
   const acessoExpirado = searchParams.get("acesso") === "expirado";
@@ -50,18 +82,18 @@ function LoginForm() {
       } = await supabase.auth.getUser();
 
       if (user) {
-        const check = await fetch("/api/auth/sessao", { cache: "no-store" });
-        if (check.status === 401 || check.status === 200) {
-          const data = check.ok
-            ? ((await check.json()) as { valida?: boolean; pendente?: boolean })
-            : null;
-          if (check.status === 401 || data?.pendente) {
-            const reg = await registrarSessaoAtiva();
-            if (!reg.ok) {
-              setError(reg.erro ?? "Não foi possível validar a sessão.");
-              setCheckingSession(false);
-              return;
-            }
+        const { statusHttp, data } = await lerStatusSessao();
+        if (precisaConfirmarOutraMaquina(statusHttp, data)) {
+          setConflitoSessao(true);
+          setCheckingSession(false);
+          return;
+        }
+        if (statusHttp === 200 && data?.pendente) {
+          const reg = await registrarSessaoAtiva();
+          if (!reg.ok) {
+            setError(reg.erro ?? "Não foi possível validar a sessão.");
+            setCheckingSession(false);
+            return;
           }
         }
         window.location.assign("/dashboard");
@@ -75,10 +107,33 @@ function LoginForm() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, sessaoEncerrada, acessoExpirado]);
 
+  async function abrirNesteComputador() {
+    setAssumindoSessao(true);
+    setError(null);
+    const reg = await registrarSessaoAtiva();
+    if (!reg.ok) {
+      setError(reg.erro ?? "Não foi possível abrir a sessão aqui.");
+      setAssumindoSessao(false);
+      return;
+    }
+    window.location.assign("/dashboard");
+  }
+
+  async function manterNoOutroDispositivo() {
+    setAssumindoSessao(true);
+    await fetch("/api/auth/sessao", { method: "DELETE" }).catch(() => null);
+    await supabase.auth.signOut();
+    setConflitoSessao(false);
+    setManteveOutro(true);
+    setAssumindoSessao(false);
+    setCheckingSession(false);
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setManteveOutro(false);
 
     const form = new FormData(e.currentTarget);
     const email = String(form.get("email"));
@@ -95,6 +150,13 @@ function LoginForm() {
       return;
     }
 
+    const { statusHttp, data } = await lerStatusSessao();
+    if (precisaConfirmarOutraMaquina(statusHttp, data)) {
+      setConflitoSessao(true);
+      setLoading(false);
+      return;
+    }
+
     const reg = await registrarSessaoAtiva();
     if (!reg.ok) {
       setError(reg.erro ?? "Não foi possível registrar a sessão.");
@@ -102,8 +164,6 @@ function LoginForm() {
       return;
     }
 
-    // Navegação completa garante que o cookie facto_sessao vá no próximo
-    // request (router.push às vezes corre antes do browser aplicar Set-Cookie).
     window.location.assign("/dashboard");
   }
 
@@ -117,6 +177,12 @@ function LoginForm() {
 
   return (
     <div className="relative flex min-h-full items-center justify-center bg-facto-dark px-4 py-12">
+      <SessaoOutraMaquinaDialog
+        aberto={conflitoSessao}
+        carregando={assumindoSessao}
+        onAbrirAqui={() => void abrirNesteComputador()}
+        onManterOutro={() => void manterNoOutroDispositivo()}
+      />
       <div
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(144,139,106,0.14),transparent_60%)]"
         aria-hidden
@@ -136,9 +202,18 @@ function LoginForm() {
         >
           {sessaoEncerrada && (
             <div className="mb-4 rounded-lg border border-amber-800/60 bg-amber-950/40 px-4 py-3 text-sm text-amber-200">
-              Sua sessão foi encerrada porque esta conta foi acessada em outro
-              dispositivo. Suas preferências e dados salvos no FACTO foram
-              preservados.
+              Esta conta passou a ser usada em outro computador. Você pode
+              entrar de novo aqui — vamos perguntar se deseja assumir esta
+              máquina ou manter a outra aberta. Casos e preferências salvos
+              permanecem intactos.
+            </div>
+          )}
+
+          {manteveOutro && (
+            <div className="mb-4 rounded-lg border border-stone-600 bg-stone-800/60 px-4 py-3 text-sm text-stone-300">
+              Ok — o FACTO continua no outro dispositivo. Quando quiser usar
+              neste computador, entre novamente e escolha “Abrir neste
+              computador”.
             </div>
           )}
 

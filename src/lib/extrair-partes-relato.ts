@@ -12,7 +12,7 @@ const CORTE_NOME =
   /\s+(?:teve|pede|pediu|pretende|ajuizou|entrou|move|prop[oõ]e|contra|em\s+face|versus|vs\.?|foram|foi|com\s+pedido)\b/i;
 
 const STOP_NOME =
-  /\b(processo|comarca|juizado|peti[cç][aã]o|danos|tutela|valor|reais|r\$|cpf|cnpj|rg)\b/i;
+  /\b(processo|comarca|juizado|peti[cç][aã]o|danos|tutela|valor|reais|r\$|cpf|cnpj|rg|promoveu|promove|ajuizou|interpoe|interp[oõ]e)\b/i;
 
 function limparNome(bruto: string): string {
   return bruto
@@ -39,6 +39,14 @@ function pareceNomeParte(nome: string): boolean {
   if (/^\d/.test(t)) return false;
   if (STOP_NOME.test(t)) return false;
   if (/^r\$\s*/i.test(t)) return false;
+  if (/\(fls\.?|\bfls\b/i.test(t)) return false;
+  if (
+    /^(foi|fora|sera|será|esta|está|vive|viveu|conviveu|apresentou|juntou|requereu|postulou)\b/i.test(
+      t
+    )
+  ) {
+    return false;
+  }
   return /[A-Za-zÀ-ú]/.test(t);
 }
 
@@ -124,8 +132,30 @@ export function extrairPartesDoRelato(texto: string): PartesExtraidasRelato {
     return { autoresNomes: [], reusNomes: [] };
   }
 
-  const autores: string[] = [];
-  const reus: string[] = [];
+  // Capa ESAJ / petição: "Requerente:" / "Requerido:" prevalecem sobre prosa.
+  const capaAutores = uniqNomes(
+    capturarTodos(
+      t,
+      /(?:^|\n)\s*(?:AUTOR(?:A)?|REQUERENTE|EXEQUENTE|RECLAMANTE)\s*[:\t]\s*([^\n]+)/gim
+    )
+  );
+  const capaReus = uniqNomes(
+    capturarTodos(
+      t,
+      /(?:^|\n)\s*(?:R[EÉ](?:U)?|REQUERID[OA]|EXECUTAD[OA]|RECLAMAD[OA]|RÉU)\s*[:\t]\s*([^\n]+)/gim
+    )
+  );
+  if (capaAutores.length && capaReus.length) {
+    return deduplicarAutorReu(
+      ajustarPartesBeneficioPrevidenciario(t, {
+        autoresNomes: capaAutores,
+        reusNomes: capaReus,
+      })
+    );
+  }
+
+  const autores: string[] = [...capaAutores];
+  const reus: string[] = [...capaReus];
 
   autores.push(
     ...capturarTodos(

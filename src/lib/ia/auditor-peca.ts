@@ -205,7 +205,8 @@ export function auditarPecaGerada(
     );
   }
 
-  if (/\[\[espaco/i.test(peca)) {
+  // [[ESPACO_*]] e [[JURIS]] são internos (preview/export). Só alerta marcadores estranhos.
+  if (/\[\[(?!ESPACO_|JURIS(?:\]\]|\/)|\/JURIS)[^\]]+\]\]/i.test(peca)) {
     push(
       achados,
       "marcador-interno",

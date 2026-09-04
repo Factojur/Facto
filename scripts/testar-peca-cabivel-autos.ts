@@ -50,13 +50,24 @@ function main() {
   });
   assert(ajustado === "agravo-instrumento", "overlay troca execução por agravo");
 
-  const inferido = inferirEspecieDaArea(
-    "jec",
-    "Cumprimento de sentença",
-    AUTOS_ASTREINTES,
-    "execucao"
+  const inferido = ajustarEspecieCabivel({
+    areaId: "jec",
+    especie: "execucao",
+    tipoAcao: "Cumprimento de sentença",
+    fatos: AUTOS_ASTREINTES,
+  });
+  assert(inferido === "agravo-instrumento", "ajustarEspecieCabivel não reabre o incidente");
+
+  // Pista explícita sem overlay de autos (inferirEspecieDaArea é pass-through).
+  assert(
+    inferirEspecieDaArea(
+      "jec",
+      "Cumprimento de sentença",
+      AUTOS_ASTREINTES,
+      "execucao"
+    ) === "execucao",
+    "inferirEspecieDaArea preserva a pista explícita (overlay fica em ajustarEspecieCabivel)"
   );
-  assert(inferido === "agravo-instrumento", "inferirEspecieDaArea não reabre o incidente");
 
   const meta = extrairMetadadosAutos(AUTOS_ASTREINTES);
   assert(meta.numeroProcesso === "0006509-93.2023.8.26.0016", "extrai CNJ");
@@ -205,6 +216,45 @@ function main() {
   );
   assert(metaJanela.truncado, "metadados: PDF longo truncado");
   assert(metaJanela.charsTotais > LIMITE_RELATO_TRIAGEM_CHARS, "metadados: chars totais");
+
+  const AUTOS_SENTENCA_FAMILIA = `
+TRIBUNAL DE JUSTIÇA DO ESTADO DE SÃO PAULO
+COMARCA DE ITARARÉ
+1ª VARA
+Processo Digital nº: 1000011-77.2025.8.26.0279
+Classe - Assunto Alimentos - Fixação
+Requerente: Luisa de Almeida Herlemann
+Requerido: Flávio Henrique de Oliveira Herlemann
+SENTENÇA
+Ante o exposto, JULGO PARCIALMENTE PROCEDENTE o pedido, com
+resolução de mérito, com fundamento no artigo 487, I, do Código de Processo Civil, para:
+A) RECONHECER e DISSOLVER a união estável;
+G) CONDENAR o requerido ao pagamento de alimentos no valor equivalente a 1/3
+dos seus rendimentos líquidos mensais.
+P.I.C.
+Itararé, 12 de dezembro de 2025.
+`;
+  assert(
+    pecaCabivelAposUltimoAto("familia", AUTOS_SENTENCA_FAMILIA) === "apelacao",
+    "família + sentença de mérito → apelação"
+  );
+  assert(
+    pecaCabivelAposUltimoAto("jec", AUTOS_SENTENCA_FAMILIA) === "recurso-inominado",
+    "JEC + sentença de mérito → recurso inominado"
+  );
+  assert(
+    ajustarEspecieCabivel({
+      areaId: "familia",
+      especie: "",
+      fatos: AUTOS_SENTENCA_FAMILIA,
+      poloAdvocacia: "passivo",
+    }) === "apelacao",
+    "overlay vazio + sentença → apelação (polo passivo)"
+  );
+  assert(
+    pecaCabivelAposUltimoAto("jec", AUTOS_ASTREINTES) === "agravo-instrumento",
+    "cumprimento + decisão interlocutória não vira apelação"
+  );
 
   const { oks, falhas } = stats();
   console.log(`\n${oks} ok, ${falhas} falhas`);

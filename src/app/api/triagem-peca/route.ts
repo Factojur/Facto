@@ -11,7 +11,6 @@ import { detectarTesesCanonicas } from "@/lib/teses-canonicas";
 import { geminiConfigurado } from "@/lib/ia/gemini-client";
 import {
   aplicarFlagReconvencao,
-  inferirEspecieDaArea,
 } from "@/lib/peca-especie-area";
 import { normalizarAreaIdMinuta } from "@/lib/minuta-modulo";
 import {
@@ -24,7 +23,6 @@ import {
   montarContextoTriagem,
 } from "@/lib/ia/triagem-caso-peca";
 import { erroGeracaoIaTransitivo } from "@/lib/ia/gemini-client";
-import { montarPlanoFallbackTriagem } from "@/lib/ia/plano-fallback-local";
 import { opcoesLastroFromPayload } from "@/lib/chat-minuta";
 import type { GerarPecaJecInput } from "@/lib/gerar-peca-jec";
 import type { JurisCasoPayload } from "@/lib/juris-caso-types";
@@ -163,24 +161,20 @@ export async function POST(request: Request) {
       );
     }
 
+    // Espécie só se o chat/IA já gravou — sem kit local.
     const especiePayload = String(body.especiePeca ?? "")
       .trim()
       .toLowerCase()
       .replace(/\s+/g, "-");
     const especie = aplicarFlagReconvencao(
       areaId,
-      especiePayload ||
-        inferirEspecieDaArea(
-          areaId,
-          body.tipoAcao,
-          body.fatos,
-          body.especiePeca
-        ),
+      especiePayload,
       body.comReconvencao
     );
-    mensagemPoloObrigatorioGeracao(areaId, especie, body.poloAdvocacia);
+    mensagemPoloObrigatorioGeracao(areaId, especie || "peticao", body.poloAdvocacia);
     const polo =
-      resolverPoloGeracao(areaId, especie, body.poloAdvocacia) ?? "ativo";
+      resolverPoloGeracao(areaId, especie || "peticao", body.poloAdvocacia) ??
+      "ativo";
     const teses = detectarTesesCanonicas(
       areaId,
       body.fatos,
@@ -303,30 +297,19 @@ export async function POST(request: Request) {
     });
 
     if (!triagem.ok) {
-      const fallback = montarPlanoFallbackTriagem({
-        areaId,
-        tipoAcao: body.tipoAcao,
-        fatos: body.fatos,
-        especiePeca: vinculos.especie,
-        pedidosUsuario: body.pedidosUsuario,
-        tesesIds: Array.isArray(body.tesesIds)
-          ? body.tesesIds.map((id) => String(id)).filter(Boolean)
-          : [],
-        motivo: erroGeracaoIaTransitivo(triagem.erro)
-          ? "serviço ocupado — tentando de novo em instantes"
-          : "análise estratégica indisponível",
-      });
-      const nCoberturaOk = fallback.cobertura.filter((i) => i.noPlano).length;
-      return NextResponse.json({
-        ok: true,
-        fallbackLocal: true,
-        estrategiaJuridica: fallback.estrategiaJuridica,
-        analiseEstrategica: fallback.analiseEstrategica,
-        topicos: fallback.topicos,
-        cobertura: fallback.cobertura,
-        coberturaResumo: `${nCoberturaOk}/${fallback.cobertura.length}`,
-        modelo: fallback.modelo,
-      });
+      // Sem plano-reserva local: a IA é a linha de frente.
+      return NextResponse.json(
+        {
+          ok: false,
+          error: erroGeracaoIaTransitivo(triagem.erro)
+            ? "A análise estratégica está ocupada. Tente de novo em instantes."
+            : triagem.erro || "Falha na análise estratégica.",
+          codigo: erroGeracaoIaTransitivo(triagem.erro)
+            ? "IA_INDISPONIVEL"
+            : "IA_FALHOU",
+        },
+        { status: erroGeracaoIaTransitivo(triagem.erro) ? 503 : 502 }
+      );
     }
 
     const nCoberturaOk = triagem.cobertura.filter((i) => i.noPlano).length;

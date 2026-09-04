@@ -11,6 +11,8 @@ import {
   extrairPartesDoRelato,
   mesclarPartesExtraidas,
 } from "@/lib/extrair-partes-relato";
+import { extrairDadosOcr } from "@/lib/extrair-dados-ocr";
+import { resumoFatosParaPainel } from "@/lib/filtrar-ruido-ocr-relato";
 import {
   aplicarQualificacaoExtraidaRelato,
   extrairQualificacaoDoRelato,
@@ -19,8 +21,8 @@ import {
 } from "@/lib/extrair-qualificacao-relato";
 import {
   analisarJanelaRelato,
-  pecaCabivelAposUltimoAto,
   resumoLeituraRelato,
+  rotulosEpigrafePeca,
 } from "@/lib/peca-cabivel-autos";
 import { extrasOrganizacaoLocal } from "@/lib/organizar-caso-local";
 import {
@@ -30,7 +32,6 @@ import {
 } from "@/lib/juris-provedores/tribunais-opcoes";
 import type { OpcoesBuscaConhecimento } from "@/lib/base-conhecimento";
 import { inferirPoloDoRelato, resolverPoloGeracao, especieCompativelComPolo, type PoloAdvocacia } from "@/lib/polo-advocacia";
-import { ajustarEspecieCabivel, rotulosEpigrafePeca } from "@/lib/peca-cabivel-autos";
 import {
   areaUsaPoloAdvocacia,
   inferirPoloPorEspecie,
@@ -148,6 +149,9 @@ export type EstadoCasoChat = {
   jurisCaso: JurisCasoChat[];
   leiMunicipalTitulo: string;
   leiMunicipalTexto: string;
+  /** Peça-modelo do advogado só neste caso (PDF/DOCX). */
+  modeloPecaNome: string;
+  modeloPecaTexto: string;
   valoresCausa: ValoresCausaChat;
   /** Até 3 tribunais para priorizar lastro (TJ + superiores). */
   tribunaisPreferidos: string[];
@@ -160,15 +164,18 @@ export type EstadoCasoChat = {
   qualificacaoReu: QualificacaoExtraida;
 };
 
+/** Catálogo neutro até a IA ler o caso — não pré-indica Juizado. */
+export const AREA_CHAT_NEUTRA: AreaIdMinuta = "civil";
+
 export function estadoCasoChatVazio(
-  areaId: AreaIdMinuta = "jec"
+  areaId: AreaIdMinuta = AREA_CHAT_NEUTRA
 ): EstadoCasoChat {
   return {
     areaId,
     fatos: "",
     tipoAcao: "",
     especiePeca: "",
-    poloAdvocacia: "ativo",
+    poloAdvocacia: null,
     poloConfirmado: false,
     pedirJusticaGratuita: false,
     tutelaUrgencia: false,
@@ -193,6 +200,8 @@ export function estadoCasoChatVazio(
     jurisCaso: [],
     leiMunicipalTitulo: "",
     leiMunicipalTexto: "",
+    modeloPecaNome: "",
+    modeloPecaTexto: "",
     valoresCausa: { danosMateriais: [], danosMorais: [] },
     tribunaisPreferidos: [],
     tribunaisDispensados: false,
@@ -204,17 +213,17 @@ export function estadoCasoChatVazio(
 
 const REGRAS_AREA: { id: AreaIdMinuta; re: RegExp; peso: number }[] = [
   { id: "jec", re: /juizado|9\.099|jec\b|pequenas causas/i, peso: 3 },
-  { id: "trabalhista", re: /trabalh|clt|reclamante|reclamad|tst\b|justiça do trabalho/i, peso: 3 },
+  { id: "trabalhista", re: /trabalhista|\bclt\b|reclamante|reclamad|\btst\b|\btrt\b|justiça do trabalho|justica do trabalho/i, peso: 3 },
   { id: "consumidor", re: /consumidor|cdc|fornecedor|vício do produto|propaganda enganosa/i, peso: 3 },
   {
     id: "familia",
-    re: /\bfamília\b(?!\s+na\s+cidade)|\bfamilia\b(?!\s+na\s+cidade)|\balimentos\b|\bguarda\b|\bdivórcio\b|\bdivorcio\b|\binventário\b/i,
+    re: /\bfamília\b(?!\s+na\s+cidade)|\bfamilia\b(?!\s+na\s+cidade)|\balimentos\b|\bguarda\b|\bdivórcio\b|\bdivorcio\b|\binventário\b|\bunião\s+estável\b|\buniao\s+estavel\b|\bpartilha\b/i,
     peso: 3,
   },
   { id: "imobiliario", re: /imobili|locação|locacao|despejo|usucapião|condomínio/i, peso: 3 },
   {
     id: "previdenciario",
-    re: /\bprevid|\binss\b|\bbenefício\b|\bbeneficio\b|\baposentadoria\b|\bbpc\b|\bloas\b|\bder\b|\bindefer/i,
+    re: /\bprevid|\binss\b|\baposentadoria\b|\bbpc\b|\bloas\b|\bder\b|(?<!em\s)\bbenef[ií]cio\b|\bindeferimento\s+(do\s+)?benef/i,
     peso: 4,
   },
   { id: "criminal", re: /habeas\s+corpus|pris[aã]o\s+preventiva|flagrante|furto\s+simples|art\.?\s*155|convers[aã]o\s+em\s+pris[aã]o/i, peso: 6 },
@@ -260,7 +269,7 @@ export function inferirAreaChatDetalhado(params: {
     .map(([areaId, score]) => ({ areaId, score }));
 
   if (ordenado.length === 0) {
-    const fallback: AreaIdMinuta = params.leigo ? "jec" : "civil";
+    const fallback: AreaIdMinuta = AREA_CHAT_NEUTRA;
     return {
       inferencia: {
         areaId: fallback,
@@ -283,12 +292,26 @@ export function inferirAreaChatDetalhado(params: {
     topId === "familia" &&
     segundoId === "previdenciario" &&
     topScore <= segundo + 1 &&
-    /\b(inss|bpc|loas|previd|beneficio|benefício|aposentadoria)\b/i.test(
+    /\b(inss|bpc|loas|previd|aposentadoria)\b/i.test(params.texto) &&
+    !/\b(alimentos|guarda|div[oó]rcio|uni[aã]o\s+est[aá]vel|partilha)\b/i.test(
       params.texto
     )
   ) {
     topId = "previdenciario";
     topScore = segundo;
+  }
+
+  // Família prevalece quando o núcleo é alimentos/guarda/união — mesmo empatado.
+  if (
+    (scores.get("familia") ?? 0) > 0 &&
+    /\b(alimentos|guarda|div[oó]rcio|uni[aã]o\s+est[aá]vel)\b/i.test(
+      params.texto
+    ) &&
+    topId !== "familia" &&
+    topId !== "criminal"
+  ) {
+    topId = "familia";
+    topScore = Math.max(topScore, scores.get("familia") ?? 0) + 1;
   }
 
   if (
@@ -426,24 +449,17 @@ export function montarResumoEntendimentoChat(estado: EstadoCasoChat): {
   pedidos: string[];
   foro: string;
 } {
-  const fatos = estado.fatos.trim();
-  const temConteudo = casoChatTemConteudo(estado);
-  const especie = temConteudo
-    ? inferirEspecieDaArea(
-        estado.areaId,
-        estado.tipoAcao || "Petição",
-        fatos,
-        estado.especiePeca || undefined
-      )
-    : "";
+  const fatosResumo = resumoFatosParaPainel(estado.fatos);
+  const especieFixa = estado.especiePeca?.trim();
   return {
-    fatosResumo: fatos.length
-      ? fatos.length > 480
-        ? `${fatos.slice(0, 480).trim()}…`
-        : fatos
-      : "",
+    fatosResumo:
+      fatosResumo ||
+      (estado.fatos.trim()
+        ? "Documento no contexto — oriente no chat o que pretende na peça."
+        : ""),
     tipoAcao: estado.tipoAcao.trim() || "—",
-    especie: temConteudo && especie ? especie.replace(/-/g, " ") : "—",
+    // Só o que a IA/advogado gravou — sem kit local inventando “execução”.
+    especie: especieFixa ? especieFixa.replace(/-/g, " ") : "A definir",
     autores: estado.autoresNomes.join(", ") || "—",
     reus: estado.reusNomes.join(", ") || "—",
     pedidos: estado.pedidos.filter(Boolean),
@@ -470,6 +486,8 @@ export type PayloadGeracaoChat = GerarPecaJecInput & {
     mimeType?: string;
     base64?: string;
   } | null;
+  /** Modelo de peça do advogado (só este caso) — forma, não fatos. */
+  modeloPeca?: { nome: string; texto: string } | null;
   jurisDoCaso?: JurisCasoPayload[] | null;
 };
 
@@ -574,6 +592,7 @@ export function montarPayloadGeracaoChat(
 
   let autoresNomes = estado.autoresNomes;
   let reusNomes = estado.reusNomes;
+  const ocr = extrairDadosOcr(estado.fatos);
   if (!autoresNomes.length || !reusNomes.length) {
     const extraidas = extrairPartesDoRelato(estado.fatos);
     const mesclado = mesclarPartesExtraidas(
@@ -583,6 +602,8 @@ export function montarPayloadGeracaoChat(
     autoresNomes = mesclado.autoresNomes;
     reusNomes = mesclado.reusNomes;
   }
+  if (!autoresNomes.length && ocr.autores.length) autoresNomes = ocr.autores;
+  if (!reusNomes.length && ocr.reus.length) reusNomes = ocr.reus;
 
   let autores = autoresAPartirDosNomes(autoresNomes.join("; "));
   let reus = reusAPartirDosNomes(reusNomes.join("; "));
@@ -608,7 +629,7 @@ export function montarPayloadGeracaoChat(
 
   return {
     areaId,
-    tipoAcao: estado.tipoAcao.trim() || "Petição",
+    tipoAcao: estado.tipoAcao.trim() || "",
     especiePeca: especie,
     fatos: estado.fatos.trim(),
     tutelaUrgencia: estado.tutelaUrgencia,
@@ -633,17 +654,21 @@ export function montarPayloadGeracaoChat(
     autores,
     reus,
     comarca: {
-      foro: estado.comarca.foro?.trim() || undefined,
+      foro: estado.comarca.foro?.trim() || ocr.foro || undefined,
       cidade: estado.comarca.cidade?.trim() || undefined,
-      uf: estado.comarca.uf?.trim() || undefined,
-      numeroJuizado: estado.comarca.numeroJuizado?.trim() || undefined,
-      numeroProcesso: estado.comarca.numeroProcesso?.trim() || undefined,
+      uf: estado.comarca.uf?.trim() || ocr.uf || undefined,
+      numeroJuizado:
+        estado.comarca.numeroJuizado?.trim() || ocr.vara || undefined,
+      numeroProcesso:
+        estado.comarca.numeroProcesso?.trim() ||
+        ocr.numeroProcesso ||
+        undefined,
     },
     valoresCausa,
     pedidosUsuario,
     tesesIds: estado.tesesIds,
     resumoEntrada: estado.resumoEntrada ?? undefined,
-    ultimoAto: estado.ultimoAto?.trim() || null,
+    ultimoAto: estado.ultimoAto?.trim() || ocr.ultimoAto || null,
     leituraRelato: janelaRelato.truncado
       ? resumoLeituraRelato({
           truncado: true,
@@ -657,6 +682,12 @@ export function montarPayloadGeracaoChat(
       estado.leiMunicipalTitulo,
       estado.leiMunicipalTexto
     ),
+    modeloPeca: estado.modeloPecaTexto.trim()
+      ? {
+          nome: estado.modeloPecaNome.trim() || "Modelo do advogado",
+          texto: estado.modeloPecaTexto.trim().slice(0, 80_000),
+        }
+      : null,
     jurisDoCaso: montarJurisDoCasoPayload(estado.jurisCaso),
     tribunaisPreferidos: estadoSync.tribunaisPreferidos,
   };
@@ -665,7 +696,7 @@ export function montarPayloadGeracaoChat(
 /** Completa campos novos em sessões antigas do localStorage/nuvem. */
 export function normalizarEstadoCasoChat(
   bruto: Partial<EstadoCasoChat> | null | undefined,
-  areaFallback: AreaIdMinuta = "jec"
+  areaFallback: AreaIdMinuta = AREA_CHAT_NEUTRA
 ): EstadoCasoChat {
   const base = estadoCasoChatVazio(
     bruto?.areaId
@@ -721,6 +752,14 @@ export function normalizarEstadoCasoChat(
       typeof bruto.areaMotivo === "string" ? bruto.areaMotivo : base.areaMotivo,
     planoVisto: Boolean(bruto.planoVisto ?? bruto.previewVisto),
     previewVisto: Boolean(bruto.previewVisto ?? bruto.planoVisto),
+    modeloPecaNome:
+      typeof bruto.modeloPecaNome === "string"
+        ? bruto.modeloPecaNome
+        : base.modeloPecaNome,
+    modeloPecaTexto:
+      typeof bruto.modeloPecaTexto === "string"
+        ? bruto.modeloPecaTexto
+        : base.modeloPecaTexto,
   };
 }
 
@@ -999,30 +1038,12 @@ export function sincronizarComarcaDaQualificacao(
 }
 
 export function especieResolvidaChat(estado: EstadoCasoChat): string {
-  // Chat MinutaIA-style: se a espécie do caso já está definida (IA),
-  // não re-varre o relato inteiro — PDF antigo com "contestação" não pode sobrescrever.
+  // Espécie só a que a IA (ou o advogado) gravou. Sem kit, sem último-ato local.
   const fixa = estado.especiePeca?.trim();
   if (fixa) {
-    return ajustarEspecieCabivel({
-      areaId: estado.areaId,
-      especie: fixa,
-      tipoAcao: estado.tipoAcao,
-      fatos: estado.fatos,
-      poloAdvocacia: estado.poloAdvocacia,
-    });
+    return fixa.toLowerCase().replace(/\s+/g, "-");
   }
-  // Sem espécie ainda: só remédio do último ato (fraco) — não kit de área.
-  const cabivel = pecaCabivelAposUltimoAto(
-    estado.areaId,
-    `${estado.tipoAcao}\n${estado.fatos}`
-  );
-  if (cabivel) return cabivel;
-  return inferirEspecieDaArea(
-    estado.areaId,
-    estado.tipoAcao || "Petição",
-    estado.fatos,
-    estado.especiePeca
-  );
+  return "";
 }
 
 export function poloExigeConfirmacaoChat(
@@ -1066,28 +1087,14 @@ export function aplicarPoloInferidoChat(
 }
 
 /**
- * Reajusta espécie após polo — só quando a IA ainda não fixou o remédio.
- * Com `respeitarEspecieIa`, não sobrescreve a interpretação.
+ * No chat document-first a IA é autoridade: não reajusta espécie por heurística.
+ * Mantido como no-op para não quebrar chamadas antigas.
  */
 export function reajustarEspeciePoloChat(
   estado: EstadoCasoChat,
-  opts?: { respeitarEspecieIa?: boolean }
+  _opts?: { respeitarEspecieIa?: boolean }
 ): EstadoCasoChat {
-  if (opts?.respeitarEspecieIa && estado.especiePeca?.trim()) {
-    return estado;
-  }
-  const especieAtual = especieResolvidaChat(estado);
-  const ajustada = ajustarEspecieCabivel({
-    areaId: estado.areaId,
-    especie: especieAtual,
-    tipoAcao: estado.tipoAcao,
-    fatos: estado.fatos,
-    poloAdvocacia: estado.poloAdvocacia,
-  });
-  if (ajustada === especieAtual && ajustada === estado.especiePeca) return estado;
-  const tipoAcao =
-    tituloPecaDaArea(estado.areaId, ajustada, estado.tipoAcao) || estado.tipoAcao;
-  return { ...estado, especiePeca: ajustada, tipoAcao };
+  return estado;
 }
 
 /**

@@ -1,6 +1,9 @@
-import { Suspense } from "react";
-import { notFound } from "next/navigation";
-import { JecForm } from "@/components/dashboard/jec-form";
+/**
+ * Rotas /dashboard/<area> — não alimentam o chat.
+ * Catálogo e assistente são independentes; o workspace vive em /dashboard.
+ */
+
+import { redirect, notFound } from "next/navigation";
 import { areaAbertaParaCliente } from "@/lib/acesso-areas";
 import { resolverAcessoConta } from "@/lib/emails-acesso-livre";
 import type { AreaIdMinuta } from "@/lib/minuta-modulo";
@@ -10,7 +13,10 @@ import {
   getPlanoAtivoServidor,
 } from "@/lib/sessao-servidor";
 
-export async function AreaMinutaPage({ areaId }: { areaId: AreaIdMinuta }) {
+/** Valida acesso à área e leva à home do assistente (sem ?area=). */
+export async function redirecionarAreaParaChat(
+  areaId: AreaIdMinuta
+): Promise<never> {
   const user = await getUsuarioServidor();
 
   let tipoUsuario =
@@ -33,15 +39,14 @@ export async function AreaMinutaPage({ areaId }: { areaId: AreaIdMinuta }) {
     notFound();
   }
 
-  const leigo = acesso.leigo && areaId === "jec";
+  redirect("/dashboard#assistente-workspace");
+}
 
-  return (
-    <Suspense
-      fallback={
-        <div className="p-8 text-sm text-slate-500">Carregando formulário…</div>
-      }
-    >
-      <JecForm leigo={leigo} areaId={areaId} />
-    </Suspense>
-  );
+/** @deprecated use redirecionarAreaParaChat */
+export async function AreaMinutaPage({
+  areaId,
+}: {
+  areaId: AreaIdMinuta;
+}): Promise<never> {
+  return redirecionarAreaParaChat(areaId);
 }

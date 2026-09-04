@@ -1,6 +1,6 @@
 /**
- * Organização determinística do caso (0 tokens) — fallback quando entrada-caso
- * demora/falha ou para complementos no chat sem reprocessar tudo na IA.
+ * Organização do caso (0 tokens) — só metadados: partes, foro, processo, pedidos
+ * citados. NÃO decide remédio/espécie/área (heurística jurídica desligada).
  */
 
 import type { PreenchimentoEntradaCaso } from "@/lib/entrada-caso-types";
@@ -12,11 +12,8 @@ import {
   extrairUltimoAtoDoTexto,
   resolverAreaEspecieOrganizacao,
 } from "@/lib/peca-cabivel-autos";
-import {
-  especieUsaTutelaUrgenciaCpc,
-  inferirEspecieDaArea,
-  tituloPecaDaArea,
-} from "@/lib/peca-especie-area";
+import { filtrarRuidoOcrRelato } from "@/lib/filtrar-ruido-ocr-relato";
+import { especieUsaTutelaUrgenciaCpc } from "@/lib/peca-especie-area";
 import { detectarTesesCanonicas } from "@/lib/teses-canonicas";
 
 export type ExtrasOrganizacaoLocal = {
@@ -109,7 +106,8 @@ function extrairLeiMunicipalTitulo(relato: string): string | null {
 }
 
 function narrativaFatos(relato: string): string {
-  const linhas = relato.split(/\n+/);
+  const limpo = filtrarRuidoOcrRelato(relato);
+  const linhas = limpo.split(/\n+/);
   const out: string[] = [];
   for (const linha of linhas) {
     const l = linha.trim();
@@ -119,7 +117,7 @@ function narrativaFatos(relato: string): string {
     out.push(l);
   }
   const texto = out.join("\n").trim();
-  return texto.length >= 40 ? texto : relato.trim();
+  return texto.length >= 40 ? texto : limpo.trim();
 }
 
 export type ResultadoOrganizacaoLocal = {
@@ -127,88 +125,39 @@ export type ResultadoOrganizacaoLocal = {
   areaIdResolvida: AreaIdMinuta;
 };
 
-/** Preenche campos do caso a partir do relato, sem LLM. */
+/**
+ * Metadados + pista leve de remédio (0 tokens).
+ * Espécie/área aqui são orientação; a IA do chat pode redefinir pelos autos.
+ */
 export function organizarCasoLocal(params: {
   relato: string;
   areaId: string;
   poloAdvocacia?: "ativo" | "passivo" | null;
-  /**
-   * Chat MinutaIA-style: extrai partes/metadados, mas NÃO decide o remédio.
-   * Espécie fica para a IA (`/api/inferir-area`).
-   */
+  /** @deprecated Ignorado — pista de remédio sempre leve. */
   semRemedio?: boolean;
 }): ResultadoOrganizacaoLocal {
-  const relato = params.relato.trim();
+  const relato = filtrarRuidoOcrRelato(params.relato.trim());
   const meta = extrairMetadadosAutos(relato);
   const partes = extrairPartesDoRelato(relato);
   const ultimoAto = extrairUltimoAtoDoTexto(relato);
   const n = norm(relato);
+  const areaId = normalizarAreaIdMinuta(params.areaId);
+  const teses = detectarTesesCanonicas(areaId, relato, []);
 
-  if (params.semRemedio) {
-    const areaId = normalizarAreaIdMinuta(params.areaId);
-    const teses = detectarTesesCanonicas(areaId, relato);
-    return {
-      areaIdResolvida: areaId,
-      preenchimento: {
-        especiePeca: "",
-        tipoAcao: "",
-        fatos: narrativaFatos(relato),
-        autoresNomes: partes.autoresNomes,
-        reusNomes: partes.reusNomes,
-        numeroProcesso: meta.numeroProcesso,
-        foro: meta.foro,
-        cidade: meta.cidade,
-        uf: meta.uf,
-        numeroVara: meta.numeroVara,
-        especieDoProcesso: null,
-        ultimoAto,
-        pedidos: extrairPedidosDoRelato(relato, "peticao-inicial"),
-        pedirJusticaGratuita: /justi[cç]a\s+gratuita|gratuidade|hipossufici|jg\b/.test(
-          n
-        )
-          ? true
-          : null,
-        tutelaUrgencia:
-          /tutela\s+(de\s+)?urg[eê]ncia|restabelecimento\s+imediato|corte\s+indevido|liminar|antecipa[cç][aã]o\s+de\s+tutela/.test(
-            n
-          )
-            ? true
-            : null,
-        danosMorais: /danos?\s*morais?/.test(n) ? true : null,
-        danosMateriais: /danos?\s*materiais|restitui[cç][aã]o/.test(n)
-          ? true
-          : null,
-        tesesIds: teses.map((t) => t.id),
-        camposIncertos: partes.autoresNomes.length ? [] : ["partes"],
-        resumoConferencia:
-          "Caso lido — a IA escolhe a peça cabível (paridade MinutaIA)." +
-          (ultimoAto ? ` Último ato: ${ultimoAto.slice(0, 120)}` : ""),
-      },
-    };
-  }
-
-  let especie =
-    inferirEspecieDaArea(params.areaId, "Petição inicial", relato, null) ||
-    "peticao-inicial";
-  const tipoAcaoInicial =
-    tituloPecaDaArea(params.areaId, especie, "Petição inicial") ||
-    "Petição inicial";
   const resolvido = resolverAreaEspecieOrganizacao({
-    areaId: params.areaId,
+    areaId,
     relato,
-    especie,
-    tipoAcao: tipoAcaoInicial,
-    poloAdvocacia: params.poloAdvocacia,
+    especie: "",
+    poloAdvocacia: params.poloAdvocacia ?? null,
   });
-  especie = resolvido.especie;
-  const tipoAcao = resolvido.tipoAcao;
-  const teses = detectarTesesCanonicas(resolvido.areaId, relato);
-  const pedidos = extrairPedidosDoRelato(relato, especie);
+  const especiePista = resolvido.especie.trim();
+  const areaResolvida = normalizarAreaIdMinuta(resolvido.areaId);
 
   return {
+    areaIdResolvida: areaResolvida,
     preenchimento: {
-      especiePeca: especie,
-      tipoAcao,
+      especiePeca: especiePista,
+      tipoAcao: especiePista ? resolvido.tipoAcao : "",
       fatos: narrativaFatos(relato),
       autoresNomes: partes.autoresNomes,
       reusNomes: partes.reusNomes,
@@ -219,36 +168,32 @@ export function organizarCasoLocal(params: {
       numeroVara: meta.numeroVara,
       especieDoProcesso: null,
       ultimoAto,
-      pedidos,
-      pedirJusticaGratuita: /justi[cç]a\s+gratuita|gratuidade|hipossufici|jg\b/.test(n)
+      pedidos: extrairPedidosDoRelato(relato, especiePista),
+      pedirJusticaGratuita: /justi[cç]a\s+gratuita|gratuidade|hipossufici|jg\b/.test(
+        n
+      )
         ? true
         : null,
       tutelaUrgencia:
-        (/tutela\s+(de\s+)?urg[eê]ncia|restabelecimento\s+imediato|corte\s+indevido/.test(
-          n
-        ) ||
-          (/liminar/.test(n) && especieUsaTutelaUrgenciaCpc(especie))) &&
-        especieUsaTutelaUrgenciaCpc(especie)
-          ? true
-          : null,
+        /habeas|mandado\s+de\s+seguran[cç]a/.test(n)
+          ? null
+          : /tutela\s+(de\s+)?urg[eê]ncia|restabelecimento\s+imediato|corte\s+indevido|antecipa[cç][aã]o\s+de\s+tutela/.test(
+                n
+              )
+            ? true
+            : null,
       danosMorais: /danos?\s*morais?/.test(n) ? true : null,
-      danosMateriais: /danos?\s*materiais|restitui[cç][aã]o/.test(n) ? true : null,
+      danosMateriais: /danos?\s*materiais|restitui[cç][aã]o/.test(n)
+        ? true
+        : null,
       tesesIds: teses.map((t) => t.id),
       camposIncertos: partes.autoresNomes.length ? [] : ["partes"],
-      resumoConferencia: [
-        "Caso organizado em modo rápido — confira partes, pedidos e comarca antes de redigir.",
-        ultimoAto ? `Último ato detectado: ${ultimoAto.slice(0, 160)}` : null,
-        especie !== "peticao-inicial"
-          ? `Espécie sugerida: ${tipoAcao}.`
-          : null,
-        resolvido.areaId !== params.areaId
-          ? `Área ajustada para ${resolvido.areaId} (remédio cabível).`
-          : null,
-      ]
-        .filter(Boolean)
-        .join(" "),
+      resumoConferencia:
+        (especiePista
+          ? `Pista de peça: ${resolvido.tipoAcao}. A IA confirma pelos autos.`
+          : "Caso lido — a IA escolhe a peça cabível.") +
+        (ultimoAto ? ` Último ato: ${ultimoAto.slice(0, 120)}` : ""),
     },
-    areaIdResolvida: resolvido.areaId as AreaIdMinuta,
   };
 }
 

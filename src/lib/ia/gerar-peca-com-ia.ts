@@ -28,6 +28,15 @@ import {
 import { gerarTextoComAnthropic } from "@/lib/ia/anthropic-client";
 import { decidirRedatorSonnet } from "@/lib/ia/roteador-redator";
 import {
+  blocoPromptAdesao,
+  blocoModeloPecaCaso,
+  normalizarAdesaoRedacao,
+  normalizarEsforcoRedacao,
+  tokensRedacaoPorEsforco,
+  type AdesaoRedacao,
+  type EsforcoRedacao,
+} from "@/lib/chat-redacao-opcoes";
+import {
   obterContagemSonnet,
   registrarUmaRedacaoSonnet,
 } from "@/lib/cota-pecas-server";
@@ -56,10 +65,7 @@ import {
   reforcarEstrategiaParaRedator,
   resolverVinculosPeca,
 } from "@/lib/ia/skins-facto";
-import {
-  inferirEspecieDaArea,
-  blocoEstruturaDaArea,
-} from "@/lib/peca-especie-area";
+import { blocoEstruturaDaArea } from "@/lib/peca-especie-area";
 import {
   normalizarPoloAdvocacia,
   rotuloPoloAdvocacia,
@@ -231,7 +237,7 @@ function montarUserPromptRedacao(params: {
   const partes = [
     "TAREFA: redija a PEÇA COMPLETA seguindo o system prompt e o resumo estratégico abaixo.",
     "NÃO devolva o resumo — só a peça em Markdown limpo.",
-    "Se houver <PLANO_DE_TOPICOS_OBRIGATORIO>, use os títulos definidos na triagem.",
+    "Se houver <PLANO_DE_TOPICOS> (ou legado OBRIGATORIO), use-o como guia de títulos da triagem.",
     "QUALIDADE: memorial de advogado sênior — argumente o caso concreto (expor, encaixar tese nos fatos, valorizar o polo, requerer). Não entregue só citações de lei/jurisprudência.",
     "",
     params.casoReal
@@ -445,7 +451,13 @@ export async function gerarPecaComIA(params: {
   atuarLeigo?: boolean;
   tesesIds?: string[];
   estiloEscritorio?: string | null;
-  /** Roteamento Flash/Sonnet (Completo 12% · Pro 22%). */
+  /** Modelo de peça do advogado (só este caso) — forma. */
+  modeloPeca?: { nome: string; texto: string } | null;
+  /** Livre | Fiel | Recorte. */
+  adesaoRedacao?: AdesaoRedacao | null;
+  /** Expressa | Equilíbrio | Detalhada — tokens e Sonnet (ids: agil|padrao|fundo). */
+  esforcoRedacao?: EsforcoRedacao | null;
+  /** Roteamento Flash/Sonnet (Completo 20% · Pro 26%). */
   roteamento?: {
     userId: string;
     plano: PlanoCota;
@@ -468,7 +480,7 @@ export async function gerarPecaComIA(params: {
   }
 
   const casoReal = params.casoReal ?? true;
-  const areaId = params.areaId ?? "jec";
+  const areaId = params.areaId ?? "civil";
   const polo =
     params.poloAdvocacia != null
       ? normalizarPoloAdvocacia(params.poloAdvocacia)
@@ -477,16 +489,11 @@ export async function gerarPecaComIA(params: {
     polo != null
       ? { polo, atuarLeigo: Boolean(params.atuarLeigo) }
       : undefined;
-  // MinutaIA-style: espécie do payload/IA prevalece; não re-inferir pelo kit da área.
-  const especieFixa = String(params.especiePeca ?? "").trim();
-  const especie = especieFixa
-    ? especieFixa.toLowerCase().replace(/\s+/g, "-")
-    : inferirEspecieDaArea(
-        areaId,
-        params.tipoAcao,
-        params.fatos,
-        params.especiePeca
-      );
+  // Só espécie explícita — sem kit/heurística local.
+  const especie = String(params.especiePeca ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-");
   const teses = detectarTesesCanonicas(
     areaId,
     params.fatos,
@@ -497,7 +504,7 @@ export async function gerarPecaComIA(params: {
     especie,
     tipoAcao: params.tipoAcao,
     fatos: params.fatos,
-    confiarEspecie: Boolean(especieFixa),
+    confiarEspecie: true,
   });
   const especieFinal = vinculos.especie;
   const blocoVinculos = blocoPecaCabivelPrompt(vinculos);
@@ -742,17 +749,31 @@ export async function gerarPecaComIA(params: {
   });
 
   // —— Redator forense (Flash padrão; Sonnet se roteador autorizar) ——
-  const systemRedacao = montarSystemPromptRedacaoTier1(
-    contextoRedacao,
-    leiMunicipal,
-    jurisDoCaso,
-    especieFinal,
-    areaId,
-    opcoesPolo,
-    blocoVinculos,
-    params.estiloEscritorio,
-    provasDoCaso
-  );
+  const adesao = normalizarAdesaoRedacao(params.adesaoRedacao);
+  const esforco = normalizarEsforcoRedacao(params.esforcoRedacao);
+  const maxTokensRedacao = tokensRedacaoPorEsforco(esforco);
+  const temModeloCaso = Boolean(params.modeloPeca?.texto?.trim());
+  const temEstiloOuModelo =
+    temModeloCaso || Boolean(params.estiloEscritorio?.trim());
+
+  const systemRedacao = [
+    montarSystemPromptRedacaoTier1(
+      contextoRedacao,
+      leiMunicipal,
+      jurisDoCaso,
+      especieFinal,
+      areaId,
+      opcoesPolo,
+      blocoVinculos,
+      params.estiloEscritorio,
+      provasDoCaso
+    ),
+    blocoModeloPecaCaso(params.modeloPeca),
+    blocoPromptAdesao(adesao, temEstiloOuModelo),
+    "FORMATAÇÃO: foque no conteúdo jurídico completo. Espaçamentos e tipografia forense finais serão aplicados por um passo separado — não deixe de redigir mérito por preocupação com margens.",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
   const userRedacao = montarUserPromptRedacao({
     dossieBloco: dossie.bloco,
     tipoAcao: analiseEstrategica.nomeAcao || params.tipoAcao,
@@ -778,6 +799,7 @@ export async function gerarPecaComIA(params: {
     charsRelato: params.fatos.length,
     tutelaUrgencia: Boolean(params.instrucoes?.tutelaUrgencia),
     sonnetUsadas,
+    esforco,
   });
 
   if (decisao.usarSonnet) {
@@ -785,7 +807,7 @@ export async function gerarPecaComIA(params: {
       systemPrompt: systemRedacao,
       userPrompt: userRedacao,
       temperature: 0.35,
-      maxOutputTokens: 8192,
+      maxOutputTokens: maxTokensRedacao,
     });
     if (sonnetRes.ok) {
       textoBrutoRedacao = sonnetRes.texto;
@@ -803,7 +825,7 @@ export async function gerarPecaComIA(params: {
       userPrompt: userRedacao,
       modelos: modelosRedacao(),
       temperature: 0.35,
-      maxOutputTokens: 8192,
+      maxOutputTokens: maxTokensRedacao,
     };
     const redacaoRes = params.onRedacaoDelta
       ? await gerarTextoComGeminiStream({
@@ -849,6 +871,9 @@ export async function gerarPecaComIA(params: {
     }),
     modelo: redacaoModelo,
   });
+
+  // Formatação forense fica a cargo do Redator (liberdade da IA).
+  // Passo Gemini de diagramação (formatarPecaForense) desligado — evita molde rígido.
 
   const contextoParaVerificacao = [
     contextoRedacao,

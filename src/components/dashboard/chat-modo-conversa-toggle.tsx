@@ -8,14 +8,17 @@ type Props = {
   onModoChange: (modo: ModoConversaChat) => void;
   modoWorkspace?: boolean;
   compacto?: boolean;
+  /** Instantâneo/Planejado só no modo Minuta. */
+  desabilitado?: boolean;
 };
 
-/** Toggle Instantâneo / Planejado — estilo MinutaIA. */
+/** Toggle Instantâneo / Planejado. */
 export function ChatModoConversaToggle({
   modo,
   onModoChange,
   modoWorkspace = false,
   compacto = false,
+  desabilitado = false,
 }: Props) {
   const instantaneo = configModoConversa("instantaneo");
   const planejado = configModoConversa("planejado");
@@ -41,22 +44,29 @@ export function ChatModoConversaToggle({
       className={`inline-flex items-center gap-0.5 rounded-full border p-0.5 ${shell}`}
       role="group"
       aria-label="Modo da conversa"
+      aria-disabled={desabilitado}
     >
       <button
         type="button"
-        title={instantaneo.dica}
+        title={desabilitado ? "Disponível no modo Minuta" : instantaneo.dica}
         aria-pressed={modo === "instantaneo"}
+        disabled={desabilitado}
         onClick={() => onModoChange("instantaneo")}
-        className={`${btn} ${modo === "instantaneo" ? ativo : inativo}`}
+        className={`${btn} ${modo === "instantaneo" ? ativo : inativo} ${
+          desabilitado ? "cursor-not-allowed opacity-40" : ""
+        }`}
       >
         Instantâneo
       </button>
       <button
         type="button"
-        title={planejado.dica}
+        title={desabilitado ? "Disponível no modo Minuta" : planejado.dica}
         aria-pressed={modo === "planejado"}
+        disabled={desabilitado}
         onClick={() => onModoChange("planejado")}
-        className={`${btn} ${modo === "planejado" ? ativo : inativo}`}
+        className={`${btn} ${modo === "planejado" ? ativo : inativo} ${
+          desabilitado ? "cursor-not-allowed opacity-40" : ""
+        }`}
       >
         Planejado
       </button>

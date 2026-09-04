@@ -20,7 +20,7 @@ const RE_PARECÊ_RELATO =
   /\b(autor|r[eé]u|cliente|contrato|corte\s+de\s+[aá]gua|danos?\s+morais?|peti[cç][aã]o|contest[aã]o|processo\s+n|comarca|r\.\s*\$|valor\s+da\s+causa)\b/i;
 
 const RE_AJUSTE_PECA =
-  /\b(inclu(a|ir)|acrescente|mude|altere|reescrev|tire|remov|corrij|ajust|reforç|suaviz|enfatiz|troque|substitu|pedido|fundament|trecho|par[aá]grafo|tutela|liminar|valor|qualifica)\b/i;
+  /\b(inclu(a|ir)|acrescente|mude|altere|reescrev|regener|tire|remov|corrij|ajust|reforç|suaviz|enfatiz|troque|substitu|pedido|fundament|trecho|par[aá]grafo|se[cç][aã]o|t[oó]pico|tutela|liminar|valor|qualifica|m[eé]rito|do direito|dos pedidos)\b/i;
 
 const RE_TRIBUNAL =
   /\b(tjsp|tjrj|tjmg|tjrs|tjpr|stf|stj|tst|tse|trf|tj\s+de|tribunal|buscar\s+juris|prioriz)\b/i;
@@ -44,7 +44,8 @@ export function classificarIntencaoChat(input: {
   const pareceAjuste = RE_AJUSTE_PECA.test(t);
   const pareceTribunal = RE_TRIBUNAL.test(t);
 
-  if (input.pecaGerada && curto && pareceAjuste && !pareceRelato) {
+  // Pós-peça: prioriza ajuste (mesmo se citar "valor"/"tutela") — evita reabrir o caso.
+  if (input.pecaGerada && curto && pareceAjuste) {
     return "ajuste_peca";
   }
 
@@ -72,19 +73,19 @@ export function respostaMetaLeiJuris(): string {
     "Não consulto a web nem invento ementa neste chat.",
     "Se você **já tem** a lei municipal ou um acórdão/súmula do caso, abra **Provas / lei e juris** e cole/anexe — entra só nesta peça.",
     "Citar só o **número da lei** no chat ajuda a organizar o caso; o **texto integral** vai em Provas / lei e juris.",
-    "O **plano à direita** mostra teses e lastro sugerido; a fundamentação completa vem ao **Redigir (1 peça)**.",
+    "O **plano** à direita mostra teses e lastro sugerido; a peça completa vem no **modo Minuta** (1 crédito).",
   ].join("\n\n");
 }
 
 export function respostaMetaAjuda(): string {
   return [
-    "Fluxo rápido:",
-    "1. Descreva o caso (ou anexe PDF) — organizo o entendimento.",
-    "2. O **plano estratégico** à direita atualiza enquanto você conversa (sem cota).",
-    "3. Lei municipal / juris do caso → **Provas / lei e juris**.",
-    "4. Comarca/UF no relato prioriza o TJ; ou escolha até **3 tribunais**.",
-    "5. Ajuste pedidos no chat ou edite no plano.",
-    "6. Quando estiver bom → **Redigir (1 peça)**; depois peça **ajustes** na conversa.",
+    "Fluxo rápido no FACTO:",
+    "1. Anexe os autos — ficam no contexto (ainda sem peça).",
+    "2. No **Chat**, alinhe o caso; diga **redija** (ou use **Criar minuta**) para gerar no preview (**1 crédito**).",
+    "3. Digite **/** no composer para espécie ou atalho (ex.: `/contestacao`, `/minuta`).",
+    "4. **+ Modelo** (PDF/DOCX) = referência de forma só neste caso; Livre/Fiel/Recorte definem a adesão.",
+    "5. O **plano** à direita acompanha a estratégia; lei/juris do caso → complementos.",
+    "6. Depois da peça, peça **ajustes** no chat (sem novo crédito de peça).",
   ].join("\n");
 }
 

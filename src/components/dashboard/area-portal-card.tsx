@@ -4,10 +4,6 @@ import Link from "next/link";
 import { AreaIllustration } from "@/components/dashboard/area-illustration";
 import { ROTULO_AREA_BOTAO } from "@/components/dashboard/areas-rede-visual";
 import { hrefModuloArea, type AreaAtuacao } from "@/lib/areas-atuacao";
-import {
-  chatMinutaAreaHabilitada,
-  hrefChatMinuta,
-} from "@/lib/chat-minuta";
 
 function BotaoFavorito({
   ativo,
@@ -56,8 +52,6 @@ export function AreaPortalCard({
   liberadaNoPlano = true,
   rotuloBloqueio = "Upgrade de plano",
   previewInterno = false,
-  /** Catálogo “Preencha manualmente”: abre o formulário, não o assistente. */
-  preferirFormulario = false,
 }: {
   area: AreaAtuacao;
   favorito: boolean;
@@ -66,20 +60,11 @@ export function AreaPortalCard({
   liberadaNoPlano?: boolean;
   rotuloBloqueio?: string;
   previewInterno?: boolean;
+  /** @deprecated — catálogo não abre mais o chat com área pré-selecionada. */
   preferirFormulario?: boolean;
 }) {
-  const hrefModulo = hrefModuloArea(area, previewInterno);
-  const hrefChat =
-    liberadaNoPlano && chatMinutaAreaHabilitada(area.id)
-      ? hrefChatMinuta(area.id, { nova: true })
-      : null;
-  const hrefPrincipal = preferirFormulario
-    ? hrefModulo ?? hrefChat
-    : hrefChat ?? hrefModulo;
+  const hrefPrincipal = hrefModuloArea(area, previewInterno);
   const disponivel = Boolean(hrefPrincipal && liberadaNoPlano);
-  const mostraLinkSecundario = Boolean(
-    disponivel && hrefChat && hrefModulo && hrefPrincipal
-  );
   const rotulo = ROTULO_AREA_BOTAO[area.id] ?? area.title;
 
   const classes = `group relative flex flex-col overflow-hidden rounded-xl border border-facto-gold/35 bg-[#1c1c16]/75 backdrop-blur-[2px] transition duration-300 ${
@@ -120,11 +105,6 @@ export function AreaPortalCard({
                 {area.available && !liberadaNoPlano && (
                   <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-200/90">
                     {rotuloBloqueio}
-                  </span>
-                )}
-                {hrefChat && !preferirFormulario && (
-                  <span className="rounded-full border border-facto-gold/25 bg-facto-gold/10 px-2 py-0.5 text-[9px] font-medium uppercase tracking-wide text-facto-gold/90">
-                    Assistente
                   </span>
                 )}
               </div>
@@ -187,17 +167,6 @@ export function AreaPortalCard({
           )}
         </div>
       </div>
-
-      {mostraLinkSecundario && (
-        <div className="border-t border-white/10 bg-black/20 px-4 py-2 md:px-5">
-          <Link
-            href={preferirFormulario ? hrefChat! : hrefModulo!}
-            className="text-xs font-medium text-white/45 underline-offset-2 transition hover:text-facto-gold hover:underline"
-          >
-            {preferirFormulario ? "Abrir no assistente" : "Formulário completo"}
-          </Link>
-        </div>
-      )}
     </>
   );
 

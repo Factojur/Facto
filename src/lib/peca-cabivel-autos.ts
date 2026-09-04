@@ -33,15 +33,16 @@ export type MetadadosAutos = {
 };
 
 /**
- * Teto da triagem (entrada / análise). ~180 mil caracteres ≈ 90–120 páginas
- * de texto extraído — cabe no contexto do Flash-Lite (1M tokens) e no
- * timeout de 60s. PDF maior: capa + decisões do miolo + fim (último ato).
+ * Teto da janela enviada à triagem/redação (~320 mil caracteres ≈ 160–220
+ * páginas de texto extraído). Lote de milhares de páginas NÃO cabe num único
+ * contexto: capa + sentenças/acórdãos/decisões do miolo + cauda (último ato).
  */
-export const LIMITE_RELATO_TRIAGEM_CHARS = 180_000;
+export const LIMITE_RELATO_TRIAGEM_CHARS = 320_000;
 
 function trechosDecisao(texto: string, maxChars: number): string {
   if (maxChars < 80 || !texto.trim()) return "";
-  const re = /\bDECIS[AÃ]O\b[\s\S]{0,2200}/gi;
+  const re =
+    /\b(DECIS[AÃ]O|SENTEN[CÇ]A|AC[OÓ]RD[AÃ]O|DESPACHO|DISPOSITIVO)\b[\s\S]{0,2800}/gi;
   const partes: string[] = [];
   let usado = 0;
   let m: RegExpExecArray | null;
@@ -60,8 +61,8 @@ export function janelaRelatoParaTriagem(
 ): string {
   const t = texto.trim();
   if (t.length <= max) return t;
-  const cabeca = Math.min(40_000, Math.floor(max * 0.22));
-  const reservaDecisoes = Math.min(30_000, Math.floor(max * 0.18));
+  const cabeca = Math.min(56_000, Math.floor(max * 0.2));
+  const reservaDecisoes = Math.min(72_000, Math.floor(max * 0.28));
   const cauda = max - cabeca - reservaDecisoes - 180;
   const meio = t.slice(cabeca, Math.max(cabeca, t.length - cauda));
   const decisoes = trechosDecisao(meio, reservaDecisoes);
@@ -219,6 +220,39 @@ function especieAgravoDaArea(areaId: string): string {
   return "agravo-instrumento";
 }
 
+/** Recurso cabível após sentença/acórdão de mérito (não interlocutória). */
+function especieApelacaoDaArea(areaId: string): string {
+  if (areaId === "jec" || areaId === "jecr") return "recurso-inominado";
+  if (areaId === "trabalhista") return "recurso-ordinario";
+  return "apelacao";
+}
+
+/**
+ * Sentença (ou acórdão) de mérito nos autos — tipicamente abre apelação /
+ * recurso inominado / RO, não contestação nem cumprimento.
+ */
+function sentencaMeritoNoTexto(t: string): boolean {
+  if (!t) return false;
+  // Cumprimento/execução já aberto: o “sentença” do título do incidente não conta.
+  if (
+    /cumprimento de sentenca|\bfase de (cumprimento|execucao)\b|exequente|executad/.test(
+      t
+    ) &&
+    !/julgo (parcialmente )?(procedente|improcedente)/.test(t)
+  ) {
+    return false;
+  }
+  const dispositivo =
+    /julgo (parcialmente )?(procedente|improcedente)/.test(t) ||
+    (/ante o exposto|diante do exposto/.test(t) &&
+      /resolucao de merito|artigo 487|art\.?\s*487/.test(t));
+  const rotuloSentenca =
+    /\bsentenca\b/.test(t) ||
+    (/\bacordao\b/.test(t) &&
+      /(negar|dar)\s+(parcial\s+)?provimento|conhecer.{0,40}recurso/.test(t));
+  return dispositivo && rotuloSentenca;
+}
+
 function ehEspecieAberturaExecucao(especie: string): boolean {
   const e = especie.toLowerCase();
   return (
@@ -271,7 +305,14 @@ export function pecaCabivelAposUltimoAto(
     (/astreinte|multa diaria/.test(t) &&
       /erro material|nao em seu valor|forma de aplicacao/.test(t));
 
-  if (!incidenteExecucaoJaAberto(texto) && !interlocutoria && !vicio) {
+  const sentencaMerito = sentencaMeritoNoTexto(t);
+
+  if (
+    !incidenteExecucaoJaAberto(texto) &&
+    !interlocutoria &&
+    !vicio &&
+    !sentencaMerito
+  ) {
     return explicitaFracaDefesa ? explicita : null;
   }
 
@@ -284,6 +325,7 @@ export function pecaCabivelAposUltimoAto(
     return especieAgravoDaArea(areaId);
   }
   if (vicio) return especieEmbargosDaArea(areaId);
+  if (sentencaMerito) return especieApelacaoDaArea(areaId);
   return explicitaFracaDefesa ? explicita : null;
 }
 
@@ -370,10 +412,14 @@ export function ajustarEspecieCabivel(params: {
     );
   }
   if (!cabivel) return params.especie;
+  /** Sem espécie ainda (pista vazia) — o remédio do último ato é a orientação. */
+  if (!especie && cabivel) return cabivel;
   const especieEhDefesa =
     /^(contestacao|defesa|replica|defesa-jecrim|resposta-acusacao)$/.test(especie);
   const cabivelEhRemedioUltimoAto =
-    /agravo|embargos|mandado-seguranca/.test(cabivel);
+    /agravo|embargos|mandado-seguranca|apelacao|recurso-inominado|recurso-ordinario/.test(
+      cabivel
+    );
   if (
     ehEspecieAberturaExecucao(especie) ||
     especie === "peticao-inicial" ||
@@ -446,16 +492,58 @@ export function extrairUltimoAtoDoTexto(
   const t = texto.replace(/\u0000/g, " ").trim();
   if (!t) return null;
 
-  const cauda = t.slice(-Math.min(14_000, t.length));
+  const prioridade = (rotulo: string) => {
+    const r = rotulo
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toUpperCase();
+    if (r.startsWith("SENTEN")) return 4;
+    if (r.startsWith("ACORD")) return 4;
+    if (r.startsWith("DECIS")) return 3;
+    if (r.startsWith("DESPACHO")) return 2;
+    return 1; // CERTIDÃO etc.
+  };
+
   const re =
     /\b(DECIS[AÃ]O|DESPACHO|SENTEN[CÇ]A|AC[OÓ]RD[AÃ]O|CERTID[AÃ]O)\b/gi;
-  const matches = [...cauda.matchAll(re)];
-  let trecho = "";
 
-  if (matches.length > 0) {
-    const ultimo = matches[matches.length - 1]!;
-    const idx = ultimo.index ?? 0;
-    trecho = cauda.slice(idx).replace(/\s+/g, " ").trim();
+  const escolher = (fonte: string): { idx: number; prio: number } | null => {
+    const matches = [...fonte.matchAll(re)];
+    if (matches.length === 0) return null;
+    let escolhido = matches[matches.length - 1]!;
+    let melhor = prioridade(escolhido[1] ?? "");
+    for (let i = matches.length - 1; i >= 0; i--) {
+      const m = matches[i]!;
+      const p = prioridade(m[1] ?? "");
+      if (p > melhor) {
+        escolhido = m;
+        melhor = p;
+        if (melhor >= 4) break;
+      }
+    }
+    return { idx: escolhido.index ?? 0, prio: melhor };
+  };
+
+  const caudaLen = Math.min(14_000, t.length);
+  const cauda = t.slice(-caudaLen);
+  let escolha = escolher(cauda);
+  let baseOffset = t.length - caudaLen;
+  let trechoFonte = cauda;
+
+  // PDF que é a própria sentença: o rótulo SENTENÇA fica no início e a cauda
+  // só traz “certidão de honorários” — preferir o ato decisório no documento.
+  if (!escolha || escolha.prio <= 1) {
+    const noDoc = escolher(t);
+    if (noDoc && noDoc.prio > (escolha?.prio ?? 0)) {
+      escolha = noDoc;
+      baseOffset = 0;
+      trechoFonte = t;
+    }
+  }
+
+  let trecho = "";
+  if (escolha) {
+    trecho = trechoFonte.slice(escolha.idx).replace(/\s+/g, " ").trim();
   } else {
     const linhas = cauda
       .split(/\n+/)
@@ -464,6 +552,16 @@ export function extrairUltimoAtoDoTexto(
     trecho = linhas[linhas.length - 1] ?? "";
   }
 
+  // Preferir o dispositivo (JULGO) quando a sentença é longa.
+  const julgo = t.search(
+    /\b(Ante o exposto|Diante do exposto|JULGO\s+(PARCIALMENTE\s+)?(PROCEDENTE|IMPROCEDENTE))/i
+  );
+  if (julgo >= 0 && (!escolha || escolha.prio >= 3)) {
+    const doJulgo = t.slice(julgo).replace(/\s+/g, " ").trim();
+    if (doJulgo.length > 80) trecho = doJulgo;
+  }
+
+  void baseOffset;
   if (!trecho) return null;
   return trecho.length > maxChars ? `${trecho.slice(0, maxChars)}…` : trecho;
 }

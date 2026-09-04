@@ -10,7 +10,7 @@ import {
   rotuloAreaJudiciaria,
   type ComarcaInfo,
 } from "@/lib/endereco-comarca";
-import { ritoDaArea } from "@/lib/area-rito";
+import { ritoCurtoSuave, ritoDaArea } from "@/lib/area-rito";
 import { getAreaById } from "@/lib/areas-atuacao";
 import { areaMostraMle } from "@/lib/minuta-modulo";
 import {
@@ -324,7 +324,7 @@ function fundamentosLegaisBase(areaId: string, tutelaUrgencia: boolean): string[
     area?.law
       ? `${area.title} — ${area.law}`
       : `${rito.especialidade}`,
-    rito.ritoCurto,
+    ritoCurtoSuave(areaId),
   ];
   if (tutelaUrgencia) {
     base.push("Art. 300 do Código de Processo Civil — tutela de urgência");

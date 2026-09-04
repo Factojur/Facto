@@ -135,9 +135,9 @@ export function PlanoLastroHint({
               ? "border-facto-gold bg-amber-100 text-amber-950 ring-amber-300"
               : "border-facto-gold/50 bg-amber-50/90 text-amber-900 ring-amber-200/60 hover:border-facto-gold hover:bg-amber-100"
           }`}
-          aria-label={`Ver lastro do tópico ${topico.romano}. ${topico.titulo}`}
+          aria-label={`Ver lastro FACTO do tópico ${topico.romano}. ${topico.titulo}`}
           aria-expanded={inspectorAberto}
-          title="Lastro do tópico — clique para abrir"
+          title="Lastro FACTO (base + anexos) — clique para abrir"
           onClick={(e) => {
             e.stopPropagation();
             setInspectorAberto(true);
@@ -150,11 +150,11 @@ export function PlanoLastroHint({
           className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden w-72 -translate-x-1/2 rounded-lg border border-stone-200 bg-white px-3 py-2 text-left text-xs leading-relaxed text-stone-700 shadow-lg group-hover/lastro:block group-focus-within/lastro:block max-sm:hidden"
         >
           <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-facto-gold">
-            Lastro
+            Lastro FACTO
           </span>
           <PlanoLastroCorpo ex={ex} onAbrirFls={onAbrirFls} compacto />
           <p className="mt-1.5 border-t border-stone-100 pt-1.5 text-[10px] text-stone-400">
-            Clique para abrir o inspector
+            Clique para o inspector (encaixe + fontes)
           </p>
         </span>
       </span>
@@ -168,7 +168,7 @@ export function PlanoLastroHint({
         <header className="flex shrink-0 items-start justify-between gap-3 border-b border-stone-200 px-4 py-3">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-wide text-facto-gold">
-              Inspector de lastro
+              Inspector de lastro FACTO
             </p>
             <h2 className="mt-0.5 text-base font-semibold text-stone-900">
               {topico.romano}. {topico.titulo}
@@ -186,7 +186,8 @@ export function PlanoLastroHint({
           <PlanoLastroCorpo ex={ex} onAbrirFls={onAbrirFls} />
           {!ex.encaixe && ex.fontes.length === 0 && !ex.aviso && (
             <p className="text-sm text-stone-500">
-              Confira anexos (fls.) e juris do caso antes de redigir.
+              Sem lastro estruturado neste tópico. Confira anexos (fls.) e juris
+              do caso antes de redigir.
             </p>
           )}
         </div>

@@ -7,7 +7,7 @@ const PASSOS = [
     passo: "01",
     titulo: "Conte o caso no chat",
     texto:
-      "Relato, voz ou PDF/Word na home. A área e a espécie saem da conversa — ou escolha manual, se preferir.",
+      "Relato, voz ou PDF/Word no assistente. A área e a espécie saem da conversa — sem escolher módulo na mão.",
     icone: (
       <svg
         viewBox="0 0 24 24"
@@ -27,9 +27,9 @@ const PASSOS = [
   },
   {
     passo: "02",
-    titulo: "Confira a pré-visualização",
+    titulo: "Confira o plano",
     texto:
-      "O assistente qualifica partes, fatos e pedidos. Revise o entendimento antes de redigir — sem consumir peça.",
+      "Partes, fatos, pedidos e teses na aba Plano — sem gastar crédito de peça. Só então peça a minuta.",
     icone: (
       <svg
         viewBox="0 0 24 24"
@@ -49,7 +49,7 @@ const PASSOS = [
     passo: "03",
     titulo: "Redija com lastro",
     texto:
-      "Triagem estratégica e peça no padrão forense — lastro da base FACTO e da jurisprudência que você anexar ao caso.",
+      "Minuta (1 crédito): peça no painel com lastro da base FACTO e da jurisprudência anexada ao caso.",
     destaque: true,
     icone: (
       <svg

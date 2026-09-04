@@ -1,6 +1,7 @@
 "use client";
 
 import { dividirPecaEmPaginas } from "@/lib/peca-paginas-preview";
+import { ESTILO_FOLHA_A4 } from "@/lib/estilo-folha-a4";
 import { TextoJuridicoInline } from "@/components/dashboard/texto-juridico-inline";
 import { useMemo } from "react";
 
@@ -22,15 +23,12 @@ export function PecaPreviewPaginado({
       {paginas.map((blocos, idx) => (
         <article
           key={`pag-${idx}`}
-          className="relative w-full max-w-[min(100%,210mm)] bg-white shadow-md ring-1 ring-stone-200/80"
-          style={{
-            minHeight: "min(297mm, 72vh)",
-            padding: "18mm 20mm 22mm",
-          }}
+          className="relative w-full bg-white shadow-md ring-1 ring-stone-200/80"
+          style={ESTILO_FOLHA_A4}
         >
-          <div className="font-serif text-[11pt] leading-[1.55] text-justify text-slate-900">
+          <div className="text-inherit">
             {blocos.map((bloco, bi) => (
-              <p key={`${idx}-${bi}`} className="mb-3 whitespace-pre-wrap">
+              <p key={`${idx}-${bi}`} className="mb-0 whitespace-pre-wrap">
                 <TextoJuridicoInline
                   texto={bloco}
                   onAbrirFls={onAbrirFls}

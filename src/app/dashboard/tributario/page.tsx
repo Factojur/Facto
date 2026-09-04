@@ -1,5 +1,5 @@
-import { AreaMinutaPage } from "@/components/dashboard/area-minuta-page";
+﻿import { redirecionarAreaParaChat } from "@/components/dashboard/area-minuta-page";
 
-export default function Page() {
-  return <AreaMinutaPage areaId="tributario" />;
+export default async function Page() {
+  await redirecionarAreaParaChat("tributario");
 }

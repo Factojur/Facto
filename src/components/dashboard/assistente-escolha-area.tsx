@@ -4,10 +4,6 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { getAreaById, hrefModuloArea } from "@/lib/areas-atuacao";
 import { sugerirAreaPorWizard } from "@/lib/grupos-areas-dashboard";
-import {
-  chatMinutaAreaHabilitada,
-  hrefChatMinuta,
-} from "@/lib/chat-minuta";
 import { AreaIllustration } from "@/components/dashboard/area-illustration";
 import { areaEstaLiberada } from "@/lib/acesso-areas";
 import type { PlanoId } from "@/lib/planos-facto";
@@ -18,7 +14,7 @@ type Props = {
   previewAreas?: boolean;
   /** No painel da home: já vem aberto, sem toggle. */
   sempreAberto?: boolean;
-  /** Catálogo manual: formulário como ação principal. */
+  /** @deprecated — catálogo não abre formulário nem pré-seleciona área no chat. */
   preferirFormulario?: boolean;
 };
 
@@ -46,7 +42,6 @@ export function AssistenteEscolhaArea({
   plano = null,
   previewAreas = false,
   sempreAberto = false,
-  preferirFormulario = false,
 }: Props) {
   const [aberto, setAberto] = useState(sempreAberto);
   const [assunto, setAssunto] = useState("");
@@ -58,21 +53,15 @@ export function AssistenteEscolhaArea({
   }, [assunto, juizado]);
 
   const area = sugestao ? getAreaById(sugestao.areaId) : null;
-  const hrefModulo =
-    area && hrefModuloArea(area, previewAreas)
-      ? hrefModuloArea(area, previewAreas)
-      : null;
-  const hrefChat =
-    area && chatMinutaAreaHabilitada(area.id)
-      ? hrefChatMinuta(area.id, { nova: true })
-      : null;
-  const liberada =
-    area && (hrefModulo || hrefChat)
-      ? areaEstaLiberada(area.id, {
-          plano,
-          tipoUsuario: leigo ? "leigo" : "advogado",
-        })
-      : false;
+  const hrefAssistente = area
+    ? hrefModuloArea(area, previewAreas)
+    : "/dashboard#assistente-workspace";
+  const liberada = area
+    ? areaEstaLiberada(area.id, {
+        plano,
+        tipoUsuario: leigo ? "leigo" : "advogado",
+      })
+    : false;
 
   if (leigo) return null;
 
@@ -85,39 +74,40 @@ export function AssistenteEscolhaArea({
       }`}
     >
       {!sempreAberto && (
-      <button
-        type="button"
-        onClick={() => setAberto((v) => !v)}
-        aria-expanded={aberto}
-        className="flex w-full items-center gap-3 px-3 py-2.5 text-left"
-      >
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-stone-400">
-          <IconeGuia className="h-4 w-4" />
-        </span>
-
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-medium text-stone-200">
-            Em dúvida sobre a área?
+        <button
+          type="button"
+          onClick={() => setAberto((v) => !v)}
+          aria-expanded={aberto}
+          className="flex w-full items-center gap-3 px-3 py-2.5 text-left"
+        >
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-stone-400">
+            <IconeGuia className="h-4 w-4" />
           </span>
-          <span className="mt-0.5 block text-xs text-stone-500">
-            Duas perguntas — o FACTO sugere a área e abre o assistente.
-          </span>
-        </span>
 
-        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.04] px-2.5 py-1 text-xs font-medium text-stone-300">
-          {aberto ? "Fechar" : "Abrir guia"}
-          <svg
-            viewBox="0 0 20 20"
-            className={`h-3.5 w-3.5 text-facto-gold transition-transform ${
-              aberto ? "rotate-180" : ""
-            }`}
-            fill="currentColor"
-            aria-hidden
-          >
-            <path d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" />
-          </svg>
-        </span>
-      </button>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-medium text-stone-200">
+              Em dúvida sobre o rito do caso?
+            </span>
+            <span className="mt-0.5 block text-xs text-stone-500">
+              Duas perguntas — o FACTO sugere a orientação e você segue no
+              assistente acima.
+            </span>
+          </span>
+
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.04] px-2.5 py-1 text-xs font-medium text-stone-300">
+            {aberto ? "Fechar" : "Abrir guia"}
+            <svg
+              viewBox="0 0 20 20"
+              className={`h-3.5 w-3.5 text-facto-gold transition-transform ${
+                aberto ? "rotate-180" : ""
+              }`}
+              fill="currentColor"
+              aria-hidden
+            >
+              <path d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" />
+            </svg>
+          </span>
+        </button>
       )}
 
       {aberto || sempreAberto ? (
@@ -129,10 +119,11 @@ export function AssistenteEscolhaArea({
           {sempreAberto && (
             <div className="mb-1">
               <p className="text-sm font-medium text-stone-200">
-                Em dúvida sobre a área?
+                Em dúvida sobre o rito do caso?
               </p>
               <p className="mt-0.5 text-xs text-stone-500">
-                Responda e abra no assistente (ou no formulário).
+                Responda e volte ao assistente — anexe os autos e descreva o que
+                precisa.
               </p>
             </div>
           )}
@@ -213,47 +204,20 @@ export function AssistenteEscolhaArea({
                   <p className="mt-1 text-xs leading-relaxed text-stone-400">
                     {sugestao.motivo}
                   </p>
+                  <p className="mt-2 text-xs text-stone-500">
+                    Use o assistente acima: anexe os autos e diga o que precisa —
+                    a IA interpreta o rito a partir do caso.
+                  </p>
                 </div>
               </div>
-              {liberada && (hrefChat || hrefModulo) ? (
+              {liberada && hrefAssistente ? (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {preferirFormulario && hrefModulo ? (
-                    <Link
-                      href={hrefModulo}
-                      className="inline-flex rounded-lg bg-facto-gold px-4 py-2 text-sm font-semibold text-facto-dark hover:bg-[#a39a78]"
-                    >
-                      Abrir formulário →
-                    </Link>
-                  ) : hrefChat ? (
-                    <Link
-                      href={hrefChat}
-                      className="inline-flex rounded-lg bg-facto-gold px-4 py-2 text-sm font-semibold text-facto-dark hover:bg-[#a39a78]"
-                    >
-                      Começar no assistente →
-                    </Link>
-                  ) : hrefModulo ? (
-                    <Link
-                      href={hrefModulo}
-                      className="inline-flex rounded-lg bg-facto-gold px-4 py-2 text-sm font-semibold text-facto-dark hover:bg-[#a39a78]"
-                    >
-                      Entrar neste módulo →
-                    </Link>
-                  ) : null}
-                  {preferirFormulario && hrefChat ? (
-                    <Link
-                      href={hrefChat}
-                      className="inline-flex rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-stone-200 hover:bg-white/5"
-                    >
-                      Assistente →
-                    </Link>
-                  ) : hrefModulo && hrefChat ? (
-                    <Link
-                      href={hrefModulo}
-                      className="inline-flex rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-stone-200 hover:bg-white/5"
-                    >
-                      Formulário completo →
-                    </Link>
-                  ) : null}
+                  <Link
+                    href={hrefAssistente}
+                    className="inline-flex rounded-lg bg-facto-gold px-4 py-2 text-sm font-semibold text-facto-dark hover:bg-[#a39a78]"
+                  >
+                    Ir ao assistente →
+                  </Link>
                 </div>
               ) : (
                 <p className="mt-3 text-xs text-amber-200/90">

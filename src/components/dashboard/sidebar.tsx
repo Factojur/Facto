@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FactoLogo } from "@/components/brand/facto-logo";
 import { MenuIcon, type MenuIconName } from "@/components/dashboard/menu-icons";
-import { areaIdFromPathname, moduloDaArea } from "@/lib/minuta-modulo";
 
 const STORAGE_KEY = "facto-sidebar-recolhida";
 
@@ -51,7 +50,6 @@ function SidebarNav({
   recolhida?: boolean;
 }) {
   const pathname = usePathname();
-  const modulo = moduloDaArea(areaIdFromPathname(pathname));
 
   const navItems: {
     href: string;
@@ -71,13 +69,6 @@ function SidebarNav({
       label: "Meus casos",
       icon: "file",
       match: (path: string) => path.startsWith("/dashboard/meus-casos"),
-    },
-    {
-      href: modulo.href,
-      label: modulo.rotuloNav,
-      icon: "scales",
-      match: (path: string) =>
-        path === modulo.href || path.startsWith(`${modulo.href}/`),
     },
     {
       href: "/dashboard/suporte",

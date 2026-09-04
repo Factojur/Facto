@@ -219,13 +219,12 @@ export function tesePorId(id: string): TeseCanonica | undefined {
   return TESES_CANONICAS.find((t) => t.id === id);
 }
 
-/** Cruza o relato com pistas do código. Não inventa tese. */
+/** Só teses que o advogado/IA marcou por id — sem pista automática no relato. */
 export function detectarTesesCanonicas(
   areaId: string,
-  relato: string,
+  _relato: string,
   idsExtra: string[] = []
 ): TeseCanonica[] {
-  const n = normalizar(relato);
   const vistos = new Set<string>();
   const out: TeseCanonica[] = [];
 
@@ -235,19 +234,6 @@ export function detectarTesesCanonicas(
       vistos.add(t.id);
       out.push(t);
     }
-  }
-
-  for (const t of tesesDaArea(areaId)) {
-    if (vistos.has(t.id)) continue;
-    if (t.pistas.some((p) => n.includes(normalizar(p)))) {
-      vistos.add(t.id);
-      out.push(t);
-    }
-  }
-
-  if (areaId === "jec" && !vistos.has("juizado-9099")) {
-    const jec = tesePorId("juizado-9099");
-    if (jec) out.push(jec);
   }
 
   return out.slice(0, 6);

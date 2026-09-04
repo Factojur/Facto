@@ -98,7 +98,6 @@ export function PlanoCasoPainel({
   leituraAnexo,
   dicaPrazo,
   avisoComplementosLastro,
-  onConfirmarRedacao,
   onAtualizarPlano,
   onPedidosChange,
   onRestaurarVersao,
@@ -115,7 +114,6 @@ export function PlanoCasoPainel({
   leituraAnexo?: string | null;
   dicaPrazo?: string | null;
   avisoComplementosLastro?: string | null;
-  onConfirmarRedacao: () => void;
   onAtualizarPlano?: () => void;
   onPedidosChange?: (pedidos: string[]) => void;
   onRestaurarVersao?: (versao: VersaoPlanoChat) => void;
@@ -164,14 +162,21 @@ export function PlanoCasoPainel({
   if (!triagem) {
     return (
       <div className="mx-auto max-w-3xl">
-        <EntendimentoLocalCard
-          resumo={resumo}
-          areaRotulo={areaRotulo}
-          pedidosEditaveis={Boolean(onPedidosChange)}
-          onPedidosChange={onPedidosChange}
-        />
+        {resumo.fatosResumo || resumo.foro !== "—" || resumo.autores !== "—" ? (
+          <EntendimentoLocalCard
+            resumo={resumo}
+            areaRotulo={areaRotulo}
+            pedidosEditaveis={Boolean(onPedidosChange)}
+            onPedidosChange={onPedidosChange}
+          />
+        ) : (
+          <p className="rounded-xl border border-dashed border-stone-300 bg-white/80 p-6 text-center text-sm text-stone-600">
+            Oriente no chat o que pretende na peça. O plano estratégico sobe aqui
+            quando a IA concluir a análise (Gemini) — sem chute local de remédio.
+          </p>
+        )}
         <p className="mt-4 text-center text-xs text-stone-500">
-          Continue conversando à esquerda — o plano atualiza automaticamente.
+          Continue conversando à esquerda — o plano atualiza quando a IA responder.
         </p>
       </div>
     );
@@ -294,8 +299,8 @@ export function PlanoCasoPainel({
           </details>
         )}
 
-        <div className="mt-6 flex flex-wrap justify-end gap-2 border-t border-stone-200 pt-4">
-          {onAtualizarPlano && (
+        {onAtualizarPlano && (
+          <div className="mt-6 flex justify-end border-t border-stone-200 pt-4">
             <button
               type="button"
               onClick={onAtualizarPlano}
@@ -304,16 +309,8 @@ export function PlanoCasoPainel({
             >
               Atualizar plano
             </button>
-          )}
-          <button
-            type="button"
-            onClick={onConfirmarRedacao}
-            disabled={confirmando || carregando}
-            className="rounded-lg bg-stone-800 px-5 py-2 text-sm font-semibold text-amber-50 shadow-sm hover:bg-stone-700 disabled:opacity-60"
-          >
-            {confirmando ? "Redigindo a peça…" : "Redigir (1 peça)"}
-          </button>
-        </div>
+          </div>
+        )}
       </section>
     </div>
   );

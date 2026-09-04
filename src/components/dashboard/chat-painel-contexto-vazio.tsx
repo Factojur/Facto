@@ -19,8 +19,8 @@ export function ChatPainelContextoVazio({ workspace }: { workspace?: boolean }) 
           workspace ? "text-stone-400" : "text-stone-600"
         }`}
       >
-        Descreva o caso à esquerda. Área, estratégia e plano surgem do que você
-        contar — com lastro da{" "}
+        Descreva o caso ou anexe o PDF dos autos. A peça sobe no preview para
+        você editar e exportar — com lastro da{" "}
         <strong className="font-medium text-facto-gold">base FACTO</strong>.
       </p>
       <ul
@@ -32,21 +32,20 @@ export function ChatPainelContextoVazio({ workspace }: { workspace?: boolean }) 
           <span className="text-facto-gold" aria-hidden>
             ·
           </span>
-          <span>Converse até o plano ficar bom</span>
+          <span>Anexe os autos — a análise começa na hora</span>
         </li>
         <li className="flex gap-2">
           <span className="text-facto-gold" aria-hidden>
             ·
           </span>
-          <span>Anexe PDF ou use Provas / lei e juris do caso</span>
+          <span>Complemente com uma instrução curta se quiser</span>
         </li>
         <li className="flex gap-2">
           <span className="text-facto-gold" aria-hidden>
             ·
           </span>
           <span>
-            <strong className="font-medium text-stone-400">Redigir</strong> só
-            quando quiser a peça protocolável (1 crédito)
+            Edite a peça no preview e exporte Word/PDF para protocolar
           </span>
         </li>
       </ul>

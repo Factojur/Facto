@@ -4,6 +4,7 @@
  */
 
 import type { BriefingCasoLivre } from "@/lib/ia/briefing-caso-livre";
+import { filtrarRuidoOcrRelato } from "@/lib/filtrar-ruido-ocr-relato";
 import type { ProvaTextoCaso } from "@/lib/provas-caso-texto";
 
 export type DossieCasoLivre = {
@@ -21,19 +22,42 @@ export function montarDossieCasoLivre(params: {
   dispositivoSentenca?: string | null;
   provas?: ProvaTextoCaso[];
 }): DossieCasoLivre {
-  const fatos = params.fatos.trim();
+  const fatos = filtrarRuidoOcrRelato(params.fatos.trim());
   const partes: string[] = [
     "<DOSSIE_DO_CASO>",
-    "Leia o dossiê inteiro antes de planejar tópicos e pedidos.",
-    "Campos do formulário são pistas; o relato e as provas prevalecem em conflito.",
+    "MODO DOCUMENT-FIRST: os AUTOS/OCR abaixo SÃO o caso.",
+    "Mensagens curtas do advogado = instrução de atuação (polo, remédio, ênfase) — não substituem os autos.",
+    "Leia o dossiê inteiro antes de planejar e redigir. Aja cirurgicamente em favor do polo indicado.",
+    "Ignore lixo de OCR/e-mail (Outlook, cid:, Página X de Y) — não copie isso para a peça.",
+    "Campos de formulário, se houver, são pistas fracas; autos e provas prevalecem em conflito.",
+    "",
+    "<AUTOS_E_RELATO>",
+    fatos,
+    "</AUTOS_E_RELATO>",
     "",
   ];
 
-  if (params.briefingFormulario?.texto.trim()) {
+  const provas = (params.provas ?? []).filter(
+    (p) => (p.texto ?? "").trim().length >= 20 || (p.sintese ?? "").trim().length >= 10
+  );
+  if (provas.length) {
+    partes.push("<PROVAS_E_ANEXOS>");
+    for (const p of provas.slice(0, 12)) {
+      const nome = p.nome?.trim() || "Documento";
+      const sintese = p.sintese?.trim();
+      const trecho = (p.texto ?? "").trim().slice(0, 2500);
+      partes.push(`• ${nome}`);
+      if (sintese) partes.push(`  Síntese: ${sintese}`);
+      if (trecho) partes.push(`  Trecho: ${trecho}`);
+    }
+    partes.push("</PROVAS_E_ANEXOS>", "");
+  }
+
+  if (params.dispositivoSentenca?.trim()) {
     partes.push(
-      "<ORIENTACOES_FORMULARIO>",
-      params.briefingFormulario.texto.trim(),
-      "</ORIENTACOES_FORMULARIO>",
+      "<DISPOSITIVO_SENTENCA>",
+      params.dispositivoSentenca.trim().slice(0, 6000),
+      "</DISPOSITIVO_SENTENCA>",
       ""
     );
   }
@@ -47,32 +71,15 @@ export function montarDossieCasoLivre(params: {
     );
   }
 
-  if (params.dispositivoSentenca?.trim()) {
+  if (params.briefingFormulario?.texto.trim()) {
     partes.push(
-      "<DISPOSITIVO_SENTENCA>",
-      params.dispositivoSentenca.trim().slice(0, 6000),
-      "</DISPOSITIVO_SENTENCA>",
+      "<INSTRUCAO_DO_ADVOGADO>",
+      params.briefingFormulario.texto.trim(),
+      "</INSTRUCAO_DO_ADVOGADO>",
       ""
     );
   }
 
-  const provas = (params.provas ?? []).filter(
-    (p) => (p.texto ?? "").trim().length >= 20 || (p.sintese ?? "").trim().length >= 10
-  );
-  if (provas.length) {
-    partes.push("<SINTESE_PROVAS>");
-    for (const p of provas.slice(0, 12)) {
-      const nome = p.nome?.trim() || "Documento";
-      const sintese = p.sintese?.trim();
-      const trecho = (p.texto ?? "").trim().slice(0, 1500);
-      partes.push(`• ${nome}`);
-      if (sintese) partes.push(`  Síntese: ${sintese}`);
-      else if (trecho) partes.push(`  Trecho: ${trecho}`);
-    }
-    partes.push("</SINTESE_PROVAS>", "");
-  }
-
-  partes.push("<RELATO_BRUTO_DO_USUARIO>", fatos, "</RELATO_BRUTO_DO_USUARIO>");
   partes.push("</DOSSIE_DO_CASO>");
 
   const relatoExtra = [

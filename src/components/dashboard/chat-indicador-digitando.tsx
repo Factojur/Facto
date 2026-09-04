@@ -1,6 +1,6 @@
 "use client";
 
-/** Bolha “digitando…” estilo chat fluido (MinutaIA-like). */
+/** Bolha “digitando…” no chat. */
 export function ChatIndicadorDigitando({
   temaAssistente,
 }: {

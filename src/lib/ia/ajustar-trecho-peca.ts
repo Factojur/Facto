@@ -3,6 +3,7 @@
  * Proibido: mudar endereçamento, inventar julgado, encurtar a peça inteira.
  */
 
+import { PERSONA_ADVOGADO_SENIOR_FACTO } from "@/lib/ia/assistente-facto-prompt";
 import {
   gerarTextoComGemini,
   geminiConfigurado,
@@ -52,7 +53,8 @@ export async function ajustarTrechoPeca(params: {
 
   const res = await gerarTextoComGemini({
     systemPrompt: [
-      "Você edita uma minuta forense já pronta.",
+      PERSONA_ADVOGADO_SENIOR_FACTO,
+      "Tarefa: editar uma minuta forense já pronta.",
       "Devolva a peça COMPLETA (não um trecho).",
       "Altere SÓ o que o pedido pedir.",
       "Se houver TRECHO_ALVO, concentre a alteração nesse trecho; o restante permanece.",

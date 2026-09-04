@@ -74,7 +74,6 @@ import {
 } from "@/lib/minuta-modulo";
 import {
   chatMinutaAreaHabilitada,
-  hrefChatMinuta,
 } from "@/lib/chat-minuta";
 import {
   PreviewTriagemPeca,
@@ -2076,7 +2075,7 @@ export function JecForm({
             <div className="flex flex-wrap items-center gap-2">
               {chatMinutaAreaHabilitada(areaId) ? (
                 <Link
-                  href={hrefChatMinuta(areaId, { nova: true })}
+                  href="/dashboard#assistente-workspace"
                   className="rounded-lg border border-facto-gold/40 bg-amber-50/80 px-3 py-1.5 text-sm font-medium text-stone-800 transition hover:border-facto-gold hover:bg-amber-50"
                 >
                   Continuar no assistente

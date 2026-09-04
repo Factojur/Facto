@@ -6,6 +6,7 @@ import { ACEITE_TERMOS_VERSAO, temAceiteTermos } from "@/lib/aceite-termos";
 import { gestaoHabilitada } from "@/lib/gestao/gestao-flags";
 import {
   COOKIE_SESSAO,
+  obterCookieSessao,
   opcoesCookieSessao,
 } from "@/lib/sessao-unica";
 import { registrarSessaoPecasAtiva } from "@/lib/sessao-pecas-server";
@@ -38,10 +39,16 @@ export async function POST(request: Request) {
 
   let intent: "trial" | "login" = "login";
   let destinoGestao = false;
+  let assumirSessao = false;
   try {
-    const body = (await request.json()) as { intent?: string; destino?: string };
+    const body = (await request.json()) as {
+      intent?: string;
+      destino?: string;
+      assumirSessao?: boolean;
+    };
     if (body.intent === "trial") intent = "trial";
     if (body.destino === "gestao") destinoGestao = true;
+    if (body.assumirSessao === true) assumirSessao = true;
   } catch {
     /* sem body */
   }
@@ -132,6 +139,19 @@ export async function POST(request: Request) {
   const response = NextResponse.json({ ok: true, redirect, intent });
 
   if (!loginGestao) {
+    const cookieAtual = await obterCookieSessao();
+    const sessaoAtiva = perfilExistente?.sessao_ativa_id ?? null;
+    const outraMaquina = Boolean(
+      sessaoAtiva && cookieAtual !== sessaoAtiva
+    );
+    if (outraMaquina && !assumirSessao) {
+      return NextResponse.json({
+        ok: false,
+        precisaConfirmarSessao: true,
+        redirect: "/dashboard",
+      });
+    }
+
     const reg = await registrarSessaoPecasAtiva(user.id);
     if (!reg.ok) {
       return NextResponse.json({ error: reg.erro }, { status: 500 });

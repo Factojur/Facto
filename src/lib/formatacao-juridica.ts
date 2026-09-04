@@ -218,7 +218,8 @@ export function gerarDocumentoTimbrado(
       margin: 0;
     }
     .documento-juridico .secao-titulo {
-      font-weight: bold;
+      /* Negrito só via ** Markdown da IA — alinhado ao PDF/Word */
+      font-weight: normal;
       text-align: left;
       text-indent: 0;
       /* Apenas respiro antes do tópico romano — sem “parágrafo duplo” */
@@ -256,7 +257,7 @@ export function gerarDocumentoTimbrado(
       text-transform: uppercase;
     }
     .documento-juridico .subtopico {
-      font-weight: bold;
+      font-weight: normal;
       text-align: left;
       text-indent: 2cm;
       margin: 0;
@@ -291,6 +292,8 @@ export function gerarDocumentoTimbrado(
       text-align: center;
       text-indent: 0;
       margin: 0;
+      /* Localidade + OAB: ritmo da entrelinha 1,5 (espaços via [[ESPACO_1]]) */
+      line-height: ${FORMATACAO_FORENSE.entrelinhas};
     }
     .documento-juridico .documento-conteudo {
       position: relative;

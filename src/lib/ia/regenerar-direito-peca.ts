@@ -6,6 +6,7 @@ import {
   montarContextoConhecimento,
   type TrechoConhecimento,
 } from "@/lib/base-conhecimento";
+import { PERSONA_ADVOGADO_SENIOR_FACTO } from "@/lib/ia/assistente-facto-prompt";
 import { gerarTextoComGemini, modelosRedacao } from "@/lib/ia/gemini-client";
 import {
   blocoPlanoTopicosParaRedator,
@@ -27,7 +28,7 @@ export type ResultadoRegenerarDireito =
 
 function montarSystemPromptDireito(): string {
   return [
-    "Você é o Redator forense do FACTO.",
+    PERSONA_ADVOGADO_SENIOR_FACTO,
     "TAREFA ÚNICA: redigir SOMENTE a seção DO DIREITO (ou DO MÉRITO — DOS FATOS E DO DIREITO) da peça.",
     "",
     "Regras:",

@@ -3,27 +3,29 @@
  *
  * Tetos mensais (sobre a cota de peças do plano, sem extras):
  * - JEC / trial: 0%
- * - Completo (mensal/anual): 12%
- * - Pro (mensal/anual) + escritórios: 22%
+ * - Completo (mensal/anual): 20%
+ * - Pro (mensal/anual) + escritórios: 26%
  *
  * Gatilhos (precisa de ≥1 + saldo do teto + ANTHROPIC_API_KEY):
  * - espécie complexa (recurso, agravo, embargos, remédios etc.)
- * - relato longo (≥ 8.000 chars)
+ * - relato longo (≥ 5.500 chars)
  * - tutela de urgência (Pro / escritório)
+ * - esforço Detalhada / Fundo (se ainda houver teto)
  */
 
 import type { PlanoCota } from "@/lib/cota-pecas";
 import { limiteDoPlano } from "@/lib/cota-pecas";
 import { anthropicConfigurado } from "@/lib/ia/anthropic-client";
 
-export const TETO_SONNET_COMPLETO = 0.12;
-export const TETO_SONNET_PRO = 0.22;
-export const LIMITE_CHARS_RELATO_SONNET = 8_000;
+export const TETO_SONNET_COMPLETO = 0.2;
+export const TETO_SONNET_PRO = 0.26;
+export const LIMITE_CHARS_RELATO_SONNET = 5_500;
 
 export type MotivoSonnet =
   | "especie_complexa"
   | "relato_longo"
   | "tutela_pro"
+  | "esforco_fundo"
   | null;
 
 export type DecisaoRedator = {
@@ -78,6 +80,8 @@ export function decidirRedatorSonnet(opcoes: {
   charsRelato?: number;
   tutelaUrgencia?: boolean;
   sonnetUsadas: number;
+  /** Expressa nunca usa Sonnet; Detalhada usa se ainda houver teto. */
+  esforco?: "agil" | "padrao" | "fundo";
 }): DecisaoRedator {
   const tetoMes = tetoSonnetDoPlano(opcoes.plano);
   const sonnetUsadas = Math.max(0, opcoes.sonnetUsadas);
@@ -89,6 +93,16 @@ export function decidirRedatorSonnet(opcoes: {
       tetoMes,
       sonnetUsadas,
       detalhe: "Anthropic não configurada — Redator em Flash.",
+    };
+  }
+
+  if (opcoes.esforco === "agil") {
+    return {
+      usarSonnet: false,
+      motivo: null,
+      tetoMes,
+      sonnetUsadas,
+      detalhe: "Esforço Expressa — Redator em Flash.",
     };
   }
 
@@ -122,6 +136,8 @@ export function decidirRedatorSonnet(opcoes: {
     fracaoTetoSonnet(opcoes.plano) >= TETO_SONNET_PRO
   ) {
     motivo = "tutela_pro";
+  } else if (opcoes.esforco === "fundo") {
+    motivo = "esforco_fundo";
   }
 
   if (!motivo) {

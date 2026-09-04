@@ -160,7 +160,7 @@ function BtnFonte({
   );
 }
 
-/** Coluna flutuante de fontes — comportamento MinutaIA, visual FACTO. */
+/** Coluna flutuante de fontes — visual FACTO. */
 export function ChatFontesFlutuante({
   contagens,
   onAbrir,
@@ -188,7 +188,7 @@ export function ChatFontesFlutuante({
       </BtnFonte>
       <BtnFonte
         aba="anexos"
-        label="Documentos e provas anexados"
+        label="Documentos"
         tooltip={tooltips?.anexos}
         ativo={abaAtiva === "anexos"}
         pulse={pulse?.anexos}
@@ -199,9 +199,24 @@ export function ChatFontesFlutuante({
         <IconBook className="h-4.5 w-4.5" />
       </BtnFonte>
       <BtnFonte
+        aba="teses"
+        label="Provas e teses"
+        tooltip={
+          tooltips?.teses ??
+          "Provas do fato, teses e complementos. Modelo de peça: botão + Modelo na barra."
+        }
+        ativo={abaAtiva === "teses"}
+        pulse={pulse?.teses}
+        badge={contagens.teses}
+        modoWorkspace={modoWorkspace}
+        onAbrir={onAbrir}
+      >
+        <IconPuzzle className="h-4.5 w-4.5" />
+      </BtnFonte>
+      <BtnFonte
         aba="lei"
-        label="Lei municipal"
-        tooltip={tooltips?.lei}
+        label="Legislação"
+        tooltip={tooltips?.lei ?? "Lei municipal do caso"}
         ativo={abaAtiva === "lei"}
         pulse={pulse?.lei}
         badge={contagens.lei}
@@ -212,7 +227,7 @@ export function ChatFontesFlutuante({
       </BtnFonte>
       <BtnFonte
         aba="juris"
-        label="Jurisprudência do caso"
+        label="Jurisprudência"
         tooltip={tooltips?.juris}
         ativo={abaAtiva === "juris"}
         pulse={pulse?.juris}
@@ -221,18 +236,6 @@ export function ChatFontesFlutuante({
         onAbrir={onAbrir}
       >
         <IconGavel className="h-4.5 w-4.5" />
-      </BtnFonte>
-      <BtnFonte
-        aba="teses"
-        label="Teses e complementos"
-        tooltip={tooltips?.teses}
-        ativo={abaAtiva === "teses"}
-        pulse={pulse?.teses}
-        badge={contagens.teses}
-        modoWorkspace={modoWorkspace}
-        onAbrir={onAbrir}
-      >
-        <IconPuzzle className="h-4.5 w-4.5" />
       </BtnFonte>
     </div>
   );

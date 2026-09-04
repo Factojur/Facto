@@ -7,7 +7,7 @@ type Props = {
   onAbrirFls?: (pagina: number | null, trecho: string) => void;
 };
 
-/** Mensagem do chat com markdown mínimo e citações inline (estilo MinutaIA). */
+/** Mensagem do chat com markdown mínimo e citações inline. */
 export function ChatMensagemTexto({ texto, onAbrirFls }: Props) {
   return <TextoJuridicoInline texto={texto} onAbrirFls={onAbrirFls} />;
 }

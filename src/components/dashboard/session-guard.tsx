@@ -23,7 +23,16 @@ export function SessionGuard() {
         }
 
         if (res.ok) {
-          const data = await res.json();
+          const data = (await res.json()) as {
+            pendente?: boolean;
+            outraMaquina?: boolean;
+          };
+          // Não assumir sessão de outra máquina em silêncio.
+          if (data.outraMaquina) {
+            await supabase.auth.signOut();
+            window.location.assign("/login?sessao=encerrada");
+            return;
+          }
           if (data.pendente && !registrando.current) {
             registrando.current = true;
             await fetch("/api/auth/sessao", { method: "POST" });

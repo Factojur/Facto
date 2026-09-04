@@ -34,6 +34,7 @@ const PASSOS: Record<Exclude<FaseEquipeChat, "idle">, PassoAgente[]> = {
     { skin: "Pesquisa & súmulas", titulo: "Buscando lastro na base FACTO" },
     { skin: "Estrategista", titulo: "Fechando estratégia" },
     { skin: "Redator forense", titulo: "Redigindo a minuta" },
+    { skin: "Diagramador", titulo: "Aplicando forma forense" },
     { skin: "Auditor", titulo: "Conferindo forma e citações" },
   ],
   ajuste: [{ skin: "Redator forense", titulo: "Ajustando o trecho pedido" }],

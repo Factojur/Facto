@@ -4,8 +4,11 @@
  * Sem Google Search.
  */
 
-import { ritoDaArea } from "@/lib/area-rito";
 import type { PreenchimentoEntradaCaso } from "@/lib/entrada-caso-types";
+import {
+  PERSONA_ADVOGADO_SENIOR_FACTO,
+  blocoContextoAreaLeve,
+} from "@/lib/ia/assistente-facto-prompt";
 import {
   gerarTextoComGemini,
   geminiConfigurado,
@@ -115,11 +118,12 @@ export async function preencherEntradaCaso(params: {
   const especies = listaEspeciesDaArea(params.areaId) ?? [];
   const idsEspecie = especies.map((e) => e.id);
   const teses = tesesDaArea(params.areaId);
-  const rito = ritoDaArea(params.areaId);
 
   const res = await gerarTextoComGemini({
     systemPrompt: [
-      `Você preenche um formulário de minuta (${rito.ritoCurto}).`,
+      PERSONA_ADVOGADO_SENIOR_FACTO,
+      "Tarefa: preencher um formulário de minuta a partir do relato/autos.",
+      blocoContextoAreaLeve(params.areaId),
       "NÃO redija a peça. NÃO invente fato, nome, comarca, número de processo ou julgado.",
       "Se não tiver certeza, use null ou []. Nunca chute.",
       "especieDoProcesso = o que os autos JÁ são (incidente em curso).",
@@ -129,8 +133,9 @@ export async function preencherEntradaCaso(params: {
       "Devolva APENAS JSON com as chaves pedidas.",
     ].join(" "),
     userPrompt: [
-      `Área: ${params.areaId}`,
-      `Espécies válidas (id): ${idsEspecie.join(", ") || "(qualquer da área)"}`,
+      `Área sugerida (pista): ${params.areaId}`,
+      `Espécies típicas nesta pista (id — preferência; se os AUTOS exigirem outra, use o id mais próximo ou descreva): ${idsEspecie.join(", ") || "(livre pelos autos)"}`,
+      "especiePeca: prefira um id da lista; se nenhum couber, escolha o remédio correto pelos AUTOS e use o id mais próximo.",
       teses.length
         ? `Teses canônicas (id, só se o relato bater): ${teses.map((t) => t.id).join(", ")}`
         : "Sem teses canônicas nesta área.",

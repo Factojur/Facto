@@ -8,8 +8,9 @@
  * - Citação de jurisprudência: Times 10 pt, justificado, recuo esquerdo 4 cm
  * - Entre parágrafos do corpo: sem espaço adicional (só a entrelinha 1,5)
  * - Centralizado: endereçamento, nome da ação, fechamento
- * - Negrito: endereçamento, nome da ação, tópicos romanos, subtítulos a)/b)
+ * - Negrito: endereçamento, nome da ação; tópicos/subtítulos só se Markdown da IA (**…**)
  * - Itálico: latim, inglês e demais línguas estrangeiras; citações entre aspas
+ * - Fechamento: Nestes termos / pede deferimento / localidade+data / nome / OAB (centralizado)
  * - Após endereçamento: 6 linhas (Processo nº na 4ª, se houver)
  * - Após autor: 1 linha → nome da ação → 1 linha → réu → 2 linhas → seções
  */
@@ -103,6 +104,37 @@ export function cmParaTwips(cm: number): number {
 /** Altura aproximada de N linhas com entrelinha 1,5 em mm (PDF). */
 export function alturaLinhasMm(linhas: number): number {
   return linhas * 6.35;
+}
+
+/**
+ * Texto para Copiar / clipboard: expande espaços e remove marcadores internos.
+ * Word/PDF continuam usando o texto com [[ESPACO_…]] / [[JURIS]].
+ */
+export function textoPecaParaClipboard(texto: string): string {
+  return texto
+    .replace(/\r\n/g, "\n")
+    .replace(/\[\[JURIS\]\]\s*/gi, "")
+    .replace(/\s*\[\[\/JURIS\]\]/gi, "")
+    .replace(/\[\[ESPACO_6_LINHAS\|([^\]]+)\]\]/gi, (_m, ep: string) => {
+      const extras = String(ep)
+        .split(";;")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const inicio = extras.length >= 3 ? 2 : 4;
+      const linhas: string[] = [];
+      for (let i = 1; i <= 6; i++) {
+        const idx = i - inicio;
+        linhas.push(idx >= 0 && idx < extras.length ? extras[idx]! : "");
+      }
+      return `\n${linhas.join("\n")}\n`;
+    })
+    .replace(/\[\[ESPACO_6_LINHAS\]\]/gi, "\n\n\n\n\n\n")
+    .replace(/\[\[ESPACO_2_LINHAS\]\]/gi, "\n\n")
+    .replace(/\[\[ESPACO_1_LINHA\]\]/gi, "\n")
+    .replace(/\[\[ESPACO_6_LINHAS_APOS_ENDERE[CÇ]AMENTO\]\]/gi, "\n\n\n\n\n\n")
+    .replace(/\[\[ESPACO_10_LINHAS_APOS_ENDERE[CÇ]AMENTO\]\]/gi, "\n\n\n\n\n\n")
+    .replace(/\n{4,}/g, "\n\n\n")
+    .trim();
 }
 
 /**

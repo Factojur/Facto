@@ -11,11 +11,115 @@ Fila de melhorias inspirada no MinutaIA (ordem de aplicação, sem misturar seed
 Ordem fechada — **não inverter**:
 
 1. **Chat = MinutaIA** — mesmo fluxo, fluidez, iteração, liberdade da IA. Únicas diferenças: **aparência FACTO** + **juris = base FACTO + anexos**. Configurações/travas pré-chat (áreas manuais, chips, filtros rígidos) **ficam de lado** e **não** condicionam o chat.
-2. **Preview MinutaIA-style** — peça montada cedo; diferencial FACTO = aba de **planos** planejados.
-3. **Formatação protocolável** — tipografia, títulos, PDF/Word (Fase D).
-4. **Só no final** — revisitar o trabalho pré-chat (áreas, ritos, dashboards) para aprimorar o produto voltado ao advogado.
+2. **Preview MinutaIA-style** — peça = resposta da IA no **Minuta** (1 crédito); diferencial FACTO = aba **Planos**. Sem scaffold/molde no preview.
+3. **Formatação protocolável** — entrega Word/PDF alinhada ao texto da IA/editado; tipografia fina **parcial** (margens/fechamento 04/09); detalhe ABNT/Sonnet **depois**.
+4. **Só no final** — revisitar o trabalho pré-chat (áreas, ritos, dashboards) para aprimorar o produto voltado ao advogado. **Fatia 1 feita (04/09):** nav/catálogo → chat; pista de área enriquecida; órfãos de confirmação removidos. Formulário 3 etapas permanece laboratório (JEC), não porta do cliente.
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
+
+### Feito nesta rodada (04/09 — qualidade perceptível + calibração sentença)
+- **Sentença → apelação** — `pecaCabivelAposUltimoAto` detecta JULGO/SENTENÇA de mérito (JEC→recurso inominado; trabalhista→RO).
+- **Anti-falso positivo** — `reclamante…verbas` solto e “em benefício do núcleo” não viram reclamação/previdenciário; trabalhista exige CLT/reclamante+reclamado; família sobe com alimentos/guarda/união.
+- **Último ato** — prioriza SENTENÇA/JULGO sobre “certidão de honorários” no fim do PDF.
+- **Partes capa** — `Requerente:`/`Requerido:` ESAJ prevalecem; filtra “foi devidamente citado (fls”.
+- **Teste PDF** `doc_128308307` (proc. 1000011-77.2025.8.26.0279, advogado do requerido): FACTO → família + apelação + peça smoke OK (~8,6k). MinutaIA → Apelação Cível, família, Flávio apelante (alimentos/convivência; imóvel mantido).
+- **Calibrar depois (fino):** MinutaIA escreveu “Vara Cível” / “filho” (autos: 1ª Vara / filha); FACTO foro capa ainda frágil; tipografia ABNT + **Sonnet adiado**.
+- Smoke: cabivel 42ok · chat-minuta 86ok · API familia-apelacao 1/1.
+
+### Feito nesta rodada (04/09 — tipografia fina parcial + lastro UX)
+- **Tipografia** — preview≡export: marcadores `[[ESPACO_*]]` no editor; margens Times 3/2 cm; fechamento Nestes termos / localidade+OAB; títulos sem negrito forçado (só Markdown da IA).
+- **Higiene** — `normalizarPecaGerada` garante Nestes termos / pede deferimento se a IA omitir; Copiar limpa marcadores internos.
+- **Conferência** — checklist alerta fechamento ausente; barra Entregar com contagem; copy lastro FACTO no ícone i.
+- **Smoke** — fechamento aceita Ante o exposto / Diante do exposto.
+- **Skill** — tipografia fina parcial; Sonnet adiado. Sem `formatarPecaForense` / sem Gestão / sem API paga.
+
+### Feito nesta rodada (04/09 — comparativo 8 casos)
+- Lista: `scripts/lista-comparativo-minutaia.md`
+- FACTO: comparativo 17ok · calibração 19ok · 0006509 10ok · chat-minuta 86ok
+- Fix: pista de espécie em `organizarCasoLocal` (agravo/HC) — não é trava
+- MinutaIA (browser): 0006509 = Agravo + polo ativo; demais cenários no histórico
+- Relatório: `scripts/comparativo-paridade-minutaia.md`
+
+### Feito nesta rodada (04/09 — item 4 liberdade/qualidade MinutaIA)
+- **Prompt livre:** guia de estrutura sem “OBRIGATÓRIA”; plano de tópicos = guia; triagem sem `nomePeca`/`especieHint` pesados; `ritoCurtoSuave` no lastro local.
+- **Anti-contaminação:** civil ≠ consumidor no agrupamento de reset.
+- **Entrada-caso:** espécies = preferência, não allowlist fechada.
+- **Peça:** fls./lei clicáveis até o clique para editar (`PecaEditorMinuta`).
+- **Limpeza:** morto `executarScaffoldPreview` / `confirmarArea` no chat; comparativo atualizado.
+- Smoke API 2/2 + `test:chat-minuta` 86 ok (verificação local).
+
+### Feito nesta rodada (04/09 — item 4 áreas/ritos, fatia 1)
+- **Sidebar** — removido "Gerar peça X" (duplicava Assistente / formulário legado).
+- **Catálogo / módulos** — `HREF_CHAT_ASSISTENTE` (`/dashboard#assistente-workspace`); `hrefModuloArea` e `AreaModuloConfig.href` alinhados.
+- **Prompt** — `blocoContextoAreaLeve` com `leiResumo` + `ritoCurto` suavizado; honestidade de lastro eleitoral (TRE/TSE fraco).
+- **Copy fluxo** — passo 02 = plano (não "pré-visualização" scaffold); passo 03 = Minuta 1 crédito.
+- **Órfãos** — removidos `chat-confirmar-area` / `chat-confirmacao-polo` (funções `areaExige/SugereConfirmacao` seguem `false` nos testes).
+
+### Feito nesta rodada (04/09 — item 3 entrega protocolável)
+- **Export fiel à peça** — flush do contenteditable antes de Copiar/Word/PDF; remove preview HTML enganoso no Word.
+- **PDF/Word** — não forçam mais negrito em títulos/subtópicos (só Markdown da IA); margens Times mantidas.
+- **CTA Entregar** — barra sticky Copiar/Word/PDF no topo do documento.
+- Tipografia forense fina **parcial** (04/09: margens/fechamento/preview≡export); ABNT detalhada + Sonnet **depois**.
+
+### Feito nesta rodada (04/09 — peça IA só no Minuta + editor Word)
+- **Sem scaffold no preview** — molde 0 cota removido do painel Peça; plano na aba Plano; peça = só stream/resposta da IA após Minuta (1 crédito).
+- **Editor contenteditable** — clique e digite no parágrafo (sem textarea); ementas `[[JURIS]]` travadas.
+- **Formatação** — `formatarPecaForense` (Gemini) desligado; Redator define diagramação; `normalizarPecaGerada` só higiene; prompt sem “REGRA CRÍTICA” de molde rígido.
+
+### Feito nesta rodada (04/09 — preview MinutaIA + Fase D)
+- **Scaffold cedo** — `previewMostraScaffold` ligado de novo: prévia 0 cota na aba Peça + botão Redigir; abas Peça|Plano.
+- **Editor ≡ PDF** — removido `mb-3` entre parágrafos; espaçamento só em seções/subtópicos (`PecaEditorMinuta`).
+- **Stream** — edição bloqueada enquanto `redigindo` (`edicaoBloqueada` / sem `onPecaEditada`).
+- **Títulos** — separa “em face de… I - DOS FATOS O autor…”; não parte “DAS PROVAS E ANEXOS”.
+
+### Feito nesta rodada (04/09 — item 1 Chat = MinutaIA)
+- **+ Modelo** ligado: upload PDF/DOCX → `modeloPecaNome/Texto` → `blocoModeloPecaCaso` na geração; chip removível; adesão Livre/Fiel/Recorte na barra.
+- **Paleta `/`:** espécies e atalhos FACTO (`chat-slash-comandos` + `ChatSlashPalette`); setas/Enter/Esc.
+- **Fluxo:** copy “redija / Criar minuta” (sem pedir toggle manual); ramo morto removido; empty-state com `/`.
+- **Iteração pós-peça:** intenção de ajuste priorizada com peça pronta; chips de sugestão; ajuda atualizada.
+- Fonte flutuante “Modelos e estilo” → **Provas e teses** (modelo é o botão + Modelo).
+
+### Feito nesta rodada (04/09 — anti-contaminação + smoke UI)
+- Prompt redação: bloco **ANTI-CONTAMINAÇÃO** (defesa/polo passivo sem inventar tutela/religação/serviço essencial); tutela só se nos autos deste turno.
+- Smoke Playwright: `data-testid` composer/enviar + `fill()` React; checagens negativas na contestação.
+- Smoke API: strip HTML→texto; `--only=`; contestação civil **ok** sem “Da tutela… serviço essencial” (`scripts/smoke-api-dois-casos-peca.ts`).
+
+### Feito nesta rodada (03/09 — destravar paridade MinutaIA)
+- Guia de estrutura sem “NÃO aplique…” / linhas `Rito:` (`aliviarGuiaEstruturaPrompt`).
+- Espécie no redator = pista (autos prevalecem); sem “espécie travada”.
+- Pedido explícito de redigir no Chat ativa Minuta e gera (1 crédito).
+- Lastro mínimo relaxado (OCR/documento / limiares menores).
+- Classificador + entrada-caso com `blocoContextoAreaLeve` (sem classificador/ritoCurto pesados).
+- Smoke API 2 casos (chat + gerar-peca, 1 crédito cada): JEC consumo + contestação civil — **2/2 ok** (`scripts/smoke-api-dois-casos-peca.ts`).
+
+### Feito nesta rodada (03/09 — rito leve no prompt)
+- Chat, triagem e redação usam `blocoContextoAreaLeve` (área = pista); removido `ritoLinha` pesado do system da redação.
+- Molde forense permanece no código (endereçamento determinístico, tipografia, auditor). Sem roteador automático de esforço.
+- Guardrail único: coerência de juízo no mesmo cabeçalho (sem lista “NÃO aplique Lei X”).
+- 2ª leva (fora): classificador/nomenclatura e `entrada-caso` ainda com rito legado.
+
+### Feito nesta rodada (03/09 — home só assistente)
+- Removidos catálogo “Ver todas as áreas”, grade e guia de área da dashboard; permanece assistente + aviso JEC/leigo + fluxo.
+- Leigo: mesmo assistente (sem UX separada por enquanto).
+
+### Feito nesta rodada (03/09 — Expressa + scroll)
+- Profundidade: **Expressa / Equilíbrio / Detalhada** (ids internos iguais); hover só com benefício, sem nome de modelo.
+- Chat ancora no **início** da mensagem nova (não no fim do stream) — leitura de cima para baixo.
+
+### Feito nesta rodada (03/09 — chat altura viewport)
+- Chat embutido (não fixado): altura máxima ≈ viewport (`70dvh` / `100dvh−9rem`); rolagem interna em mensagens, compositor e preview.
+
+### Feito nesta rodada (03/09 — toolbar à esquerda)
+- Ferramentas do header (Chat/Minuta, modos, Nuvem, etc.) alinhadas à **esquerda**; só **Fixar área de trabalho** permanece à direita.
+
+### Feito nesta rodada (03/09 — chat limpo + layout)
+- Chat à **esquerda**, preview/documento à **direita** (altura plena); compositor só sob o chat.
+- Removidos **Formulário**, **Meus casos** e **Reiniciar** (duplicados); catálogo de áreas **não** pré-seleciona área no chat (`?area=` ignorado).
+- Copy de ajuda/prompts sem referência a concorrente; fluxo FACTO próprio.
+
+### Feito nesta rodada (03/09 — persona Advogado Sênior)
+- Gemini e Claude (roteador) usam `PERSONA_ADVOGADO_SENIOR_FACTO`: domínio pleno de todas as áreas; módulo = rito do caso, não limite de competência.
+- Ligado em triagem/redação, chat, refinar plano, inferir área, regenerar direito, ajustar trecho, classificador de nomenclatura (`area-rito` sem “paralegal”).
 
 ### Decisão produto (01/09 noite) — paridade funcional MinutaIA no chat
 
@@ -28,7 +132,7 @@ Ordem fechada — **não inverter**:
 | Camada | Papel |
 |--------|--------|
 | **Chat** | Intake + interpretação + plano + redação (sensação MinutaIA) |
-| **Áreas / módulos** | Catálogo de acesso + esqueleto de rito **depois** da IA escolher; allowlist de produto |
+| **Áreas / módulos** | Catálogo de acesso + esqueleto de rito **depois** da IA escolher; allowlist de produto; no prompt de chat/triagem/redação a área é **pista** (`blocoContextoAreaLeve`), não `ritoLinha` |
 | **Únicas diferenças vs MinutaIA** | Lastro (base FACTO + anexos, sem inventar acórdão) e aparência (glass FACTO) |
 
 Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração remédio — pontos em que o MinutaIA falha ou inventa.
@@ -51,12 +155,13 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 1. **A — Entendimento e segurança (P0)** — IA interpreta; avisos soft (não bloqueiam); remédio por último ato; área/polo auto; reteste 0006509.
 2. **B — Rastreabilidade visível (P0)** — citações `fls.` e ✓ lei inline no plano e na prévia (reusar `pagina-anexo-pdf` + base FACTO); “o que li do PDF” em 1 balão após anexo.
 3. **C — Fluidez e fontes (P1)** — streaming turno/plano; coluna fontes (anexos, juris do caso, teses); menos chips no header, mais no fluxo natural do chat.
-4. **D — Formatação/entrega da peça** — **em andamento** (03/09): títulos colados corrigidos; tipografia preview≡PDF e polish forense na fila.
+4. **D — Formatação/entrega da peça** — **parcial** (04/09): margens/fechamento/preview≡export; tipografia ABNT detalhada + Sonnet **depois**.
 
 **Não fazer neste épico:** clone visual, skills 2k, juris live, reprocessar PDF inteiro a cada turno (margem 35–40%). **Não** religar confirmação obrigatória de área/polo no chat.
 
 ### Em andamento (épico paridade)
 
+- [x] **Rito leve no prompt (03/09)** — `blocoContextoAreaLeve` em chat/triagem/redação; `ritoLinha` fora do system da peça; molde forense no código
 - [x] **Polo no thread** — `ChatConfirmacaoPolo` no corpo do chat; após confirmar → plano automático
 - [x] **Espécie × polo** — calibração transversal (`calibracao-area-especie`, `peca-cabivel-autos`, `polo-advocacia`); MS antes de agravo; exequente ≠ agravo da executada
 - [x] **Rastreio inline** — `TextoJuridicoInline` (fls. + ✓ lei) no chat e plano; clique em fls. abre painel de anexos
@@ -78,6 +183,80 @@ Foco de aperfeiçoamento: lastro rastreável, memória de anexo, calibração re
 - [x] **`fls.` clicáveis na peça redigida** — `PecaDocumentoView` + `TextoJuridicoInline` no painel documento (chat)
 - [x] **Streaming redação no documento** — `stream: true` em `/api/gerar-peca` (NDJSON); redator Gemini com `onRedacaoDelta`; chat mostra texto crescendo
 - [x] **Chat livre (desacoplado das travas de área)** — área/polo não bloqueiam; IA autoridade; payload com polo default; prompts conversa/inferência MinutaIA-style
+
+### Feito nesta rodada (03/09 — sem heurística local forçando remédio)
+
+- [x] **`inferirEspecieDaArea`** — só devolve espécie explícita; sem kit/último ato
+- [x] **`detectarTesesCanonicas`** — só IDs marcados; sem pista automática no relato
+- [x] **`resolverVinculosPeca` / organizarCasoLocal** — sem remédio local; metadados + OCR limpo
+- [x] **Triagem** — sem plano-reserva local se Gemini falhar (erro explícito)
+- [x] **Upload** — só contexto; Peça = inventário; Plano = quando o usuário abrir / IA concluir
+- [ ] **Deploy** — após teste localhost
+
+### Feito nesta rodada (03/09 — chat novo: IA linha de frente)
+
+- [x] **Sem peça-reserva** — `/api/gerar-peca` não devolve scaffold JEC se a IA falhar ou Gemini estiver off (erro explícito)
+- [x] **Sem default JEC** — `AREA_CHAT_NEUTRA` (civil); polo `null`; fallback de área local ≠ leigo→jec
+- [x] **Sem heurística de espécie no chat** — `especieResolvidaChat` só usa o que a IA/advogado gravou; sem `pecaCabivel` local
+- [x] **Header limpo** — sem chip/botão de área; Chat|Minuta + Livre/Fiel/Recorte + Ágil/Padrão/Fundo
+- [x] **Abas de contexto** — Documentos / Modelos / Legislação / Jurisprudência (lastro FACTO)
+- [x] **Formatação em 2 passos** — redator escreve; `formatarPecaForense` só aplica forma
+- [x] **Sonnet** — Completo 20% / Pro 26%; relato longo ≥5,5k; Fundo prioriza Sonnet no teto
+- [x] **Janela PDF** — teto 320k chars + decisões/sentenças/acórdãos no miolo (lote grande ≠ dump 6k págs)
+- [ ] **Deploy** — após teste localhost
+
+### Feito nesta rodada (03/09 — peça no preview como MinutaIA)
+
+- [x] **Sem botão Redigir** — após o plano (envio do caso), a peça completa com IA sobe sozinha no preview (stream)
+- [x] **`adiarDebitoCota: false` no modo Minuta** — 1 crédito na geração da peça; Chat/anexo não debitam
+- [x] **Copy** — Chat conversa; Minuta redige (1 crédito)
+- [x] **Sem merge híbrido JEC** — removido `mesclarFatosIaComDireitoReserva` em `/api/gerar-peca` (não troca mais o DO DIREITO da IA por template)
+- [x] **Anexo = contexto** — drop/picker não redigem; peça só no modo Minuta ou **Criar minuta**
+- [x] **Alinhar débito de crédito** — como o MinutaIA: débito ao gerar o documento, não no 1º chat
+- [ ] **Deploy** — após teste localhost
+
+### Feito nesta rodada (03/09 — Chat vs Minuta como MinutaIA)
+
+- [x] **Pente fino** — o FACTO antigo gerava peça em todo Enviar (default “redija”, Instantâneo/Planejado forçavam redação, scaffold no preview).
+- [x] **Seletor Chat | Minuta** — Instantâneo/Planejado só no Minuta.
+- [x] **Preview** — peça só com minuta IA; plano à direita até lá.
+
+### Feito nesta rodada (03/09 — peça no preview como MinutaIA)
+
+
+
+- [x] **Áreas → chat** — `/dashboard/<area>` e `/dashboard/jec` redirecionam para `/dashboard?area=…`; `hrefModuloArea` aponta ao chat
+- [x] **Sem confirmação de área/polo no thread** — UI removida; fluxo não para
+- [x] **`organizarCasoLocal` sempre `semRemedio`** — local só extrai metadados; remédio é da IA
+- [x] **`confiarEspecie` default true** em `resolverVinculosPeca` / `gerarPecaComIA`
+- [x] **JecForm** — fora da porta do cliente (ainda no repo para preview interno legado)
+- [x] **Espécie da IA é lei** — sem `ajustarEspecieCabivel` no chat; `reajustarEspeciePoloChat` no-op
+- [x] **Scaffold document-first** — sem `gerarPecaJec`; OCR + tópicos do plano
+- [x] **Dossiê / prompts** — autos primeiro; DOCUMENT-FIRST na triagem e no redator
+- [ ] **Deploy** — após teste localhost
+
+### Feito nesta rodada (03/09 — OCR + checklist + tipografia)
+
+- [x] **OCR → partes no scaffold** — nomes viram `AutorValue`/`ReuValue`; foro, UF, processo e vara preenchem comarca; chat mescla `dadosOcrExtraidos` no estado sem sobrescrever o que o usuário já digitou
+- [x] **Payload de redação** — `montarPayloadGeracaoChat` usa OCR quando nomes/comarca estão vazios (0 tokens)
+- [x] **Checklist de conferência** — `checklist-conferencia-peca.ts` (placeholders, fls., processo, JG + auditor local) no rodapé da peça, scaffold e pós-Redigir
+- [x] **Preview ≡ PDF** — `estilo-folha-a4.ts`: Times 12, entrelinha 1,5, margens 3/2 cm no editor e nas folhas A4
+- [x] **Juris ao vivo** — **não** ligado (API paga nova); lastro continua base FACTO + anexos
+- [ ] **Deploy** — Jefferson testa localhost e sobe depois
+
+### Feito nesta rodada (03/09 — auto-fixar + sessão 2ª máquina)
+
+- [x] **Auto-fixar área de trabalho** — ao Enviar ou anexar documento no workspace, fixa tela cheia; Desfixar / Esc continuam manuais
+- [x] **Diálogo 2ª máquina** — login e Google: “FACTO já está aberto em outro lugar” → Abrir neste computador | Manter no outro dispositivo; GET `/api/auth/sessao` com `outraMaquina`; Google bootstrap exige `assumirSessao`
+- [ ] **Deploy** — conferir localhost antes de produção
+
+### Feito nesta rodada (03/09 — layout Word + preview MinutaIA, localhost)
+
+- [x] **Layout A (Word)** — workspace: ferramentas no topo, peça no centro, balões à direita (~22–24rem), composer no rodapé (`display:contents` + CSS grid; `data-layout=word-workspace`)
+- [x] **Editor MinutaIA-style** — `PecaEditorMinuta`: corpo clicável/editável; ementas `[[JURIS]]` travadas; banner; toolbar fls/lei/jur; ícones `fls.` + ✓ lei
+- [x] **Qualidade 0 custo** — prompt Redator cirúrgico + cite `(fls. N)`; `filtrarRuidoOcrRelato` no dossiê; marcador `[[JURIS]]` preservado na normalização
+- [x] **Testes** — `npx tsx scripts/testar-peca-editor-minuta.ts` ok
+- [ ] **Deploy** — **não** feito; conferir só em http://localhost:3000 antes de produção
 
 ### Feito nesta rodada (03/09 — IA livre estilo MinutaIA)
 
@@ -105,7 +284,7 @@ Observado no uso/comparativo (não é clone visual):
 4. **Sem títulos fundidos** — cada seção (fatos / direito / pedidos) em bloco separado; subtítulos a)/b) na linha seguinte.
 5. **Stream no documento** — texto cresce já na forma forense.
 
-**FACTO já tem** (`formatacao-forense`, `tipografia-peca`, scaffold, stream HTML). Gap atual: normalização inconsistente (títulos colados), corpo às vezes fragmentado, PDF/Word ainda atrás do preview. Próximos fatias Fase D: (1) smoke títulos pós-deploy · (2) tipografia preview≡PDF · (3) parágrafos DOS FATOS/DIREITO contínuos · (4) qualificação/lastro/skills = conversa à parte.
+**FACTO já tem** (`formatacao-forense`, `tipografia-peca`, scaffold, stream HTML). Gap residual: PDF/Word polish fino e casos-ouro de títulos em produção. Fatias 04/09: scaffold cedo + editor sem gap + glue endereçamento→DOS FATOS.
 
 ### Feito nesta rodada (03/09 — FACTOIA crop A)
 
@@ -223,7 +402,7 @@ Observado no uso/comparativo (não é clone visual):
 - [x] **Remover Papel no workspace** — toggle de tema só fora da home; na home o visual glass + folha com peça basta
 - [x] **Como funciona (copy)** — “Relate… Revise… Protocole.” + lastro sem sugerir acervo de lei municipal
 - [x] **Fila IA documentada** — “Melhorar sem gastar mais” + “Melhorar com custo” + scorecard 30/08
-- [ ] **Gemini paygo + Anthropic Sonnet (esta semana)** — paygo **ok 30/08** (R$ 60 Prepay + auto-reload, `factoassessoria`) · falta `ANTHROPIC_API_KEY` + 3–5 peças reais de teste
+- [ ] **Gemini paygo + Anthropic Sonnet** — paygo ok · chave Anthropic na Vercel ok · **Sonnet adiado 04/09** (refinar gatilhos/qualidade depois; não ampliar nesta leva) · falta amostra manual 1 peça Sonnet real quando retomar
 - [x] **Scaffold fora do JEC** — não cola mais placeholder interno nem ementa crua (“Com apoio no acervo FACTO…”) na peça de reserva
 - [x] **Citações compartilhadas** — sem prefixo “Jurisprudência” no bloco; paráfrase fora do recuo de citação (`tipografia-peca`, `normalizar-peca-gerada`, prompt)
 - [x] **Deploy produção 30/08** — `dpl_5dwS1uHrVMa3NjfkbudmTvfxnMJi` · [factoia.com.br](https://factoia.com.br) · paygo + citações no ar
@@ -385,7 +564,7 @@ Ordem sugerida: lastro/prompts → autos/último ato → auditor→ajuste → pa
 | # | Melhoria | Custo | Benefício | Pri | Status |
 |---|----------|-------|-----------|-----|--------|
 | C1 | OCR Gemini em PDF de RG/comprovante só para endereço | Flash-Lite ~1–3k tokens/doc (fora da cota de peça, **API Gemini**) | Qualificação completa sem digitar | P2 | Aguardando ok |
-| C2 | Claude Sonnet no Redator para mais áreas (hoje Completo/Pro c/ gatilho) | Anthropic + % teto plano | Peça mais densa em áreas complexas | P1 | **Esta semana** — chave + testes manuais; ampliar áreas só após ok |
+| C2 | Claude Sonnet no Redator para mais áreas (hoje Completo/Pro c/ gatilho) | Anthropic + % teto plano | Peça mais densa em áreas complexas | P1 | **Adiado 04/09** — refinar depois; chave ok; não ampliar gatilhos agora |
 | C3 | 2ª API juris (TRE/TSE, TRF1/2/5/6) | Assinatura nova (R$ a cotar) | Lastro eleitoral/federal fora do Juris.ai | P1 pós-788 | Aguardando ok |
 | C4 | Auto-crítica pós-redação (1 pass leve Flash) | +tokens por peça | Menos erro de coerência | P2 | Aguardando ok |
 

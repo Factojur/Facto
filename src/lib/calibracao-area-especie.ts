@@ -74,7 +74,11 @@ export function especieExplicitaNoRelato(
     return /ambient/.test(t) ? "acp-ambiental" : "acp";
   }
 
-  if (/reclamacao trabalhista|reclamante.*verbas|justica do trabalho/.test(t)) {
+  if (
+    /reclamacao trabalhista|justica do trabalho/.test(t) ||
+    /reclamante.{0,60}reclamad/.test(t) ||
+    (/reclamante.{0,40}verbas/.test(t) && /clt|tst|trt\b/.test(t))
+  ) {
     return "reclamacao";
   }
   if (/agravo de peticao/.test(t)) return "agravo-peticao";
@@ -121,11 +125,22 @@ export function especieExplicitaNoRelato(
     return "agravo-instrumento";
   }
 
-  if (/beneficio|aposentadoria|bpc|loas|inss/.test(t)) {
+  if (
+    (/(?<!em\s)\bbeneficio\b|\baposentadoria\b|\bbpc\b|\bloas\b|\binss\b/.test(
+      t
+    ) ||
+      /beneficio\s+(previdenciario|assistencial|por\s+incapacidade)/.test(t)) &&
+    !/beneficio\s+d[oa]\s+(nucleo|lar|familia|casal|menor|infante)/.test(t)
+  ) {
     if (/recurso administrativo|crps|indeferimento/.test(t)) {
       return "recurso-administrativo-previdenciario";
     }
-    if (/inicial|peticao|ajuizar|propor acao/.test(t)) {
+    if (
+      /inicial|peticao|ajuizar|propor acao/.test(t) &&
+      /(inss|bpc|loas|aposentadoria|beneficio previdenciario|beneficio assistencial)/.test(
+        t
+      )
+    ) {
       return "peticao-inicial-previdenciaria";
     }
   }

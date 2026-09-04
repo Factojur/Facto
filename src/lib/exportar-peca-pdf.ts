@@ -316,7 +316,8 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
         lineH,
         fontSize: FORMATACAO_FORENSE.tamanhoPt,
         firstLineIndentMm: 0,
-        forceBold: true,
+        // Negrito só se a IA marcou (**…**); sem forçar molde.
+        forceBold: false,
         justify: false,
       });
       continue;
@@ -331,7 +332,7 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
         lineH,
         fontSize: FORMATACAO_FORENSE.tamanhoPt,
         firstLineIndentMm: indent,
-        forceBold: true,
+        forceBold: false,
         justify: false,
       });
       continue;

@@ -44,7 +44,7 @@ function corrigirOrtografiaForense(texto: string): string {
     .replace(/\bEXCELENTENT[IÍ]SSIM[OA]\b/gi, "EXCELENTÍSSIMO")
     .replace(/\bEXCELCELENT[IÍ]SSIM[OA]\b/gi, "EXCELENTÍSSIMO")
     .replace(/\bVARADO\b/gi, "VARA DO")
-    .replace(/\[\[\/?JURIS\]\]/gi, "")
+    // NÃO remover [[JURIS]] — ementas travadas no preview dependem do marcador.
     .replace(/\[Inserir[^\]]*\]/gi, "…");
 }
 
@@ -340,6 +340,45 @@ function separarTitulosESubtopicos(texto: string): string {
         continue;
       }
       out.push(`${letra} ${resto}`);
+      continue;
+    }
+
+    // Prefixo (qualificação / "em face de…") colado no primeiro romano
+    const romanoComPrefixo =
+      /^(.+?)\s+([IVXLCDM]+)\s*[-—–.]\s+(DOS FATOS|DO DIREITO|DO M[EÉ]RITO|DAS PROVAS|DOS PEDIDOS|DAS PRELIMINARES)\b(.*)$/i.exec(
+        linha
+      );
+    if (
+      romanoComPrefixo &&
+      romanoComPrefixo[1]!.trim().length >= 12 &&
+      !/^[IVXLCDM]+\s*[-—–.]/i.test(romanoComPrefixo[1]!.trim())
+    ) {
+      const restoAposSecao = romanoComPrefixo[4]!.trim();
+      // Não partir títulos compostos: "DAS PROVAS E ANEXOS"
+      if (!restoAposSecao || !/^(E|OU)\b/i.test(restoAposSecao)) {
+        out.push(romanoComPrefixo[1]!.trim());
+        out.push(
+          `${romanoComPrefixo[2]!.toUpperCase()} - ${romanoComPrefixo[3]!.toUpperCase()}`
+        );
+        if (restoAposSecao) out.push(restoAposSecao);
+        continue;
+      }
+    }
+
+    // Corpo colado no título: I - DOS FATOS O autor… (não "DAS PROVAS E ANEXOS")
+    const tituloComCorpo =
+      /^([IVXLCDM]+)\s*[-—–.]\s+(DOS FATOS|DO DIREITO|DO M[EÉ]RITO|DAS PROVAS|DOS PEDIDOS|DAS PRELIMINARES)\s+(.+)$/i.exec(
+        linha
+      );
+    if (
+      tituloComCorpo &&
+      !/^[a-z]\)/i.test(tituloComCorpo[3]!.trim()) &&
+      !/^(E|OU)\b/i.test(tituloComCorpo[3]!.trim())
+    ) {
+      out.push(
+        `${tituloComCorpo[1]!.toUpperCase()} - ${tituloComCorpo[2]!.toUpperCase()}`
+      );
+      out.push(tituloComCorpo[3]!.trim());
       continue;
     }
 
@@ -699,6 +738,30 @@ function normalizarLinhaOab(texto: string): string {
 }
 
 /**
+ * Se a IA omitiu a fórmula de encerramento, acrescenta só Nestes termos / pede deferimento.
+ * Não inventa localidade, nome nem OAB (vêm do perfil / da própria IA).
+ */
+function garantirFormulaFechamento(texto: string): string {
+  const t = texto.trim();
+  if (t.length < 400) return t;
+  if (
+    /Nestes termos|Termos em que|pede deferimento|Pede e espera deferimento/i.test(
+      t
+    )
+  ) {
+    return t;
+  }
+  if (
+    !/DOS PEDIDOS|DO REQUERIMENTO|Ante o exposto|Diante do exposto|Requer(?:-se)?(?:\s+a)?\s+Vossa Excel/i.test(
+      t
+    )
+  ) {
+    return t;
+  }
+  return `${t}\n${MARCADOR_ESPACO_1}\nNestes termos,\npede deferimento.`;
+}
+
+/**
  * Fecha a peça no formato rígido:
  * (1 linha) Nestes termos, / pede deferimento. / (1 linha) / data / (1 linha) / nome / OAB
  */
@@ -938,6 +1001,7 @@ export function normalizarPecaGerada(texto: string): string {
   t = negritarSubtitulosDireito(t);
   t = aplicarItalicoTermosEstrangeiros(t);
   t = normalizarLinhaOab(t);
+  t = garantirFormulaFechamento(t);
   t = normalizarFechamentoAssinatura(t);
   t = removerSeparadoresMarkdown(t);
   return t.trim();
