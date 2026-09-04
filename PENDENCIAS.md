@@ -17,6 +17,12 @@ Ordem fechada — **não inverter**:
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
 
+### Feito nesta rodada (04/09 — fluidez chat polish)
+
+- [x] **Stream turno** — bolha só no 1º token (typing até lá); cursor piscando na mensagem; scroll acompanha se perto do rodapé
+- [x] **Plano ao montar** — ao iniciar triagem, abre aba Plano/preview (mobile incluso)
+- [x] **Gap MinutaIA** — “Chat ultra-fluido / streaming turno” fecha polish P1 (sidebar fontes já ok)
+
 ### Feito nesta rodada (04/09 — foro fiel + Sonnet)
 - **Foro/capa:** `FORO DE`/`COMARCA DE`; `especialidadeVara` só se explícita; endereçamento sem inventar Cível/Família; bug JEC-default em `formatarEnderecamentoPadrao` corrigido; cidade rejeita prefixos Foro/Vara.
 - **Prompt:** órgão = autos; preservar filho/filha.
@@ -637,7 +643,7 @@ Ordem sugerida para o agente/Jefferson. **Grátis** = implementar quando fizer s
 | Balão “o que li do PDF” após anexo | `formatarBalaoLeituraAnexo` — 1× no chat + painel plano | **Feito** |
 | Thread sem ruído (prazo, chips, conferências) | Prazo/complementos no plano; área média auto; alerta só no plano | **Feito** |
 | Memória de anexo (2º turno) | Smoke prod OK | **Feito** |
-| Chat ultra-fluido / streaming turno | Stream ativo + typing até 1º token; debounce plano 600ms | **P1** — polish sidebar |
+| Chat ultra-fluido / streaming turno | Stream + typing até 1º token + caret + scroll follow; debounce plano 600ms; abre Plano ao montar | **Feito** (04/09 polish) |
 | Sidebar fontes do caso | Tooltips, estado ativo, pulse, ícone lei municipal | **Feito** (02/09) — validar visual em browser |
 | Streaming redação no documento | NDJSON em `/api/gerar-peca` (`stream: true`) | **Feito** (02/09) |
 | Comparativo lado a lado 5–10 casos | Não rodado | **P0** validação |

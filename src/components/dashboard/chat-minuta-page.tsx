@@ -1339,6 +1339,30 @@ export function ChatMinutaPage({
 
   const [msgStreamId, setMsgStreamId] = useState<string | null>(null);
 
+  // Durante o stream, acompanha o fim se o usuário ainda está perto do rodapé.
+  useEffect(() => {
+    if (!msgStreamId) return;
+    const scroller = document.querySelector(
+      "[data-chat-mensagens-scroll]"
+    ) as HTMLElement | null;
+    if (!scroller) {
+      fimChatRef.current?.scrollIntoView({
+        behavior: "auto",
+        block: "nearest",
+      });
+      return;
+    }
+    const folga =
+      scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight;
+    if (folga > 140) return;
+    window.requestAnimationFrame(() => {
+      scroller.scrollTo({
+        top: scroller.scrollHeight,
+        behavior: "auto",
+      });
+    });
+  }, [mensagens, msgStreamId]);
+
   const consumirStreamConversa = useCallback(
     async (payload: {
       mensagem: string;
@@ -1352,10 +1376,8 @@ export function ChatMinutaPage({
     }): Promise<string | null> => {
       const msgId = idMensagemChat();
       setMsgStreamId(msgId);
-      setMensagens((m) => [
-        ...m,
-        { id: msgId, papel: "assistente", texto: "", ts: Date.now() },
-      ]);
+      // Bolha só no 1º token — até lá fica o indicador "digitando".
+      let bolhaCriada = false;
 
       try {
         const res = await fetch("/api/chat-conversa/stream", {
@@ -1364,7 +1386,6 @@ export function ChatMinutaPage({
           body: JSON.stringify(payload),
         });
         if (!res.ok || !res.body) {
-          setMensagens((m) => m.filter((x) => x.id !== msgId));
           return null;
         }
 
@@ -1387,28 +1408,47 @@ export function ChatMinutaPage({
               done?: boolean;
             };
             if (evt.error) {
-              setMensagens((m) => m.filter((x) => x.id !== msgId));
+              if (bolhaCriada) {
+                setMensagens((m) => m.filter((x) => x.id !== msgId));
+              }
               return null;
             }
             if (evt.t) {
               texto += evt.t;
               const acumulado = texto;
-              setMensagens((m) =>
-                m.map((x) =>
-                  x.id === msgId ? { ...x, texto: acumulado } : x
-                )
-              );
+              if (!bolhaCriada) {
+                bolhaCriada = true;
+                setMensagens((m) => [
+                  ...m,
+                  {
+                    id: msgId,
+                    papel: "assistente",
+                    texto: acumulado,
+                    ts: Date.now(),
+                  },
+                ]);
+              } else {
+                setMensagens((m) =>
+                  m.map((x) =>
+                    x.id === msgId ? { ...x, texto: acumulado } : x
+                  )
+                );
+              }
             }
           }
         }
 
         if (!texto.trim()) {
-          setMensagens((m) => m.filter((x) => x.id !== msgId));
+          if (bolhaCriada) {
+            setMensagens((m) => m.filter((x) => x.id !== msgId));
+          }
           return null;
         }
         return texto.trim();
       } catch {
-        setMensagens((m) => m.filter((x) => x.id !== msgId));
+        if (bolhaCriada) {
+          setMensagens((m) => m.filter((x) => x.id !== msgId));
+        }
         return null;
       } finally {
         setMsgStreamId(null);
@@ -1524,6 +1564,8 @@ export function ChatMinutaPage({
       planoAbortRef.current = ac;
 
       setPlanoLoading(true);
+      setPreviewPainel("plano");
+      setAbaMobile("peca");
       if (!opts?.silencioso) {
         setErro(null);
         setAvisos(null);
@@ -2872,13 +2914,15 @@ export function ChatMinutaPage({
                         : tema.msgAssistente
                   }`}
                 >
-                  <ChatMensagemTexto texto={m.texto} onAbrirFls={abrirFlsNoAnexo} />
+                  <ChatMensagemTexto
+                    texto={m.texto}
+                    onAbrirFls={abrirFlsNoAnexo}
+                    streaming={m.id === msgStreamId}
+                  />
                 </div>
               </div>
             ))}
-            {enviando &&
-              (!msgStreamId ||
-                !mensagens.find((m) => m.id === msgStreamId)?.texto.trim()) && (
+            {enviando && !mensagens.find((m) => m.id === msgStreamId)?.texto.trim() && (
               <ChatIndicadorDigitando temaAssistente={tema.msgAssistente} />
             )}
             {mensagens.length <= 1 && !casoJaOrganizado && (
