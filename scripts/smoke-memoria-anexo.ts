@@ -180,16 +180,30 @@ async function anexarPdf(page: Page, pdfPath: string) {
       await page.waitForTimeout(500);
     }
   }
-  const input = page.locator('input[type="file"]').first();
+  // Banner input (accept inclui image/*). .first() pega outro <input hidden> do dashboard.
+  const input = page.locator('input[type="file"][accept*="image/jpeg"]').last();
   await input.waitFor({ state: "attached", timeout: 15_000 });
   await input.setInputFiles(pdfPath);
+  // Upload no banner dispara soContexto e fecha o painel; Enviar do banner
+  // fica disabled sem fila — não clicar nele.
+  await page
+    .getByText(/li \d+ documento|lendo documentos|na fila:/i)
+    .first()
+    .waitFor({ state: "visible", timeout: 30_000 })
+    .catch(() => undefined);
   await page.waitForTimeout(800);
+  await page.keyboard.press("Escape").catch(() => undefined);
+  await page.waitForTimeout(300);
 }
 
 async function enviarMensagem(page: Page, texto: string) {
-  const composer = page.locator("textarea").last();
+  // Composer (não o Enviar do ChatAnexosBanner, que exige arquivos na fila).
+  const composer = page.getByTestId("chat-composer");
+  await composer.waitFor({ state: "visible", timeout: 15_000 });
   await composer.fill(texto);
-  await page.getByRole("button", { name: /^enviar$/i }).last().click();
+  const enviar = page.getByTestId("chat-enviar");
+  await enviar.waitFor({ state: "visible", timeout: 10_000 });
+  await enviar.click({ timeout: 30_000 });
 }
 
 async function browserE2E(page: Page) {

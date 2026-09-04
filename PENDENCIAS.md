@@ -17,6 +17,10 @@ Ordem fechada — **não inverter**:
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
 
+### Feito nesta rodada (04/09 — smoke memória anexo)
+
+- [x] **Smoke browser** — seletor desatualizado: `Enviar.last()` caía no banner (disabled sem fila); `input[type=file].first()` errava o input. Patch: `data-testid=chat-composer/chat-enviar` + input do banner (accept image/jpeg). Prod: pipeline 8/8 + browser OK
+
 ### Feito nesta rodada (04/09 — item 4 áreas/ritos, fatia 2)
 
 - [x] **Meus casos JEC → assistente** — CTAs não caem mais em `/dashboard/jec` (redirect vazio); briefing one-shot (`briefing-caso-chat`) com fatos/espécie/foro
