@@ -24,6 +24,7 @@ const VAZIO: PreenchimentoEntradaCaso = {
   cidade: null,
   uf: null,
   numeroVara: null,
+  especialidadeVara: null,
   especieDoProcesso: null,
   ultimoAto: null,
   pedidos: [],

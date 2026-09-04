@@ -86,6 +86,7 @@ function main() {
     cidade: "São Paulo",
     uf: "SP",
     numeroVara: null,
+    especialidadeVara: null,
     especieDoProcesso: null,
     ultimoAto: null,
     pedidos: ["Indenização por danos morais"],

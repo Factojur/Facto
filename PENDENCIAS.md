@@ -22,7 +22,8 @@ Ordem fechada — **não inverter**:
 - **Prompt:** órgão = autos; preservar filho/filha.
 - **Sonnet:** gatilhos ampliados (área densa 3,5k / Fundo); log + fallback Flash; roteamento usa plano efetivo (Completo teste ≠ JEC DB).
 - **Smoke local:** apelação família com Sonnet (`1/20`); Anthropic OK.
-- **Deploy:** push desta rodada → prod + smoke prod.
+- **Build fix:** fixtures com `especialidadeVara` (typecheck Vercel).
+- **Deploy:** push desta rodada → prod + smoke prod (aguardando Ready).
 
 ### Feito nesta rodada (04/09 — qualidade perceptível + calibração sentença)
 - **Sentença → apelação** — `pecaCabivelAposUltimoAto` detecta JULGO/SENTENÇA de mérito (JEC→recurso inominado; trabalhista→RO).
