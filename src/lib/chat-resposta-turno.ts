@@ -94,7 +94,7 @@ export function montarRespostaTurnoLocal(input: {
 export function perguntaProativaLocal(estado: EstadoCasoChat): string | null {
   if (!estado.fatos.trim() || estado.fatos.trim().length < 40) return null;
   if (!estado.comarca.uf?.trim() && !estado.comarca.cidade?.trim()) {
-    return "Qual a **comarca ou cidade/UF** do foro? Isso melhora endereçamento e juris.";
+    return "Qual a **comarca ou cidade/UF** do foro? Pode responder aqui ou editar no painel **Plano** (campo Foro). Isso melhora endereçamento e juris.";
   }
   if (!estado.autoresNomes.length) {
     return "Quem é o **autor** (nome completo) para qualificação na peça?";

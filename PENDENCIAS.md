@@ -25,6 +25,7 @@ Ordem fechada — **não inverter**:
 - **Build fix:** fixtures com `especialidadeVara` (typecheck Vercel).
 - **Timeout Sonnet:** `gerar-peca` `maxDuration` 60→180s (504 em prod).
 - **Cidade/capa:** não mais `COMARCA DE VARA DE ITARARÉ` (sanear `Vara de X/UF` → município).
+- **Comarca no chat:** campo editável no Plano/Entendimento + alerta se vazia/suspeita; parse município/UF/vara ao digitar.
 - **Tipografia protocolável (fina):** CNJ sozinho ≠ `[[JURIS]]`; limpa `*"**"in casu"*"*` / `**` órfão; cola título romano partido; cerca \`\`\`markdown; localidade sem “Vara de”.
 - **Redação / fidelidade:** prompt + pós-process filho/filha (ignora «não filho»); limpa `R$ ([valor por extenso])`; não inventar % alimentos / data sem lastro.
 - **Smoke prod fidelidade:** `familia-apelacao-sentenca` **1/1** — Sonnet · COMARCA DE ITARARÉ · filha/alimentanda · Nestes termos (`d682e13` · `dpl` Ready).

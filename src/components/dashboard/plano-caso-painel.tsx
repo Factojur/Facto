@@ -11,6 +11,10 @@ import {
   rotuloAreaChat,
   type EstadoCasoChat,
 } from "@/lib/chat-minuta";
+import {
+  avaliarComarcaChat,
+  textoForoEditavel,
+} from "@/lib/comarca-chat";
 import { ChatPainelContextoVazio } from "@/components/dashboard/chat-painel-contexto-vazio";
 import type { VersaoPlanoChat } from "@/lib/chat-plano-versoes";
 
@@ -19,11 +23,19 @@ function EntendimentoLocalCard({
   areaRotulo,
   pedidosEditaveis,
   onPedidosChange,
+  foroEditavel,
+  foroTexto,
+  avaliacaoComarca,
+  onForoChange,
 }: {
   resumo: ReturnType<typeof montarResumoEntendimentoChat>;
   areaRotulo: string;
   pedidosEditaveis?: boolean;
   onPedidosChange?: (pedidos: string[]) => void;
+  foroEditavel?: boolean;
+  foroTexto?: string;
+  avaliacaoComarca?: { nivel: string; mensagem: string };
+  onForoChange?: (foro: string) => void;
 }) {
   return (
     <div className="rounded-xl border border-stone-200 bg-white/95 p-4 shadow-sm">
@@ -46,9 +58,40 @@ function EntendimentoLocalCard({
           <dt className="text-xs font-medium text-stone-500">Ação</dt>
           <dd>{resumo.tipoAcao}</dd>
         </div>
-        <div>
-          <dt className="text-xs font-medium text-stone-500">Foro</dt>
-          <dd>{resumo.foro}</dd>
+        <div className="sm:col-span-2">
+          <dt className="text-xs font-medium text-stone-500">Foro / comarca</dt>
+          <dd>
+            {foroEditavel && onForoChange ? (
+              <div className="mt-1 space-y-1.5">
+                <input
+                  type="text"
+                  className="w-full rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-sm text-stone-800 placeholder:text-stone-400"
+                  value={foroTexto ?? ""}
+                  placeholder="Ex.: 1ª Vara de Itararé/SP ou Foro de Campinas/SP"
+                  onChange={(e) => onForoChange(e.target.value)}
+                  aria-label="Foro ou comarca"
+                />
+                {avaliacaoComarca?.nivel === "vazia" ||
+                avaliacaoComarca?.nivel === "suspeita" ? (
+                  <p
+                    className={`text-xs leading-snug ${
+                      avaliacaoComarca.nivel === "vazia"
+                        ? "text-amber-800"
+                        : "text-amber-700"
+                    }`}
+                  >
+                    {avaliacaoComarca.mensagem}
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-stone-500">
+                    Usado no cabeçalho da peça. Edite se a extração errou.
+                  </p>
+                )}
+              </div>
+            ) : (
+              resumo.foro
+            )}
+          </dd>
         </div>
         <div className="sm:col-span-2">
           <dt className="text-xs font-medium text-stone-500">Partes</dt>
@@ -116,11 +159,14 @@ export function PlanoCasoPainel({
   avisoComplementosLastro?: string | null;
   onAtualizarPlano?: () => void;
   onPedidosChange?: (pedidos: string[]) => void;
+  onForoChange?: (foro: string) => void;
   onRestaurarVersao?: (versao: VersaoPlanoChat) => void;
   onIncluirCobertura?: (itemId: string) => void;
   onAbrirFls?: (pagina: number | null, trecho: string) => void;
 }) {
   const resumo = montarResumoEntendimentoChat(estado);
+  const avaliacaoComarca = avaliarComarcaChat(estado.comarca);
+  const foroTexto = textoForoEditavel(estado.comarca);
   const painelVazio = casoChatPainelVazio(estado);
   const areaRotulo = painelVazio
     ? "A definir"
@@ -128,6 +174,15 @@ export function PlanoCasoPainel({
       ? rotuloAreaChat(estado.areaId)
       : "A definir";
   const nVersoes = versoes?.length ?? 0;
+  const propsForo =
+    onForoChange
+      ? {
+          foroEditavel: true as const,
+          foroTexto,
+          avaliacaoComarca,
+          onForoChange,
+        }
+      : {};
 
   if (painelVazio && !carregando) {
     return <ChatPainelContextoVazio />;
@@ -137,7 +192,11 @@ export function PlanoCasoPainel({
     return (
       <div className="mx-auto max-w-3xl space-y-4">
         {casoChatTemConteudo(estado) ? (
-          <EntendimentoLocalCard resumo={resumo} areaRotulo={areaRotulo} />
+          <EntendimentoLocalCard
+            resumo={resumo}
+            areaRotulo={areaRotulo}
+            {...propsForo}
+          />
         ) : (
           <ChatPainelContextoVazio />
         )}
@@ -168,6 +227,7 @@ export function PlanoCasoPainel({
             areaRotulo={areaRotulo}
             pedidosEditaveis={Boolean(onPedidosChange)}
             onPedidosChange={onPedidosChange}
+            {...propsForo}
           />
         ) : (
           <p className="rounded-xl border border-dashed border-stone-300 bg-white/80 p-6 text-center text-sm text-stone-600">
@@ -216,6 +276,31 @@ export function PlanoCasoPainel({
           Edite pedidos abaixo se precisar. A redação completa debita 1 peça ao
           confirmar.
         </p>
+
+        {onForoChange && (
+          <div className="mt-4 rounded-lg border border-stone-200 bg-white px-3 py-2.5">
+            <label className="text-xs font-medium text-stone-500">
+              Foro / comarca
+            </label>
+            <input
+              type="text"
+              className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-sm text-stone-800 placeholder:text-stone-400"
+              value={foroTexto}
+              placeholder="Ex.: 1ª Vara de Itararé/SP ou Foro de Campinas/SP"
+              onChange={(e) => onForoChange(e.target.value)}
+              aria-label="Foro ou comarca"
+            />
+            {avaliacaoComarca.nivel !== "ok" ? (
+              <p className="mt-1.5 text-xs leading-snug text-amber-800">
+                {avaliacaoComarca.mensagem}
+              </p>
+            ) : (
+              <p className="mt-1 text-[11px] text-stone-500">
+                Cabeçalho da peça — corrija se a extração errou.
+              </p>
+            )}
+          </div>
+        )}
 
         {leituraAnexo && (
           <div className="mt-4 rounded-lg border border-sky-200 bg-sky-50/90 px-3 py-2.5 text-sm text-sky-950 whitespace-pre-wrap">

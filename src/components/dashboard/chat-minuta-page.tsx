@@ -78,6 +78,9 @@ import {
   type MensagemChat,
 } from "@/lib/chat-minuta";
 import {
+  aplicarTextoForoAoComarca,
+} from "@/lib/comarca-chat";
+import {
   mesclarDadosOcrNoEstado,
   type DadosOcrExtraidos,
 } from "@/lib/extrair-dados-ocr";
@@ -2502,6 +2505,16 @@ export function ChatMinutaPage({
     planoUltimoFingerprintRef.current = null;
   }
 
+  function handleForoPlano(foro: string) {
+    setEstado((e) =>
+      sincronizarTribunaisComarca({
+        ...e,
+        comarca: aplicarTextoForoAoComarca(foro, e.comarca),
+        planoVisto: false,
+      })
+    );
+  }
+
   function restaurarVersaoPlano(versao: VersaoPlanoChat) {
     setTriagemPreview(versao.triagem);
     setEstado((e) => ({ ...e, planoVisto: true, previewVisto: true }));
@@ -3395,6 +3408,7 @@ export function ChatMinutaPage({
                 void executarPlano({ forcar: true, silencioso: false })
               }
               onPedidosChange={handlePedidosPlano}
+              onForoChange={handleForoPlano}
               onRestaurarVersao={restaurarVersaoPlano}
               onIncluirCobertura={incluirCoberturaNoPlano}
               onAbrirFls={abrirFlsNoAnexo}
