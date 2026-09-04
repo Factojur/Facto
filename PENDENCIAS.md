@@ -25,6 +25,7 @@ Ordem fechada — **não inverter**:
 - **Teste PDF** `doc_128308307` (proc. 1000011-77.2025.8.26.0279, advogado do requerido): FACTO → família + apelação + peça smoke OK (~8,6k). MinutaIA → Apelação Cível, família, Flávio apelante (alimentos/convivência; imóvel mantido).
 - **Calibrar depois (fino):** MinutaIA escreveu “Vara Cível” / “filho” (autos: 1ª Vara / filha); FACTO foro capa ainda frágil; tipografia ABNT + **Sonnet adiado**.
 - Smoke: cabivel 42ok · chat-minuta 86ok · API familia-apelacao 1/1.
+- **Deploy** — `004b3d7` · `dpl_2777iNYdMkYYLp68ybvxVnLb13qY` · Ready em [factoia.com.br](https://factoia.com.br).
 
 ### Feito nesta rodada (04/09 — tipografia fina parcial + lastro UX)
 - **Tipografia** — preview≡export: marcadores `[[ESPACO_*]]` no editor; margens Times 3/2 cm; fechamento Nestes termos / localidade+OAB; títulos sem negrito forçado (só Markdown da IA).
