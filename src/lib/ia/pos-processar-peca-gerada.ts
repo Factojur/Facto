@@ -11,6 +11,10 @@ import {
 import { garantirSecaoValorCausa } from "@/lib/ia/mesclar-peca-hibrida";
 import { normalizarPecaGerada } from "@/lib/ia/normalizar-peca-gerada";
 import {
+  aplicarFidelidadeGeneroParentesco,
+  extrairSinaisFidelidadeAutos,
+} from "@/lib/fidelidade-autos-peca";
+import {
   metaEspecieDaArea,
   pecaUsaEmFaceDeReu,
 } from "@/lib/peca-especie-area";
@@ -50,6 +54,13 @@ export function limparPlaceholdersQualificacao(texto: string): string {
     .replace(/\[endere[cç]o[^\]]*\]/gi, "")
     .replace(/\[VALOR DA CAUSA\]/gi, "")
     .replace(/\[Inserir[^\]]*\]/gi, "")
+    .replace(
+      /R\$\s*\(\s*\[?[^\])\n]{0,80}(?:valor|extenso)[^\])\n]{0,40}\]?\s*\)/gi,
+      "R$ …"
+    )
+    .replace(/R\$\s*\(\s*__+\s*\)/gi, "R$ …")
+    .replace(/\[\s*valor\s+(?:da\s+causa|por\s+extenso)[^\]]*\]/gi, "…")
+    .replace(/\(\s*valor\s+por\s+extenso\s*\)/gi, "…")
     .replace(/,\s*,/g, ",")
     .replace(/,\s*\./g, ".")
     .replace(/\s{2,}/g, " ")
@@ -189,6 +200,8 @@ export type OpcoesPosProcessarPeca = {
   tituloPeca?: string;
   numeroProcesso?: string | null;
   reinjetarQualificacao?: boolean;
+  /** Relato/autos — fidelidade filho/filha etc. */
+  fatos?: string | null;
 };
 
 export function posProcessarAntesQualificacao(
@@ -200,6 +213,12 @@ export function posProcessarAntesQualificacao(
     areaId: opcoes.areaId,
     especie: opcoes.especie,
   });
+  if (opcoes.fatos?.trim()) {
+    t = aplicarFidelidadeGeneroParentesco(
+      t,
+      extrairSinaisFidelidadeAutos(opcoes.fatos)
+    );
+  }
   if (opcoes.reinjetarQualificacao !== false) {
     t = prepararCorpoParaInjecaoQualificacao(t);
   }

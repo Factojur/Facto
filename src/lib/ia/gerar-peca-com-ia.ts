@@ -11,6 +11,10 @@ import {
 } from "@/lib/base-conhecimento";
 import { sanearNomeCidade, substituirEnderecamentoDeterministico, substituirNomePecaDeterministico } from "@/lib/endereco-comarca";
 import {
+  blocoPromptFidelidadeAutos,
+  extrairSinaisFidelidadeAutos,
+} from "@/lib/fidelidade-autos-peca";
+import {
   montarSystemPromptRedacaoTier1,
   type BlocoLeiMunicipal,
 } from "@/lib/ia/assistente-facto-prompt";
@@ -234,11 +238,15 @@ function montarUserPromptRedacao(params: {
   areaId?: string;
   vinculosPeca?: string | null;
 }): string {
+  const fidelidade = blocoPromptFidelidadeAutos(
+    extrairSinaisFidelidadeAutos(params.fatos)
+  );
   const partes = [
     "TAREFA: redija a PEÇA COMPLETA seguindo o system prompt e o resumo estratégico abaixo.",
     "NÃO devolva o resumo — só a peça em Markdown limpo.",
     "Se houver <PLANO_DE_TOPICOS> (ou legado OBRIGATORIO), use-o como guia de títulos da triagem.",
     "QUALIDADE: memorial de advogado sênior — argumente o caso concreto (expor, encaixar tese nos fatos, valorizar o polo, requerer). Não entregue só citações de lei/jurisprudência.",
+    fidelidade,
     "",
     params.casoReal
       ? params.dossieBloco

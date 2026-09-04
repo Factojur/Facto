@@ -100,6 +100,8 @@ export const GUARDRAIL_COERENCIA_JUIZO = [
   "Escolha o juízo e o remédio pelos autos. Não misture de propósito ritos incompatíveis no mesmo endereçamento (ex.: Turma Recursal + apelação CPC no mesmo cabeçalho).",
   "Órgão julgador: use exatamente o que consta nos autos (ex.: «1ª VARA»). Não invente «Vara Cível», «Vara de Família» ou similar se o PDF não trouxer a especialidade.",
   "Gênero e parentesco: preserve filho/filha, o/a menor, genitor/genitora conforme os autos — não generalize para o masculino.",
+  "Não invente data de publicação/intimação, percentual de alimentos “da jurisprudência” nem cifra de valor da causa sem base literal nos autos ou na BASE FACTO.",
+  "Valor da causa: número concreto ou reticências; nunca placeholders do tipo R$ ([valor por extenso]).",
 ].join(" ");
 
 /** Remove negações rígidas de `ritoCurto` — no chat a área é pista, não trava. */

@@ -177,7 +177,7 @@ function colarContinuacaoTituloRomano(texto: string): string {
       !/^\d+\)\s+/i.test(next) &&
       !/^\[\[/.test(next) &&
       !/^(Nestes termos|Termos em que|pede deferimento)/i.test(next) &&
-      (/^(?:RECURSAL|PRELIMINAR|M[EÉ]RITO|RAZ[OÕ]ES)\b/i.test(next) ||
+      (/^(?:RECURSAL|RECURSAIS|PRELIMINAR|M[EÉ]RITO|RAZ[OÕ]ES)\b/i.test(next) ||
         (next === next.toUpperCase() &&
           next.length >= 8 &&
           next.length <= 120 &&

@@ -78,9 +78,9 @@ const CASOS = [
       "partilha, guarda e alimentos (Requerente: Luisa de Almeida Herlemann).",
       "A sentença JULGOU PARCIALMENTE PROCEDENTE: reconheceu união 10/12/2017–16/08/2024,",
       "excluiu o imóvel da partilha (vitória do réu), partilhou móveis/veículos/dívidas 50%,",
-      "fixou guarda compartilhada com residência materna e condenou o requerido a alimentos",
+      "fixou guarda compartilhada da filha com residência materna e condenou o requerido a alimentos",
       "de 1/3 dos rendimentos líquidos. Quero interpor apelação impugnando alimentos e dívidas,",
-      "preservando a exclusão do imóvel.",
+      "preservando a exclusão do imóvel. Nos autos a prole é filha (não filho).",
     ].join(" "),
     ajuste:
       "Confirme em 3 linhas: área, polo (requerido) e se a peça é apelação contra a sentença.",
@@ -91,11 +91,13 @@ const CASOS = [
       /FL[AÁ]VIO|REQUERID|APELANTE|ITARAR[EÉ]|1000011-77\.2025/i,
       /ALIMENT|UNI[AÃ]O\s+EST[AÁ]VEL|PARTILHA|1\/3|TER[CÇ]O/i,
       /Nestes termos|pede deferimento|Diante do exposto|Ante o exposto|Termos em que|requer a Vossa Excel/i,
+      /filha|a menor|alimentanda/i,
     ],
     proibidos: [
       /restabelecimento.{0,50}servi[cç]o essencial/i,
       /tutela de urg[eê]ncia.{0,80}(?:relig|corte|energia)/i,
       /CONTESTA[CÇ][AÃ]O\b/i,
+      /\bo filho\b|\bao filho\b|\bdo filho\b|\balimentando\b/i,
     ],
   },
 ] as const;

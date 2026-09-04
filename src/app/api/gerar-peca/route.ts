@@ -326,6 +326,7 @@ function finalizarTextoPeca(
     tituloPeca,
     numeroProcesso: body.comarca?.numeroProcesso ?? null,
     reinjetarQualificacao: !pecaUsaPartesJaQualificadas(especie, idsInicial),
+    fatos: body.fatos,
   });
 
   const comProvas = injetarProvasELinkNuvem(t, {
