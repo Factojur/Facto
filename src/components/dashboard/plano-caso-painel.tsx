@@ -143,6 +143,7 @@ export function PlanoCasoPainel({
   avisoComplementosLastro,
   onAtualizarPlano,
   onPedidosChange,
+  onForoChange,
   onRestaurarVersao,
   onIncluirCobertura,
   onAbrirFls,
