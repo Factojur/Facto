@@ -17,6 +17,11 @@ Ordem fechada — **não inverter**:
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
 
+### Feito nesta rodada (07/09 — deploy S1 Ready)
+
+- [x] **Deploy Ready** — `7615fb8` · `dpl_2513bqZdo5VYD2KMd1X8pG75iNGw` · [factoia.com.br](https://factoia.com.br)
+- 1º build falhou (typecheck em `scripts/e2e-*`); corrigido excluindo `scripts/e2e-*` do `tsconfig`
+
 ### Feito nesta rodada (07/09 — DA ___ª VARA + E2E todas espécies)
 
 - [x] **Endereçamento inaugural** — padrão `DA ___ª VARA …` (cível/família/trabalho etc.); proíbe “DE UMA DAS VARAS”; pós-processo `corrigirEnderecamentoInauguralSemVara`; injeção determinística se faltar na instrução
