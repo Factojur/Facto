@@ -123,7 +123,7 @@ Duas simulações reais em [factoia.com.br/dashboard](https://factoia.com.br/das
 
 | # | Item | Custo | Status |
 |---|------|-------|--------|
-| S1 | **Deploy** fatia tipografia/___ª VARA/assinatura/inaugurais | — | Em andamento (commit/push/deploy) |
+| S1 | **Deploy** fatia tipografia/___ª VARA/assinatura/inaugurais | — | **Feito** `7615fb8` · `dpl_2513bqZdo5VYD2KMd1X8pG75iNGw` Ready |
 | S2 | **Seed 846→1500** + reindex | cota Juris.ai / Gemini SEED | Em curso — Gemini 429 hoje de manhã |
 | S3 | **Smoke lastro** 20 áreas | Gemini SEED | Após embeddings |
 | S4 | **ABNT fino** preview≡PDF | — | **Feito** 07/09 |
