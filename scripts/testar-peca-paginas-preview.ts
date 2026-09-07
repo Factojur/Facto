@@ -7,7 +7,12 @@ import {
   estimarLinhasBloco,
   LINHAS_POR_PAGINA,
 } from "../src/lib/peca-paginas-preview";
-import { MARCADOR_ESPACO_6 } from "../src/lib/formatacao-forense";
+import {
+  expandirLinhasMarcadorEspaco,
+  MARCADOR_ESPACO_6,
+  montarMarcadorEspaco6,
+  parseMarcadorEspaco,
+} from "../src/lib/formatacao-forense";
 import { createSuite } from "./casos-ouro/suite";
 
 function main() {
@@ -21,6 +26,32 @@ function main() {
   assert(estimarLinhasBloco(titulo) >= 1, "título ≥ 1 linha");
   assert(estimarLinhasBloco(corpo) >= 2, "parágrafo longo ≥ 2 linhas");
   assert(estimarLinhasBloco(MARCADOR_ESPACO_6) === 6, "marcador 6 linhas");
+
+  const citacao =
+    "[[JURIS]]A jurisprudência reiterada do STJ firmou entendimento no sentido de que o mero aborrecimento não configura dano moral indenizável, exigindo-se ofensa a direito da personalidade com repercussão concreta.[[/JURIS]]";
+  assert(
+    estimarLinhasBloco(citacao) >= 1,
+    "citação JURIS estima sem TypeError"
+  );
+
+  const marcEp = parseMarcadorEspaco(
+    montarMarcadorEspaco6(null, [
+      "Processo nº 0000001-00.2024.8.26.0000",
+      "Agravante: Fulano",
+      "Agravado: Beltrano",
+    ])
+  )!;
+  const linhasEp = expandirLinhasMarcadorEspaco(marcEp);
+  assert(linhasEp.length === 6, "epígrafe → 6 slots");
+  assert(linhasEp[0] === "", "epígrafe ≥3: linha 1 vazia");
+  assert(/Processo/.test(linhasEp[1]!), "epígrafe na linha 2");
+  assert(/Agravante/.test(linhasEp[2]!), "polo linha 3");
+  assert(
+    estimarLinhasBloco(
+      montarMarcadorEspaco6(null, ["Processo nº 1", "A: A", "B: B"])
+    ) === 6,
+    "marcador c/ epígrafe ainda conta 6"
+  );
 
   // Título no fim da página não fica órfão: leva o próximo bloco
   const pecaCurta = [

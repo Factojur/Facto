@@ -1,12 +1,12 @@
 {
-  "faseIndice": 2,
+  "faseIndice": 6,
   "offset": 0,
   "concluido": false,
-  "ultimaRodada": "2026-08-31",
+  "ultimaRodada": "2026-09-07",
   "ultimoResultado": {
-    "fase": "tst_oj_sdi1",
-    "ok": 27,
+    "fase": "tst_oj_sdc",
+    "ok": 24,
     "falha": 0,
-    "avanco": 27
+    "avanco": 24
   }
 }

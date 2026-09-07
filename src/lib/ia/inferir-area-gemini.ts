@@ -5,7 +5,10 @@
 
 import type { AreaIdMinuta } from "@/lib/minuta-modulo";
 import { rotuloAreaChat } from "@/lib/chat-minuta";
-import { PERSONA_ADVOGADO_SENIOR_FACTO } from "@/lib/ia/assistente-facto-prompt";
+import {
+  PERSONA_ADVOGADO_SENIOR_FACTO,
+  PROTOCOLO_ESCLARECIMENTO_SEM_TRAVA,
+} from "@/lib/ia/assistente-facto-prompt";
 import {
   gerarTextoComGemini,
   geminiConfigurado,
@@ -70,20 +73,20 @@ export async function inferirCasoComGemini(input: {
 
   const system = `${PERSONA_ADVOGADO_SENIOR_FACTO}
 
+${PROTOCOLO_ESCLARECIMENTO_SEM_TRAVA}
+
 Missão: classificar área e espécie da peça a redigir AGORA, com base nos fatos e no último ato processual.
 
 Liberdade (obrigatório):
-- Interprete o caso concreto. NÃO force catálogo, checklist de área nem peças históricas citadas nos autos.
+- Interprete o caso concreto. NÃO force catálogo nem peças históricas citadas nos autos.
 - Menção antiga a "contestação", "intimação" ou peça protocolada no PDF NÃO define a peça de agora.
-- Cumprimento/execução JÁ aberto + decisão interlocutória → em regra agravo de instrumento (não reabrir o incidente; não contestação).
-- Mandado de segurança só se cabível ou pedido explícito.
-- Habeas corpus → criminal.
+- Se a espécie não estiver clara, devolva especiePeca null (o chat pedirá 1 clique ao advogado).
 - Áreas listadas são módulos FACTO (rito depois) — escolha a que melhor cabe.
 
 Responda APENAS JSON:
 {"areaId":"...","especiePeca":"slug-kebab","motivo":"uma frase curta em português"}
 - areaId deve ser um dos ids listados.
-- especiePeca: agravo-instrumento, mandado-seguranca, habeas-corpus, peticao-inicial, contestacao, reclamacao, embargos-declaracao, resposta-acusacao, replica, cumprimento-sentenca, etc. Use null se incerto.`;
+- especiePeca: agravo-instrumento, mandado-seguranca, habeas-corpus, peticao-inicial, contestacao, reclamacao, embargos-declaracao, resposta-acusacao, replica, cumprimento-sentenca, apelacao, etc. Use null se incerto.`;
 
   const user = `Áreas possíveis:\n${opcoes}${pista}\n\nRelato/autos (trecho):\n${relato}`;
 

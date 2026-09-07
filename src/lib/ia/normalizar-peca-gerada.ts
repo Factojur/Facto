@@ -10,7 +10,9 @@ import {
   MARCADOR_ESPACO_2,
   MARCADOR_ESPACO_6,
   parseMarcadorEspaco,
+  separarMarcadoresEspacoEmbutidos,
 } from "@/lib/formatacao-forense";
+import { corrigirEnderecamentoInauguralSemVara } from "@/lib/endereco-comarca";
 import {
   juntarQuebrasDeLinhaSuaves,
   normalizarCorpoDosTopicos,
@@ -21,6 +23,10 @@ import {
   normalizarBlocosJuris,
   pareceEmentaOuSumulaLiteral,
 } from "@/lib/tipografia-peca";
+import {
+  aplicarAssinaturaPeca,
+  type DadosAssinaturaPeca,
+} from "@/lib/ia/aplicar-assinatura-peca";
 import { normalizarParagrafosDoDireito } from "@/lib/ia/mesclar-peca-hibrida";
 
 const PADRAO_NOME_ACAO =
@@ -36,14 +42,17 @@ function corrigirOrtografiaForense(texto: string): string {
     .replace(/\baplicaju[cć]i-se\b/gi, "aplica-se")
     .replace(/\bpatagar\b/gi, "patamar")
     .replace(/\binsubistente\b/gi, "não informado")
-    .replace(/\bVALORDA\b/g, "VALOR DA")
-    .replace(/\bDO VALORDA\b/gi, "DO VALOR DA")
+    .replace(/\bVALOR\s*DA\b/gi, "VALOR DA")
+    .replace(/\bVALORDA\b/gi, "VALOR DA")
+    .replace(/\bDO\s+VALORDA\b/gi, "DO VALOR DA")
     .replace(/\bINDENIZÁVELE\b/gi, "INDENIZÁVEL E")
     .replace(/\bOBJETIVAE\b/gi, "OBJETIVA E")
     .replace(/\bPROVASE\b/gi, "PROVAS E")
     .replace(/\bEXCELENTENT[IÍ]SSIM[OA]\b/gi, "EXCELENTÍSSIMO")
     .replace(/\bEXCELCELENT[IÍ]SSIM[OA]\b/gi, "EXCELENTÍSSIMO")
     .replace(/\bVARADO\b/gi, "VARA DO")
+    .replace(/\bescrit[oó]rio profissional na\s*,/gi, "escritório profissional no endereço constante da procuração anexa,")
+    .replace(/\bescrit[oó]rio profissional na\s+onde\b/gi, "escritório profissional no endereço constante da procuração anexa, onde")
     // NÃO remover [[JURIS]] — ementas travadas no preview dependem do marcador.
     .replace(/\[Inserir[^\]]*\]/gi, "…");
 }
@@ -524,16 +533,21 @@ export function removerTituloAcaoAposEnderecamento(texto: string): string {
       continue;
     }
 
-    // Marcador colado com texto (ex.: "[[ESPACO_1_LINHA]] em face de…")
-    const marcadorColado = /^(\[\[ESPACO[^\]]+\]\])\s+(.+)$/i.exec(raw);
-    if (marcadorColado) {
-      saida.push(marcadorColado[1]!);
-      const resto = marcadorColado[2]!.trim();
-      if (resto) {
-        if (!entrouQualificacao && ehInicioQualificacao(resto)) {
+    // Marcador colado a texto na mesma linha (antes ou depois)
+    if (/\[\[ESPACO/i.test(raw) && !ehMarcadorEspaco(raw)) {
+      const pedacos = raw
+        .split(/(\[\[ESPACO[^\]]+\]\])/i)
+        .map((p) => p.trim())
+        .filter(Boolean);
+      for (const pedaco of pedacos) {
+        if (ehMarcadorEspaco(pedaco) || /^\[\[ESPACO/i.test(pedaco)) {
+          saida.push(pedaco);
+          continue;
+        }
+        if (!entrouQualificacao && ehInicioQualificacao(pedaco)) {
           entrouQualificacao = true;
         }
-        saida.push(resto);
+        saida.push(pedaco);
       }
       continue;
     }
@@ -670,7 +684,11 @@ function deduplicarLinhasConsecutivas(texto: string): string {
  * e o início da qualificação do Autor.
  */
 export function inserirEspacoAposEnderecamento(texto: string): string {
-  const linhas = texto.split("\n").filter((l) => !ehMarcadorEspaco(l));
+  const linhas = texto.split("\n").filter((l) => {
+    const m = parseMarcadorEspaco(l);
+    // Reinsere só o bloco de 6; preserva ESPACO_1/2 já corretos.
+    return !(m && m.linhas === 6);
+  });
 
   const saida: string[] = [];
   let inseriu = false;
@@ -1076,9 +1094,17 @@ function negritarSubtitulosDireito(texto: string): string {
     .join("\n");
 }
 
+export type OpcoesNormalizarPeca = {
+  assinatura?: DadosAssinaturaPeca;
+};
+
 /** Pipeline completo aplicado à saída da IA antes de HTML/PDF/Word. */
-export function normalizarPecaGerada(texto: string): string {
-  let t = removerCercasMarkdown(texto);
+export function normalizarPecaGerada(
+  texto: string,
+  opts?: OpcoesNormalizarPeca
+): string {
+  let t = separarMarcadoresEspacoEmbutidos(texto);
+  t = removerCercasMarkdown(t);
   t = corrigirOrtografiaForense(t);
   t = corrigirArt22Continuidade(t);
   t = limparDigitosEmoji(t);
@@ -1086,6 +1112,7 @@ export function normalizarPecaGerada(texto: string): string {
   t = limparAsteriscosMarkdownOrfaos(t);
   t = removerSeparadoresMarkdown(t);
   t = forcarCaixaEnderecamento(t);
+  t = corrigirEnderecamentoInauguralSemVara(t);
   t = envolverCitacoesSoltas(t);
   t = normalizarBlocosJuris(t);
   t = juntarQuebrasDeLinhaSuaves(t);
@@ -1111,6 +1138,7 @@ export function normalizarPecaGerada(texto: string): string {
   t = garantirFormulaFechamento(t);
   t = normalizarFechamentoAssinatura(t);
   t = sanearLinhaLocalidadeData(t);
+  t = aplicarAssinaturaPeca(t, opts?.assinatura);
   t = removerSeparadoresMarkdown(t);
   return t.trim();
 }

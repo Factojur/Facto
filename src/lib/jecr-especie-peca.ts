@@ -223,7 +223,12 @@ export function normalizarEspecieJecr(
   raw: string | null | undefined
 ): EspeciePecaJecr | null {
   if (!raw) return null;
-  const id = raw.trim().toLowerCase().replace(/\s+/g, "-");
+  const id = raw
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/\s+/g, "-");
   const ids: EspeciePecaJecr[] = [
     "queixa-crime",
     "defesa-jecrim",
@@ -235,6 +240,7 @@ export function normalizarEspecieJecr(
     "recurso-inominado",
   ];
   if (ids.includes(id as EspeciePecaJecr)) return id as EspeciePecaJecr;
+  if (id === "peticao-inicial" || id === "inicial") return "queixa-crime";
   if (id.includes("queixa")) return "queixa-crime";
   if (id.includes("transac")) return "transacao-penal";
   if (id.includes("composi")) return "composicao-civil";
@@ -274,12 +280,17 @@ export function inferirEspecieJecr(
 }
 
 export function tituloPecaJecr(
-  especie: EspeciePecaJecr,
+  especie: EspeciePecaJecr | string,
   tipoSugerido?: string | null
 ): string {
-  switch (especie) {
-    case "queixa-crime":
-      return String(tipoSugerido ?? "Queixa-crime").trim() || "Queixa-crime";
+  const canon =
+    normalizarEspecieJecr(especie) ?? (especie as EspeciePecaJecr);
+  switch (canon) {
+    case "queixa-crime": {
+      const sug = String(tipoSugerido ?? "").trim();
+      if (!sug || /peti[cç][aã]o\s+inicial/i.test(sug)) return "Queixa-crime";
+      return sug;
+    }
     case "defesa-jecrim":
       return "Defesa";
     case "composicao-civil":
@@ -321,6 +332,8 @@ export function blocoEstruturaPromptJecr(especie: EspeciePecaJecr): string {
   ];
   if (especie === "queixa-crime") {
     extras.push(
+      "   Nome forense típico: QUEIXA-CRIME (ação penal privada; não use o rótulo cível \"petição inicial\").",
+      "   Formatação: qualificação completa do querelante → nome da peça → \"em face de\" + querelado.",
       "   Polos: querelante e querelado. Demonstre legitimidade da ação penal privada e a representação/queixa tempestiva só com o que estiver nos FATOS.",
       "   Não transforme em ação indenizatória cível."
     );

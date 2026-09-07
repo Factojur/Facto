@@ -307,7 +307,8 @@ async function main() {
       `▸ [${court} ${tokenIdx + 1}/${tokens.length}] ${query.slice(0, 44)}… `
     );
 
-    let r = await buscarNoPool(court, query, PUB_FROM || undefined);
+    const pubFromTermo = termo.pubFrom ?? (PUB_FROM || undefined);
+    let r = await buscarNoPool(court, query, pubFromTermo);
 
     if (r.todasEsgotadas) {
       console.log(`${tokens.length}/${tokens.length} contas 429 — interrompendo o lote.`);
@@ -324,7 +325,7 @@ async function main() {
 
     let decisoes = r.decisoes;
 
-    if (PUB_FROM && decisoes.length === 0) {
+    if (pubFromTermo && decisoes.length === 0) {
       process.stdout.write("fallback sem data… ");
       r = await buscarNoPool(court, query);
       if (r.todasEsgotadas) {

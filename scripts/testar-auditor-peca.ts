@@ -64,8 +64,12 @@ const rErrada = auditarPecaGerada({
   pecaInaugural: false,
 });
 assert(
-  rErrada.achados.some((a) => a.gravidade === "bloqueante"),
-  "reabrir cumprimento é bloqueante"
+  rErrada.achados.some(
+    (a) =>
+      (a.id === "especie-cabivel" || a.id === "reabre-execucao") &&
+      a.gravidade === "alerta"
+  ),
+  "reabrir cumprimento gera alerta (não bloqueia — escolha do advogado prevalece)"
 );
 
 const rVara = auditarPecaGerada({

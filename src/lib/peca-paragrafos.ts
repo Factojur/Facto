@@ -15,6 +15,10 @@ function pareceContinuacao(linha: string): boolean {
   const t = linha.trim();
   if (!t) return false;
   if (TITULO_SECAO.test(t)) return false;
+  // Fecha parêntese / pontuação órfã da linha anterior
+  if (/^[)\].,;:]/.test(t)) return true;
+  // Lei / Art. partidos em linhas próprias
+  if (/^(Lei|Decreto|Art\.|arts?\.|n[ºo°.]\s*\d)/i.test(t)) return true;
   // Continua se começa minúscula, número, aspas ou conectivo típico
   return /^[a-záàâãéêíóôõúüç"'«(-\d]/.test(t);
 }
@@ -55,6 +59,18 @@ export function juntarQuebrasDeLinhaSuaves(texto: string): string {
     }
 
     if (ehLinhaEstruturalPeca(linha)) {
+      // Subtítulo a)/b) incompleto — segura para colar a continuação na próxima linha
+      if (
+        /^[a-z]\)\s+\S/i.test(linha) &&
+        !terminaFrase(linha) &&
+        linha.length < 90
+      ) {
+        if (atual) {
+          paragrafos.push(atual);
+        }
+        atual = linha;
+        continue;
+      }
       if (atual) {
         paragrafos.push(atual);
         atual = "";
@@ -64,6 +80,16 @@ export function juntarQuebrasDeLinhaSuaves(texto: string): string {
     }
 
     if (atual && ehLinhaEstruturalPeca(atual)) {
+      // Subtítulo a)/b) partido ("Da Cumula" + "com a Cobrança…")
+      if (
+        /^[a-z]\)\s+\S/i.test(atual.trim()) &&
+        !terminaFrase(atual) &&
+        pareceContinuacao(linha) &&
+        !ehLinhaEstruturalPeca(linha)
+      ) {
+        atual = `${atual} ${linha}`;
+        continue;
+      }
       paragrafos.push(atual);
       atual = linha;
       continue;
@@ -71,6 +97,13 @@ export function juntarQuebrasDeLinhaSuaves(texto: string): string {
 
     if (!atual) {
       atual = linha;
+      continue;
+    }
+
+    // "Consumidor (" + "Lei nº …" + ")" → uma linha
+    if (/[\(\[]\s*$/.test(atual) || /^[)\]]/.test(linha)) {
+      const sep = /^[)\]]/.test(linha) || /[\(\[]\s*$/.test(atual) ? "" : " ";
+      atual = `${atual}${sep}${linha}`;
       continue;
     }
 
@@ -82,6 +115,15 @@ export function juntarQuebrasDeLinhaSuaves(texto: string): string {
     // Hífen de continuação no fim da linha
     if (/[A-Za-zÀ-ÿ]-$/.test(atual) && /^[a-záàâãéêíóôõúüç]/.test(linha)) {
       atual = `${atual.slice(0, -1)}${linha}`;
+      continue;
+    }
+
+    // "Código de Defesa do" / "Consumidor" partido; ou "nº" sozinho
+    if (
+      /\b(do|da|de|dos|das|n[ºo°.])$/i.test(atual) &&
+      /^[A-Za-zÀ-ÿ0-9]/.test(linha)
+    ) {
+      atual = `${atual} ${linha}`;
       continue;
     }
 

@@ -9,7 +9,7 @@ import {
   montarContextoConhecimento,
   type TrechoConhecimento,
 } from "@/lib/base-conhecimento";
-import { sanearNomeCidade, substituirEnderecamentoDeterministico, substituirNomePecaDeterministico } from "@/lib/endereco-comarca";
+import { sanearNomeCidade, formatarEnderecamentoPadrao, substituirEnderecamentoDeterministico, substituirNomePecaDeterministico } from "@/lib/endereco-comarca";
 import {
   blocoPromptFidelidadeAutos,
   extrairSinaisFidelidadeAutos,
@@ -69,14 +69,14 @@ import {
   reforcarEstrategiaParaRedator,
   resolverVinculosPeca,
 } from "@/lib/ia/skins-facto";
-import { blocoEstruturaDaArea } from "@/lib/peca-especie-area";
+import { blocoEstruturaDaArea, canonizarEspecieDaArea, especiePadraoInauguralDaArea } from "@/lib/peca-especie-area";
 import {
   normalizarPoloAdvocacia,
   rotuloPoloAdvocacia,
   type PoloAdvocacia,
 } from "@/lib/polo-advocacia";
 import { moduloDaArea } from "@/lib/minuta-modulo";
-import { blocoInstrucoesQualificacaoPrompt } from "@/lib/partes-ja-qualificadas";
+import { blocoInstrucoesQualificacaoPrompt, especieEhPeticaoInaugural } from "@/lib/partes-ja-qualificadas";
 import { formatarOabAssinatura } from "@/lib/formatar-oab";
 import {
   contextoVerificacaoJurisCaso,
@@ -283,6 +283,11 @@ function montarUserPromptRedacao(params: {
       "ENDEREÇAMENTO DETERMINÍSTICO (usar literalmente no início):",
       params.instrucoes.enderecamento.trim()
     );
+    if (/___/.test(params.instrucoes.enderecamento)) {
+      partes.push(
+        "Peça inaugural: mantenha DA ___ª VARA (ou ZONA). Nunca escreva \"DE UMA DAS VARAS\" nem \"DA VARA\" sem o underline/número — a distribuição ainda não ocorreu."
+      );
+    }
   }
 
   if (params.instrucoes?.epigrafe?.length) {
@@ -339,7 +344,10 @@ function montarUserPromptRedacao(params: {
       "",
       blocoInstrucoesQualificacaoPrompt({
         areaId,
-        especie: params.especiePeca ?? "peticao-inicial",
+        especie: canonizarEspecieDaArea(
+          areaId,
+          params.especiePeca ?? especiePadraoInauguralDaArea(areaId)
+        ),
         partesJaQualificadas: Boolean(params.instrucoes?.partesJaQualificadas),
         polo: params.poloAdvocacia,
         rotuloAtivo: modulo.rotuloPoloAtivo,
@@ -425,9 +433,13 @@ function montarUserPromptRedacao(params: {
     ufFallback
   );
 
+  const assinaturaEhPlaceholder =
+    /[\[\]]|Nome do Advogado|Cidade\/UF/i.test(`${cidadeUf}${nomeAdv}${linhaOab}`);
   partes.push(
     "",
-    "ASSINATURA FINAL OBRIGATÓRIA (reproduzir ao final EXATAMENTE assim — sem as palavras \"Nome:\" ou \"OAB:\"):",
+    assinaturaEhPlaceholder
+      ? "ASSINATURA FINAL (reproduzir ao final; se faltar dado, use o advogado/OAB/comarca do relato — NÃO invente colchetes):"
+      : "ASSINATURA FINAL OBRIGATÓRIA (reproduzir ao final EXATAMENTE assim — sem as palavras \"Nome:\" ou \"OAB:\" e SEM colchetes/placeholders):",
     "Nestes termos,",
     "pede deferimento.",
     "",
@@ -530,6 +542,7 @@ export async function gerarPecaComIA(params: {
       teses,
       pedirJusticaGratuita: params.instrucoes?.pedirJusticaGratuita,
       temMle: params.instrucoes?.temMle,
+      fatos: params.fatos,
     }),
   ];
 
@@ -635,9 +648,8 @@ export async function gerarPecaComIA(params: {
     skin: "Analista Facto",
     titulo: "Análise do caso",
     status:
-      vinculos.incidenteAberto &&
-      vinculos.cabivel &&
-      vinculos.especie !== vinculos.cabivel
+      !vinculos.especie ||
+      (analiseEstrategica.riscosOuLacunas?.length ?? 0) >= 3
         ? "parcial"
         : "ok",
     detalhe: [
@@ -645,6 +657,7 @@ export async function gerarPecaComIA(params: {
         nomeAcao: analiseEstrategica.nomeAcao,
         vinculos,
         riscos: analiseEstrategica.riscosOuLacunas,
+        polo,
       }),
       topicosExtraidos.length
         ? `${topicosExtraidos.length} tópico(s) planejado(s)`
@@ -756,6 +769,7 @@ export async function gerarPecaComIA(params: {
       pedirJusticaGratuita: params.instrucoes?.pedirJusticaGratuita,
       temMle: params.instrucoes?.temMle,
       tutelaUrgencia: params.instrucoes?.tutelaUrgencia,
+      polo,
     }),
     topicos: topicosExtraidos,
     pedidosEssenciais: analiseEstrategica.pedidosEssenciais,
@@ -864,10 +878,28 @@ export async function gerarPecaComIA(params: {
   }
 
   let textoGerado = removerVazamentoDeAnalise(textoBrutoRedacao);
-  if (params.instrucoes?.enderecamento?.trim()) {
+  const enderecamentoEfetivo = (() => {
+    const dado = params.instrucoes?.enderecamento?.trim();
+    if (dado) return dado;
+    if (
+      !especieEhPeticaoInaugural(
+        especieFinal,
+        moduloDaArea(areaId).idsPeticaoInicial
+      )
+    ) {
+      return "";
+    }
+    // HC / revisão / controles vão a tribunal — formatarEnderecamentoPadrao já decide
+    return formatarEnderecamentoPadrao({
+      areaId,
+      especiePeca: especieFinal,
+      varaEmBranco: true,
+    });
+  })();
+  if (enderecamentoEfetivo) {
     textoGerado = substituirEnderecamentoDeterministico(
       textoGerado,
-      params.instrucoes.enderecamento
+      enderecamentoEfetivo
     );
   }
   if (params.instrucoes?.nomePeca?.trim()) {
@@ -913,7 +945,14 @@ export async function gerarPecaComIA(params: {
     .filter(Boolean)
     .join("\n\n---\n\n");
 
-  const textoNormalizado = normalizarPecaGerada(textoGerado);
+  const textoNormalizado = normalizarPecaGerada(textoGerado, {
+    assinatura: {
+      autorNome: params.instrucoes?.autorNome,
+      autorOab: params.instrucoes?.autorOab,
+      localFechamento: params.instrucoes?.localFechamento,
+      fatos: params.fatos,
+    },
+  });
   const citacoes = verificarCitacoes(
     textoNormalizado,
     contextoParaVerificacao,
@@ -944,7 +983,10 @@ export async function gerarPecaComIA(params: {
       params.instrucoes?.epigrafe?.find((l) =>
         /\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/.test(l)
       ) ?? null,
-    pecaInaugural: moduloDaArea(areaId).idsPeticaoInicial.includes(especieFinal),
+    pecaInaugural: especieEhPeticaoInaugural(
+      especieFinal,
+      moduloDaArea(areaId).idsPeticaoInicial
+    ),
     pedirJusticaGratuita: params.instrucoes?.pedirJusticaGratuita,
     temMle: params.instrucoes?.temMle,
     pedidosUsuario: params.instrucoes?.pedidosUsuario,

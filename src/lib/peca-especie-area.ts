@@ -35,6 +35,7 @@ import {
   esqueletoPorEspecieTrabalhista,
   inferirEspecieTrabalhista,
   metaEspecieTrabalhista,
+  normalizarEspecieTrabalhista,
   tituloPecaTrabalhista,
   type EspeciePecaTrabalhista,
 } from "@/lib/trabalhista-especie-peca";
@@ -62,6 +63,7 @@ import {
   esqueletoPorEspecieJecr,
   inferirEspecieJecr,
   metaEspecieJecr,
+  normalizarEspecieJecr,
   tituloPecaJecr,
   type EspeciePecaJecr,
 } from "@/lib/jecr-especie-peca";
@@ -146,19 +148,64 @@ export function idsPeticaoInicialDaArea(areaId: string): readonly string[] {
   return moduloDaArea(areaId).idsPeticaoInicial;
 }
 
+/** Primeira espécie inaugural canônica da área (fallback de defaults). */
+export function especiePadraoInauguralDaArea(areaId: string): string {
+  return idsPeticaoInicialDaArea(areaId)[0] ?? "peticao-inicial";
+}
+
+/**
+ * Canoniza id de espécie ao rito da área (aliases do chat → id local).
+ * Ex.: trabalhista + “petição inicial” → reclamacao; jecr → queixa-crime.
+ */
+export function canonizarEspecieDaArea(
+  areaId: string,
+  especie: string | null | undefined
+): string {
+  const raw = String(especie ?? "").trim();
+  if (!raw) return especiePadraoInauguralDaArea(areaId);
+
+  if (areaId === "trabalhista") {
+    return (
+      normalizarEspecieTrabalhista(raw) ??
+      inferirEspecieTrabalhista("", "", raw)
+    );
+  }
+  if (areaId === "jecr") {
+    return normalizarEspecieJecr(raw) ?? inferirEspecieJecr("", "", raw);
+  }
+  if (areaId === "consumidor") {
+    return inferirEspecieConsumidor("", "", raw);
+  }
+  if (areaId === "civil") {
+    return inferirEspecieCivil("", "", raw);
+  }
+  if (areaId === "familia") {
+    return inferirEspecieFamilia("", "", raw);
+  }
+  if (areaId === "imobiliario") {
+    return inferirEspecieImobiliario("", "", raw);
+  }
+  if (kitDaArea(areaId)) {
+    return inferirEspecieKit(areaId, "", "", raw);
+  }
+  const jec = inferirEspeciePeca("", "", raw);
+  return jec || raw.toLowerCase().replace(/\s+/g, "-");
+}
+
 /**
  * Espécie só se vier explícita (formulário/IA).
  * Sem chute por kit, menção nos autos ou último ato — isso competia com Gemini/Claude.
+ * Quando há valor, canoniza ao rito da área.
  */
 export function inferirEspecieDaArea(
-  _areaId: string,
+  areaId: string,
   _tipoAcao: string,
   _fatos?: string,
   especieExplicita?: string | null
 ): string {
   const fixa = especieExplicita?.trim();
   if (!fixa) return "";
-  return fixa.toLowerCase().replace(/\s+/g, "-");
+  return canonizarEspecieDaArea(areaId, fixa);
 }
 
 export function blocoEstruturaDaArea(areaId: string, especie: string): string {
@@ -274,28 +321,29 @@ export function tituloPecaDaArea(
   tipoSugerido?: string | null,
   contexto?: string | null
 ): string {
+  const esp = canonizarEspecieDaArea(areaId, especie);
   if (areaId === "consumidor") {
-    return tituloPecaConsumidor(especie as EspeciePecaConsumidor, tipoSugerido);
+    return tituloPecaConsumidor(esp as EspeciePecaConsumidor, tipoSugerido);
   }
   if (areaId === "civil") {
-    return tituloPecaCivil(especie as EspeciePecaCivil, tipoSugerido);
+    return tituloPecaCivil(esp as EspeciePecaCivil, tipoSugerido);
   }
   if (areaId === "trabalhista") {
-    return tituloPecaTrabalhista(especie as EspeciePecaTrabalhista, tipoSugerido);
+    return tituloPecaTrabalhista(esp as EspeciePecaTrabalhista, tipoSugerido);
   }
   if (areaId === "familia") {
-    return tituloPecaFamilia(especie as EspeciePecaFamilia, tipoSugerido);
+    return tituloPecaFamilia(esp as EspeciePecaFamilia, tipoSugerido);
   }
   if (areaId === "imobiliario") {
-    return tituloPecaImobiliario(especie as EspeciePecaImobiliario, tipoSugerido);
+    return tituloPecaImobiliario(esp as EspeciePecaImobiliario, tipoSugerido);
   }
   if (areaId === "jecr") {
-    return tituloPecaJecr(especie as EspeciePecaJecr, tipoSugerido);
+    return tituloPecaJecr(esp as EspeciePecaJecr, tipoSugerido);
   }
   if (kitDaArea(areaId)) {
-    return tituloPecaKit(areaId, especie, tipoSugerido);
+    return tituloPecaKit(areaId, esp, tipoSugerido);
   }
-  return tituloPecaCabivel(especie as EspeciePecaJec, tipoSugerido, contexto);
+  return tituloPecaCabivel(esp as EspeciePecaJec, tipoSugerido, contexto);
 }
 
 export function especieParaScaffoldJec(

@@ -318,7 +318,33 @@ function finalizarTextoPeca(
     poloAdvocacia: body.poloAdvocacia,
   });
 
-  let t = posProcessarAntesQualificacao(normalizarPecaGerada(texto), {
+  let t = posProcessarAntesQualificacao(
+    normalizarPecaGerada(texto, {
+      assinatura: {
+        autorNome: opcoes?.advogadoNome,
+        autorOab: opcoes?.oabQualificacao,
+        localFechamento: (() => {
+          const extraidoForo = body.comarca?.foro
+            ? extrairCidadeUfDoForo(body.comarca.foro)
+            : { cidade: "", uf: "" };
+          const cidade =
+            body.comarca?.cidade?.trim() || extraidoForo.cidade || undefined;
+          const uf =
+            body.comarca?.uf?.trim() || extraidoForo.uf || undefined;
+          return cidade && uf ? `${cidade}/${uf.toUpperCase()}` : undefined;
+        })(),
+        fatos: [
+          body.fatos,
+          body.ultimoAto,
+          body.resumoEntrada,
+          body.dispositivoSentenca,
+          body.tipoAcao,
+        ]
+          .filter((x) => typeof x === "string" && x.trim())
+          .join("\n"),
+      },
+    }),
+    {
     areaId,
     especie,
     enderecamento,
@@ -466,7 +492,22 @@ function montarRespostaGerarPeca(ctx: {
     return { tipo: "erro_ia", detalhe: ia.erro };
   }
 
-  const pecaBrutaIa = normalizarPecaGerada(ia.textoGerado);
+  const pecaBrutaIa = normalizarPecaGerada(ia.textoGerado, {
+    assinatura: {
+      autorNome: opcoesAdvogadoQualificacao.advogadoNome,
+      autorOab: opcoesAdvogadoQualificacao.oabQualificacao,
+      localFechamento: (() => {
+        const extraidoForo = body.comarca?.foro
+          ? extrairCidadeUfDoForo(body.comarca.foro)
+          : { cidade: "", uf: "" };
+        const cidade =
+          body.comarca?.cidade?.trim() || extraidoForo.cidade || undefined;
+        const uf = body.comarca?.uf?.trim() || extraidoForo.uf || undefined;
+        return cidade && uf ? `${cidade}/${uf.toUpperCase()}` : undefined;
+      })(),
+      fatos: body.fatos,
+    },
+  });
 
   // Document-first: a IA mantém o DO DIREITO — sem mesclar template JEC por cima.
 

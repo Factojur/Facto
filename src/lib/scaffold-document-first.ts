@@ -16,7 +16,7 @@ import { extrairDadosOcr } from "@/lib/extrair-dados-ocr";
 import { gerarDocumentoTimbrado } from "@/lib/formatacao-juridica";
 import type { EscritorioConfig } from "@/lib/escritorio-types";
 import type { TopicoPlanejado } from "@/lib/ia/plano-topicos-peca";
-import { tituloPecaDaArea, idsPeticaoInicialDaArea } from "@/lib/peca-especie-area";
+import { tituloPecaDaArea, idsPeticaoInicialDaArea, canonizarEspecieDaArea, especiePadraoInauguralDaArea } from "@/lib/peca-especie-area";
 import {
   autoresAPartirDosNomes,
   reusAPartirDosNomes,
@@ -81,14 +81,16 @@ export function montarScaffoldDocumentFirst(
 ): { peca: string; pecaHtml: string } {
   const ocr = extrairDadosOcr(input.fatos);
   const areaId = input.areaId || "jec";
-  const especie = (input.especiePeca || "peticao-inicial")
-    .toLowerCase()
-    .replace(/\s+/g, "-");
+  const especie = canonizarEspecieDaArea(
+    areaId,
+    input.especiePeca || especiePadraoInauguralDaArea(areaId)
+  );
   const titulo =
     tituloPecaDaArea(areaId, especie, input.tipoAcao) ||
     input.tipoAcao?.trim() ||
     ocr.tipoAcaoInferido ||
-    "PETIÇÃO";
+    tituloPecaDaArea(areaId, especiePadraoInauguralDaArea(areaId)) ||
+    "PEÇA";
 
   const comarca: ComarcaInfo = {
     foro: input.comarca?.foro?.trim() || ocr.foro || undefined,

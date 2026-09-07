@@ -4,7 +4,10 @@ import { dividirPecaEmPaginas } from "@/lib/peca-paginas-preview";
 import { ESTILO_EMENTA_A4, ESTILO_FOLHA_A4 } from "@/lib/estilo-folha-a4";
 import { TextoJuridicoInline } from "@/components/dashboard/texto-juridico-inline";
 import { classificarPeca } from "@/lib/tipografia-peca";
-import { parseMarcadorEspaco } from "@/lib/formatacao-forense";
+import {
+  expandirLinhasMarcadorEspaco,
+  parseMarcadorEspaco,
+} from "@/lib/formatacao-forense";
 import { useMemo } from "react";
 
 function classePorTipo(tipo: string): string {
@@ -31,17 +34,7 @@ function classePorTipo(tipo: string): string {
 function expandirMarcador(bloco: string): string[] | null {
   const m = parseMarcadorEspaco(bloco.trim());
   if (!m) return null;
-  const linhas: string[] = [];
-  const extras = m.epigrafe?.length
-    ? m.epigrafe
-    : m.processo
-      ? [m.processo]
-      : [];
-  const vazias = Math.max(0, m.linhas - extras.length);
-  for (let i = 0; i < vazias; i++) linhas.push("");
-  for (const e of extras) linhas.push(e);
-  while (linhas.length < m.linhas) linhas.push("");
-  return linhas;
+  return expandirLinhasMarcadorEspaco(m);
 }
 
 export function PecaPreviewPaginado({
@@ -106,8 +99,8 @@ export function PecaPreviewPaginado({
               );
             })}
           </div>
-          <footer className="pointer-events-none absolute bottom-3 left-0 right-0 text-center text-[9pt] text-stone-500">
-            Folha {idx + 1} de {paginas.length}
+          <footer className="pointer-events-none absolute bottom-3 right-[2cm] left-auto text-right text-[9pt] text-stone-500">
+            {idx + 1}
           </footer>
         </article>
       ))}

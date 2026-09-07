@@ -6,8 +6,40 @@ import type { EstadoCasoChat } from "@/lib/chat-minuta";
 
 /** Pedido explícito de minuta (modo planejado / reforço). */
 export function pedidoExplicitoRedacao(texto: string): boolean {
-  return /\b(redij|elabore|escreva|fa[cç]a|gere|gerar|monte|prepare|minuta|pe[cç]a|peti[cç][aã]o|contest|agravo|embargos|recurso\s+inominado|habeas|mandado\s+de\s+seguran[cç]a)\b/i.test(
-    texto.trim()
+  const t = texto.trim();
+  if (!t) return false;
+
+  // Negação: "não redija", "ainda não quero a redação" — não força Minuta.
+  if (
+    /\b(n[aã]o\s+(quero\s+)?(a\s+)?(redi|elabore|escreva|gere|gerar|minuta|pe[cç]a|reda)|ainda\s+n[aã]o\s+quero\s+(a\s+)?reda|sem\s+redigir)/i.test(
+      t
+    )
+  ) {
+    return false;
+  }
+
+  // "monte/prepare o plano" organiza o caso — não é pedido de peça.
+  if (
+    /\b(monte|prepare)\s+(o\s+)?plano\b/i.test(t) &&
+    !/\b(redi[gj]\w*|elabore\w*|escreva|gere|gerar|minuta)\b/i.test(t)
+  ) {
+    return false;
+  }
+
+  const verboRedacao =
+    /\b(redi[gj]\w*|elabore\w*|escreva|fa[cç]a|gere|gerar|monte|prepare|minuta)\b/i.test(
+      t
+    );
+  // Relato longo citando "petição"/"peça" sem verbo de redação → Chat organiza.
+  if (!verboRedacao) {
+    if (t.length > 160) return false;
+    return /\b(contest\w*|agravo\w*|embargos|recurso\s+inominado|habeas|mandado\s+de\s+seguran[cç]a)\b/i.test(
+      t
+    );
+  }
+
+  return /\b(redi[gj]\w*|elabore\w*|escreva|fa[cç]a|gere|gerar|monte|prepare|minuta|pe[cç]a|peti[cç][aã]o|contest\w*|agravo\w*|embargos|recurso\s+inominado|habeas|mandado\s+de\s+seguran[cç]a)\b/i.test(
+    t
   );
 }
 

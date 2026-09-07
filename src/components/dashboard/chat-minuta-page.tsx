@@ -56,6 +56,8 @@ import {
 import { FactoWordmarkIa } from "@/components/brand/facto-wordmark";
 import { ChatPreviewInventarioAnexos } from "@/components/dashboard/chat-preview-inventario-anexos";
 import { ChatEstiloAtivoBadge } from "@/components/dashboard/chat-estilo-ativo-badge";
+import { ChatEsclarecimentoChips } from "@/components/dashboard/chat-esclarecimento-chips";
+import { precisaEsclarecimentoMinimoChat } from "@/lib/chat-esclarecimento-peca";
 import { filtrarRiscosParaRodape } from "@/lib/filtrar-riscos-plano";
 import { gerarDocumentoTimbrado } from "@/lib/formatacao-juridica";
 import {
@@ -421,6 +423,11 @@ export function ChatMinutaPage({
   const [versoesPlano, setVersoesPlano] = useState<VersaoPlanoChat[]>([]);
   const [planoHighlight, setPlanoHighlight] = useState(false);
   const [areaSugestaoDispensada, setAreaSugestaoDispensada] = useState(false);
+  const [esclarecimentoDispensado, setEsclarecimentoDispensado] =
+    useState(false);
+  const [sugestaoAjusteAuditor, setSugestaoAjusteAuditor] = useState<string | null>(
+    null
+  );
   const [payloadPendente, setPayloadPendente] = useState<ReturnType<
     typeof montarPayloadGeracaoChat
   > | null>(null);
@@ -1516,9 +1523,38 @@ export function ChatMinutaPage({
     setAvisos(null);
     adicionarMensagem(
       "sistema",
-      `Polo confirmado: **${rotuloUi}**. Montando o plano direcionado…`
+      `Polo confirmado: **${rotuloUi}**.`
     );
-    void executarPlano({ silencioso: false, forcar: true });
+    if (next.especiePeca?.trim()) {
+      adicionarMensagem(
+        "sistema",
+        "Peça e polo alinhados. Montando o plano direcionado…"
+      );
+      void executarPlano({ silencioso: false, forcar: true });
+    }
+  }
+
+  function confirmarEspecieChip(id: string, rotulo: string) {
+    const next = reajustarEspeciePoloChat({
+      ...estadoRef.current,
+      especiePeca: id,
+      tipoAcao:
+        tituloPecaDaArea(estadoRef.current.areaId, id, rotulo) || rotulo,
+    });
+    setEstado(next);
+    estadoRef.current = next;
+    estadoAnteriorRef.current = next;
+    planoUltimoFingerprintRef.current = null;
+    setErro(null);
+    setAvisos(null);
+    adicionarMensagem("sistema", `Peça escolhida: **${rotulo}**.`);
+    if (next.poloConfirmado && next.poloAdvocacia) {
+      adicionarMensagem(
+        "sistema",
+        "Peça e polo alinhados. Montando o plano direcionado…"
+      );
+      void executarPlano({ silencioso: false, forcar: true });
+    }
   }
 
   function aplicarEspecieReplica() {
@@ -2278,7 +2314,10 @@ export function ChatMinutaPage({
       setEstado(nextEstado);
       estadoRef.current = nextEstado;
       estadoAnteriorRef.current = nextEstado;
-      if (primeiroRelato) planoUltimoFingerprintRef.current = null;
+      if (primeiroRelato) {
+        planoUltimoFingerprintRef.current = null;
+        setEsclarecimentoDispensado(false);
+      }
 
       void (async () => {
         try {
@@ -2611,8 +2650,13 @@ export function ChatMinutaPage({
         }
         const pedidoAuditor = pedidoAjusteDeAuditoria(data.auditoria);
         if (pedidoAuditor) {
-          msgPosRedacao += `\n\nSugestão de ajuste (cole no chat): “${pedidoAuditor}”`;
+          setSugestaoAjusteAuditor(pedidoAuditor);
+          msgPosRedacao += `\n\nSugestão de ajuste: use o chip abaixo ou digite no chat.`;
+        } else {
+          setSugestaoAjusteAuditor(null);
         }
+      } else {
+        setSugestaoAjusteAuditor(null);
       }
       const msgRedacao: MensagemChat = {
         id: idMensagemChat(),
@@ -2701,8 +2745,9 @@ export function ChatMinutaPage({
   }
   confirmarRedacaoRef.current = confirmarRedacao;
 
-  async function handleAjustarTrecho() {
-    if (pedidoAjuste.trim().length < 8) {
+  async function handleAjustarTrecho(pedidoOverride?: string) {
+    const pedido = (pedidoOverride ?? pedidoAjuste).trim();
+    if (pedido.length < 8) {
       setErro("Descreva o ajuste (mín. 8 caracteres).");
       return;
     }
@@ -2713,13 +2758,14 @@ export function ChatMinutaPage({
     setAjustando(true);
     setErro(null);
     setAvisos(null);
+    if (pedidoOverride) setPedidoAjuste(pedido);
     try {
       const res = await fetch("/api/ajustar-peca", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           peca,
-          pedido: pedidoAjuste.trim(),
+          pedido,
           ajustesJaFeitos: ajustesFeitos,
         }),
       });
@@ -3186,6 +3232,27 @@ export function ChatMinutaPage({
               casoJaOrganizado &&
               !geradoPorIA &&
               !redigindo &&
+              mensagens.length > 1 &&
+              !esclarecimentoDispensado &&
+              precisaEsclarecimentoMinimoChat(estado) && (
+                <ChatEsclarecimentoChips
+                  estado={estado}
+                  modoWorkspace={modoWorkspace}
+                  onEscolherEspecie={confirmarEspecieChip}
+                  onEscolherPolo={confirmarPolo}
+                  onDispensar={() => {
+                    setEsclarecimentoDispensado(true);
+                    adicionarMensagem(
+                      "sistema",
+                      "Seguindo sem confirmação — a IA usa o que já entendeu dos autos e do chat."
+                    );
+                  }}
+                />
+              )}
+            {papelInteracao === "chat" &&
+              casoJaOrganizado &&
+              !geradoPorIA &&
+              !redigindo &&
               mensagens.length > 1 && (
               <div className="flex flex-col items-start gap-2 pt-1">
                 <p
@@ -3212,27 +3279,41 @@ export function ChatMinutaPage({
               </div>
             )}
             {geradoPorIA && peca.trim() && !redigindo && ajustesRestantes > 0 && (
-              <div className="flex flex-wrap gap-2 pt-1">
+              <div
+                className="flex flex-wrap gap-2 pt-1"
+                role="group"
+                aria-label="Ajustes rápidos da peça"
+              >
                 {(
                   [
+                    ...(sugestaoAjusteAuditor ? [sugestaoAjusteAuditor] : []),
                     "Reforce a seção DO DIREITO com mais subsunção aos fatos",
                     "Ajuste os DOS PEDIDOS: deixe mais objetivos e numerados",
                     "Suavize o tom sem perder a tese principal",
-                  ] as const
+                  ] as string[]
                 ).map((sugestao) => (
                   <button
                     key={sugestao}
                     type="button"
+                    data-testid={
+                      sugestao === sugestaoAjusteAuditor
+                        ? "chat-ajuste-auditor"
+                        : "chat-ajuste-rapido"
+                    }
+                    aria-label={`Ajuste: ${sugestao.slice(0, 80)}`}
+                    disabled={ajustando}
                     onClick={() => {
-                      setInput(sugestao);
+                      void handleAjustarTrecho(sugestao);
                     }}
                     className={
                       modoWorkspace
-                        ? "rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-left text-[11px] text-stone-300 backdrop-blur-sm transition hover:border-facto-gold/40 hover:text-facto-gold"
-                        : "rounded-full border border-stone-300 bg-white/80 px-3 py-1.5 text-left text-[11px] text-stone-600 transition hover:border-facto-gold/50 hover:text-stone-900"
+                        ? "rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-left text-[11px] text-stone-300 backdrop-blur-sm transition hover:border-facto-gold/40 hover:text-facto-gold disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-facto-gold/60"
+                        : "rounded-full border border-stone-300 bg-white/80 px-3 py-1.5 text-left text-[11px] text-stone-600 transition hover:border-facto-gold/50 hover:text-stone-900 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500/70"
                     }
                   >
-                    {sugestao}
+                    {sugestao === sugestaoAjusteAuditor
+                      ? `Auditor: ${sugestao.length > 72 ? `${sugestao.slice(0, 72)}…` : sugestao}`
+                      : sugestao}
                   </button>
                 ))}
               </div>

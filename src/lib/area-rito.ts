@@ -138,7 +138,7 @@ const TABELA: Record<string, AreaRitoCopy> = {
     especieHint:
       "5. Indique a espécie (despejo, usucapião, consignação, condomínio, contestação, apelação ou cumprimento);",
     ritoLinha:
-      "Atue no contencioso imobiliário (Lei 8.245/91, CC, condomínio e CPC). Despejo ≠ cobrança cível. Honorários: art. 85 do CPC. Endereçamento: Vara Cível.",
+      "Atue no contencioso imobiliário (Lei 8.245/91, CC, condomínio e CPC). Despejo ≠ cobrança cível. Honorários: art. 85 do CPC. Endereçamento: órgão exatamente como nos autos — sem inventar Cível/Família.",
     especialidade: "Direito Imobiliário (locação, usucapião, condomínio)",
     foroAssistente: "no contencioso imobiliário (Lei 8.245/91 e CC)",
     tipoAcaoDefault: "Ação de Despejo",

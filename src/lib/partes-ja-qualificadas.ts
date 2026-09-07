@@ -1,10 +1,10 @@
 /**
- * Qualificação das partes por espécie de peça.
+ * Qualificação das partes — LAYOUT forense (não reescreve o mérito da IA).
  *
- * — Petição inicial (e equivalentes): qualificação completa do polo ativo +
- *   linha "em face de" com qualificação completa do polo passivo.
- * — Peças incidentais/respostas: só nomes ("já qualificado nos autos");
- *   quem abre o parágrafo é SEMPRE a parte que o advogado representa (polo escolhido).
+ * — Espécies com qualificação completa (idsPeticaoInicial / inaugurais do rito):
+ *   polo ativo completo + nome da peça + "em face de" + polo passivo completo.
+ * — Peças incidentais: só nomes ("já qualificado") + epígrafe com Processo nº quando houver.
+ * Conteúdo (fatos, direito, pedidos) = liberdade da IA; aqui só tipografia do cabeçalho.
  */
 
 import type { AutorValue } from "@/lib/autor-types";
@@ -18,13 +18,53 @@ import {
   type PoloAdvocacia,
 } from "@/lib/polo-especies-por-area";
 
+/**
+ * Peça inaugural da área (= exige qualificação completa das partes).
+ * O *nome* forense vem do módulo (reclamação, queixa, HC, MS, petição inicial…).
+ * Alias `peticao-inicial` no chat ainda conta como inaugural p/ qualificação
+ * (evita “já qualificado” errado); o título é corrigido por `canonizarEspecieDaArea`.
+ */
+export function especieEhPeticaoInaugural(
+  especie: string | null | undefined,
+  idsPeticaoInicial: readonly string[] = MODULO_JEC.idsPeticaoInicial
+): boolean {
+  if (!especie) return false;
+  const e = String(especie)
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "");
+  if (idsPeticaoInicial.includes(e)) return true;
+  if (
+    idsPeticaoInicial.some(
+      (id) =>
+        id === e ||
+        id.normalize("NFD").replace(/\p{M}/gu, "") === e
+    )
+  ) {
+    return true;
+  }
+  // Alias genérico do chat — só modo de qualificação (não redefine o nome da peça)
+  if (
+    e === "peticao-inicial" ||
+    e === "inicial" ||
+    e === "reclamacao" ||
+    e === "reclamacao-trabalhista" ||
+    e === "reclamatoria" ||
+    e === "queixa-crime" ||
+    e === "queixa"
+  ) {
+    return true;
+  }
+  return false;
+}
+
 /** Incidentais: só nome. Petição inicial: qualificação mínima. */
 export function pecaUsaPartesJaQualificadas(
   especie: string | null | undefined,
   idsPeticaoInicial: readonly string[] = MODULO_JEC.idsPeticaoInicial
 ): boolean {
-  if (!especie) return false;
-  return !idsPeticaoInicial.includes(especie);
+  return !especieEhPeticaoInaugural(especie, idsPeticaoInicial);
 }
 
 export function resolverPoloClienteQualificacao(
@@ -343,7 +383,11 @@ export function formatarBlocoPartesJaQualificadas(opcoes: {
   const pronomeAdv = qtd > 1 ? "seu advogado comum" : "seu advogado";
   const adv = txt(opcoes.advogadoNome) || "[NOME DO(A) ADVOGADO(A)]";
   const oab = txt(opcoes.oabQualificacao) || "OAB/[UF] [Número]";
-  const endAdv = txt(opcoes.enderecoAdvogado) || "[endereço do advogado]";
+  const endRaw = txt(opcoes.enderecoAdvogado);
+  const endAdv =
+    endRaw && endRaw !== "," && endRaw.length >= 5
+      ? endRaw
+      : "[endereço do advogado]";
 
   const intro = montarTrechoPartesIntro(
     cliente,
@@ -386,21 +430,24 @@ export function blocoInstrucoesQualificacaoPrompt(opcoes: {
 
   if (!opcoes.partesJaQualificadas) {
     return [
-      "QUALIFICAÇÃO DAS PARTES — PEÇA INAUGURAL:",
-      `1) Qualifique COMPLETAMENTE o ${ativo} (dados determinísticos do formulário).`,
-      "2) Uma linha em branco → NOME DA AÇÃO/PEÇA em caixa alta.",
-      `3) Linha própria iniciando com \"em face de\" + qualificação COMPLETA do ${passivo}, pelos fatos e fundamentos…`,
-      "4) PROIBIDO \"já qualificado nos autos\", CPF/endereço inventados ou segundo bloco de qualificação completa.",
+      "FORMATAÇÃO — QUALIFICAÇÃO COMPLETA (modelo forense desta espécie):",
+      "A IA redige com os dados do dossiê/cadastro; o sistema só espera este LAYOUT visual:",
+      `1) Bloco com qualificação completa do ${ativo} (use o que houver nos fatos/formulário; não invente campos).`,
+      "2) Linha em branco → NOME FORENSE DA PEÇA em caixa alta (o nome que a espécie/rito comportar).",
+      `3) Linha própria: \"em face de\" + qualificação completa do ${passivo} (dados disponíveis), pelos fatos e fundamentos…`,
+      "4) Nesta espécie NÃO use o atalho \"já qualificado nos autos\" — esse molde é de peça incidental.",
+      "5) Conteúdo (fatos, direito, pedidos) = liberdade total da IA; aqui só a ordem tipográfica do cabeçalho.",
     ].join("\n");
   }
 
   const linhas = [
-    "QUALIFICAÇÃO DAS PARTES — PEÇA INCIDENTAL / RESPOSTA:",
+    "FORMATAÇÃO — PARTES JÁ QUALIFICADAS (modelo forense incidental):",
     `Polo do advogado: ${polo.toUpperCase()} (${cliente}).`,
-    "Use LITERALMENTE o bloco determinístico de introdução (só nomes; partes já qualificadas nos autos).",
-    "PROIBIDO repetir CPF, RG, CNPJ, estado civil ou endereço das partes.",
-    "PROIBIDO segunda linha \"em face de\" com qualificação completa após o nome da peça.",
-    `Quem abre o parágrafo é SEMPRE o ${cliente} (cliente), não o ${adversario}.`,
+    "LAYOUT: só nomes + \"já qualificado no processo em epígrafe\" (ou equivalente do rito).",
+    "Não repita CPF/CNPJ/endereço das partes no cabeçalho.",
+    "Epígrafe: se houver número de processo nos autos/dossiê, use Processo nº na forma forense (bloco de linhas após o endereçamento).",
+    `Quem abre o parágrafo é o ${cliente} (parte representada).`,
+    "Conteúdo da peça = liberdade da IA; aqui só o molde visual do cabeçalho.",
   ];
 
   const e = String(opcoes.especie).toLowerCase();
@@ -433,14 +480,14 @@ export function extrasQualificacaoEstruturaPrompt(
   const idsInicial = moduloDaArea(areaId).idsPeticaoInicial;
   if (!pecaUsaPartesJaQualificadas(especie, idsInicial)) {
     return [
-      "   Qualificação: COMPLETA do polo ativo → nome da ação → \"em face de\" + qualificação COMPLETA do polo passivo.",
-      "   Não use \"já qualificado nos autos\" nesta espécie.",
+      "   Formatação do cabeçalho (qualificação completa): polo ativo → nome forense da peça → \"em face de\" + polo passivo.",
+      "   Sem atalho \"já qualificado\" nesta espécie. Dados = dossiê/IA; layout = praxe forense.",
     ];
   }
   const e = String(especie).toLowerCase();
   const linhas = [
-    "   Qualificação: SOMENTE nomes (\"já qualificado no processo em epígrafe\"). Não invente CPF/CNPJ/endereço.",
-    "   Respeite o polo do advogado: quem abre o parágrafo é a parte representada (Estou atuando pelo…).",
+    "   Formatação do cabeçalho (incidental): só nomes + já qualificado; epígrafe com Processo nº se constar no dossiê.",
+    "   Quem abre o parágrafo é a parte representada (polo do advogado).",
   ];
   if (ehEspecieRecursalOuContrarrazoes(e)) {
     linhas.push(

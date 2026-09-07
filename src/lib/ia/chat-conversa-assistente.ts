@@ -11,6 +11,7 @@ import {
 } from "@/lib/chat-minuta";
 import {
   PERSONA_ADVOGADO_SENIOR_FACTO,
+  PROTOCOLO_ESCLARECIMENTO_SEM_TRAVA,
   blocoContextoAreaLeve,
 } from "@/lib/ia/assistente-facto-prompt";
 import {
@@ -62,9 +63,11 @@ function blocoBaseSistemaConversa(
   const estilo = blocoEstiloConversa(estiloEscritorio);
   return [
     PERSONA_ADVOGADO_SENIOR_FACTO,
+    PROTOCOLO_ESCLARECIMENTO_SEM_TRAVA,
     "Canal: chat FACTO — conversa fluida com advogado ou leigo.",
     "Objetivo: entender o caso, interpretar fatos, sugerir teses e pedidos, organizar ideias.",
     "Liberdade: interprete área, espécie e cabimento. O módulo/área FACTO é rito do caso, não limite da sua competência.",
+    "Se faltar só peça ou polo, diga em 1 frase e diga que há opções clicáveis — não faça interrogatório longo.",
     "NÃO redija petição inteira. NÃO invente fatos, acórdãos ou números de processo não narrados/anexados.",
     "Tom: profissional, direto, acolhedor — como um colega sênior no chat.",
     "Pode usar listas curtas e **negrito** em termos-chave.",

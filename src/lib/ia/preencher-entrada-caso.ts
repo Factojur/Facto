@@ -17,7 +17,6 @@ import {
 import { listaEspeciesDaArea, tituloPecaDaArea } from "@/lib/peca-especie-area";
 import { tesesDaArea } from "@/lib/teses-canonicas";
 import {
-  ajustarEspecieCabivel,
   extrairMetadadosAutos,
   janelaRelatoParaTriagem,
 } from "@/lib/peca-cabivel-autos";
@@ -128,15 +127,15 @@ export async function preencherEntradaCaso(params: {
       "NÃO redija a peça. NÃO invente fato, nome, comarca, número de processo ou julgado.",
       "Se não tiver certeza, use null ou []. Nunca chute.",
       "especieDoProcesso = o que os autos JÁ são (incidente em curso).",
-      "especiePeca = a peça que o advogado deve PROTOCOLAR AGORA, não o nome do processo já aberto.",
-      "Se o cumprimento/execução já está instaurado e há decisão posterior (astreintes, penhora, tutela), NÃO devolva cumprimento-sentenca nem execucao.",
-      "Nesse caso: embargos-declaracao (ou embargos no JEC) se o ataque for omissão/contradição/obscuridade/erro material; agravo-instrumento se for reforma de interlocutória na justiça comum.",
+      "especiePeca = a peça a PROTOCOLAR AGORA (não o nome do incidente já aberto).",
+      "Se estiver incerto sobre a espécie, devolva null — o advogado confirma nos chips do chat.",
+      "Não invente remédio por menção histórica nos autos (contestação antiga ≠ peça de agora).",
       "Devolva APENAS JSON com as chaves pedidas.",
     ].join(" "),
     userPrompt: [
       `Área sugerida (pista): ${params.areaId}`,
-      `Espécies típicas nesta pista (id — preferência; se os AUTOS exigirem outra, use o id mais próximo ou descreva): ${idsEspecie.join(", ") || "(livre pelos autos)"}`,
-      "especiePeca: prefira um id da lista; se nenhum couber, escolha o remédio correto pelos AUTOS e use o id mais próximo.",
+      `Espécies típicas nesta pista (orientação): ${idsEspecie.join(", ") || "(livre pelos autos)"}`,
+      "especiePeca: id da peça a protocolar agora, ou null se incerto.",
       teses.length
         ? `Teses canônicas (id, só se o relato bater): ${teses.map((t) => t.id).join(", ")}`
         : "Sem teses canônicas nesta área.",
@@ -189,18 +188,8 @@ export async function preencherEntradaCaso(params: {
     teses.some((t) => t.id === id)
   );
 
-  const especieAjustada = ajustarEspecieCabivel({
-    areaId: params.areaId,
-    especie: especiePeca ?? "peticao-inicial",
-    tipoAcao: str(json.tipoAcao),
-    fatos: [str(json.fatos), str(json.ultimoAto), janela]
-      .filter(Boolean)
-      .join("\n"),
-  });
-  const especieFinal =
-    especieAjustada && idsEspecie.includes(especieAjustada)
-      ? especieAjustada
-      : especiePeca;
+  // Sem heurística local: espécie só a que a IA devolveu (ou null).
+  const especieFinal = especiePeca;
   const tipoAcao =
     (especieFinal
       ? tituloPecaDaArea(params.areaId, especieFinal, str(json.tipoAcao))

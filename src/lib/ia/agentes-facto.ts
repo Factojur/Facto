@@ -10,7 +10,7 @@ export const AGENTES_FACTO = [
     skin: "Maestro",
     titulo: "Orquestração",
     descricao:
-      "Monta o plano real: espécie, polo, teses, JG/MLE e último ato — sem LLM.",
+      "Fixa o plano operacional: peça confirmada, polo, teses, JG/MLE e último ato — sem LLM.",
     visivel: true,
   },
   {
@@ -18,7 +18,7 @@ export const AGENTES_FACTO = [
     skin: "Analista Facto",
     titulo: "Análise do caso",
     descricao:
-      "Define tipo de ação, cúmulos, tutela, riscos e lacunas (evolução do Assistente Facto).",
+      "Lê o dossiê: ação, cúmulos, tutela, riscos/lacunas e plano de tópicos (triagem).",
     visivel: true,
   },
   {
@@ -26,28 +26,31 @@ export const AGENTES_FACTO = [
     skin: "Pesquisa & súmulas",
     titulo: "Fundamentos encontrados",
     descricao:
-      "Busca leis/súmulas curadas e jurisprudência enviada no caso (API externa depois).",
+      "RAG na base FACTO + súmulas + juris do caso; só favoráveis ao polo da peça.",
     visivel: true,
   },
   {
     id: "estrategista",
     skin: "Estrategista",
     titulo: "Tese e DO DIREITO",
-    descricao: "Monta a estratégia jurídica e pedidos essenciais.",
+    descricao:
+      "Injeta vínculos (fato→tese→pedido, JG/MLE, pedidos) na estratégia do Redator.",
     visivel: true,
   },
   {
     id: "redator",
     skin: "Redator forense",
     titulo: "Redação da peça",
-    descricao: "Escreve a minuta no padrão FACTO.",
+    descricao:
+      "Redige a minuta completa com persuasão forense e higiene leve pós-texto.",
     visivel: true,
   },
   {
     id: "auditor",
     skin: "Auditor",
     titulo: "Conferência da minuta",
-    descricao: "Confere espécie, endereçamento, epígrafe, lacunas, pedidos e citações.",
+    descricao:
+      "Confere espécie×autos, endereçamento, epígrafe, lacunas, pedidos e citações (0 tokens).",
     visivel: true,
   },
   {

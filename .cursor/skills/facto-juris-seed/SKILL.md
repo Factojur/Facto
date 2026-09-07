@@ -24,15 +24,15 @@ Não muda a minuta sozinho. Alimenta a base que a Pesquisa usa.
 - Depois de cada dia: o diário já chama `reindex:embeddings`.
 - API: `stf stj tst trf3 trf4 tjce tjgo tjma tjmg tjmt tjpr tjrj tjrs tjsc tjsp carf`. Sem TSE, TRE, TRF1/2/5/6, TNU.
 
-## Estado (25/08)
+## Estado (06/09 noite)
 
-- `proximoLote` **400** · `ate` / `LOTE_MAX` **683** · vencimento **2026-09-13** (pausa ~06/09).
-- Diário 25/08: lotes **366–399** ok (+1973 insert); parou no **400** por cota Juris.ai. Reindex Gemini 429.
-- Súmulas: `faseIndice` **1** (próx. OJs TST); noite 25/08 fechou upsert código (+165 updates, 0 inserts).
-- Tarefa juris: se Last Result `0x800710E0`, rodar `npm run seed:juris-diario` logado.
-- **Não** criar lotes novos até esgotar 683; TRE/TSE julgados = 2ª API (súmulas TSE já no seed 04h).
-- UI busca acervo: STF/STJ/**TST**/**TSE** + TJs 26+DF (máx. 3).
-- PDFs de teste: `tmp/testes-pecas-scaffold/<runId>/` (não em `files/`).
+- **789–824** reforço + **825–845** volume baixados; cota esgotou no **846**.
+- Estado: `proximoLote` **846**, `ate` **1500**, vencimento **2026-09-13**.
+- Volume 825+ = `pub_from` 2023 (3 anos); reforço 789–824 = 2021 (5 anos).
+- Diário **01h** pausa na janela −7d do vencimento; após renovar Juris.ai (ou se cota diária voltar): PC ligado → retoma do **846**.
+- Lacunas estruturais: **Eleitoral** (sem TRE/TSE), 17 TJs + TRF1/2/5/6 + TNU + STM fora da API.
+- Súmulas 04h segue. API: `stf stj tst trf3 trf4 tjce tjgo tjma tjmg tjmt tjpr tjrj tjrs tjsc tjsp carf`.
+- Pós-renovação: 2ª fonte para TJs/TRFs/TRE/TSE fora da API (não scrape cego no produto).
 
 ## Produto vs seed
 

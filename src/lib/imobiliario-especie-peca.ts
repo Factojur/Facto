@@ -377,7 +377,7 @@ export function blocoEstruturaPromptImobiliario(
     return `   ${ROMANOS[i] ?? i + 1} - ${secao.titulo}${opt}`;
   });
   const extras: string[] = [
-    "   Rito: JUSTIÇA COMUM IMOBILIÁRIA (Vara Cível). NÃO aplique Lei 9.099/95, CLT nem CDC como tese principal (locação de imóvel urbano segue a Lei 8.245/91).",
+    "   Rito: JUSTIÇA COMUM IMOBILIÁRIA. Endereçamento: órgão exatamente como nos autos (sem inventar «Vara Cível»). NÃO aplique Lei 9.099/95, CLT nem CDC como tese principal (locação de imóvel urbano segue a Lei 8.245/91).",
     "   Honorários: art. 85 do CPC. Identifique o imóvel (matrícula, endereço) só com o que estiver nos FATOS — não invente número de matrícula.",
     "   Agravo: Tribunal de Justiça. Julgado contrário ao pedido: não cite como lastro favorável.",
   ];

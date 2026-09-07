@@ -894,7 +894,7 @@ export function aplicarPreenchimentoAoEstado(
     const lado = ladoPoloDaEspecie(next.areaId, next.especiePeca);
     if (lado === "ativo" || lado === "passivo") {
       next.poloAdvocacia = lado;
-      next.poloConfirmado = true;
+      // Confirmação explícita fica nos chips do chat.
     } else if (lado === "ambos" && !next.poloConfirmado) {
       const inferido = inferirPoloDoRelato(
         [
@@ -907,7 +907,6 @@ export function aplicarPreenchimentoAoEstado(
       );
       if (inferido) {
         next.poloAdvocacia = inferido;
-        next.poloConfirmado = true;
       }
     }
   }
@@ -1173,6 +1172,7 @@ export function sincronizarPoloAutomaticoChat(
 ): EstadoCasoChat {
   let next = aplicarPoloInferidoChat(estado, textoExtra);
 
+  // Sugestão de polo sem confirmar — chips do chat confirmam (MinutaIA-style).
   if (!next.poloConfirmado || !next.poloAdvocacia) {
     const especie = especieResolvidaChat(next);
     const lado =
@@ -1181,7 +1181,11 @@ export function sincronizarPoloAutomaticoChat(
         ? ladoPoloDaEspecie(next.areaId, especie)
         : null);
     if (lado === "ativo" || lado === "passivo") {
-      next = { ...next, poloAdvocacia: lado, poloConfirmado: true };
+      next = {
+        ...next,
+        poloAdvocacia: next.poloAdvocacia ?? lado,
+        // Não marca poloConfirmado — usuário confirma no chip.
+      };
     }
   }
 

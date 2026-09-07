@@ -76,6 +76,21 @@ function main() {
   assert(!/VARA C[IÍ]VEL/i.test(semEsp), "remove Vara Cível inventada");
   assert(/1ª\s*VARA\b/i.test(semEsp), "mantém 1ª Vara");
 
+  const semEspBare = aplicarFidelidadeEspecialidadeVara(
+    "Endereço à Vara Cível de Itararé e DA VARA CÍVEL do fórum.",
+    "1ª Vara de Itararé/SP — alimentos."
+  );
+  assert(!/Vara\s+C[ÍIíi]vel/i.test(semEspBare), "remove Vara Cível sem ordinal");
+  assert(/à\s+Vara\s+de\s+Itararé/i.test(semEspBare), "mantém à Vara de");
+  const jecOk = aplicarFidelidadeEspecialidadeVara(
+    "EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DO JUIZADO ESPECIAL CÍVEL",
+    "Juizado Especial Cível de Guarulhos"
+  );
+  assert(
+    /JUIZADO ESPECIAL C[IÍ]VEL/i.test(jecOk),
+    "preserva Juizado Especial Cível"
+  );
+
   const comEsp = aplicarFidelidadeEspecialidadeVara(
     "DA 2ª VARA CÍVEL DE SANTOS",
     "2ª Vara Cível de Santos — cobrança."

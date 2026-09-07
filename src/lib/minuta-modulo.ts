@@ -101,6 +101,7 @@ export const MODULO_TRABALHISTA: AreaModuloConfig = {
   tituloDashboard: "Justiça do Trabalho",
   leiResumo: "CLT · rito trabalhista",
   href: HREF_CHAT_ASSISTENTE,
+  // Inaugurais: reclamação (nunca “petição inicial” do CPC/JEC) + execução
   idsPeticaoInicial: ["reclamacao", "execucao-titulo"],
   copyCabecalho:
     "Peças na Justiça do Trabalho (CLT): reclamação, defesa, recurso ordinário. Não use CPC de justiça comum nem Lei 9.099. Polos: reclamante e reclamado. Revise sempre antes de protocolar.",
@@ -149,11 +150,7 @@ export const MODULO_JECR: AreaModuloConfig = {
   tituloDashboard: "Juizado Especial Criminal",
   leiResumo: "Lei nº 9.099/95 (JECRIM)",
   href: HREF_CHAT_ASSISTENTE,
-  idsPeticaoInicial: [
-    "queixa-crime",
-    "composicao-civil",
-    "transacao-penal",
-  ],
+  idsPeticaoInicial: ["queixa-crime"],
   copyCabecalho:
     "Peças no Juizado Especial Criminal (Lei 9.099/95, arts. 60 a 92): queixa-crime, composição civil, transação penal, defesa e recurso inominado. Não use para o JEC cível nem para o rito penal comum (CPP). Revise sempre antes de protocolar.",
   fundamentoQualificacao: "na Lei nº 9.099/95 (rito criminal)",
@@ -251,7 +248,7 @@ export const MODULO_AMBIENTAL: AreaModuloConfig = {
   tituloDashboard: "Direito Ambiental",
   leiResumo: "Lei 6.938/81 · ACP",
   href: HREF_CHAT_ASSISTENTE,
-  idsPeticaoInicial: ["acp-ambiental", "peticao-inicial"],
+  idsPeticaoInicial: ["acp-ambiental", "peticao-inicial", "mandado-seguranca"],
   copyCabecalho:
     "Peças ambientais: ACP, defesa de auto de infração, obrigação de fazer. Não invente licença nem auto. Revise sempre antes de protocolar.",
   fundamentoQualificacao: "na legislação ambiental",
@@ -465,7 +462,7 @@ export function placeholderForoDaArea(areaId: string): string {
     case "jec":
       return "Ex.: Juizado Especial Cível de Guarulhos/SP";
     default:
-      return "Ex.: Vara Cível de Campinas/SP";
+      return "Ex.: 1ª Vara de Campinas/SP";
   }
 }
 
@@ -512,6 +509,7 @@ export function foroLegadoDaArea(
         ? `${n}ª Vara do Juizado Especial Cível de ${local}`
         : `Juizado Especial Cível de ${local}`;
     default:
-      return n ? `${n}ª Vara Cível de ${local}` : `Vara Cível de ${local}`;
+      // Sem inventar «Cível» — especialidade só se a área (acima) ou os autos trouxerem.
+      return n ? `${n}ª Vara de ${local}` : `Vara de ${local}`;
   }
 }

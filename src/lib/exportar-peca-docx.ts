@@ -8,6 +8,7 @@ import {
   HorizontalPositionRelativeFrom,
   ImageRun,
   Packer,
+  PageNumber,
   Paragraph,
   TextRun,
   VerticalPositionAlign,
@@ -18,7 +19,9 @@ import type { EscritorioConfig } from "./escritorio-types";
 import {
   FORMATACAO_FORENSE,
   cmParaTwips,
+  expandirLinhasMarcadorEspaco,
   parseMarcadorEspaco,
+  tamanhoPapelA4Twips,
 } from "./formatacao-forense";
 import { classificarPeca, parseMarkdownRuns } from "./tipografia-peca";
 
@@ -27,8 +30,9 @@ const TAMANHO = FORMATACAO_FORENSE.tamanhoPt * 2; // half-points
 const TAMANHO_CITACAO = FORMATACAO_FORENSE.tamanhoCitacaoPt * 2;
 const RECUO_PARAGRAFO = cmParaTwips(FORMATACAO_FORENSE.recuoPrimeiraLinhaCm);
 const RECUO_CITACAO = cmParaTwips(FORMATACAO_FORENSE.recuoCitacaoCm);
-const ESPACO_LINHA = 360; // 1,5 entrelinhas
-const ESPACO_LINHA_CITACAO = 300; // ~1,5 em 10pt
+const ESPACO_LINHA = 360; // 1,5 entrelinhas (240 = simples)
+/** Citação longa: espaço simples (NBR 10520 / 14724) — 240 twips. */
+const ESPACO_LINHA_CITACAO = 240;
 
 function dataUrlParaBytes(dataUrl: string): Uint8Array {
   const base64 = dataUrl.split(",")[1];
@@ -131,40 +135,20 @@ function blocoParaParagrafo(
 ): Paragraph | Paragraph[] {
   if (tipo === "marcador" && marcador) {
     if (marcador.linhas === 6) {
-      const linhas: Paragraph[] = [];
-      for (let i = 1; i <= 6; i++) {
-              const extra =
-                marcador.epigrafe && marcador.epigrafe.length > 0
-                  ? marcador.epigrafe
-                  : marcador.processo
-                    ? [marcador.processo]
-                    : [];
-              const inicio = extra.length >= 3 ? 2 : 4;
-              const idx = i - inicio;
-              if (idx >= 0 && idx < extra.length) {
-                linhas.push(
-                  new Paragraph({
-                    alignment: AlignmentType.LEFT,
-                    spacing: { after: 0, line: ESPACO_LINHA },
-                    children: [
-                      new TextRun({
-                        text: extra[idx]!,
-                        font: FONTE,
-                        size: TAMANHO,
-                      }),
-                    ],
-                  })
-                );
-              } else {
-          linhas.push(
-            new Paragraph({
-              spacing: { after: 0, line: ESPACO_LINHA },
-              children: [new TextRun({ text: "", font: FONTE, size: TAMANHO })],
-            })
-          );
-        }
-      }
-      return linhas;
+      return expandirLinhasMarcadorEspaco(marcador).map(
+        (textoLinha) =>
+          new Paragraph({
+            alignment: AlignmentType.LEFT,
+            spacing: { after: 0, line: ESPACO_LINHA },
+            children: [
+              new TextRun({
+                text: textoLinha,
+                font: FONTE,
+                size: TAMANHO,
+              }),
+            ],
+          })
+      );
     }
     return Array.from({ length: marcador.linhas }, () =>
       new Paragraph({
@@ -369,10 +353,23 @@ export async function gerarPecaDocxBlob(
     paragrafos.unshift(...(await paragrafosCabecalho(escritorio!)));
   }
 
-  const footers =
-    usarTimbre && escritorio?.rodapeBase64
-      ? { default: new Footer({ children: [await paragrafoRodape(escritorio.rodapeBase64)] }) }
-      : undefined;
+  const filhosRodape: Paragraph[] = [];
+  if (usarTimbre && escritorio?.rodapeBase64) {
+    filhosRodape.push(await paragrafoRodape(escritorio.rodapeBase64));
+  }
+  filhosRodape.push(
+    new Paragraph({
+      alignment: AlignmentType.RIGHT,
+      children: [
+        new TextRun({
+          children: [PageNumber.CURRENT],
+          font: FONTE,
+          size: 18,
+        }),
+      ],
+    })
+  );
+  const footers = { default: new Footer({ children: filhosRodape }) };
 
   const headers =
     headerParagrafos.length > 0
@@ -384,6 +381,7 @@ export async function gerarPecaDocxBlob(
       {
         properties: {
           page: {
+            size: tamanhoPapelA4Twips(),
             margin: {
               top: cmParaTwips(FORMATACAO_FORENSE.margemSuperiorCm),
               right: cmParaTwips(FORMATACAO_FORENSE.margemDireitaCm),

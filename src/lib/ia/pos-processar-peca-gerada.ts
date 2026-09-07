@@ -271,5 +271,9 @@ export function posProcessarDepoisQualificacao(
     );
     t = aplicarFidelidadeEspecialidadeVara(t, opcoes.fatos);
   }
-  return normalizarPecaGerada(t);
+  return normalizarPecaGerada(t, {
+    assinatura: {
+      fatos: opcoes.fatos,
+    },
+  });
 }

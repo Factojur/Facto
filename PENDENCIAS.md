@@ -17,6 +17,121 @@ Ordem fechada — **não inverter**:
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
 
+### Feito nesta rodada (07/09 — DA ___ª VARA + E2E todas espécies)
+
+- [x] **Endereçamento inaugural** — padrão `DA ___ª VARA …` (cível/família/trabalho etc.); proíbe “DE UMA DAS VARAS”; pós-processo `corrigirEnderecamentoInauguralSemVara`; injeção determinística se faltar na instrução
+- [x] Reexport `testes-e2e-07-09/01-familia` e `02-imobiliario` com ___ª (feche o Word do despejo se o `.docx` ainda estiver antigo)
+- [x] **E2E matriz completa** — 186 espécies × 20 áreas → [`testes-e2e-07-09-todas/`](./testes-e2e-07-09-todas/) (`ok=185` · `skip=1` · `fail=0`); 0× “UMA DAS VARAS”; script `scripts/e2e-todas-pecas-07-09.ts` (retomável)
+- Custo: lote Flash ágil sob pedido explícito (~1h20)
+
+### Feito nesta rodada (07/09 — assinatura + JURIS truncado)
+
+Corrigido a partir dos E2E em [`testes-e2e-07-09/`](./testes-e2e-07-09/) (família com placeholders; 1ª família truncou JURIS):
+
+- [x] **Assinatura determinística** — `aplicarAssinaturaPeca`: preenche `[Cidade/UF]` / `[Nome]` / `OAB/[UF]` a partir do perfil, relato ou corpo (comarca do endereçamento)
+- [x] **JURIS truncado** — remove bloco `[[JURIS]]` incompleto em vez de fechar ementa pela metade
+- [x] **Subtítulo partido** — cola `b) Da Cumula` + `com a Cobrança…`
+- [x] Prompt + auditor + rota `/api/gerar-peca` passam dados de assinatura no normalizar
+- Pasta E2E: `01-familia-alimentos/` e `02-imobiliario-despejo/` (txt+pdf+docx)
+
+### Feito nesta rodada (07/09 — E2E 2 casos aleatórios)
+
+Simulações locais com IA (código pós-formatação), pasta [`testes-e2e-07-09/`](./testes-e2e-07-09/):
+
+| Caso | Área | Espécie | Arquivos |
+|------|------|---------|----------|
+| 1 | Família | Ação de alimentos c/c guarda | `01-familia-alimentos/` txt+pdf+docx |
+| 2 | Imobiliário | Ação de despejo | `02-imobiliario-despejo/` txt+pdf+docx |
+
+Nota: `[[ESPACO_*]]` no `.txt` é marcador interno; PDF/DOCX expandem. Caso 1 regenerado (1ª tentativa truncou no JURIS).
+
+### Feito nesta rodada (07/09 — formatação vs liberdade da IA)
+
+- [x] Clarificado: **inaugural** = molde de qualificação completa / tipografia; **conteúdo = IA**
+- [x] Prompts de qualificação/diagramação = layout forense + epígrafe/Processo nº; sem engessar mérito
+- [x] Soften PROIBIDO de título → orientação de nome forense do rito
+- Canonização de espécies e tipografia (rodapé, JURIS, ESPACO) permanecem
+
+### Feito nesta rodada (07/09 — inaugurais por área)
+
+- [x] **Trabalhista** — normalize acentos (`Petição Inicial`→reclamação, não agravo-petição); copy sem “Petição inicial na JT”
+- [x] **JECRIM** — inaugural só `queixa-crime`; alias PI→queixa; título rejeita “Petição Inicial”
+- [x] **Ambiental** — MS incluído em `idsPeticaoInicial` (qualificação completa)
+- [x] **Kits** — `peticao-inicial` órfão → `defaultId`; títulos tributário/penal/eleitoral; PROIBIDO PI em blocos
+- [x] **Canonização** — `canonizarEspecieDaArea` + `resolverVinculosPeca` / scaffold / redator usam id e título do rito
+- Entra no **S1 deploy**
+
+### Feito nesta rodada (07/09 — tipografia/qualificação das peças)
+
+Corrigido a partir dos PDFs `peca-facto.pdf` (JEC) e `peca-facto 2.pdf` (trabalhista) — **código compartilhado, todas as áreas**:
+
+- [x] **Petição inaugural** — `especieEhPeticaoInaugural` + qualificação completa nas inaugurais de cada área; prompt exige polo ativo → nome forense → `em face de` + passivo
+- [x] **Trabalhista** — inaugural = **Reclamação Trabalhista** (não “petição inicial”); título força reclamação se a IA/chat usar rótulo genérico
+- [x] **Rodapé** — só o número da página, canto inferior direito (PDF / preview / DOCX)
+- [x] **Citações** — paráfrases de súmula/TST deixam de virar tipografia de citação; só literal FACTO em `[[JURIS]]`
+- [x] **Quebras** — `[[ESPACO_*]]` colado ao texto é separado; leis/Art. partidos e `VALORDA` saneados; endereço vazio do advogado
+- [x] **Margens** — confirmadas NBR 14724 (3/2 cm) no export; numeração antiga “Folha X de Y” removida
+- Entra no **S1 deploy** com o restante da fatia local
+
+### Feito nesta rodada (07/09 — E2E browser prod, conta Teste)
+
+Duas simulações reais em [factoia.com.br/dashboard](https://factoia.com.br/dashboard) (Plano Completo · `factoassessoria.jur` / Teste):
+
+| Caso | Área | Fluxo | Resultado |
+|------|------|-------|-----------|
+| 1 | Trabalhista | Chat → plano (foro Campinas) → Criar minuta → ajuste chip | Peça gerada · **14** lastro · 2 ajustes restantes |
+| 2 | JEC consumidor (Santos, corte energia) | Chat → editar pedidos → Detalhada → lastro plano → Criar minuta → editar parágrafo → ajuste DOS PEDIDOS → Ver lastro → Copiar/Word/PDF/checklist | Peça gerada · **14** lastro · TJSP e-SAJ · **2** ajustes restantes |
+
+**Bugs prod observados (fila fix — vários já no local, falta deploy S1):**
+
+1. **`pedidoExplicitoRedacao` agressivo** — palavras `monte` / `petição` / `Não redija` forçavam Minuta + “falta lastro”. **Corrigido no local** (`chat-minuta-redacao.ts`: negação, “monte o plano”, relato longo com petição). Entra no S1.
+2. **Chips pós-peça** preenchem o composer de Minuta (1 crédito) em vez do campo **Aplicar ajuste** (ajuste gratuito).
+3. **Preview mostra `[[ESPACO_2_LINHAS]]`** — local já expande; prod ainda não (S1).
+4. Endereçamento com `___ VARA` + checklist “placeholders” (JEC sem número de vara informado).
+5. Caso 1: checklist **TRT-2** p/ Campinas (deveria TRT-15); auditor espécie “petição inicial” vs reclamação.
+6. Export Word/PDF no browser do agente: pop-up bloqueado (“Permita pop-ups para o FACTO”); botões Baixar clicados.
+
+### Feito nesta rodada (07/09 — S4/S5/S6 sistema)
+
+- [x] **ABNT fino** — epígrafe preview≡PDF/DOCX/clipboard (`expandirLinhasMarcadorEspaco`); fix `alturaLinhaCorpoMm` na citação; anti-órfão de título no PDF; testes paginação 15 ok
+- [x] **Foro/capa** — `foroLegadoDaArea` sem inventar «Vara Cível»; strip bare `à Vara Cível` / `DA VARA CÍVEL`; prompts imobiliário/civil sem forçar Cível; fidelidade 26 ok
+- [x] **Chips** — copy sem `**`; a11y (`aria-pressed`/`aria-label`); chip Auditor 1-click pós-peça
+- [x] **E2E browser** — 2 peças geradas em prod (trabalhista + JEC); achados acima
+- [x] **S2 seed 846→903** — faixa 07/09: inserts ok; cota Juris esgotou no **904**; `proximoLote` **904** / `ate` **1500** · reindex parcial **+238** (+396 no reindex anterior, Gemini SEED ainda 429 residual)
+- [ ] **S2 retoma** — amanhã `npx tsx scripts/seed-juris-ai-faixa.ts 904 1500` + `reindex:embeddings` quando Gemini SEED liberar
+- [ ] **S3 smoke lastro** — após embeddings
+- Deploy (S1) / compra MP (S7) / 2ª API (S8): aguardam Jefferson
+
+### Feito nesta rodada (06/09 — scorecard + juris + próximos)
+
+- [x] **Scorecard 06/09** — Iteração **8,9** · Lastro **7,5** · Formato **8,2** · Preço **8,0** · Gestão **7,2** · média **≈ 7,96** vs MinutaIA **≈ 6,80** (+1,16)
+- [x] Canvas scorecard alinhado · lacunas da base reescritas (pós 789–845)
+- [x] Seed hoje: **789–824** (reforço) + **825–845** (volume); cota esgotou no **846** · `proximoLote` **846** / `ate` **1500** · vencimento **13/09**
+- [x] Skins aprofundadas (sem 7ª) · chips esclarecimento · ABNT citação NBR 10520 · remédio sem autoridade local
+- Próximo sistema (sem custo): deploy se local ≠ prod · smoke lastro · ABNT fino · foro capa · polish chips
+- Ops: meia-noite / renovar Juris.ai → retomar **846→1500**; depois **2ª API** (TRE/TSE + TJs/TRFs ausentes)
+
+### Feito nesta rodada (06/09 — lotes 789–1500 + madrugada)
+
+- [x] **789–824** baixados (reforço lacunas, `pub_from` 2021); **825–1500** definidos (volume, `pub_from` 2023) · `LOTE_MAX` **1500**
+- [x] **825–845** baixados na mesma cota; **846** interrompido (7/7 429)
+- [x] Estado final do dia: `proximoLote` **846** · `ate` **1500**
+- [x] Skins aprofundadas (sem 7ª) + chips/prompts
+- Pós-renovação: 2ª fonte para TJs/TRFs/TRE/TSE fora da API
+
+### Próximo — sistema (07/09)
+
+| # | Item | Custo | Status |
+|---|------|-------|--------|
+| S1 | **Deploy** fatia tipografia/___ª VARA/assinatura/inaugurais | — | Em andamento (commit/push/deploy) |
+| S2 | **Seed 846→1500** + reindex | cota Juris.ai / Gemini SEED | Em curso — Gemini 429 hoje de manhã |
+| S3 | **Smoke lastro** 20 áreas | Gemini SEED | Após embeddings |
+| S4 | **ABNT fino** preview≡PDF | — | **Feito** 07/09 |
+| S5 | **Foro/capa** residual | — | **Feito** 07/09 |
+| S6 | **Chips** polish UX | — | **Feito** 07/09 |
+| S7 | **Compra MP** ponta a ponta | — | Jefferson |
+| S8 | **2ª API juris** TRE/TSE + gaps | assinatura | Só com ok (C3) |
+
 ### Feito nesta rodada (04/09 — deploy calibração+ABNT)
 
 - [x] **Commit/push** — `f8adaef` + fix `b398644` (export `numeroVaraDoTexto`)
@@ -30,10 +145,9 @@ Ordem fechada — **não inverter**:
 - [x] **Testes** — `test:peca-paginas` · `test:fidelidade` · formatacao ampliada
 - Fora desta fatia: seed 100k · smoke pós-deploy lastro
 
-### Feito nesta rodada (04/09 — scorecard atualizado)
+### Feito nesta rodada (04/09 — scorecard — supersedido 06/09)
 
-- [x] **Scorecard 04/09** — Iteração 8,7 · Lastro 7,3 · Formato 8,0 · Preço 8,0 · Gestão 7,2 · média **≈ 7,84** vs MinutaIA **≈ 6,80** (+1,04)
-- [x] Canvas `facto-vs-minutaia-scorecard.canvas.tsx` alinhado à tabela PENDENCIAS
+- [x] **Scorecard 04/09** — Iteração 8,7 · Lastro 7,3 · Formato 8,0 · Preço 8,0 · Gestão 7,2 · média **≈ 7,84** (ver **06/09** no topo / scorecard)
 
 ### Feito nesta rodada (04/09 — lastro profundidade + estabilidade peça)
 
@@ -622,7 +736,7 @@ Ordem sugerida: lastro/prompts → autos/último ato → auditor→ajuste → pa
 
 | # | Item | Benefício | Status |
 |---|------|-----------|--------|
-| G1 | **Lastro + seed** até meta / lacunas (TRE/TSE etc. em paralelo) | Fundamentação sentida; menos peça genérica | Em curso (560/788) |
+| G1 | **Lastro + seed** até meta / lacunas (TRE/TSE etc. em paralelo) | Fundamentação sentida; menos peça genérica | Em curso (**846**/1500; cota dia esgotada 06/09) |
 | G2 | **Prompts por área** — rito, endereçamento, pedidos típicos mais duros | Qualidade sem +tokens | Feito 01/09 (`blocoRitoArea`) |
 | G3 | **Último ato / espécie em autos longos** — extração CNJ e ato decisivo | Menos espécie errada | Feito 01/09 (`extrairUltimoAtoDoTexto`) |
 | G4 | **Qualificação local** — regex/ViaCEP/partes (refino contínuo) | Menos buraco sem token | Parcial (30/08 noite: Enel PJ, BPC autor, split “cortou”; deploy pendente) |
@@ -725,10 +839,10 @@ Ordem sugerida para o agente/Jefferson. **Grátis** = implementar quando fizer s
 ### Em andamento (Jefferson)
 
 - [ ] **Compra real MP** — testando ponta a ponta
-- [ ] **Seed juris** — lote **560** / **788** · meta **100k+** · lotes **684+** lacunas fracas até vencimento 13/09
+- [ ] **Seed juris** — lote **846** / **1500** · meta **100k+** · cota do dia esgotada 06/09; retomar após meia-noite/renovação (venc. **13/09**)
 - [x] **Gemini paygo + `ANTHROPIC_API_KEY`** — paygo ok · chave Anthropic na Vercel 01/09 · falta 1 peça Sonnet real em prod (HC Pro)
 - [ ] **Testar gestão** em produção (`factoia.com.br/gestao`)
-- [x] **Smoke lastro (embedding)** — 29/08: **20 ok · 0 fraco · 0 falhas** (Gemini 429 com retry; ok)
+- [x] **Smoke lastro (embedding)** — 29/08: **20 ok · 0 fraco · 0 falhas** (Gemini 429 com retry; ok) · **revalidar** após 846+
 - [x] **Restaurar sessão nuvem** — GET `/api/chat/sessoes?sessaoId=` · Meus casos → Continuar · `?sessaoNuvem=` importa snapshot local
 - [x] **Prazos no assistente** — dica determinística (`sugerirPrazoDaPeca` + feriados/UF) no chat
 - [x] **Chat nova conversa** — CTA homepage/`hrefChatMinuta(..., { nova: true })` inicia caso limpo; sidebar Assistente retoma a sessão ativa; Conversas/Meus casos abrem a antiga
@@ -742,6 +856,32 @@ Ordem sugerida para o agente/Jefferson. **Grátis** = implementar quando fizer s
 3. Amostra manual: 1 JEC (Flash) · 1 Completo/Pro com gatilho Sonnet · 1 área densa (Const/Prev/Trab).
 4. Conferir: lastro na peça, endereçamento, Auditor, export Word/PDF.
 5. Anotar custo ~R$/peça no chat (Flash **~R$ 0,11** medido; Sonnet **~R$ 0,69**; ver **Decisão margem 01/09**).
+
+### Scorecard FACTO vs MinutaIA (06/09 — chips + ABNT citação + seed 789–845)
+
+| Critério | MinutaIA | FACTO 04/09 | FACTO 06/09 | Δ vs Minuta |
+|----------|----------|-------------|-------------|-------------|
+| Iteração (chat, fluidez, preview) | 9,0 | 8,7 | **8,9** | −0,1 |
+| Lastro / fundamentação | 7,0 | 7,3 | **7,5** | **+0,5** |
+| Formato forense e entrega | 6,0 | 8,0 | **8,2** | **+2,2** |
+| Preço / custo por peça | 5,0 | 8,0 | **8,0** | +3,0 |
+| Gestão + continuidade | 7,0 | 7,2 | **7,2** | +0,2 |
+
+**O que subiu (06/09):**
+- **Iteração +0,2** — chips de esclarecimento (peça/polo, soft); ajuste 1-click pós-peça; remédio sem autoridade local forçada; skins/Maestro/Auditor aprofundados.
+- **Lastro +0,2** — reforço 789–824 (STF/STJ eleitoral proxy, prev/trab/trib/digital) + volume 825–845; retrieve já estruturado (04/09).
+- **Formato +0,2** — citação longa NBR 10520 (10pt / 4 cm / entrelinha 1) + A4 NBR 14724; `test:formatacao-pagina-abnt`.
+
+**Ainda frágil / ops:**
+- **Eleitoral** estruturalmente fraco (sem TRE/TSE na API) — só espelho STJ.
+- **17 TJs + TRF1/2/5/6 + TNU + STM** fora do Juris.ai → lastro regional/federal fino nesses foros.
+- Volume: fila **846→1500** + meta **100k**; 2ª API pós-renovação.
+- ABNT **fino** (pixel-perfect) e foro capa residual.
+- Iteração −0,1 vs MinutaIA (fluidez “nativa”).
+
+**Generalista (pesos iguais):** FACTO **≈ 7,96** vs MinutaIA **≈ 6,80** (**+1,16**).
+
+Canvas: scorecard Cursor `facto-vs-minutaia-scorecard.canvas.tsx` (atualizar junto).
 
 ### Scorecard FACTO vs MinutaIA (04/09 — tipografia + fluidez + lastro profundidade + fatia 2)
 
@@ -758,11 +898,10 @@ Ordem sugerida para o agente/Jefferson. **Grátis** = implementar quando fizer s
 - **Lastro +0,4** — inspector fontes; ementa↔CNJ; ENCAIXE/LASTRO no Redator; RAG por tópico com re-rank; diversidade retrieve; juris anexada na Pesquisa.
 - **Formato +2,2** (vs noite 02/09) — tipografia fina; fidelidade filha/filho; comarca editável; Sonnet; fechamento/Auditor; preview≡export.
 
-**Ainda abaixo / ops:**
+**Ainda abaixo / ops (histórico 04/09):**
 - Iteração −0,3 vs MinutaIA (fluidez “nativa” residual).
 - Lastro: **volume** (100k + 2ª API) — código já usa melhor o acervo atual; não inventa julgado.
-- ABNT **fino** (pixel-perfect preview≡PDF) ainda residual; **grosso** fechado 04/09 (linhas A4, tipografia folhas, anti-órfão).
-- Calibração fina: amostra densas 3/3 Sonnet ok; edge cases PDF ruim continuam sob demanda.
+- ABNT **fino** residual; **grosso** fechado 04/09.
 
 **Generalista (pesos iguais):** FACTO **≈ 7,84** vs MinutaIA **≈ 6,80** (**+1,04**).
 
@@ -1614,19 +1753,20 @@ _Estratégia:_ esgotar Jurisprudências.ai nos tribunais que ela tem; lacunas (T
 
 ### Lacunas da base (áreas falhas) — atualizar após cada seed
 
-API **não tem:** TSE, TRE-SP (nem outro TRE), TRF1/2/5/6, TNU, STM. Listagem 14/08: `stf stj tst trf3 trf4 tjce tjgo tjma tjmg tjmt tjpr tjrj tjrs tjsc tjsp carf`.
+API **não tem:** TSE, TRE-*, TRF1/2/5/6, TNU, STM; TJs ausentes: AC AL AP AM BA DF ES MS PA PB PE PI RN RO RR SE TO. Tem: `stf stj tst trf3 trf4 tjce tjgo tjma tjmg tjmt tjpr tjrj tjrs tjsc tjsp carf`.
 
-| Área | Evidência | Status |
-|------|-----------|--------|
-| **Eleitoral** | Lote 22: **0** (TJSP). Lote **63** STJ: **0**. TRE/TSE fora da API. | Lote **207** (STJ REsp / LC 64) na fila **201+**. Segunda API depois. |
-| **Constitucional** | Módulo no ar; lastro STF fraco. Lote **196** (STF HC) ainda na fila **177–200**. | Lotes **201–205** (STF remédios/RE/ADI/ADPF + STJ MS/ROC) entram logo após o 200. |
-| **Previdenciário** | Lote 7 STJ fraco; lote 36 STJ: **0**. 57–59 e 181–185 na fila. | Reforço **213–216** (TRF3/TRF4, queries novas) em **201+**. |
-| **Trabalhista** | Lotes 9 e 32 no TJSP fracos. 60–62 e 177–180 na fila. | Reforço **218–219** (TST) em **201+**. |
-| **Tributário** | Lote 64 CARF fraco; lote 77 IPTU TJSP fraco. | **220–224** (CARF + IPTU TJSP/TJMG/TJRJ). LEF segue nos TJs 152/160/168/176. |
-| **Digital / LGPD** | Lote 74 STJ fraco. | Lote **206** (STJ, queries curtas). |
-| **Conselhos** | Lotes 50 e 79 fracos. | Lote **208**. |
-| **Marítimo** | Lote 41 vazio; 78 retoma. | Lote **212**. |
-| **Internacional** | Lote 24 +5. | Lote **209** (STJ homologação). Segunda fonte depois. |
+**Diagnóstico 06/09 (pós 789–845):** a base **não está “morta”** nas 20 áreas do smoke (29/08: 20 ok). O que ainda é **fraco de verdade**:
+
+| Área / gap | Evidência 06/09 | Status |
+|------------|-----------------|--------|
+| **Eleitoral** | TRE/TSE **fora da API**. Lotes 792–793 (STJ espelho): inserts baixos / muitos 0 úteis ou só skip. | **Mais frágil** do catálogo. Honestidade no prompt. Só 2ª API fecha. |
+| **TJs / TRFs ausentes** | Cliente de BA/PE/DF/etc. não tem ementa daquele TJ na base. | Estrutural até 2ª fonte / DataJud. |
+| **Constitucional / STF** | Reforço 789–791 (+inserts bons). Volume 825+ ainda na fila. | **Melhorou**; profundidade ≠ MinutaIA 100k. |
+| **Previdenciário** | Histórico STJ fraco; reforço 789–824 + TRF3/4 na fila volume. | **Melhorando**; JEF/TRF1/2/5/6 ainda raso. |
+| **Trabalhista** | TST reforçado na FASE4; volume segue. | Aceitável → bom; continuar 846+. |
+| **Tributário / CARF / IPTU** | Reforço CARF + LEF/IPTU multi-TJ. | Aceitável; CARF niche ainda fino. |
+| **Digital / LGPD / Conselhos** | Reforço 789–824. | Menos crítico que antes; não “zero”. |
+| **Marítimo / Internacional** | Volume niche; pouca demanda comercial. | P2; 2ª fonte se vender. |
 
 Critério de “falha”: lote com **0** insert, ou &lt;10 insert em tema que deveria ter acórdão no tribunal usado, ou tribunal inexistente na API.
 
@@ -1643,10 +1783,12 @@ Critério de “falha”: lote com **0** insert, ou &lt;10 insert em tema que de
 - [x] Lotes **84–115** (17/08 madrugada) — seed diário 01h; cota 429 no **116**; `reindex` **+1607**.
 - [x] Lotes **116–148** (18/08 01h) — diário até o 149; cota 429 no meio do **149** (TJRS imobiliário). Retoma o **149**.
 - [x] Lotes **149–328** — avançados nas madrugadas 19–23/08 (ver log); **329** parou por cota **23/08**.
-- [ ] Lotes **560–788** — retomar diário / `npx tsx scripts/seed-juris-ai-faixa.ts 560 788`. **Estado 30/08:** `proximoLote` **560**. `LOTE_MAX` **788** (684+ lacunas fracas).
+- [x] Lotes **560–788** — faixa esgotada; **789–1500** abertos 06/09.
+- [x] **789–824** reforço + **825–845** volume baixados 06/09; cota esgotou no **846** (`proximoLote` **846** / `ate` **1500`). Vencimento **13/09**.
+- [x] **Lotes 789–1500 definidos** — reforço lacunas 789–824 (`pub_from` 2021) + volume 825–1500 (`pub_from` 2023); `LOTE_MAX=1500`.
 - [x] Após seed diário 17/08: `reindex:embeddings` (+1607).
-- [ ] Conferir reindex após cada madrugada (diário já chama no fim).
-- [ ] Segunda API (pós-683 ou lacunas): priorizar **eleitoral (TRE/TSE)** e TRF1/2/5/6 / TNU. **Não** criar lotes Juris.ai extras só por volume até esgotar 683.
+- [ ] Retomar **846→1500** na próxima cota (meia-noite ou pós-renovação) + conferir reindex.
+- [ ] Segunda API (pós-1500 ou lacunas): priorizar **eleitoral (TRE/TSE)** e TRF1/2/5/6 / TNU / TJs ausentes.
 - [ ] Reaquecer cache TJSP (`npm run aquecer:cache-tjsp`) — 14/08 cache vazio; scrape 0/15 (captcha). Base_conhecimento intacta.
 - [ ] **7º token** Jurisprudências.ai — menos urgente com plano pago no `.env.local` (não precisa ir à Vercel se o plano for cancelado pós-seed).
 - [ ] Provedor secundário STJ estável em prod.

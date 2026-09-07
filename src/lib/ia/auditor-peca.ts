@@ -186,6 +186,19 @@ export function auditarPecaGerada(
     );
   }
 
+  if (
+    /\[Cidade\s*\/\s*UF\]/i.test(peca) ||
+    /\[Nome do Advogado\]/i.test(peca)
+  ) {
+    push(
+      achados,
+      "assinatura-placeholder",
+      "alerta",
+      "Assinatura incompleta",
+      "Há placeholder no fechamento ([Cidade/UF] ou [Nome do Advogado]). Confira perfil, comarca e gere de novo."
+    );
+  }
+
   if (/\[endere[cç]o completo\]/i.test(peca) && inaugural) {
     push(
       achados,
@@ -229,9 +242,9 @@ export function auditarPecaGerada(
       push(
         achados,
         "especie-cabivel",
-        "bloqueante",
-        "Espécie provavelmente errada",
-        `Os fatos indicam ${tituloCabivel} (não reabrir ${especie.replace(/-/g, " ")}). Troque o tipo de peça e gere de novo.`
+        "alerta",
+        "Conferir espécie vs último ato",
+        `Os autos sugerem ${tituloCabivel}. A peça atual é ${especie.replace(/-/g, " ")}. Se estiver correto (escolha do advogado), ignore; senão, troque a espécie e gere de novo.`
       );
     } else if (
       incidenteExecucaoJaAberto(`${params.tipoAcao ?? ""} ${params.fatos ?? ""}`) &&
@@ -242,9 +255,9 @@ export function auditarPecaGerada(
       push(
         achados,
         "reabre-execucao",
-        "bloqueante",
-        "Reabre cumprimento já instaurado",
-        "O relato descreve cumprimento/execução em curso. Esta minuta não deve ser de abertura do incidente."
+        "alerta",
+        "Possível reabertura de cumprimento",
+        "O relato descreve cumprimento/execução em curso. Confira se a minuta não reabre o incidente já instaurado."
       );
     }
 
@@ -459,6 +472,44 @@ export function auditarPecaGerada(
       "alerta",
       "Fechamento forense frágil",
       "Não ficou claro “Nestes termos” / “pede deferimento”. Confira o fechamento antes de protocolar."
+    );
+  }
+
+  if (
+    peca.trim().length >= 1200 &&
+    !/\bDOS?\s+FATOS\b/i.test(peca) &&
+    !/\bI\s*[-—.–]\s*DOS?\s+FATOS/i.test(peca)
+  ) {
+    push(
+      achados,
+      "sem-fatos",
+      "info",
+      "Seção de fatos pouco explícita",
+      "Não localizei título “DOS FATOS”. Confira se a narrativa fática está clara."
+    );
+  }
+
+  if (
+    peca.trim().length >= 1200 &&
+    !/\bDO\s+DIREITO\b/i.test(peca) &&
+    !/\bDOS?\s+FUNDAMENTOS\b/i.test(peca)
+  ) {
+    push(
+      achados,
+      "sem-direito",
+      "info",
+      "Seção de direito pouco explícita",
+      "Não localizei “DO DIREITO” / fundamentos. Confira a estrutura argumentativa."
+    );
+  }
+
+  if (/R\$\s*\(\s*\[|\[\s*valor\s+por\s+extenso\s*\]/i.test(peca)) {
+    push(
+      achados,
+      "valor-placeholder",
+      "alerta",
+      "Valor com placeholder",
+      "Há R$ ([valor por extenso]) ou similar. Substitua por cifra concreta ou reticências."
     );
   }
 

@@ -148,6 +148,16 @@ export function aplicarFidelidadeEspecialidadeVara(
     .replace(
       /\bDA\s+(\d{1,3})\s*[ªºo°]?\s*VARA\s+C[IÍ]VEL\b/gi,
       "DA $1ª VARA"
+    )
+    // Sem ordinal: "DA VARA CÍVEL" / "à Vara Cível" — não toca Juizado Especial Cível.
+    .replace(/\bDA\s+VARA\s+C[ÍIíi]VEL\b/gi, "DA VARA")
+    .replace(
+      /(à|a|na|da)(\s+)Vara\s+C[ÍIíi]vel\b/gi,
+      "$1$2Vara"
+    )
+    .replace(
+      /(\d{1,3}\s*[ªºo°]?\s*)Vara\s+C[ÍIíi]vel\b/gi,
+      "$1Vara"
     );
 }
 

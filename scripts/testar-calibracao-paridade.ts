@@ -51,8 +51,12 @@ function main() {
     poloAdvocacia: "ativo",
   });
   assert(
-    orgAgravo.preenchimento.especiePeca === "agravo-instrumento",
-    `org espécie ${orgAgravo.preenchimento.especiePeca}`
+    !orgAgravo.preenchimento.especiePeca?.trim(),
+    "org local NÃO define espécie (IA/chips)"
+  );
+  assert(
+    Boolean(orgAgravo.preenchimento.ultimoAto?.trim()),
+    "org local ainda extrai último ato"
   );
 
   const cumprimentoMsExplicito =
@@ -105,11 +109,8 @@ function main() {
     poloAdvocacia: "ativo",
   });
   assert(
-    Boolean(
-      orgPrev.preenchimento.especiePeca?.includes("previdenci") ||
-        orgPrev.preenchimento.tipoAcao?.toLowerCase().includes("petição")
-    ),
-    "previdenciário organiza espécie"
+    !orgPrev.preenchimento.especiePeca?.trim(),
+    "previdenciário: org sem espécie local"
   );
 
   const resolvido = resolverAreaEspecieOrganizacao({

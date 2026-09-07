@@ -1,32 +1,31 @@
 /**
  * Heurística de paginação A4 para preview folha a folha.
  * Alinhada a FORMATACAO_FORENSE (Times 12, entrelinha 1,5, margens 3/2 cm).
- * Não precisa ser pixel-perfect — conferência visual antes do export PDF.
+ * Meta: mesma ordem de epígrafe e anti-órfão do PDF; citação via alturaLinhaCorpoMm.
  */
 
 import {
   FORMATACAO_FORENSE,
+  alturaLinhaCorpoMm,
   parseMarcadorEspaco,
 } from "@/lib/formatacao-forense";
 import { classificarPeca } from "@/lib/tipografia-peca";
 
 /** Altura útil da folha (mm) após margens superior/inferior. */
 const ALTURA_UTIL_MM =
-  297 -
+  FORMATACAO_FORENSE.papelAlturaMm -
   FORMATACAO_FORENSE.margemSuperiorCm * 10 -
   FORMATACAO_FORENSE.margemInferiorCm * 10;
 
 /** Largura útil (mm) após margens esquerda/direita. */
 const LARGURA_UTIL_MM =
-  210 -
+  FORMATACAO_FORENSE.papelLarguraMm -
   FORMATACAO_FORENSE.margemEsquerdaCm * 10 -
   FORMATACAO_FORENSE.margemDireitaCm * 10;
 
-/** mm por linha (pt → mm ≈ /2.834) com entrelinha. */
-const MM_POR_LINHA =
-  (FORMATACAO_FORENSE.tamanhoPt * FORMATACAO_FORENSE.entrelinhas) / 2.834;
+const MM_POR_LINHA = alturaLinhaCorpoMm();
 
-/** Linhas úteis (~36) — deixa respiro para rodapé “Folha X de Y”. */
+/** Linhas úteis (~36) — deixa respiro para o número da página no rodapé. */
 export const LINHAS_POR_PAGINA = Math.max(
   28,
   Math.floor(ALTURA_UTIL_MM / MM_POR_LINHA) - 2
@@ -65,15 +64,19 @@ export function estimarLinhasBloco(bloco: string): number {
 
   const marcador = parseMarcadorEspaco(trim);
   if (marcador) {
-    let n = marcador.linhas;
-    if (marcador.epigrafe?.length) n += marcador.epigrafe.length;
-    else if (marcador.processo) n += 1;
-    return n;
+    // Epígrafe cabe nas 6 linhas do marcador (mesma regra PDF/DOCX).
+    return marcador.linhas;
   }
 
   const tipo = classificarPeca(trim)[0]?.tipo ?? "paragrafo";
   if (tipo === "citacao-juris") {
-    return linhasDeTexto(trim, CHARS_POR_LINHA_CITACAO);
+    const linhasCit = linhasDeTexto(trim, CHARS_POR_LINHA_CITACAO);
+    const mmCit = alturaLinhaCorpoMm(
+      FORMATACAO_FORENSE.tamanhoCitacaoPt,
+      FORMATACAO_FORENSE.entrelinhasCitacao
+    );
+    const mmCorpo = alturaLinhaCorpoMm();
+    return Math.max(1, Math.ceil(linhasCit * (mmCit / mmCorpo)));
   }
   if (
     tipo === "enderecamento" ||

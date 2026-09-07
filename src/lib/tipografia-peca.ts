@@ -16,6 +16,7 @@
 import {
   FORMATACAO_FORENSE,
   parseMarcadorEspaco,
+  separarMarcadoresEspacoEmbutidos,
   type MarcadorEspacoParseado,
 } from "@/lib/formatacao-forense";
 
@@ -253,12 +254,30 @@ export function pareceEmentaOuSumulaLiteral(texto: string): boolean {
   // Epígrafe / título / narrativa com nº dos autos ≠ citação de julgado.
   if (/^Processo\s+n/i.test(t)) return false;
   if (/^[IVXLCDM]+\s*[-—–.]\s+\S/i.test(t)) return false;
+
+  // Paráfrase / fundamentação que menciona tribunal ou súmula — corpo normal.
+  if (
+    /^(A|O|As|Os|Nesse|Neste|Nesta|Conforme|Segundo|Nos\s+termos|À\s+luz|Em\s+conformidade|Com\s+efeito|Assim|Portanto|Dessarte|Outrossim|Ademais|Com efeito)\b/i.test(
+      t
+    )
+  ) {
+    return false;
+  }
+  if (
+    /\b(consolidou|estabeleceu que|estabelece que|disp[oõ]e que|prevê que|ensina que|aplica-se|no caso em tela|ao caso concreto|reconhecendo que|firmou o entendimento)\b/i.test(
+      t
+    ) &&
+    !/\bEMENTA\b/i.test(t)
+  ) {
+    return false;
+  }
   if (
     /^A\s+jurisprud[eê]ncia\b/i.test(t) &&
     !/\b(REsp|RE\s|AgRg|HC|ADI|ADPF)\s*n?[ºo°.]?\s*\d/i.test(t)
   ) {
     return false;
   }
+
   const cnj = /\b\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}\b/.test(t);
   const orgaoJulgador =
     /\b(STJ|STF|TJ[A-Z]{2}|TRF\s*\d*|TST|TSE|Turma|C[aâ]mara)\b/i.test(t);
@@ -267,13 +286,15 @@ export function pareceEmentaOuSumulaLiteral(texto: string): boolean {
       t
     );
   const rotuloEmenta = /\b(EMENTA|Acórd[aã]o|Relator|Rel\.)\b/i.test(t);
+  // Só citação se a linha *começa* pela súmula (ipsis litteris da base).
   const sumula = /^S[uú]mula(?:\s+Vinculante)?\s*(?:n[oº°.]?\s*)?\d+/i.test(t);
 
   if (sumula) return true;
   if (pecaJulgado && (orgaoJulgador || rotuloEmenta || t.length >= 80)) {
     return true;
   }
-  if (orgaoJulgador && (rotuloEmenta || pecaJulgado || t.length >= 120)) {
+  // Órgão sozinho + texto longo ≠ ementa (era pegando paráfrases com "TST…").
+  if (orgaoJulgador && (rotuloEmenta || pecaJulgado)) {
     return true;
   }
   // CNJ sozinho (ou só “processo nº …”) não vira ementa — precisa órgão/classe.
@@ -296,10 +317,15 @@ export function ehCitacaoJurisprudencia(linha: string): boolean {
   return pareceEmentaOuSumulaLiteral(t);
 }
 
-/** Colapsa [[JURIS]] aninhados (IA às vezes abre de novo dentro do bloco). */
+/**
+ * Colapsa [[JURIS]] aninhados (IA às vezes abre de novo dentro do bloco).
+ * Se a saída truncou no meio de um [[JURIS]] sem fechar, remove o bloco
+ * incompleto (não inventa [[/JURIS]] com ementa pela metade).
+ */
 export function desaninharMarcadoresJuris(texto: string): string {
   let out = "";
   let depth = 0;
+  let lastOpenOutLen = 0;
   const re = /\[\[\/?JURIS\]\]/gi;
   let last = 0;
   let m: RegExpExecArray | null;
@@ -307,7 +333,10 @@ export function desaninharMarcadoresJuris(texto: string): string {
     out += texto.slice(last, m.index);
     const fecha = m[0].includes("/");
     if (!fecha) {
-      if (depth === 0) out += "[[JURIS]]";
+      if (depth === 0) {
+        lastOpenOutLen = out.length;
+        out += "[[JURIS]]";
+      }
       depth += 1;
     } else {
       if (depth > 0) depth -= 1;
@@ -316,9 +345,8 @@ export function desaninharMarcadoresJuris(texto: string): string {
     last = m.index + m[0].length;
   }
   out += texto.slice(last);
-  while (depth > 0) {
-    out += "[[/JURIS]]";
-    depth -= 1;
+  if (depth > 0) {
+    out = out.slice(0, lastOpenOutLen).replace(/\s+$/u, "");
   }
   return out;
 }
@@ -431,7 +459,7 @@ export function classificarBlocoPeca(
 }
 
 export function classificarPeca(texto: string): BlocoPecaClassificado[] {
-  const linhas = texto
+  const linhas = separarMarcadoresEspacoEmbutidos(texto)
     .replace(/\r\n/g, "\n")
     .split("\n")
     .map((l) => l.replace(/\s+/g, " ").trim())

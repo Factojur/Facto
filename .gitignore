@@ -49,6 +49,9 @@ scripts/testes-pecas-diario.log
 
 # saídas locais de teste de peça (não commit)
 /tmp/
+/testes-e2e-*/
+.tmp-smoke/
+scripts/*.log
 
 # FACTO Gestão — dados locais de desenvolvimento (não publicar)
 .data/

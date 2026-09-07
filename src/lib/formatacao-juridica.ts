@@ -286,7 +286,7 @@ export function gerarDocumentoTimbrado(
       padding: 0;
       padding-left: ${FORMATACAO_FORENSE.recuoCitacaoCm}cm;
       font-size: ${FORMATACAO_FORENSE.tamanhoCitacaoPt}pt;
-      line-height: ${FORMATACAO_FORENSE.entrelinhas};
+      line-height: ${FORMATACAO_FORENSE.entrelinhasCitacao};
     }
     .documento-juridico .fechamento {
       text-align: center;

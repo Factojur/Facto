@@ -30,7 +30,7 @@ export const ESPECIES_PECA_TRABALHISTA: MetaEspecieTrabalhista[] = [
     id: "reclamacao",
     rotulo: "Reclamação trabalhista",
     descricao:
-      "Petição inicial na Justiça do Trabalho (arts. 840 e 841 da CLT). Polos: reclamante e reclamado. Não é petição inicial cível nem do Juizado.",
+      "Peça inaugural na Justiça do Trabalho (arts. 840 e 841 da CLT). Polos: reclamante e reclamado. Não é petição inicial cível nem do Juizado.",
     nomePecaHint: "Reclamação trabalhista",
     exigeProcesso: false,
     conectivoPartes: "pelos fatos e fundamentos jurídicos a seguir expostos.",
@@ -247,11 +247,20 @@ export function metaEspecieTrabalhista(id: string): MetaEspecieTrabalhista {
   );
 }
 
+function slugEspecie(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/\s+/g, "-");
+}
+
 export function normalizarEspecieTrabalhista(
   raw: string | null | undefined
 ): EspeciePecaTrabalhista | null {
   if (!raw) return null;
-  const id = raw.trim().toLowerCase().replace(/\s+/g, "-");
+  const id = slugEspecie(raw);
   const ids: EspeciePecaTrabalhista[] = [
     "reclamacao",
     "defesa",
@@ -265,16 +274,23 @@ export function normalizarEspecieTrabalhista(
   if (ids.includes(id as EspeciePecaTrabalhista)) {
     return id as EspeciePecaTrabalhista;
   }
-  if (id === "peticao-inicial" || id.includes("reclama")) return "reclamacao";
+  // Alias do chat/IA — inaugural JT = reclamação (antes de “petição”→agravo)
+  if (
+    id === "peticao-inicial" ||
+    id === "inicial" ||
+    id.includes("reclama")
+  ) {
+    return "reclamacao";
+  }
   if (id.includes("contesta") || id === "defesa-reclamada") return "defesa";
-  if (id.includes("réplica") || id.includes("replica") || id.includes("manifesta")) {
+  if (id.includes("replica") || id.includes("manifesta")) {
     return "manifestacao";
   }
   if (id.includes("declara")) return "embargos-declaracao";
-  if (id.includes("ordinario") || id.includes("ordinário") || id === "recurso") {
+  if (id.includes("ordinario") || id === "recurso") {
     return "recurso-ordinario";
   }
-  if (id.includes("peticao") || id.includes("petição")) return "agravo-peticao";
+  if (id.includes("agravo") && id.includes("petic")) return "agravo-peticao";
   if (id.includes("agravo")) return "agravo-instrumento";
   if (id.includes("execu") || id.includes("cumprimento")) return "execucao-titulo";
   return null;
@@ -299,10 +315,13 @@ export function inferirEspecieTrabalhista(
 }
 
 export function tituloPecaTrabalhista(
-  especie: EspeciePecaTrabalhista,
+  especie: EspeciePecaTrabalhista | string,
   tipoSugerido?: string | null
 ): string {
-  switch (especie) {
+  const canon =
+    normalizarEspecieTrabalhista(especie) ??
+    (especie as EspeciePecaTrabalhista);
+  switch (canon) {
     case "defesa":
       return "Defesa";
     case "manifestacao":
@@ -317,8 +336,15 @@ export function tituloPecaTrabalhista(
       return "Agravo de Petição";
     case "execucao-titulo":
       return "Execução Trabalhista";
-    default:
-      return String(tipoSugerido ?? "Reclamação Trabalhista").trim();
+    case "reclamacao":
+    default: {
+      const sug = String(tipoSugerido ?? "").trim();
+      // Justiça do Trabalho não tem “petição inicial” — inaugural = reclamação
+      if (!sug || /peti[cç][aã]o\s+inicial/i.test(sug)) {
+        return "Reclamação Trabalhista";
+      }
+      return sug;
+    }
   }
 }
 
@@ -351,6 +377,8 @@ export function blocoEstruturaPromptTrabalhista(
 
   if (especie === "reclamacao") {
     extras.push(
+      "   Nome forense típico: RECLAMAÇÃO TRABALHISTA (não o rótulo cível \"petição inicial\").",
+      "   Formatação: qualificação completa do reclamante → nome da peça → \"em face de\" + reclamado.",
       "   Pedidos: articule as verbas dos FATOS. Só liquíde valores se os FATOS trouxerem cifra ou base clara; senão peça “a liquidar em execução”. Não invente R$ de FGTS/férias.",
       "   Temas típicos: verbas rescisórias, horas extras, FGTS, adicional, reconhecimento de vínculo — só se os FATOS autorizarem.",
       "   Não fundamente em CDC salvo se a causa de pedir for realmente consumerista (não é este módulo)."

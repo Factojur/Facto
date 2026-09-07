@@ -3,6 +3,8 @@
  * Cada área tem extras de rito; o CPC compartilhado não vira contestação no Penal.
  */
 
+import { moduloDaArea } from "@/lib/minuta-modulo";
+
 export type MetaEspecieLivre = {
   id: string;
   rotulo: string;
@@ -312,7 +314,8 @@ export const KIT_CRIMINAL = kit(
     "   Não invente inquérito, denúncia, pena, tipificação nem coação além dos FATOS.",
     "   Resposta à acusação (arts. 396/396-A do CPP) ≠ contestação. Defesa preliminar (art. 395) ≠ resposta — só preliminares de rejeição/absolvição sumária.",
     "   Apelação: art. 593 do CPP (não inominado).",
-    "   HC: art. 5º, LXVIII, da CF e arts. 647 e ss. do CPP — endereçamento ao Tribunal.",
+    "   HC: art. 5º, LXVIII, da CF e arts. 647 e ss. do CPP — endereçamento ao Tribunal. Qualificação completa do paciente/impetrante quando for a peça que inaugura o remédio.",
+    "   Nome forense típico: Habeas Corpus, Revisão Criminal etc. — não o rótulo cível \"petição inicial\".",
     "   Agravo em execução: art. 197 da LEP (não agravo do CPC 1.015). Julgado contrário: não cite como lastro favorável.",
   ],
   (t) => {
@@ -381,7 +384,7 @@ export const KIT_CRIMINAL = kit(
     ],
     "embargos-declaracao": ED,
   },
-  "resposta-acusacao"
+  "habeas-corpus"
 );
 
 export const KIT_PREVIDENCIARIO = kit(
@@ -511,6 +514,7 @@ export const KIT_TRIBUTARIO = kit(
     "embargos-execucao-fiscal": "Embargos à Execução Fiscal",
     "excecao-pre-executividade": "Exceção de Pré-Executividade",
     "mandado-seguranca": "Mandado de Segurança",
+    "peticao-inicial": "Ação Anulatória / Repetição de Indébito",
     apelacao: "Apelação",
     contestacao: "Contestação",
     "embargos-declaracao": "Embargos de Declaração",
@@ -883,6 +887,7 @@ export const KIT_ELEITORAL = kit(
     "   Rito: ELEITORAL. NÃO invente acórdão de TRE/TSE (a base FACTO não indexa esses tribunais).",
     "   Endereçamento: Juiz Eleitoral da zona ou Tribunal Regional Eleitoral, conforme a espécie.",
     "   NÃO use Lei 9.099 cível, CLT nem CDC. Fundamente só com o que estiver nos FATOS e na lei.",
+    "   Peças que abrem demanda (Representação, AIJE, Registro/Impugnação): qualificação completa no molde forense; nome da espécie do rito eleitoral (não \"petição inicial\" cível).",
   ],
   (t) => {
     if (/\baije\b|investiga[cç][aã]o judicial eleitoral/.test(t)) return "aije";
@@ -1427,8 +1432,25 @@ export function inferirEspecieKit(
 ): string {
   const k = kitDaArea(areaId);
   if (!k) return "peticao-inicial";
-  const raw = String(especieExplicita ?? "").trim().toLowerCase().replace(/\s+/g, "-");
+  const raw = String(especieExplicita ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/\s+/g, "-");
   if (raw && k.especies.some((e) => e.id === raw)) return raw;
+  // Chat/IA manda “peticao-inicial” em área sem essa espécie → inaugural do módulo
+  if (
+    (raw === "peticao-inicial" || raw === "inicial") &&
+    !k.especies.some((e) => e.id === "peticao-inicial")
+  ) {
+    const idsInaug = moduloDaArea(areaId).idsPeticaoInicial;
+    const noKit = idsInaug.find((id) => k.especies.some((e) => e.id === id));
+    if (noKit) return noKit;
+    const semProcesso = k.especies.find((e) => !e.exigeProcesso)?.id;
+    if (semProcesso) return semProcesso;
+    return k.defaultId;
+  }
   const t = `${tipoAcao ?? ""} ${fatos ?? ""}`.toLowerCase();
   return k.inferir(t) ?? k.defaultId;
 }
@@ -1442,8 +1464,20 @@ export function tituloPecaKit(
   if (!k) return String(tipoSugerido ?? "").trim();
   if (k.titulos[especie]) return k.titulos[especie]!;
   const meta = k.especies.find((e) => e.id === especie);
-  if (especie === "peticao-inicial") return String(tipoSugerido ?? "").trim();
-  return meta?.rotulo ?? String(tipoSugerido ?? "").trim();
+  const sug = String(tipoSugerido ?? "").trim();
+  if (especie === "peticao-inicial") {
+    return (
+      sug ||
+      meta?.nomePecaHint ||
+      meta?.rotulo ||
+      "Petição Inicial"
+    );
+  }
+  // Kits sem petição inicial: não deixe o tipoSugerido “Petição Inicial” vazar
+  if (sug && /peti[cç][aã]o\s+inicial/i.test(sug) && meta?.rotulo) {
+    return meta.rotulo;
+  }
+  return meta?.rotulo ?? sug;
 }
 
 export function esqueletoKit(areaId: string, especie: string): Secao[] {

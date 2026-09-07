@@ -231,8 +231,11 @@ export function formatarBlocoQualificacaoAutor(opcoes: {
 
   const adv = t(opcoes.advogadoNome) || "[NOME DO(A) ADVOGADO(A)]";
   const oab = t(opcoes.oabQualificacao) || "OAB/[UF] [Número]";
+  const endRaw = t(opcoes.enderecoAdvogado);
   const endAdv =
-    t(opcoes.enderecoAdvogado) || "[endereço do advogado]";
+    endRaw && endRaw !== "," && endRaw.length >= 5
+      ? endRaw
+      : "[endereço do advogado]";
 
   const fundamento =
     t(opcoes.fundamentoLei) || "na Lei nº 9.099/95";

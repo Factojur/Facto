@@ -220,11 +220,19 @@ export function ehPeticaoInicial(tipoAcao: string | null | undefined): boolean {
 }
 
 function daNVara(vara: string, nomeVara: string): string {
-  if (vara === "___") return `DA ___ª ${nomeVara}`;
-  if (!vara) return `DA ${nomeVara}`;
+  const nome = nomeVara.trim();
+  // Inaugural (varaEmBranco): distribuição ainda não ocorreu
+  if (vara === "___") {
+    if (/^VARA$/i.test(nome)) return "DA ___ª VARA";
+    return `DA ___ª ${nome}`;
+  }
+  if (!vara) {
+    // Incidental sem número nos autos — sem underline (auditor flagra ___ em incidental)
+    return `DA ${nome}`;
+  }
   const n = String(vara).replace(/[ªº°]/g, "").trim();
-  if (/^VARA$/i.test(nomeVara.trim())) return `DA ${n}ª VARA`;
-  return `DA ${n}ª ${nomeVara}`;
+  if (/^VARA$/i.test(nome)) return `DA ${n}ª VARA`;
+  return `DA ${n}ª ${nome}`;
 }
 
 /**
@@ -576,10 +584,10 @@ export function formatarEnderecamentoPadrao(opcoes: {
     areaId === "propriedade-intelectual" ||
     areaId === "internacional"
   ) {
-    // Sem especialidade nos autos → só "VARA" (não inventar Cível).
+    const fallback = vara === "___" ? "VARA CÍVEL" : "VARA";
     return (
       `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO ` +
-      `${daNVara(vara, rotuloVara("VARA"))} DO FÓRUM DA COMARCA DE ${comarcaTxt}`
+      `${daNVara(vara, rotuloVara(fallback))} DO FÓRUM DA COMARCA DE ${comarcaTxt}`
     );
   }
 
@@ -598,6 +606,66 @@ export function formatarEnderecamentoJec(info: ComarcaInfo): string {
     areaJudiciaria: rotuloAreaJudiciaria("jec"),
     varaEmBranco: true,
   });
+}
+
+/**
+ * Corrige endereçamento inaugural inventado pela IA:
+ * "DE UMA DAS VARAS CÍVEIS" / "DA VARA DE FAMÍLIA" (sem número) → "DA ___ª …".
+ * Não altera "DA 1ª VARA…" nem endereçamento a tribunal.
+ */
+export function corrigirEnderecamentoInauguralSemVara(texto: string): string {
+  const linhas = texto.replace(/\r\n/g, "\n").split("\n");
+  const i = linhas.findIndex((l) => /excelent[ií]ssim/i.test(l.trim()));
+  if (i < 0) return texto;
+  let l = linhas[i]!;
+
+  // Já tem ___ ou número ordinal → ok
+  if (/___|^\d+\s*ª|\d+\s*ª\s+VARA|\d+\s*ª\s+ZONA/i.test(l) && !/UMA\s+DAS\s+VARAS/i.test(l)) {
+    return texto;
+  }
+
+  // Tribunal / ministro / desembargador / turma → não força ___
+  if (
+    /TRIBUNAL|MINISTRO|DESEMBARGADOR|TURMA RECURSAL|SUPREMO|SUPERIOR/i.test(l) &&
+    !/VARA/i.test(l)
+  ) {
+    return texto;
+  }
+
+  l = l
+    .replace(
+      /\bDE\s+UMA\s+DAS\s+VARAS\s+C[IÍ]VEIS\b/gi,
+      "DA ___ª VARA CÍVEL"
+    )
+    .replace(/\bDE\s+UMA\s+DAS\s+VARAS\b/gi, "DA ___ª VARA")
+    .replace(
+      /\bDA\s+(?!___?\s*ª?\s*)(?!\d+\s*ª\s*)VARA\s+(C[IÍ]VEL)\b/gi,
+      "DA ___ª VARA $1"
+    )
+    .replace(
+      /\bDA\s+(?!___?\s*ª?\s*)(?!\d+\s*ª\s*)VARA\s+(DE\s+FAM[IÍ]LIA(?:\s+E\s+SUCESS[OÕ]ES)?)\b/gi,
+      "DA ___ª VARA $1"
+    )
+    .replace(
+      /\bDA\s+(?!___?\s*ª?\s*)(?!\d+\s*ª\s*)VARA\s+(DO\s+TRABALHO|CRIMINAL|FEDERAL|DA\s+FAZENDA\s+P[UÚ]BLICA)\b/gi,
+      "DA ___ª VARA $1"
+    )
+    .replace(
+      /\bDA\s+(?!___?\s*ª?\s*)(?!\d+\s*ª\s*)VARA\s+(DO\s+JUIZADO\s+ESPECIAL(?:\s+\w+)?)\b/gi,
+      "DA ___ª VARA $1"
+    )
+    .replace(
+      /\bDA\s+(?!___?\s*ª?\s*)(?!\d+\s*ª\s*)ZONA\s+ELEITORAL\b/gi,
+      "DA ___ª ZONA ELEITORAL"
+    )
+    // "DA VARA DO JUIZADO…" já coberto; "DA VARA " solta antes de DO FÓRUM
+    .replace(
+      /\bDA\s+(?!___?\s*ª?\s*)(?!\d+\s*ª\s*)VARA\b(?=\s+DO\s+F[OÓ]R)/gi,
+      "DA ___ª VARA"
+    );
+
+  linhas[i] = l;
+  return linhas.join("\n");
 }
 
 /** Troca a 1ª linha se for endereçamento — a IA não pode reescrever maiúsculas. */

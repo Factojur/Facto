@@ -7,6 +7,7 @@
 
 import {
   FORMATACAO_FORENSE,
+  alturaLinhaCorpoMm,
   alturaLinhasMm,
 } from "@/lib/formatacao-forense";
 import {
@@ -245,8 +246,11 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
   const maxWidth = pageW - marginLeft - marginRight;
   const indent = FORMATACAO_FORENSE.recuoPrimeiraLinhaCm * 10;
   const indentJuris = FORMATACAO_FORENSE.recuoCitacaoCm * 10;
-  const lineH = 6.35; // 12pt * 1,5
-  const lineHCitacao = (FORMATACAO_FORENSE.tamanhoCitacaoPt / 12) * 6.35;
+  const lineH = alturaLinhaCorpoMm();
+  const lineHCitacao = alturaLinhaCorpoMm(
+    FORMATACAO_FORENSE.tamanhoCitacaoPt,
+    FORMATACAO_FORENSE.entrelinhasCitacao
+  );
   let y = marginTop;
 
   const blocos = classificarPeca(pecaTexto);
@@ -261,7 +265,8 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
     }
   }
 
-  for (const b of blocos) {
+  for (let bi = 0; bi < blocos.length; bi++) {
+    const b = blocos[bi]!;
     if (b.tipo === "marcador" && b.marcador) {
       const m = b.marcador;
       if (m.linhas === 6) {
@@ -307,8 +312,21 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
     }
 
     if (b.tipo === "secao-titulo") {
+      // Anti-órfão: título + próximo bloco na mesma página (espelha preview).
+      const prox = blocos[bi + 1];
+      let reservaProx = 0;
+      if (prox && prox.tipo !== "secao-titulo" && prox.tipo !== "marcador") {
+        const limpoProx = textoSemMarkdown(prox.texto);
+        doc.setFont("times", "normal");
+        doc.setFontSize(FORMATACAO_FORENSE.tamanhoPt);
+        const linesProx = doc.splitTextToSize(
+          limpoProx,
+          maxWidth - (prox.tipo === "paragrafo" || prox.tipo === "item-pedido" ? indent : 0)
+        );
+        reservaProx = Math.min(linesProx.length, 3) * lineH;
+      }
+      novaPaginaSePreciso(lineH + lineH + reservaProx);
       y += lineH;
-      novaPaginaSePreciso(lineH);
       y = desenharParagrafoRuns(doc, b.texto, {
         x: marginLeft,
         y,
@@ -409,10 +427,10 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
     doc.setFont("times", "normal");
     doc.setFontSize(9);
     doc.text(
-      `Folha ${pagina} de ${totalPaginas}`,
-      pageW / 2,
+      String(pagina),
+      pageW - marginRight,
       pageH - marginBottom / 2,
-      { align: "center" }
+      { align: "right" }
     );
   }
 

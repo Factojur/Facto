@@ -126,14 +126,14 @@ export type ResultadoOrganizacaoLocal = {
 };
 
 /**
- * Metadados + pista leve de remédio (0 tokens).
- * Espécie/área aqui são orientação; a IA do chat pode redefinir pelos autos.
+ * Extração local (partes, foro, último ato, pedidos) — 0 tokens.
+ * NÃO define espécie/remédio: IA ou chips do advogado.
  */
 export function organizarCasoLocal(params: {
   relato: string;
   areaId: string;
   poloAdvocacia?: "ativo" | "passivo" | null;
-  /** @deprecated Ignorado — pista de remédio sempre leve. */
+  /** @deprecated Sem efeito — espécie local desligada. */
   semRemedio?: boolean;
 }): ResultadoOrganizacaoLocal {
   const relato = filtrarRuidoOcrRelato(params.relato.trim());
@@ -150,14 +150,13 @@ export function organizarCasoLocal(params: {
     especie: "",
     poloAdvocacia: params.poloAdvocacia ?? null,
   });
-  const especiePista = resolvido.especie.trim();
   const areaResolvida = normalizarAreaIdMinuta(resolvido.areaId);
 
   return {
     areaIdResolvida: areaResolvida,
     preenchimento: {
-      especiePeca: especiePista,
-      tipoAcao: especiePista ? resolvido.tipoAcao : "",
+      especiePeca: "",
+      tipoAcao: "",
       fatos: narrativaFatos(relato),
       autoresNomes: partes.autoresNomes,
       reusNomes: partes.reusNomes,
@@ -169,7 +168,7 @@ export function organizarCasoLocal(params: {
       especialidadeVara: meta.especialidadeVara,
       especieDoProcesso: null,
       ultimoAto,
-      pedidos: extrairPedidosDoRelato(relato, especiePista),
+      pedidos: extrairPedidosDoRelato(relato, ""),
       pedirJusticaGratuita: /justi[cç]a\s+gratuita|gratuidade|hipossufici|jg\b/.test(
         n
       )
@@ -190,9 +189,7 @@ export function organizarCasoLocal(params: {
       tesesIds: teses.map((t) => t.id),
       camposIncertos: partes.autoresNomes.length ? [] : ["partes"],
       resumoConferencia:
-        (especiePista
-          ? `Pista de peça: ${resolvido.tipoAcao}. A IA confirma pelos autos.`
-          : "Caso lido — a IA escolhe a peça cabível.") +
+        "Caso lido — peça e polo: IA ou escolha do advogado (chips)." +
         (ultimoAto ? ` Último ato: ${ultimoAto.slice(0, 120)}` : ""),
     },
   };
