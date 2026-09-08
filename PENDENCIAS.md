@@ -22,6 +22,7 @@ Ordem fechada — **não inverter**:
 - [x] **Nomenclatura:** Assistente / Peça · Direto / Aprofundado · Gerar preview / Montar a peça · Usar meu modelo · Profundidade: completa · Aplicar ajuste
 - [x] **Crédito:** Assistente + plano sem débito; −1 só em **Gerar preview** confirmado (abre Peça); “redija” vira convite ao gate, não debita
 - [x] Mensagens de sistema no tom FACTO; slash `/preview` `/peca`; Termos + help atualizados
+- [x] **Deploy Ready** — `b5466ce` · `dpl_7LDY4YD3KF7t4ibk72XfeugroK7X` · [factoia.com.br](https://factoia.com.br)
 - Em aberto (depois): chips pós-peça → Aplicar ajuste gratuito; biblioteca Tom
 
 ### Feito nesta rodada (08/09 — decisão copy chat/crédito)
