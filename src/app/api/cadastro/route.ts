@@ -31,7 +31,8 @@ export async function POST(request: Request) {
   const nomeCompleto = String(body.nomeCompleto ?? "").trim();
   const cpf = String(body.cpf ?? "").replace(/\D/g, "");
   const souAdvogado = Boolean(body.souAdvogado);
-  const oabNumero = souAdvogado ? String(body.oabNumero ?? "").trim() : "";
+  const oabNumero = String(body.oabNumero ?? "").trim();
+  const informarOab = souAdvogado && oabNumero.length > 0;
   let role: string | undefined;
 
   if (!token || !email.includes("@") || senha.length < 6 || !nomeCompleto || cpf.length < 11) {
@@ -41,15 +42,20 @@ export async function POST(request: Request) {
     );
   }
 
-  if (souAdvogado) {
+  if (informarOab) {
     const oab = validateOabMock({ email, senha, oabNumero });
     if (!oab.valid) {
       return NextResponse.json({ error: oab.message }, { status: 400 });
     }
     role = oab.role;
-  } else if (!body.termoAceito) {
+  }
+
+  if (!body.termoAceito) {
     return NextResponse.json(
-      { error: "Você precisa marcar que leu e concorda com os termos para continuar sem OAB." },
+      {
+        error:
+          "Marque que leu e concorda com o aviso sobre OAB opcional e limites de uso.",
+      },
       { status: 400 }
     );
   }
@@ -97,7 +103,7 @@ export async function POST(request: Request) {
     cpf,
     tipo_usuario: souAdvogado ? "advogado" : "leigo",
   };
-  if (souAdvogado) userMetadata.oab_numero = oabNumero;
+  if (informarOab) userMetadata.oab_numero = oabNumero;
   if (role) userMetadata.role = role;
 
   const { data: created, error: createErr } = await admin.auth.admin.createUser({
@@ -134,10 +140,10 @@ export async function POST(request: Request) {
         nome_completo: nomeCompleto,
         cpf,
         email,
-        oab_numero: souAdvogado ? oabNumero : null,
+        oab_numero: informarOab ? oabNumero : null,
         tipo_usuario: souAdvogado ? "advogado" : "leigo",
-        termo_leigo_aceito_em: souAdvogado ? null : new Date().toISOString(),
-        termo_leigo_versao: souAdvogado ? null : TERMO_LEIGO_VERSAO,
+        termo_leigo_aceito_em: new Date().toISOString(),
+        termo_leigo_versao: TERMO_LEIGO_VERSAO,
       },
       { onConflict: "id" }
     );

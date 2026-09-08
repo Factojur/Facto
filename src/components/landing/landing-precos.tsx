@@ -38,8 +38,8 @@ type Aba = "comecar" | "advogado" | "escritorio";
 type Ciclo = "mensal" | "anual";
 
 const ABAS: { id: Aba; rotulo: string; dica: string }[] = [
-  { id: "comecar", rotulo: "Começar", dica: "Teste ou Juizado" },
-  { id: "advogado", rotulo: "Advogado", dica: "OAB · todas as áreas" },
+  { id: "comecar", rotulo: "Começar", dica: "Teste ou Essencial" },
+  { id: "advogado", rotulo: "Advogado", dica: "Mais cota · Sonnet" },
   {
     id: "escritorio",
     rotulo: "Escritório",
@@ -99,7 +99,7 @@ export function LandingPrecos() {
           link: LINK_MENSAL,
           cta: "Assinar Completo",
           eyebrow: "Mais escolhido",
-          sub: "Para advogados (OAB) · todas as áreas · 100 peças/mês.",
+          sub: "Todas as áreas · 100 peças/mês · mais cota de redator avançado.",
           destaque: true,
         }
       : {
@@ -118,7 +118,7 @@ export function LandingPrecos() {
           link: LINK_PRO,
           cta: "Assinar Pro",
           eyebrow: "Alto volume",
-          sub: "Para advogados (OAB) · 200 peças/mês com prioridade na fila.",
+          sub: "200 peças/mês · prioridade na fila · volume de escritório solo.",
           destaque: false as boolean,
         }
       : {
@@ -141,9 +141,9 @@ export function LandingPrecos() {
             Escolha o ritmo da sua bancada
           </h2>
           <p className="mt-4 text-stone-400">
-            Peças com cotas claras. Assistente com plano do caso — a Minuta
-            (peça completa) consome a cota do plano. Cancele quando quiser — sem
-            fidelidade.
+            Teste grátis em todas as áreas. Essencial para começar; Completo e
+            Pro para mais peças e redator avançado. Assistente e plano do caso
+            não consomem peça — só a Minuta. Sem fidelidade.
           </p>
         </div>
 
@@ -190,8 +190,8 @@ export function LandingPrecos() {
                 {PLANO_TRIAL.rotulo}
               </h3>
               <p className="mt-1 text-sm text-stone-500">
-                1 área · {PLANO_TRIAL.pecasPorMes} peças no assistente · 7 dias ·
-                export limpo.
+                Todas as áreas · {PLANO_TRIAL.pecasPorMes} peças no assistente · 7
+                dias · export Word/PDF nos planos pagos.
               </p>
               <div className="mt-6 flex items-baseline gap-1">
                 <span className="text-4xl font-bold text-white">
@@ -219,14 +219,14 @@ export function LandingPrecos() {
 
             <CardShell>
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-facto-gold/80">
-                Entrada · foco JEC
+                Entrada · todas as áreas
               </p>
               <h3 className="mt-2 text-lg font-semibold text-white">
                 {PLANO_JEC.rotulo}
               </h3>
               <p className="mt-1 text-sm text-stone-500">
-                Para a própria parte no Juizado — sem OAB: assistente + 40
-                peças/mês com lastro e padrão forense.
+                Todas as áreas · assistente + {PLANO_JEC.pecasPorMes} peças/mês
+                com lastro e padrão forense.
               </p>
               <div className="mt-6 flex items-baseline gap-1">
                 <span className="text-4xl font-bold text-white">
@@ -247,7 +247,7 @@ export function LandingPrecos() {
               </ul>
               <div className="mt-8">
                 <BotaoAssinarPlano planoId="jec" hrefFallback={LINK_JEC}>
-                  Começar no JEC
+                  Assinar Essencial
                 </BotaoAssinarPlano>
               </div>
             </CardShell>

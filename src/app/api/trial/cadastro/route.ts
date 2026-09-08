@@ -10,7 +10,7 @@ import {
 
 /**
  * POST /api/trial/cadastro
- * Conta de teste: 1 área · 2 peças · 7 dias · sem OAB.
+ * Conta de teste: todas as áreas · 3 peças · 7 dias · Flash · sem cartão.
  */
 export async function POST(request: Request) {
   let body: {
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   const email = String(body.email ?? "").trim().toLowerCase();
   const senha = String(body.senha ?? "");
   const nomeCompleto = String(body.nomeCompleto ?? "").trim();
-  const areaId = String(body.areaId ?? "").trim().toLowerCase();
+  let areaId = String(body.areaId ?? "").trim().toLowerCase();
 
   if (!email.includes("@") || senha.length < 6 || nomeCompleto.length < 3) {
     return NextResponse.json(
@@ -45,11 +45,8 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!areaValidaParaTrial(areaId)) {
-    return NextResponse.json(
-      { error: "Escolha uma área disponível para o teste." },
-      { status: 400 }
-    );
+  if (!areaId || !areaValidaParaTrial(areaId)) {
+    areaId = "jec";
   }
 
   if (emailDescartavel(email)) {

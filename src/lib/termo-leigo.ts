@@ -1,18 +1,15 @@
 /**
- * Termo de ciência exibido para quem se cadastra sem OAB (leigo) e usa o
- * FACTO apenas no módulo do Juizado Especial Cível.
- *
- * IMPORTANTE: este texto foi redigido pela IA como rascunho e ainda NÃO
- * passou por revisão de um(a) advogado(a). Recomenda-se fortemente validar
- * a redação com assessoria jurídica própria antes de expor este termo a
- * usuários reais, já que ele tem função de isenção de responsabilidade.
+ * Ciência no cadastro quando a OAB não é informada (opcional no perfil).
+ * Serve a advogados que preferem preencher depois e a não advogados.
+ * Versão sobe quando o texto mudar (registro de aceite).
  */
-export const TERMO_LEIGO_VERSAO = "v1";
+export const TERMO_LEIGO_VERSAO = "v2-oab-opcional";
 
-export const TEXTO_TERMO_LEIGO = `Declaro que não sou advogado(a) e que estou ciente de que, nos termos do art. 9º da Lei nº 9.099/95, é facultado à própria parte ajuizar ação no Juizado Especial Cível, sem a necessidade de advogado, em causas de valor não superior a 20 (vinte) salários mínimos.
+/** @deprecated use TEXTO_AVISO_OAB_OPCIONAL — mantido para imports antigos. */
+export const TEXTO_TERMO_LEIGO = `A OAB no perfil é opcional e serve à assinatura da minuta (OAB/UF nº). Você pode informar ou completar depois em Meu perfil.
 
-Estou ciente de que:
-— meu acesso ao FACTO fica restrito exclusivamente ao módulo do Juizado Especial Cível;
-— o FACTO não presta assessoria jurídica nem substitui a orientação de um(a) advogado(a);
-— sou o único responsável por conferir se minha causa se enquadra no limite de 20 salários mínimos e nos demais requisitos legais do Juizado Especial;
-— assumo integral responsabilidade pela análise, adequação e uso do conteúdo gerado, isentando o FACTO de qualquer responsabilidade por uso inadequado, incorreto ou fora do escopo aqui descrito.`;
+Se você não for advogado(a), declare que observará os limites legais de uso do FACTO (em especial causa própria no Juizado Especial e o teto de valor previsto na Lei nº 9.099/95, quando aplicável), revisará todo o conteúdo antes de protocolar e é o único responsável pela adequação e pelo uso do material gerado.
+
+O FACTO é ferramenta de apoio à redação: não presta assessoria jurídica, não protocola peças e não substitui a orientação de um(a) advogado(a) quando a lei ou a praxe exigirem.`;
+
+export const TEXTO_AVISO_OAB_OPCIONAL = TEXTO_TERMO_LEIGO;

@@ -42,6 +42,27 @@ export function conferirPecaAntesDeProtocolar(params: {
   }
 
   if (
+    peca
+      .split("\n")
+      .some((l) => /^[A-Z0-9]+(?:-[A-Z0-9]+)+$/.test(l.trim()))
+  ) {
+    itens.push({
+      id: "titulo-slug",
+      gravidade: "alerta",
+      texto:
+        "O nome da peça parece um código (ex.: PETICAO-INICIAL). Use o nome forense da ação.",
+    });
+  }
+
+  if (/\bDA\s+\d+\s+VARA\b/i.test(peca) && !/\bDA\s+\d+ª\s+VARA\b/i.test(peca)) {
+    itens.push({
+      id: "ordinal-vara",
+      gravidade: "alerta",
+      texto: "Endereçamento com “1 VARA” — corrija para “1ª VARA”.",
+    });
+  }
+
+  if (
     !params.modoScaffold &&
     peca.length > 800 &&
     /DOS PEDIDOS|Ante o exposto|Diante do exposto/i.test(peca) &&

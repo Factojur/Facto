@@ -131,6 +131,34 @@ function main() {
     "ED Embargante/Embargado"
   );
 
+  const hc = rotulosEpigrafePeca("criminal", "habeas-corpus");
+  assert(
+    hc.ativo === "Impetrante" && hc.passivo === "Paciente",
+    "HC Impetrante/Paciente"
+  );
+  const ms = rotulosEpigrafePeca("constitucional", "mandado-seguranca");
+  assert(
+    ms.ativo === "Impetrante" && ms.passivo === "Impetrado",
+    "MS Impetrante/Impetrado"
+  );
+  const queixa = rotulosEpigrafePeca("jecr", "queixa-crime");
+  assert(
+    queixa.ativo === "Querelante" && queixa.passivo === "Querelado",
+    "queixa Querelante/Querelado"
+  );
+  const respAc = rotulosEpigrafePeca("criminal", "resposta-acusacao");
+  assert(
+    respAc.ativo === "Acusado" && respAc.passivo === "Ministério Público",
+    "resposta Acusado/MP"
+  );
+
+  const endJec = formatarEnderecamentoPadrao({
+    areaId: "jec",
+    especiePeca: "contestacao",
+    comarca: { cidade: "Campinas", uf: "SP", numeroJuizado: "1" },
+  });
+  assert(/DA 1ª VARA DO JUIZADO/i.test(endJec), "JEC incidental usa 1ª VARA");
+
   const autores = [autorVazio({ nomeCompleto: "JEFFERSON DA SILVA RIBEIRO" })];
   const reus = [
     reuVazio({
@@ -167,6 +195,29 @@ function main() {
   assert(
     epiApelPassivo.some((l) => /Apelado: JEFFERSON/.test(l)),
     "apelação polo passivo: Apelado = autor"
+  );
+
+  const epiMemorial = linhasEpigrafePeca({
+    areaId: "constitucional",
+    especie: "memorial",
+    numeroProcesso: "0000001-00.2024.1.00.0000",
+    autores,
+    reus,
+  });
+  assert(
+    epiMemorial.length === 1 && /Processo nº:/.test(epiMemorial[0]!),
+    "memorial: só Processo nº"
+  );
+  const epiManif = linhasEpigrafePeca({
+    areaId: "trabalhista",
+    especie: "manifestacao",
+    numeroProcesso: "1000000-00.2024.5.02.0001",
+    autores,
+    reus,
+  });
+  assert(
+    epiManif.length === 1 && /Processo nº:/.test(epiManif[0]!),
+    "manifestação: só Processo nº"
   );
 
   const marcador = montarMarcadorEspaco6(null, epi);

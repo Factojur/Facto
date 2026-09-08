@@ -804,14 +804,13 @@ export function opcoesLastroChat(
   const polo = resolverPoloGeracao(estado.areaId, esp, estado.poloAdvocacia);
   const sync = sincronizarTribunaisComarca(estado);
   const tribunais = sync.tribunaisPreferidos ?? [];
+  const uf = sync.comarca?.uf?.trim() || undefined;
   return {
     polo,
     especie: esp,
     tribunais: tribunais.length ? tribunais : undefined,
-    ufComarca:
-      tribunais.length === 0 && sync.comarca?.uf?.trim()
-        ? sync.comarca.uf.trim()
-        : undefined,
+    // Sempre passa a UF quando houver — bloqueia TJ de outro Estado mesmo com seleção manual.
+    ufComarca: uf,
   };
 }
 

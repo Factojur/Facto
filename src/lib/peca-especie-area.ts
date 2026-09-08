@@ -322,28 +322,40 @@ export function tituloPecaDaArea(
   contexto?: string | null
 ): string {
   const esp = canonizarEspecieDaArea(areaId, especie);
+  let titulo: string;
   if (areaId === "consumidor") {
-    return tituloPecaConsumidor(esp as EspeciePecaConsumidor, tipoSugerido);
+    titulo = tituloPecaConsumidor(esp as EspeciePecaConsumidor, tipoSugerido);
+  } else if (areaId === "civil") {
+    titulo = tituloPecaCivil(esp as EspeciePecaCivil, tipoSugerido);
+  } else if (areaId === "trabalhista") {
+    titulo = tituloPecaTrabalhista(esp as EspeciePecaTrabalhista, tipoSugerido);
+  } else if (areaId === "familia") {
+    titulo = tituloPecaFamilia(esp as EspeciePecaFamilia, tipoSugerido);
+  } else if (areaId === "imobiliario") {
+    titulo = tituloPecaImobiliario(esp as EspeciePecaImobiliario, tipoSugerido);
+  } else if (areaId === "jecr") {
+    titulo = tituloPecaJecr(esp as EspeciePecaJecr, tipoSugerido);
+  } else if (kitDaArea(areaId)) {
+    titulo = tituloPecaKit(areaId, esp, tipoSugerido);
+  } else {
+    titulo = tituloPecaCabivel(esp as EspeciePecaJec, tipoSugerido, contexto);
   }
-  if (areaId === "civil") {
-    return tituloPecaCivil(esp as EspeciePecaCivil, tipoSugerido);
+  const t = String(titulo ?? "").trim();
+  // Evita vazar slug ("peticao-inicial") no nome forense da peça.
+  if (!t || /^[a-z0-9]+(-[a-z0-9]+)+$/.test(t)) {
+    if (esp === "peticao-inicial" || /peticao.?inicial/.test(esp)) {
+      return "Petição Inicial";
+    }
+    return (
+      t ||
+      esp
+        .split("-")
+        .filter(Boolean)
+        .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+        .join(" ")
+    );
   }
-  if (areaId === "trabalhista") {
-    return tituloPecaTrabalhista(esp as EspeciePecaTrabalhista, tipoSugerido);
-  }
-  if (areaId === "familia") {
-    return tituloPecaFamilia(esp as EspeciePecaFamilia, tipoSugerido);
-  }
-  if (areaId === "imobiliario") {
-    return tituloPecaImobiliario(esp as EspeciePecaImobiliario, tipoSugerido);
-  }
-  if (areaId === "jecr") {
-    return tituloPecaJecr(esp as EspeciePecaJecr, tipoSugerido);
-  }
-  if (kitDaArea(areaId)) {
-    return tituloPecaKit(areaId, esp, tipoSugerido);
-  }
-  return tituloPecaCabivel(esp as EspeciePecaJec, tipoSugerido, contexto);
+  return t;
 }
 
 export function especieParaScaffoldJec(

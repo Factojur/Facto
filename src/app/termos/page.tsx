@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function TermosPage() {
   return (
-    <LegalShell titulo="Termos de Uso" atualizacao="24 de agosto de 2026">
+    <LegalShell titulo="Termos de Uso" atualizacao="8 de setembro de 2026">
       <p>
         Estes Termos de Uso (&quot;Termos&quot;) regulam o acesso e a utilização
         do site <strong>factoia.com.br</strong>, do aplicativo e de quaisquer
@@ -80,11 +80,14 @@ export default function TermosPage() {
         </h2>
         <p>
           O Usuário declara ser maior de 18 anos e ter capacidade civil para
-          contratar. Contas de advogados devem observar as normas da OAB e o
-          Código de Ética e Disciplina. Contas de não advogados (quando
-          admitidas, inclusive em trial ou causa própria no Juizado) devem
-          observar os limites legais de atuação perante o Juizado Especial e
-          demais normas aplicáveis.
+          contratar. A OAB no perfil é opcional e serve, quando informada, à
+          assinatura da minuta. Contas de advogados devem observar as normas da
+          OAB e o Código de Ética e Disciplina. Contas de não advogados (quando
+          admitidas, inclusive em trial ou causa própria) devem observar os
+          limites legais de atuação — em especial causa própria no Juizado
+          Especial e o teto de valor da Lei nº 9.099/95 quando aplicável — e
+          demais normas aplicáveis. O FACTO não diferencia o catálogo de áreas
+          pelo perfil leigo/advogado: a liberação de áreas segue o plano ativo.
         </p>
         <p className="mt-2">
           O aceite eletrônico (checkbox e registro de data/hora/versão) tem
@@ -142,7 +145,11 @@ export default function TermosPage() {
             avançado (quando houver), trial e condições comerciais são os
             divulgados na página de compra, no painel do Usuário ou em proposta
             específica. Em caso de divergência, prevalece o que estiver vigente
-            no momento da contratação.
+            no momento da contratação. O plano de entrada (Essencial; id interno
+            de cobrança histórico) e os planos superiores liberam as áreas
+            disponíveis do catálogo; diferem principalmente por cota de peças,
+            fração de redator avançado e, no trial, restrições de exportação
+            protocolável (Word/PDF).
           </li>
           <li>
             Em regra, o <strong>assistente</strong> (relato/anexo) e o{" "}
@@ -153,8 +160,11 @@ export default function TermosPage() {
           </li>
           <li>
             Trial e períodos promocionais, quando oferecidos, são pessoais,
-            sujeitos a limite de uso e podem ser encerrados ou alterados a
-            qualquer tempo, sem criar expectativa de continuidade gratuita.
+            sujeitos a limite de uso (peças e prazo), abrangem as áreas
+            disponíveis do catálogo no período e podem ser encerrados ou
+            alterados a qualquer tempo, sem criar expectativa de continuidade
+            gratuita. A exportação Word/PDF com timbre e formatação forense
+            protocolável fica, em regra, nos planos pagos.
           </li>
           <li>
             Pacotes extras de peças, quando disponíveis, acrescentam cota

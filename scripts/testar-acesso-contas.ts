@@ -1,5 +1,5 @@
 /**
- * Personas das contas internas (jec leigo vs Completo advogado vs admin).
+ * Personas das contas internas (Essencial leigo vs Completo advogado vs admin).
  * npx tsx scripts/testar-acesso-contas.ts
  */
 import { createSuite } from "./casos-ouro/suite";
@@ -15,19 +15,16 @@ const { assert, stats } = createSuite();
 
 const jec = resolverAcessoConta("jec@facto.com", "mensal", "advogado");
 assert(jec.leigo === true, "jec@ é leigo mesmo se o perfil disser advogado");
-assert(jec.plano === "jec", "jec@ simula Plano JEC");
+assert(jec.plano === "jec", "jec@ simula Plano Essencial (id jec)");
 assert(jec.cotasIlimitadas === true, "jec@ cotas ilimitadas");
-assert(
-  areasPermitidas(jec) instanceof Set && (areasPermitidas(jec) as Set<string>).has("jec"),
-  "jec@ só tem JEC no set"
-);
+assert(areasPermitidas(jec) === "todas", "jec@ (Essencial) tem todas as áreas");
 assert(
   areaAbertaParaCliente("jec", jec) === true,
   "jec@ entra no módulo JEC"
 );
 assert(
-  areaAbertaParaCliente("civil", jec) === false,
-  "jec@ não entra em Civil"
+  areaAbertaParaCliente("civil", jec) === true,
+  "jec@ entra em Civil (todas as áreas)"
 );
 assert(isAdminEmail("jec@facto.com") === false, "jec@ sem /admin");
 assert(isEmailPreviewAreas("jec@facto.com") === false, "jec@ sem preview interno");
@@ -67,11 +64,18 @@ assert(
 
 const cliente = resolverAcessoConta("alguem@escritorio.com", "jec", "leigo");
 assert(cliente.cotasIlimitadas === false, "cliente comum tem cota");
-assert(cliente.leigo === true, "cliente JEC leigo");
+assert(cliente.leigo === true, "cliente Essencial leigo");
 assert(
-  areaAbertaParaCliente("trabalhista", cliente) === false,
-  "cliente JEC sem trabalhista"
+  areasPermitidas(cliente) === "todas",
+  "cliente Essencial tem todas as áreas"
 );
+assert(
+  areaAbertaParaCliente("trabalhista", cliente) === true,
+  "cliente Essencial entra em trabalhista"
+);
+
+const semPlano = resolverAcessoConta("sem@plano.com", null, "advogado");
+assert(areasPermitidas(semPlano) === "nenhuma", "sem plano → nenhuma área");
 
 if (stats().falhas > 0) {
   console.error(`Falhou: ${stats().falhas}`);

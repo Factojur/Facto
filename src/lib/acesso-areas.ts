@@ -1,16 +1,11 @@
 /**
- * Quais áreas o usuário pode usar, conforme plano + tipo (advogado/leigo).
+ * Quais áreas o usuário pode usar conforme o plano.
  *
- * - Qualquer plano ativo (JEC, Completo, Anual): Juizado Especial Cível liberado
- * - Plano JEC: só JEC
- * - Plano Completo (mensal/anual) + advogado (OAB): todas as áreas disponíveis
- * - Plano Completo + leigo (sem OAB): só JEC; demais áreas exigem verificação OAB
- * - Sem plano: nenhuma área (pagar ou conta interna com persona)
- * - Contas internas: `resolverAcessoConta` define plano/tipo (jec@ = só JEC;
- *   admin/assessoria = Completo). Acesso livre ≠ todas as áreas.
+ * Qualquer plano ativo (Essencial/`jec`, Completo, Pro, trial, escritório)
+ * libera todas as áreas `available` do catálogo. Diferenças entre planos =
+ * cota de peças, fração Sonnet e export (trial).
  *
- * O teto de 20 SM para leigos no JEC é validado na geração da peça (jec-teto),
- * não neste gate de área.
+ * Sem plano: nenhuma área (pagar ou conta interna com persona).
  */
 
 import type { PlanoId } from "@/lib/planos-facto";
@@ -24,22 +19,6 @@ export function areasPermitidas(opcoes: {
   trialAreaId?: string | null;
 }): Set<string> | "todas" | "nenhuma" {
   if (!opcoes.plano) return "nenhuma";
-
-  // Todo plano pago inclui JEC; o plano JEC fica restrito a essa área.
-  if (opcoes.plano === "jec") {
-    return new Set(["jec"]);
-  }
-
-  if (opcoes.plano === "trial") {
-    const area = opcoes.trialAreaId?.trim();
-    return area ? new Set([area]) : new Set(["jec"]);
-  }
-
-  // mensal / pro / anual / escritório — demais áreas exigem OAB
-  if (opcoes.tipoUsuario === "leigo") {
-    return new Set(["jec"]);
-  }
-
   return "todas";
 }
 
@@ -57,7 +36,7 @@ export function areaEstaLiberada(
   return liberadas.has(areaId);
 }
 
-/** Catálogo `available` + plano (JEC para leigo/plano JEC; demais para Completo+OAB). */
+/** Catálogo `available` + plano ativo (todas as áreas abertas ao cliente). */
 export function areaAbertaParaCliente(
   areaId: string,
   opcoes: {
@@ -67,8 +46,6 @@ export function areaAbertaParaCliente(
   }
 ): boolean {
   if (!areaEstaLiberada(areaId, opcoes)) return false;
-  if (areaId === "jec") return true;
-  if (opcoes.plano === "trial" && opcoes.trialAreaId === areaId) return true;
   const area = getAreaById(areaId);
   return Boolean(area?.available && area.href);
 }

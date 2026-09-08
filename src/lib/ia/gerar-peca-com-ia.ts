@@ -497,6 +497,9 @@ export async function gerarPecaComIA(params: {
   triagemPrecalculada?: TriagemPrecalculada | null;
   /** Delta da redação (stream) — texto acumulado do redator. */
   onRedacaoDelta?: (textoAcumulado: string) => void;
+  /** Tribunais preferidos / UF do foro — filtrar lastro (TJ do Estado + superiores). */
+  tribunaisPreferidos?: string[];
+  ufComarca?: string | null;
 }): Promise<ResultadoPecaIA> {
   if (!geminiConfigurado()) {
     return {
@@ -546,7 +549,14 @@ export async function gerarPecaComIA(params: {
     }),
   ];
 
-  const opcoesLastro = { polo, especie: especieFinal };
+  const opcoesLastro = {
+    polo,
+    especie: especieFinal,
+    tribunais: params.tribunaisPreferidos?.length
+      ? params.tribunaisPreferidos
+      : undefined,
+    ufComarca: params.ufComarca?.trim() || undefined,
+  };
   const itens =
     params.itensConhecimento ??
     (await buscarConhecimentoRelacionado(
@@ -712,6 +722,8 @@ export async function gerarPecaComIA(params: {
       opcoesLastro: {
         polo: polo ?? undefined,
         especie: especieFinal,
+        tribunais: opcoesLastro.tribunais,
+        ufComarca: opcoesLastro.ufComarca,
       },
       enriquecerQuery: enriquecerQueryLastro,
       maxPorConsulta: 3,

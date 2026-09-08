@@ -15,4 +15,4 @@ Set-ScheduledTask -TaskName "FACTO-seed-juris-01h" -Settings $settings | Out-Nul
 Write-Host "Tarefa FACTO-seed-juris-01h criada (diária 01:00)."
 Write-Host "O PC precisa estar ligado (sem dormir). Log: scripts\seed-juris-diario.log"
 Write-Host "Pool: JURISPRUDENCIAS_AI_API_KEY + JURISPRUDENCIAS_AI_API_KEYS (7 contas)."
-Write-Host "Defina vencimento em scripts\seed-juris-estado.json para pausar 7 dias antes."
+Write-Host "Sem pausa por vencimento — segue até a fila/cota ou até você mandar parar."

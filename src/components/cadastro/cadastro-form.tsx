@@ -7,7 +7,7 @@ import { FactoLogo } from "@/components/brand/facto-logo";
 import { createClient } from "@/lib/supabase/client";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { validateOabMock } from "@/lib/validate-oab";
-import { TEXTO_TERMO_LEIGO } from "@/lib/termo-leigo";
+import { TEXTO_AVISO_OAB_OPCIONAL } from "@/lib/termo-leigo";
 import { rotuloPlano } from "@/lib/assinatura-format";
 import type { PlanoId } from "@/lib/planos-facto";
 
@@ -26,7 +26,7 @@ export function CadastroForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [souAdvogado, setSouAdvogado] = useState(plano !== "jec");
+  const [souAdvogado, setSouAdvogado] = useState(true);
   const [termoAceito, setTermoAceito] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -39,18 +39,21 @@ export function CadastroForm({
     const cpf = String(form.get("cpf")).replace(/\D/g, "");
     const email = String(form.get("email"));
     const senha = String(form.get("senha"));
-    const oabNumero = souAdvogado ? String(form.get("oabNumero")) : "";
+    const oabNumero = String(form.get("oabNumero") ?? "").trim();
+    const informarOab = souAdvogado && oabNumero.length > 0;
 
-    if (souAdvogado) {
+    if (informarOab) {
       const oabValidation = validateOabMock({ email, senha, oabNumero });
       if (!oabValidation.valid) {
         setError(oabValidation.message);
         setLoading(false);
         return;
       }
-    } else if (!termoAceito) {
+    }
+
+    if (!termoAceito) {
       setError(
-        "Você precisa marcar que leu e concorda com os termos para continuar sem OAB."
+        "Marque que leu e concorda com o aviso sobre OAB opcional e limites de uso."
       );
       setLoading(false);
       return;
@@ -66,8 +69,8 @@ export function CadastroForm({
         nomeCompleto,
         cpf,
         souAdvogado,
-        oabNumero: souAdvogado ? oabNumero : undefined,
-        termoAceito: souAdvogado ? undefined : termoAceito,
+        oabNumero: informarOab ? oabNumero : undefined,
+        termoAceito,
       }),
     });
     const cadastroJson = (await cadastroRes.json().catch(() => null)) as {
@@ -116,7 +119,7 @@ export function CadastroForm({
           <FactoLogo variant="stacked" size="md" />
           <h1 className="mt-6 text-3xl font-bold text-white">Criar conta</h1>
           <p className="mt-2 text-center text-sm text-stone-400">
-            Para advogados e para quem atua no Juizado sem OAB
+            OAB opcional no perfil — serve à assinatura da minuta
           </p>
           {plano ? (
             <p className="mt-2 text-center text-xs text-stone-500">
@@ -226,7 +229,7 @@ export function CadastroForm({
                 className="mt-0.5 h-4 w-4 shrink-0 rounded border-stone-600 bg-stone-800 text-facto-gold focus:ring-facto-gold"
               />
               <label htmlFor="souAdvogado" className="text-sm text-stone-300">
-                Sou advogado(a) e tenho OAB
+                Sou advogado(a) (OAB opcional — pode preencher depois no perfil)
               </label>
             </div>
 
@@ -236,60 +239,55 @@ export function CadastroForm({
                   htmlFor="oabNumero"
                   className="mb-1.5 block text-sm font-medium text-stone-300"
                 >
-                  OAB (UF + número)
+                  OAB (UF + número) — opcional
                 </label>
                 <input
                   id="oabNumero"
                   name="oabNumero"
-                  required={souAdvogado}
                   className="w-full rounded-lg border border-stone-700 bg-stone-800 px-4 py-2.5 text-white placeholder-stone-500 outline-none focus:border-facto-gold focus:ring-1 focus:ring-facto-gold"
                   placeholder="SP147099"
                 />
                 <p className="mt-1.5 text-xs text-stone-500">
-                  Digite a UF junto com o número, sem espaços (ex.: SP147099,
-                  PR147099). Na peça, a assinatura sai como OAB/SP 147099.
+                  Se informar agora, a assinatura sai como OAB/SP 147099. Sem
+                  número, complete em Meu perfil quando quiser.
                 </p>
               </div>
-            ) : (
-              <div className="rounded-lg border border-amber-800/50 bg-amber-950/20 p-4">
-                <p className="text-sm font-semibold text-amber-300">
-                  Acesso restrito ao Juizado Especial Cível
-                </p>
-                <p className="mt-1.5 text-xs leading-relaxed text-amber-200/70">
-                  Sem OAB, seu acesso ao FACTO fica limitado ao módulo do
-                  Juizado Especial Cível, para causas de até 20 salários
-                  mínimos (art. 9º, Lei nº 9.099/95).
-                </p>
-                <div className="mt-3 max-h-32 overflow-y-auto rounded border border-amber-900/40 bg-stone-950/40 p-2.5 text-[11px] leading-relaxed whitespace-pre-line text-stone-400">
-                  {TEXTO_TERMO_LEIGO}
-                </div>
-                <label className="mt-3 flex items-start gap-2.5 text-xs text-stone-300">
-                  <input
-                    type="checkbox"
-                    checked={termoAceito}
-                    onChange={(e) => setTermoAceito(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-stone-600 bg-stone-800 text-facto-gold focus:ring-facto-gold"
-                  />
-                  Li e concordo com os termos acima.
-                </label>
+            ) : null}
+
+            <div className="rounded-lg border border-amber-800/50 bg-amber-950/20 p-4">
+              <p className="text-sm font-semibold text-amber-300">
+                Ciência — OAB opcional e limites de uso
+              </p>
+              <div className="mt-3 max-h-36 overflow-y-auto rounded border border-amber-900/40 bg-stone-950/40 p-2.5 text-[11px] leading-relaxed whitespace-pre-line text-stone-400">
+                {TEXTO_AVISO_OAB_OPCIONAL}
               </div>
-            )}
+              <label className="mt-3 flex items-start gap-2.5 text-xs text-stone-300">
+                <input
+                  type="checkbox"
+                  checked={termoAceito}
+                  onChange={(e) => setTermoAceito(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-stone-600 bg-stone-800 text-facto-gold focus:ring-facto-gold"
+                />
+                Li e concordo com o aviso acima e com os{" "}
+                <Link href="/termos" className="underline" target="_blank">
+                  Termos de Uso
+                </Link>
+                .
+              </label>
+            </div>
           </div>
 
           <button
             type="submit"
-            disabled={loading}
-            className="mt-6 w-full rounded-lg bg-facto-gold py-3 font-semibold text-facto-dark transition hover:bg-[#a39a78] disabled:opacity-50"
+            disabled={loading || !termoAceito}
+            className="mt-6 w-full rounded-lg bg-facto-gold py-3 text-sm font-semibold text-facto-dark transition hover:bg-facto-gold-light disabled:opacity-50"
           >
-            {loading ? "Cadastrando..." : "Criar conta"}
+            {loading ? "Criando conta…" : "Criar conta"}
           </button>
 
-          <p className="mt-6 text-center text-sm text-stone-400">
+          <p className="mt-4 text-center text-sm text-stone-500">
             Já tem conta?{" "}
-            <Link
-              href="/login"
-              className="font-medium text-facto-gold hover:text-[#a39a78]"
-            >
+            <Link href="/login" className="text-facto-gold hover:underline">
               Entrar
             </Link>
           </p>

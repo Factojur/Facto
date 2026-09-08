@@ -5,7 +5,7 @@
  * sem assinatura Mercado Pago.
  *
  * O que cada uma *vê* no produto:
- * - jec@facto.com → cliente Plano JEC / leigo (só Juizado)
+ * - jec@facto.com → cliente Plano Essencial / leigo (todas as áreas; persona leigo)
  * - factoassessoria.jur@gmail.com → cliente Plano Completo / advogado
  * - admin@facto.com → Completo / advogado + painel /admin
  */

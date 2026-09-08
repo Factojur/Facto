@@ -7,7 +7,9 @@ import type { CitacaoVerificada } from "@/lib/ia/verificacao-citacoes";
 import { MARCADOR_NAO_ENCONTRADO } from "@/lib/ia/verificacao-citacoes";
 import {
   ajustarEspecieCabivel,
+  especieEpigrafeSoNumeroProcesso,
   incidenteExecucaoJaAberto,
+  rotulosEpigrafePeca,
 } from "@/lib/peca-cabivel-autos";
 import {
   pecaUsaPartesJaQualificadas,
@@ -176,6 +178,36 @@ export function auditarPecaGerada(
     );
   }
 
+  if (inaugural && /DE\s+UMA\s+DAS\s+VARAS/i.test(head)) {
+    push(
+      achados,
+      "uma-das-varas",
+      "alerta",
+      "Endereçamento inaugural genérico",
+      "Use “DA ___ª VARA …” (distribuição ainda não ocorreu), não “DE UMA DAS VARAS”."
+    );
+  }
+
+  if (/\bDA\s+\d+\s+VARA\b/i.test(head) && !/\bDA\s+\d+ª\s+VARA\b/i.test(head)) {
+    push(
+      achados,
+      "ordinal-vara",
+      "alerta",
+      "Falta ordinal na vara",
+      "O endereçamento deve usar “1ª VARA” (com ª), não “1 VARA”."
+    );
+  }
+
+  if (/^[A-Z0-9]+(?:-[A-Z0-9]+)+$/m.test(tituloAparente(peca) ?? "")) {
+    push(
+      achados,
+      "titulo-slug",
+      "alerta",
+      "Nome da peça em formato de código",
+      "O título parece um id técnico (ex.: PETICAO-INICIAL). Use o nome forense da ação."
+    );
+  }
+
   if (/\[endere[cç]o do advogado\]/i.test(peca)) {
     push(
       achados,
@@ -305,25 +337,29 @@ export function auditarPecaGerada(
         "O nº informado na Identificação não aparece no cabeçalho da minuta."
       );
     }
-    const ativo = nomesAutoresCurto(params.autores);
-    const passivo = nomesReusCurto(params.reus);
-    if (ativo.length >= 3 && !headBlob.includes(blob(ativo).slice(0, 18))) {
-      push(
-        achados,
-        "epigrafe-ativo",
-        "info",
-        "Polo ativo pouco visível no cabeçalho",
-        "Confira se o nome da parte que você representa está na epígrafe."
-      );
-    }
-    if (passivo.length >= 3 && !headBlob.includes(blob(passivo).slice(0, 18))) {
-      push(
-        achados,
-        "epigrafe-passivo",
-        "info",
-        "Polo passivo pouco visível no cabeçalho",
-        "Confira se o adversário está nomeado na epígrafe."
-      );
+    const soNumero = especieEpigrafeSoNumeroProcesso(especie);
+    if (!soNumero) {
+      const rotulos = rotulosEpigrafePeca(areaId, especie, params.fatos);
+      const ativo = nomesAutoresCurto(params.autores);
+      const passivo = nomesReusCurto(params.reus);
+      if (ativo.length >= 3 && !headBlob.includes(blob(ativo).slice(0, 18))) {
+        push(
+          achados,
+          "epigrafe-ativo",
+          "info",
+          "Polo ativo pouco visível no cabeçalho",
+          `Confira se “${rotulos.ativo}: …” aparece na epígrafe.`
+        );
+      }
+      if (passivo.length >= 3 && !headBlob.includes(blob(passivo).slice(0, 18))) {
+        push(
+          achados,
+          "epigrafe-passivo",
+          "info",
+          "Polo passivo pouco visível no cabeçalho",
+          `Confira se “${rotulos.passivo}: …” aparece na epígrafe.`
+        );
+      }
     }
     if (
       especie &&

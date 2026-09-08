@@ -356,6 +356,8 @@ export function tituloPecaImobiliario(
       return "Agravo de Instrumento";
     case "cumprimento-sentenca":
       return "Cumprimento de Sentença";
+    case "peticao-inicial":
+      return String(tipoSugerido ?? "").trim() || "Petição Inicial";
     default:
       return String(tipoSugerido ?? "").trim();
   }

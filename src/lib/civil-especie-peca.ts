@@ -348,6 +348,8 @@ export function tituloPecaCivil(
       return "Cumprimento de Sentença";
     case "execucao-titulo":
       return "Execução de Título Extrajudicial";
+    case "peticao-inicial":
+      return String(tipoSugerido ?? "").trim() || "Petição Inicial";
     default:
       return String(tipoSugerido ?? "").trim();
   }

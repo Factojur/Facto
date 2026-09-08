@@ -11,7 +11,7 @@ export function rotuloBotaoPlanoTopbar(plano: PlanoId | null | undefined): {
   if (!plano || plano === "trial") {
     return { label: "Assinar plano", ehTrial: true };
   }
-  if (plano === "jec") return { label: "Plano JEC", ehTrial: false };
+  if (plano === "jec") return { label: "Plano Essencial", ehTrial: false };
   if (plano === "mensal" || plano === "anual") {
     return { label: "Plano Completo", ehTrial: false };
   }

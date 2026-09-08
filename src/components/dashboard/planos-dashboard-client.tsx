@@ -115,7 +115,7 @@ function ofertasParaPlano(
     return {
       titulo: "Faça upgrade",
       subtitulo:
-        "Você está no Plano JEC. Suba para Completo ou Pro e use o assistente em todas as áreas.",
+        "Você está no Plano Essencial. Suba para Completo ou Pro para mais peças e redator avançado com maior cota.",
       ofertas: [completo, pro],
     };
   }

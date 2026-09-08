@@ -3,7 +3,8 @@
  * usa o pool inteiro de contas (paga + grátis), queima a cota até 429,
  * atualiza o próximo lote e reindexa.
  *
- * Para 7 dias antes de `vencimento` (YYYY-MM-DD). Sem vencimento, segue até LOTE_MAX.
+ * Sem pausa por vencimento (−7d desconsiderado). Segue até LOTE_MAX / 429
+ * ou até Jefferson mandar parar.
  *
  * Uso: npm run seed:juris-diario
  */
@@ -22,20 +23,8 @@ type Estado = {
   proximoLote: number;
   ate: number;
   vencimento?: string | null;
+  nota?: string | null;
 };
-
-function hojeSp(): string {
-  return new Date().toLocaleDateString("en-CA", {
-    timeZone: "America/Sao_Paulo",
-  });
-}
-
-function menosDias(iso: string, dias: number): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  const dt = new Date(Date.UTC(y, m - 1, d));
-  dt.setUTCDate(dt.getUTCDate() - dias);
-  return dt.toISOString().slice(0, 10);
-}
 
 function lerEstado(): Estado {
   try {
@@ -44,6 +33,7 @@ function lerEstado(): Estado {
       proximoLote: Math.max(1, Number(j.proximoLote) || 1),
       ate: Math.min(LOTE_MAX, Number(j.ate) || LOTE_MAX),
       vencimento: j.vencimento || null,
+      nota: j.nota || null,
     };
   } catch {
     return { proximoLote: 84, ate: LOTE_MAX };
@@ -56,6 +46,7 @@ function gravarEstado(e: Estado) {
     ate: Math.min(LOTE_MAX, e.ate),
   };
   if (e.vencimento) out.vencimento = e.vencimento;
+  if (e.nota) out.nota = e.nota;
   writeFileSync(estadoPath, `${JSON.stringify(out, null, 2)}\n`, "utf8");
 }
 
@@ -63,7 +54,7 @@ const estado = lerEstado();
 const nContas = tokensDoPool().length;
 console.log(
   `[seed-diario] ${new Date().toISOString()} pool=${nContas} contas · lotes ${estado.proximoLote}–${LOTE_MAX}` +
-    (estado.vencimento ? ` · vencimento ${estado.vencimento}` : " · sem vencimento (não pausa a última semana)")
+    (estado.vencimento ? ` · vencimento (só referência) ${estado.vencimento}` : "")
 );
 if (!nContas) {
   console.error("Nenhuma chave JURISPRUDENCIAS_AI_API_KEY / _KEYS no .env.local");
@@ -75,18 +66,8 @@ if (nContas < 7) {
   );
 }
 
-if (estado.vencimento && /^\d{4}-\d{2}-\d{2}$/.test(estado.vencimento)) {
-  const corte = menosDias(estado.vencimento, 7);
-  if (hojeSp() >= corte) {
-    console.log(
-      `Pausa da última semana: hoje ${hojeSp()} ≥ ${corte} (vencimento ${estado.vencimento} − 7 dias). Seed automático parado. Complementar pontos fracos à mão.`
-    );
-    process.exit(0);
-  }
-}
-
 if (estado.proximoLote > LOTE_MAX) {
-  console.log("Fila de lotes esgotada. Monte a próxima série ou use a última semana da assinatura.");
+  console.log("Fila de lotes esgotada. Monte a próxima série.");
   process.exit(0);
 }
 
@@ -118,15 +99,15 @@ if (mCota?.[1]) {
   const loteParou = Number(mCota[1]);
   gravarEstado({ ...estado, proximoLote: loteParou, ate: LOTE_MAX });
   console.log(`Estado: próximo lote ${loteParou} (cota).`);
-} else if (faixaOk && faixa.status === 0) {
+} else if (faixaOk || faixa.status === 0) {
   gravarEstado({ ...estado, proximoLote: LOTE_MAX + 1, ate: LOTE_MAX });
   console.log(`Faixa até ${LOTE_MAX} ok.`);
-} else if (faixa.status === 0) {
-  gravarEstado({ ...estado, proximoLote: LOTE_MAX + 1, ate: LOTE_MAX });
-  console.log("Estado avançado.");
+} else {
+  console.error(`Faixa exit ${faixa.status ?? "?"}`);
+  process.exit(faixa.status ?? 1);
 }
 
-console.log("Reindex embeddings…");
+console.log("Reindex embeddings.");
 const reindex = spawnSync("npm", ["run", "reindex:embeddings"], {
   encoding: "utf8",
   cwd: process.cwd(),
@@ -136,6 +117,4 @@ const reindex = spawnSync("npm", ["run", "reindex:embeddings"], {
 });
 if (reindex.stdout) process.stdout.write(reindex.stdout);
 if (reindex.stderr) process.stderr.write(reindex.stderr);
-if (reindex.status && reindex.status !== 0) {
-  process.exit(reindex.status);
-}
+process.exit(reindex.status ?? 0);

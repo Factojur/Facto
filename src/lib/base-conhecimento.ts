@@ -17,6 +17,7 @@ import { expandirQueryLastro } from "@/lib/expansao-query-lastro";
 import {
   bonusAfinidadeTribunais,
   bonusAfinidadeUfComarca,
+  lastroTribunalEstadualAlheio,
 } from "@/lib/juris-provedores/tribunais-opcoes";
 import type { PoloAdvocacia } from "@/lib/polo-especies-por-area";
 
@@ -545,7 +546,7 @@ export type OpcoesBuscaConhecimento = {
   especie?: string | null;
   /** Até 3 tribunais escolhidos pelo usuário (prioridade sobre ufComarca). */
   tribunais?: string[];
-  /** UF da comarca — boost suave no TJ local; superiores mantidos. */
+  /** UF da comarca — TJ local + superiores/regionais; bloqueia TJ de outro Estado. */
   ufComarca?: string | null;
 };
 
@@ -734,6 +735,17 @@ export async function buscarConhecimentoRelacionado(
       if (lastroContrarioAoPolo(`${c.titulo}\n${c.texto}`, c.categoria, polo)) {
         continue;
       }
+      if (
+        lastroTribunalEstadualAlheio({
+          titulo: c.titulo,
+          categoria: c.categoria,
+          texto: c.texto,
+          tribunais: opcoes?.tribunais,
+          ufComarca: opcoes?.ufComarca,
+        })
+      ) {
+        continue;
+      }
       const k = `${c.categoria}|${c.titulo}|${c.texto.slice(0, 60)}`;
       if (vistos.has(k)) continue;
       const docKey = c.conhecimentoId ?? `titulo:${c.titulo}`;
@@ -777,7 +789,14 @@ export async function buscarConhecimentoRelacionado(
             `${x.item.titulo}\n${x.item.texto}`,
             x.item.categoria,
             polo
-          )
+          ) &&
+          !lastroTribunalEstadualAlheio({
+            titulo: x.item.titulo,
+            categoria: x.item.categoria,
+            texto: x.item.texto,
+            tribunais: opcoes?.tribunais,
+            ufComarca: opcoes?.ufComarca,
+          })
       )
       .sort((a, b) => b.score - a.score)
       .slice(0, limite)

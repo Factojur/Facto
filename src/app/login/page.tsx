@@ -9,6 +9,7 @@ import { SessaoOutraMaquinaDialog } from "@/components/auth/sessao-outra-maquina
 import { createClient } from "@/lib/supabase/client";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { PLANO_TRIAL } from "@/lib/planos-facto";
+import { irParaSecaoLanding } from "@/components/landing/landing-scroll";
 
 async function registrarSessaoAtiva(): Promise<{ ok: boolean; erro?: string }> {
   try {
@@ -220,8 +221,8 @@ function LoginForm() {
           {trialOk && (
             <div className="mb-4 rounded-lg border border-emerald-800/60 bg-emerald-950/40 px-4 py-3 text-sm text-emerald-200">
               Conta de teste criada. Entre com o e-mail e a senha — no dashboard,
-              abra o assistente e use suas {PLANO_TRIAL.pecasPorMes} peças na
-              área escolhida.
+              abra o assistente e use suas {PLANO_TRIAL.pecasPorMes} peças em
+              todas as áreas.
             </div>
           )}
 
@@ -229,9 +230,13 @@ function LoginForm() {
             <div className="mb-4 rounded-lg border border-amber-800/60 bg-amber-950/40 px-4 py-3 text-sm text-amber-200">
               Sua assinatura do FACTO expirou, foi cancelada ou esta conta não
               tem plano ativo. Renove ou pague um plano para continuar.{" "}
-              <Link href="/#precos" className="font-semibold underline">
+              <button
+                type="button"
+                className="font-semibold underline"
+                onClick={() => irParaSecaoLanding("precos")}
+              >
                 Ver planos
-              </Link>
+              </button>
             </div>
           )}
 

@@ -2,7 +2,8 @@
  * Roteador do Redator: Flash (padrão) vs Claude Sonnet (exceção).
  *
  * Tetos mensais (sobre a cota de peças do plano, sem extras):
- * - JEC / trial: 0%
+ * - trial: 0%
+ * - Essencial (jec): 10%
  * - Completo (mensal/anual): 20%
  * - Pro (mensal/anual) + escritórios: 26%
  *
@@ -18,6 +19,7 @@ import type { PlanoCota } from "@/lib/cota-pecas";
 import { limiteDoPlano } from "@/lib/cota-pecas";
 import { anthropicConfigurado } from "@/lib/ia/anthropic-client";
 
+export const TETO_SONNET_ESSENCIAL = 0.1;
 export const TETO_SONNET_COMPLETO = 0.2;
 export const TETO_SONNET_PRO = 0.26;
 export const LIMITE_CHARS_RELATO_SONNET = 5_500;
@@ -40,6 +42,7 @@ export type DecisaoRedator = {
 };
 
 export function fracaoTetoSonnet(plano: PlanoCota): number {
+  if (plano === "jec") return TETO_SONNET_ESSENCIAL;
   if (plano === "mensal" || plano === "anual") return TETO_SONNET_COMPLETO;
   if (
     plano === "pro" ||
@@ -131,7 +134,7 @@ export function decidirRedatorSonnet(opcoes: {
       motivo: null,
       tetoMes,
       sonnetUsadas,
-      detalhe: "Plano sem Sonnet (JEC/trial).",
+      detalhe: "Plano sem Sonnet (trial).",
     };
   }
 

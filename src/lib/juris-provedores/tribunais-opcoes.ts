@@ -149,7 +149,7 @@ function blobTribunal(partes: (string | undefined)[]): string {
     .replace(/\p{M}/gu, "");
 }
 
-/** Lê STF/STJ/TST/TSE/TJXX no título, categoria ou início da ementa. */
+/** Lê STF/STJ/TST/TSE/TRF/TRT/TJXX no título, categoria ou início da ementa. */
 export function inferirSlugTribunalDoTexto(
   titulo: string,
   categoria?: string,
@@ -161,6 +161,12 @@ export function inferirSlugTribunalDoTexto(
   if (/\bstj\b|superior tribunal de justica/.test(t)) return "stj";
   if (/\btst\b|tribunal superior do trabalho/.test(t)) return "tst";
   if (/\btse\b|tribunal superior eleitoral/.test(t)) return "tse";
+  const trf = t.match(/\btrf\s*([1-6])\b|tribunal regional federal\s*(?:da\s*)?(\d)/);
+  if (trf) return `trf${trf[1] || trf[2]}`;
+  if (/\btrf\b|tribunal regional federal/.test(t)) return "trf";
+  const trt = t.match(/\btrt\s*-?\s*(\d{1,2})\b|tribunal regional do trabalho\s*(?:da\s*)?(\d{1,2})/);
+  if (trt) return `trt${trt[1] || trt[2]}`;
+  if (/\btrt\b|tribunal regional do trabalho/.test(t)) return "trt";
   for (const op of TRIBUNAIS_ESTADUAIS) {
     const uf = (op.uf ?? "").toLowerCase();
     const re = new RegExp(
@@ -172,9 +178,54 @@ export function inferirSlugTribunalDoTexto(
   return null;
 }
 
+/** Superiores e regionais federais/trabalhistas — não são “TJ de outro Estado”. */
+export function tribunalEhNacionalOuRegional(slug: string | null): boolean {
+  if (!slug) return false;
+  const s = slug.toLowerCase();
+  if (IDS_SUPERIORES.has(s)) return true;
+  if (s === "trf" || s === "trt") return true;
+  if (/^trf[1-6]$/.test(s)) return true;
+  if (/^trt\d{1,2}$/.test(s)) return true;
+  return false;
+}
+
+/**
+ * TJ estadual de UF diferente do foro / da seleção — não entra no lastro.
+ * Sem UF e sem TJ selecionado: não descarta (não dá para saber o Estado).
+ */
+export function lastroTribunalEstadualAlheio(opcoes: {
+  titulo: string;
+  categoria?: string;
+  texto?: string;
+  tribunais?: string[] | null;
+  ufComarca?: string | null;
+}): boolean {
+  const slug = inferirSlugTribunalDoTexto(
+    opcoes.titulo,
+    opcoes.categoria,
+    opcoes.texto
+  );
+  if (!slug || !slug.startsWith("tj")) return false;
+  if (tribunalEhNacionalOuRegional(slug)) return false;
+
+  const ids = (opcoes.tribunais ?? [])
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  const tjsSelecionados = ids.filter((id) => id.startsWith("tj"));
+  if (tjsSelecionados.length > 0) {
+    return !tjsSelecionados.includes(slug);
+  }
+
+  const tjLocal = tjPorUf(opcoes.ufComarca);
+  if (tjLocal) {
+    return slug !== tjLocal.id;
+  }
+  return false;
+}
+
 /**
  * Preferência pelos tribunais que o usuário marcou.
- * Slug na seleção sobe; outro TJ desce. Sem metadado = 0.
+ * Slug na seleção sobe; TJ alheio desce forte. Sem metadado = 0.
  * Súmula: sobe se o tribunal da súmula estiver marcado; sem slug, se houver superior.
  */
 export function bonusAfinidadeTribunais(opcoes: {
@@ -194,6 +245,7 @@ export function bonusAfinidadeTribunais(opcoes: {
   const querSuperior = selecionouSuperior(ids);
   if (cat.includes("sumula")) {
     if (slug && ids.includes(slug)) return 8;
+    if (slug && tribunalEhNacionalOuRegional(slug) && querSuperior) return 5;
     return querSuperior ? 5 : -4;
   }
   if (cat.includes("lei") && !cat.includes("juris")) {
@@ -201,12 +253,14 @@ export function bonusAfinidadeTribunais(opcoes: {
   }
   if (!slug) return 0;
   if (ids.includes(slug)) return 12;
+  if (tribunalEhNacionalOuRegional(slug) && querSuperior) return 6;
+  if (slug.startsWith("tj")) return -40;
   return -8;
 }
 
 /**
- * Boost suave pelo TJ da UF da comarca — superiores nunca são penalizados.
- * Usado quando o usuário ainda não escolheu tribunais manualmente.
+ * Boost pelo TJ da UF da comarca — superiores/TRF/TRT nunca são penalizados.
+ * TJ de outro Estado: penalidade forte (o retrieve ainda aplica hard-drop).
  */
 export function bonusAfinidadeUfComarca(opcoes: {
   titulo: string;
@@ -224,13 +278,13 @@ export function bonusAfinidadeUfComarca(opcoes: {
   );
   if (cat.includes("sumula")) {
     if (slug && slug === tj.id) return 6;
-    if (slug && IDS_SUPERIORES.has(slug)) return 4;
+    if (slug && tribunalEhNacionalOuRegional(slug)) return 4;
     return 2;
   }
   if (!slug) return 0;
-  if (IDS_SUPERIORES.has(slug)) return 3;
+  if (tribunalEhNacionalOuRegional(slug)) return 3;
   if (slug === tj.id) return 10;
-  if (slug.startsWith("tj")) return -3;
+  if (slug.startsWith("tj")) return -40;
   return 0;
 }
 

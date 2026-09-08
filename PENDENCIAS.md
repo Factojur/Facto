@@ -17,6 +17,55 @@ Ordem fechada — **não inverter**:
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
 
+### Feito nesta rodada (08/09 — deploy Essencial + landing)
+
+- [x] **Deploy** — commit + push `main` · aguardar Vercel Ready · [factoia.com.br](https://factoia.com.br)
+
+### Feito nesta rodada (08/09 — landing URL + planos)
+
+- [x] Nav/CTAs rolam sem `#beneficios` / `#precos` na barra (URL limpa `factoia.com.br`)
+- [x] Copy planos (Essencial/Completo/Pro/trial) sem “1 área” / sem “Plano JEC” no rótulo
+- **Deploy** necessário para o site público refletir (produção ainda pode estar na versão antiga)
+- Em andamento (próximo): biblioteca de modelos no Tom + pergunta opt-in no chat (Fiel já enfraquecido)
+
+### Feito nesta rodada (08/09 — landing AIDA)
+
+- [x] **Landing** — hero mantém copy da marca (INTELIGÊNCIA JURÍDICA + headline); Interest/Desire alinhados ao produto; **planos** estáveis (alteração depois)
+
+### Feito nesta rodada (08/09 — Essencial + trial + OAB)
+
+- [x] **Plano Essencial** — rótulo comercial (id interno `jec`); 30 peças/mês; Sonnet **10%**; todas as áreas
+- [x] **Acesso** — qualquer plano ativo → `"todas"` (sem gate leigo→só JEC)
+- [x] **Trial** — todas as áreas; Flash; Word/PDF bloqueados; Copiar permanece (sem empurrar na copy)
+- [x] **OAB** — opcional; aviso genérico `v2-oab-opcional`; Termos atualizados (08/09)
+- Landing/topbar/planos/onboarding Google sem seletor de área; testes `testar-acesso-contas` + `testar-roteador-sonnet`
+
+### Feito nesta rodada (08/09 — lastro UF + ementa integral)
+
+- [x] **Lastro por Estado** — hard-drop de TJ alheio à UF do foro; STF/STJ/TST/TSE/TRF/TRT ok; UF passa no reforço/RAG por tópico
+- [x] **Citação ipsis litteris** — prompt: ementa/súmula **integral** em `[[JURIS]]`; cabimento só no corpo
+- Teste: `scripts/testar-lastro-tribunal-uf.ts`
+
+### Feito nesta rodada (08/09 — auditor + tipografia + E2E + seed 01h)
+
+- [x] **Auditor/prompts** — rótulos de epígrafe por espécie; petições curtas sem polos; alertas ordinal `1ª`, slug `PETICAO-INICIAL`, “UMA DAS VARAS”
+- [x] **Higiene tipográfica** — asteriscos órfãos reforçados; checklist pós-S1 (slug/ordinal)
+- [x] **E2E 2 casos** — [`testes-e2e-08-09/`](./testes-e2e-08-09/) HC criminal + consumidor (txt/pdf/docx)
+- [x] **Seed 01h** — regra **−7d removida de vez** (só referência de vencimento); segue até fila/cota ou ordem de parar; retomado manual 904→1500
+
+### Feito nesta rodada (08/09 — epígrafe fina + bugs E2E)
+
+- [x] **Epígrafe fina** — rótulos HC/MS/queixa/resposta/AIJE; petições curtas (`memorial`, `manifestacao`…) só com Processo nº
+- [x] **JEC** — incidental `DA 1ª VARA` (faltava ordinal)
+- [x] **Título** — `peticao-inicial` sem tipo → “Petição Inicial” (não vaza slug `PETICAO-INICIAL`)
+- Testes: `testar-peca-cabivel-autos.ts` 60 ok
+
+### Feito nesta rodada (08/09 — scorecard pós-S1)
+
+- [x] **Scorecard 08/09** — Iteração **8,9** · Lastro **7,6** · Formato **8,6** · Preço **8,0** · Gestão **7,2** · média **≈ 8,06** vs MinutaIA **≈ 6,80** (+1,26)
+- [x] Canvas `facto-vs-minutaia-scorecard.canvas.tsx` alinhado
+- Formato sobe com tipografia/___ª VARA/assinatura/inaugurais + E2E 186; lastro +0,1 (faixa 846–903)
+
 ### Feito nesta rodada (07/09 — deploy S1 Ready)
 
 - [x] **Deploy Ready** — `7615fb8` · `dpl_2513bqZdo5VYD2KMd1X8pG75iNGw` · [factoia.com.br](https://factoia.com.br)
@@ -103,9 +152,34 @@ Duas simulações reais em [factoia.com.br/dashboard](https://factoia.com.br/das
 - [x] **Chips** — copy sem `**`; a11y (`aria-pressed`/`aria-label`); chip Auditor 1-click pós-peça
 - [x] **E2E browser** — 2 peças geradas em prod (trabalhista + JEC); achados acima
 - [x] **S2 seed 846→903** — faixa 07/09: inserts ok; cota Juris esgotou no **904**; `proximoLote` **904** / `ate` **1500** · reindex parcial **+238** (+396 no reindex anterior, Gemini SEED ainda 429 residual)
-- [ ] **S2 retoma** — amanhã `npx tsx scripts/seed-juris-ai-faixa.ts 904 1500` + `reindex:embeddings` quando Gemini SEED liberar
+- [ ] **S2 retoma** — `npx tsx scripts/seed-juris-ai-faixa.ts 904 1500` + `reindex:embeddings` quando Gemini SEED liberar
 - [ ] **S3 smoke lastro** — após embeddings
-- Deploy (S1) / compra MP (S7) / 2ª API (S8): aguardam Jefferson
+- Compra MP (S7) / 2ª API (S8): aguardam Jefferson
+
+### Scorecard FACTO vs MinutaIA (08/09 — S1 tipografia + seed 846–903)
+
+| Critério | MinutaIA | FACTO 06/09 | FACTO 08/09 | Δ vs Minuta |
+|----------|----------|-------------|-------------|-------------|
+| Iteração (chat, fluidez, preview) | 9,0 | 8,9 | **8,9** | −0,1 |
+| Lastro / fundamentação | 7,0 | 7,5 | **7,6** | **+0,6** |
+| Formato forense e entrega | 6,0 | 8,2 | **8,6** | **+2,6** |
+| Preço / custo por peça | 5,0 | 8,0 | **8,0** | +3,0 |
+| Gestão + continuidade | 7,0 | 7,2 | **7,2** | +0,2 |
+
+**O que subiu (08/09):**
+- **Formato +0,4** — `DA ___ª VARA`; assinatura determinística; JURIS truncado; rodapé só nº; inaugurais por área (reclamação/queixa/MS…); E2E 186 espécies; S1 Ready em prod.
+- **Lastro +0,1** — faixa **846–903** inserida; fila **904→1500**.
+
+**Ainda melhorar (fila):**
+1. **P0** Seed **904→1500** + reindex · smoke lastro 20 áreas · diário 01h **sem pausa −7d** (só para quando você mandar)  
+2. **P0** Compra **MP** ponta a ponta (bloqueio comercial)  
+3. **P1** 2ª API juris (TRE/TSE + TJs/TRFs ausentes) — só com ok  
+4. [x] **P1** Epígrafe fina (rótulos raros; petições curtas só com nº) + JEC `1ª` + anti-slug título  
+5. [x] **P2** Auditor/prompts + higiene tipográfica + E2E 08/09 (2 casos) — ABNT pixel residual / tokens Flash ficam abertos
+
+**Generalista (pesos iguais):** FACTO **≈ 8,06** vs MinutaIA **≈ 6,80** (**+1,26**).
+
+Canvas: scorecard Cursor `facto-vs-minutaia-scorecard.canvas.tsx` (atualizar junto).
 
 ### Feito nesta rodada (06/09 — scorecard + juris + próximos)
 
@@ -115,6 +189,32 @@ Duas simulações reais em [factoia.com.br/dashboard](https://factoia.com.br/das
 - [x] Skins aprofundadas (sem 7ª) · chips esclarecimento · ABNT citação NBR 10520 · remédio sem autoridade local
 - Próximo sistema (sem custo): deploy se local ≠ prod · smoke lastro · ABNT fino · foro capa · polish chips
 - Ops: meia-noite / renovar Juris.ai → retomar **846→1500**; depois **2ª API** (TRE/TSE + TJs/TRFs ausentes)
+
+### Scorecard FACTO vs MinutaIA (06/09 — chips + ABNT citação + seed 789–845)
+
+| Critério | MinutaIA | FACTO 04/09 | FACTO 06/09 | Δ vs Minuta |
+|----------|----------|-------------|-------------|-------------|
+| Iteração (chat, fluidez, preview) | 9,0 | 8,7 | **8,9** | −0,1 |
+| Lastro / fundamentação | 7,0 | 7,3 | **7,5** | **+0,5** |
+| Formato forense e entrega | 6,0 | 8,0 | **8,2** | **+2,2** |
+| Preço / custo por peça | 5,0 | 8,0 | **8,0** | +3,0 |
+| Gestão + continuidade | 7,0 | 7,2 | **7,2** | +0,2 |
+
+**O que subiu (06/09):**
+- **Iteração +0,2** — chips de esclarecimento (peça/polo, soft); ajuste 1-click pós-peça; remédio sem autoridade local forçada; skins/Maestro/Auditor aprofundados.
+- **Lastro +0,2** — reforço 789–824 (STF/STJ eleitoral proxy, prev/trab/trib/digital) + volume 825–845; retrieve já estruturado (04/09).
+- **Formato +0,2** — citação longa NBR 10520 (10pt / 4 cm / entrelinha 1) + A4 NBR 14724; `test:formatacao-pagina-abnt`.
+
+**Ainda frágil / ops:**
+- **Eleitoral** estruturalmente fraco (sem TRE/TSE na API) — só espelho STJ.
+- **17 TJs + TRF1/2/5/6 + TNU + STM** fora do Juris.ai → lastro regional/federal fino nesses foros.
+- Volume: fila **846→1500** + meta **100k**; 2ª API pós-renovação.
+- ABNT **fino** (pixel-perfect) e foro capa residual.
+- Iteração −0,1 vs MinutaIA (fluidez “nativa”).
+
+**Generalista (pesos iguais):** FACTO **≈ 7,96** vs MinutaIA **≈ 6,80** (**+1,16**).
+
+Canvas: scorecard Cursor `facto-vs-minutaia-scorecard.canvas.tsx` (atualizar junto).
 
 ### Feito nesta rodada (06/09 — lotes 789–1500 + madrugada)
 
@@ -129,13 +229,37 @@ Duas simulações reais em [factoia.com.br/dashboard](https://factoia.com.br/das
 | # | Item | Custo | Status |
 |---|------|-------|--------|
 | S1 | **Deploy** fatia tipografia/___ª VARA/assinatura/inaugurais | — | **Feito** `7615fb8` · `dpl_2513bqZdo5VYD2KMd1X8pG75iNGw` Ready |
-| S2 | **Seed 846→1500** + reindex | cota Juris.ai / Gemini SEED | Em curso — Gemini 429 hoje de manhã |
+| S2 | **Seed 846→1500** + reindex | cota Juris.ai / Gemini SEED | Em curso — `proximoLote` **904** |
 | S3 | **Smoke lastro** 20 áreas | Gemini SEED | Após embeddings |
 | S4 | **ABNT fino** preview≡PDF | — | **Feito** 07/09 |
 | S5 | **Foro/capa** residual | — | **Feito** 07/09 |
 | S6 | **Chips** polish UX | — | **Feito** 07/09 |
 | S7 | **Compra MP** ponta a ponta | — | Jefferson |
 | S8 | **2ª API juris** TRE/TSE + gaps | assinatura | Só com ok (C3) |
+
+### Scorecard FACTO vs MinutaIA (04/09 — tipografia + fluidez + lastro profundidade + fatia 2)
+
+| Critério | MinutaIA | FACTO 02/09 noite | FACTO 04/09 | Δ vs Minuta |
+|----------|----------|-------------------|-------------|-------------|
+| Iteração (chat, fluidez, preview) | 9,0 | 8,3 | **8,7** | −0,3 |
+| Lastro / fundamentação | 7,0 | 6,9 | **7,3** | **+0,3** |
+| Formato forense e entrega | 6,0 | 5,8 | **8,0** | **+2,0** |
+| Preço / custo por peça | 5,0 | 8,0 | **8,0** | +3,0 |
+| Gestão + continuidade | 7,0 | 7,2 | **7,2** | +0,2 |
+
+**O que subiu (04/09):**
+- **Iteração +0,4** — stream com caret; typing até 1º token; Plano ao montar; chat = porta; copy comercial alinhada.
+- **Lastro +0,4** — inspector fontes; ementa↔CNJ; ENCAIXE/LASTRO no Redator; RAG por tópico com re-rank; diversidade retrieve; juris anexada na Pesquisa.
+- **Formato +2,2** (vs noite 02/09) — tipografia fina; fidelidade filha/filho; comarca editável; Sonnet; fechamento/Auditor; preview≡export.
+
+**Ainda abaixo / ops (histórico 04/09):**
+- Iteração −0,3 vs MinutaIA (fluidez “nativa” residual).
+- Lastro: **volume** (100k + 2ª API) — código já usa melhor o acervo atual; não inventa julgado.
+- ABNT **fino** residual; **grosso** fechado 04/09.
+
+**Generalista (pesos iguais):** FACTO **≈ 7,84** vs MinutaIA **≈ 6,80** (**+1,04**).
+
+Canvas: `canvases/facto-vs-minutaia-scorecard.canvas.tsx`.
 
 ### Feito nesta rodada (04/09 — deploy calibração+ABNT)
 
@@ -1273,7 +1397,7 @@ Retomar: `npm run seed:juris-diario` (na próxima cota) ou `npx tsx scripts/seed
 
 **18/08 (noite):** pack imobiliário 149/157/165/173 e demais queries com lei/número ainda na fila 150+ foram enxugadas (lei/número zera a API). A partir de **201**: lacunas (STF constitucional, TRF prev, TST, CARF, retomas) **antes** do volume 10 TJs; **+10 packs vitrine** (JEC/digital/médico/JECR/amb/trab/fam/prev) após ~227.
 
-**Vencimento Jurisprudências.ai: 13/09/2026.** Pausa automática a partir de **06/09** (última semana para pontos fracos). Inflação: madrugadas até **05/09**.
+**Vencimento Jurisprudências.ai: 13/09/2026** (referência). **Pausa −7d desligada (08/09)** — diário 01h segue até a fila/cota ou ordem de parar.
 
 Fila: lotes **329–683**. Cada madrugada usa as **7 contas** até 429 e reindexa.
 
@@ -1355,7 +1479,7 @@ Checklist **por área** antes de considerar área “fechada” para cliente exi
 4. **Prazos** no Assistente/checklist (alertar, não protocolar).
 5. Polo/qualificação do rito (reclamante, querelante, impetrante, executado…).
 6. Prompt + fundamentação (leis/códigos da área) + lastro no tribunal certo.
-7. Gate: Completo/Pro + OAB; leigo continua só JEC.
+7. Gate de áreas: qualquer plano ativo libera todas; diferenças = cota, Sonnet e export (trial).
 8. Casos-ouro da área com endereçamento **real**.
 
 ### Recursos aos tribunais superiores (16/08) — **não implementar agora**
@@ -1373,7 +1497,7 @@ O detector de “nome da ação” hoje não trata REsp/RE/RR — se gerar sem i
 
 Fonte viva também em `src/lib/abertura-areas.ts`. Trabalhar **uma de cada vez**; o compartilhado já está no contrato da minuta.
 
-**Catálogo (16/08):** áreas com rota próprias `available: true` (Completo/Pro + OAB). **Contratual** saiu da grade; teaser **Contratos — em breve** na home. Litígio de contrato: Civil. Plano JEC e leigo: só JEC. Eleitoral aberto; lastro TRE/TSE depois (Datajud ou manual).
+**Catálogo (16/08):** áreas com rota próprias `available: true`. **Contratual** saiu da grade; teaser **Contratos — em breve** na home. Litígio de contrato: Civil. **(08/09)** Qualquer plano ativo (Essencial incluso) libera todas as áreas; Eleitoral aberto; lastro TRE/TSE depois (Datajud ou manual).
 
 **Preview interno** ainda existe em `/dashboard/preview/<id>` para e-mails admin.
 
@@ -1615,7 +1739,7 @@ Contribuição média (sem fixo): receita − IA − MP ≈ **R$ 3.476** (~70%).
 
 Nome interno do pacote alinhado em 12/08. **Código da leva B/E/G/H/I/J/N no repo (14/08).** A só quando avisar “vou começar a vender”.  
 Rodar no SQL Editor: `supabase/migration-extras-analises.sql`. Completo Anual **permanece R$ 1.890** (link MP já está nesse valor).  
-Posicionamento: **JEC = leigo/sem OAB**; motor de caixa = **Completo + Pro** (advogados).
+Posicionamento **(08/09):** entrada = **Essencial** (todas as áreas, 30 peças, Sonnet 10%); motor de caixa = **Completo + Pro** (mais cota / Sonnet). OAB opcional.
 
 **Lembrete A:** quando o usuário disser que vai **começar a vender**, lembrar de assinar **Supabase Pro** (e confirmar Gemini paygo / Resend / MP).
 

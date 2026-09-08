@@ -19,20 +19,17 @@ Não muda a minuta sozinho. Alimenta a base que a Pesquisa usa.
 - Agenda sugerida: **22h** testes · **01h** juris · **04h** súmulas (folga Gemini após o juris).
 - Pool: **sempre as 7 contas** (`JURISPRUDENCIAS_AI_API_KEY` + `JURISPRUDENCIAS_AI_API_KEYS`). Round-robin; abortar lote só se **todas** responderem 429.
 - O diário queima do `proximoLote` até `LOTE_MAX` ou 429 (não corta em 16 lotes). `npx --yes` para não travar à noite.
-- `vencimento` (YYYY-MM-DD) no estado: pausa 7 dias antes. Sem data, não pausa.
+- **Sem pausa −7d:** `vencimento` no estado é só referência; o diário segue até a fila/cota ou até Jefferson mandar parar.
 - Parou no 429: retomar **do lote que falhou**.
 - Depois de cada dia: o diário já chama `reindex:embeddings`.
 - API: `stf stj tst trf3 trf4 tjce tjgo tjma tjmg tjmt tjpr tjrj tjrs tjsc tjsp carf`. Sem TSE, TRE, TRF1/2/5/6, TNU.
 
-## Estado (06/09 noite)
+## Estado (08/09)
 
-- **789–824** reforço + **825–845** volume baixados; cota esgotou no **846**.
-- Estado: `proximoLote` **846**, `ate` **1500**, vencimento **2026-09-13**.
-- Volume 825+ = `pub_from` 2023 (3 anos); reforço 789–824 = 2021 (5 anos).
-- Diário **01h** pausa na janela −7d do vencimento; após renovar Juris.ai (ou se cota diária voltar): PC ligado → retoma do **846**.
+- `proximoLote` **904**, `ate` **1500**, vencimento **2026-09-13** (só referência).
+- 07/09 manual: **846–903** ok; cota no **904**.
+- Regra −7d **desligada** (08/09): diário 01h segue normalmente.
 - Lacunas estruturais: **Eleitoral** (sem TRE/TSE), 17 TJs + TRF1/2/5/6 + TNU + STM fora da API.
-- Súmulas 04h segue. API: `stf stj tst trf3 trf4 tjce tjgo tjma tjmg tjmt tjpr tjrj tjrs tjsc tjsp carf`.
-- Pós-renovação: 2ª fonte para TJs/TRFs/TRE/TSE fora da API (não scrape cego no produto).
 
 ## Produto vs seed
 

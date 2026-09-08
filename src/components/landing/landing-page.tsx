@@ -3,7 +3,16 @@ import { FactoLogo } from "@/components/brand/facto-logo";
 import { LandingHeroAtmosphere } from "@/components/landing/landing-hero-atmosphere";
 import { LandingHeroWatermark } from "@/components/landing/landing-hero-watermark";
 import { LandingPrecos } from "@/components/landing/landing-precos";
+import {
+  LandingScrollHome,
+  LandingSecaoLink,
+} from "@/components/landing/landing-scroll";
 import { PLANO_TRIAL } from "@/lib/planos-facto";
+
+/**
+ * Landing comercial — fluxo AIDA:
+ * Attention (hero) → Interest (por quê) → Desire (como + desejo) → Action (planos/CTA).
+ */
 
 function IconeRelogio({ className }: { className?: string }) {
   return (
@@ -33,80 +42,92 @@ function IconeDocumento({ className }: { className?: string }) {
   );
 }
 
-function IconeCadeado({ className }: { className?: string }) {
+function IconeTom({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
-      <rect x="5" y="11" width="14" height="9" rx="2" />
-      <path d="M8 11V8a4 4 0 018 0v3" strokeLinecap="round" />
+      <path d="M4 19V5h10v14H4z" strokeLinejoin="round" />
+      <path d="M14 8h6v11h-6" strokeLinejoin="round" />
+      <path d="M7 9h4M7 13h4M7 17h2" strokeLinecap="round" />
     </svg>
   );
 }
 
+/** Interest — benefícios que prendem a atenção no problema real do advogado. */
 const BENEFICIOS = [
   {
     icone: IconeRelogio,
-    titulo: "Economize horas de trabalho",
+    titulo: "Sai da página em branco",
     texto:
-      "Conte o caso no assistente — o FACTO estrutura fundamentos, pedidos e narrativa em minutos, prontos para revisão.",
+      "Você narra o caso. O FACTO monta o plano e a minuta — você revisa e protocola, em vez de reescrever a peça do zero.",
   },
   {
     icone: IconeBalanca,
-    titulo: "Fundamentos com lastro",
+    titulo: "Lastro que dá segurança",
     texto:
-      "Súmulas e julgados da base FACTO ou upload de sua preferência; o que não tiver lastro não é inventado.",
+      "Súmulas e julgados da base FACTO (ou os que você anexa). O que não tem lastro não é inventado para “parecer jurídico”.",
+  },
+  {
+    icone: IconeTom,
+    titulo: "Tom do escritório (parâmetro)",
+    texto:
+      "Preferência de tom e forma — nunca trava a IA. Você decide quando usar; o rito e os autos prevalecem.",
   },
   {
     icone: IconeDocumento,
-    titulo: "Padrão forense",
+    titulo: "Pronta para revisar e baixar",
     texto:
-      "Peças em Word ou PDF no padrão do escritório; revise tipografia e detalhes do caso antes de protocolar.",
-  },
-  {
-    icone: IconeCadeado,
-    titulo: "Seus dados, sua confidencialidade",
-    texto:
-      "Ambiente privado para tratar o caso. O FACTO não armazena a peça gerada: baixe o Word ou PDF e guarde na sua pasta ou nuvem — a preservação é sua.",
+      "Word ou PDF no padrão forense. A caneta final é sua; o FACTO acelera o caminho até o protocolo.",
   },
 ] as const;
 
+/** Desire — jornada que torna o resultado desejável e concreto. */
 const PASSOS = [
   {
     passo: "01",
-    titulo: "Conte o caso no assistente",
+    titulo: "Conte o caso uma vez",
     texto:
-      "Linguagem natural, PDF ou Word. O FACTO organiza fatos, partes e rito e monta o plano do caso — sem consumir cota. A peça completa só no Minuta (1 crédito).",
+      "Chat, PDF ou Word. O assistente organiza fatos, partes e rito e mostra o plano do caso — sem gastar cota de peça.",
   },
   {
     passo: "02",
-    titulo: "A equipe FACTO redige com lastro",
+    titulo: "Confirme e a equipe redige",
     texto:
-      "Você confirma a redação (1 peça). Analista, Pesquisa e Redator estruturam a minuta com súmulas da base curada — pronta para revisão.",
+      "Na Minuta (1 crédito), Analista, Pesquisa e Redator estruturam a peça com lastro da base — no tom do seu perfil, se você quiser.",
   },
   {
     passo: "03",
-    titulo: "Revise, baixe e protocole",
+    titulo: "Revise, exporte, protocole",
     texto:
-      "Exporte em Word ou PDF, ajuste o que for do caso concreto e protocole. O FACTO acelera a redação; a caneta final continua sendo sua.",
+      "Ajuste o concreto do caso, baixe Word ou PDF e protocole fora do FACTO. Rápido o suficiente para o prazo; sério o suficiente para o juízo.",
   },
 ] as const;
 
 export function LandingPage() {
   return (
     <div className="relative bg-facto-dark">
-      {/* Header */}
+      <LandingScrollHome />
       <header className="sticky top-0 z-30 border-b border-white/10 bg-facto-dark/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 md:px-10">
           <FactoLogo variant="horizontal" size="sm" />
           <nav className="hidden items-center gap-8 text-sm font-medium text-stone-300 md:flex">
-            <a href="#beneficios" className="transition hover:text-white">
+            <LandingSecaoLink
+              secaoId="beneficios"
+              className="transition hover:text-white"
+            >
               Por que o FACTO
-            </a>
-            <a href="#como-funciona" className="transition hover:text-white">
+            </LandingSecaoLink>
+            <LandingSecaoLink
+              secaoId="como-funciona"
+              className="transition hover:text-white"
+            >
               Como funciona
-            </a>
-            <a href="#precos" className="transition hover:text-white">
-              Preços
-            </a>
+            </LandingSecaoLink>
+            <LandingSecaoLink
+              secaoId="precos"
+              className="transition hover:text-white"
+            >
+              Planos
+            </LandingSecaoLink>
           </nav>
           <div className="flex items-center gap-3">
             <Link
@@ -126,7 +147,7 @@ export function LandingPage() {
       </header>
 
       <main>
-        {/* Hero */}
+        {/* A — Attention */}
         <section className="relative overflow-hidden px-6 pb-20 pt-16 md:px-10 md:pb-28 md:pt-24">
           <div
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(144,139,106,0.18),transparent_60%)]"
@@ -158,22 +179,22 @@ export function LandingPage() {
                 >
                   Teste grátis · 7 dias
                 </Link>
-                <a
-                  href="#precos"
+                <LandingSecaoLink
+                  secaoId="precos"
                   className="rounded-lg border border-white/15 px-8 py-3.5 font-semibold text-white transition hover:border-facto-gold/50 hover:bg-white/5"
                 >
                   Ver planos
-                </a>
+                </LandingSecaoLink>
               </div>
               <p className="max-w-md text-center text-xs leading-relaxed text-stone-500">
-                Teste: 1 área e {PLANO_TRIAL.pecasPorMes} peças · plano do caso
-                incluso. Export Word/PDF nos planos pagos.
+                Teste: todas as áreas · {PLANO_TRIAL.pecasPorMes} peças · plano do
+                caso incluso. Export Word/PDF nos planos pagos.
               </p>
             </div>
           </div>
         </section>
 
-        {/* Benefícios */}
+        {/* I — Interest */}
         <section id="beneficios" className="relative px-6 py-20 md:px-10">
           <div className="mx-auto max-w-7xl">
             <div className="mx-auto max-w-2xl text-center">
@@ -181,8 +202,13 @@ export function LandingPage() {
                 Por que o FACTO
               </p>
               <h2 className="mt-3 text-3xl font-bold text-white md:text-4xl">
-                Tecnologia a serviço da sua advocacia
+                Assistente, lastro e o tom da sua bancada
               </h2>
+              <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-stone-500 md:text-base">
+                O FACTO não substitui o advogado: organiza o caso, fundamenta
+                com a base curada e redige a minuta para você revisar — com
+                liberdade da IA e o estilo do escritório só como parâmetro.
+              </p>
             </div>
 
             <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -204,7 +230,7 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* Como funciona */}
+        {/* D — Desire */}
         <section id="como-funciona" className="relative px-6 py-20 md:px-10">
           <div className="mx-auto max-w-7xl rounded-2xl border border-white/10 bg-white/[0.03] p-8 md:p-12">
             <div className="mx-auto max-w-2xl text-center">
@@ -233,13 +259,25 @@ export function LandingPage() {
                 </div>
               ))}
             </div>
+
+            <div className="mt-12 flex flex-col items-center gap-3 border-t border-white/10 pt-10 text-center">
+              <p className="max-w-lg text-sm text-stone-400 md:text-base">
+                Pronto para experimentar no seu próximo caso?
+              </p>
+              <Link
+                href="/trial"
+                className="rounded-lg bg-facto-gold px-7 py-3 text-sm font-semibold text-facto-dark transition hover:bg-[#a39a78]"
+              >
+                Teste grátis · 7 dias
+              </Link>
+            </div>
           </div>
         </section>
 
+        {/* A — Action */}
         <LandingPrecos />
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-white/10 px-6 py-10 md:px-10">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
           <FactoLogo variant="horizontal" size="sm" />
@@ -249,6 +287,9 @@ export function LandingPage() {
             </Link>
             <Link href="/termos" className="hover:text-stone-300">
               Termos de uso
+            </Link>
+            <Link href="/trial" className="hover:text-stone-300">
+              Teste grátis
             </Link>
           </nav>
           <p className="text-xs text-stone-600">

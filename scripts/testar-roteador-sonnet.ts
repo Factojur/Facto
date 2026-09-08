@@ -26,12 +26,23 @@ async function main() {
   assert(!especieExigeSonnet("peticao-inicial"), "inicial JEC não exige Sonnet");
   assert(areaDensaSonnet("familia"), "família é área densa");
 
-  const flash = decidirRedatorSonnet({
+  const essencial = decidirRedatorSonnet({
     plano: "jec",
     especie: "apelacao",
     sonnetUsadas: 0,
   });
-  assert(!flash.usarSonnet, "JEC nunca Sonnet");
+  assert(
+    essencial.usarSonnet && essencial.motivo === "especie_complexa",
+    "Essencial + apelação → Sonnet (teto 10%)"
+  );
+  assert(essencial.tetoMes === 3, "Essencial teto Sonnet = floor(30×10%) = 3");
+
+  const trial = decidirRedatorSonnet({
+    plano: "trial",
+    especie: "apelacao",
+    sonnetUsadas: 0,
+  });
+  assert(!trial.usarSonnet, "trial nunca Sonnet");
 
   const apel = decidirRedatorSonnet({
     plano: "mensal",

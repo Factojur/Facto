@@ -277,10 +277,10 @@ function enderecoJecPrimeiraInstancia(
     return `${cargo} DO JUIZADO ESPECIAL CÍVEL ${anexo}${foro} DA COMARCA DE ${comarcaTxt}`;
   }
   if (vara && vara !== "___") {
-    return `${cargo} DA ${vara} VARA DO JUIZADO ESPECIAL CÍVEL DO FÓRUM DA COMARCA DE ${comarcaTxt}`;
+    return `${cargo} ${daNVara(vara, "VARA")} DO JUIZADO ESPECIAL CÍVEL DO FÓRUM DA COMARCA DE ${comarcaTxt}`;
   }
   if (vara === "___") {
-    return `${cargo} DA ___ VARA DO JUIZADO ESPECIAL CÍVEL DO FÓRUM DA COMARCA DE ${comarcaTxt}`;
+    return `${cargo} ${daNVara("___", "VARA")} DO JUIZADO ESPECIAL CÍVEL DO FÓRUM DA COMARCA DE ${comarcaTxt}`;
   }
   return `${cargo} DO JUIZADO ESPECIAL CÍVEL DO FÓRUM DA COMARCA DE ${comarcaTxt}`;
 }

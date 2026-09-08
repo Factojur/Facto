@@ -11,7 +11,7 @@ export const CHAT_ESFORCO_KEY = "facto:chat-esforco-v1";
 
 export const ROTULO_ADESAO: Record<AdesaoRedacao, string> = {
   livre: "Livre",
-  fiel: "Fiel",
+  fiel: "Guia",
   recorte: "Recorte",
 };
 
@@ -65,7 +65,7 @@ export function salvarEsforcoRedacaoStorage(v: EsforcoRedacao) {
   }
 }
 
-/** Instrução ao redator — conteúdo, não clone de UI alheia. */
+/** Instrução ao redator — parâmetro leve; autos e lastro prevalecem. */
 export function blocoPromptAdesao(
   adesao: AdesaoRedacao,
   temModeloOuEstilo: boolean
@@ -73,28 +73,31 @@ export function blocoPromptAdesao(
   if (adesao === "fiel") {
     return [
       "<ADERENCIA_FACTO>",
-      "Modo FIEL: se houver modelo de peça ou estilo do escritório no prompt, reproduza tom, vocabulário e ordem de tópicos dessa referência.",
-      "Não invente seções que o modelo não usa. O caso concreto (AUTOS) preenche o molde — não o contrário.",
+      "Modo FIEL (leve): se houver modelo de peça ou tom do escritório, use-os só como referência suave de tom e organização.",
+      "Liberdade total para estruturar a peça pelos AUTOS e pelo lastro FACTO.",
+      "NÃO amarre tópicos ao modelo; NÃO omita tese útil só porque a amostra não a traz.",
+      "NÃO copie fatos, nomes nem valores da amostra.",
       temModeloOuEstilo
-        ? "Há modelo/estilo abaixo — trate-o como referência obrigatória de FORMA (não copie fatos, nomes nem valores da amostra)."
-        : "Não há modelo anexado neste caso: redija em padrão forense clássico.",
+        ? "Há modelo/estilo abaixo — parâmetro de forma, não molde rígido."
+        : "Sem modelo neste caso: redija em padrão forense livre e completo.",
       "</ADERENCIA_FACTO>",
     ].join("\n");
   }
   if (adesao === "recorte") {
     return [
       "<ADERENCIA_FACTO>",
-      "Modo RECORTE: se houver modelo/estilo, altere só o necessário (partes, fatos, pedidos, valores, último ato).",
-      "Preserve frases e estrutura do modelo quando couberem ao caso. Não reescreva o que já está adequado.",
+      "Modo RECORTE (leve): se houver modelo/estilo, pode reaproveitar frases úteis de forma — mas troque tudo que os AUTOS exigirem.",
+      "Liberdade total no mérito. Autos e lastro prevalecem sobre a amostra.",
+      "NÃO copie fatos, nomes nem valores da amostra.",
       temModeloOuEstilo
-        ? "Use o modelo/estilo como base e troque somente o que os AUTOS exigirem."
-        : "Sem modelo neste caso: redija completo, sem fingir que há um molde a recortar.",
+        ? "Use o modelo como ponto de partida opcional; reescreva o necessário."
+        : "Sem modelo neste caso: redija completo, sem fingir que há molde a recortar.",
       "</ADERENCIA_FACTO>",
     ].join("\n");
   }
   return [
     "<ADERENCIA_FACTO>",
-    "Modo LIVRE: você estrutura a peça pelo caso (autos + lastro FACTO). Modelo/estilo, se houver, é sugestão de tom — não amarra tópicos.",
+    "Modo LIVRE: estruture a peça pelo caso (autos + lastro FACTO). Modelo/estilo, se houver, é só sugestão de tom — não amarra tópicos.",
     "</ADERENCIA_FACTO>",
   ].join("\n");
 }
@@ -108,11 +111,12 @@ export function blocoModeloPecaCaso(
   const nome = modelo?.nome?.trim() || "Modelo do advogado";
   return [
     "================================================================================",
-    "MODELO DE PEÇA DO ADVOGADO (SÓ ESTE CASO — FORMA)",
+    "MODELO DE PEÇA (PARÂMETRO DE FORMA — OPT-IN)",
     "================================================================================",
     `Arquivo: ${nome}`,
-    "Use como referência de ESTRUTURA, tom e ordem de tópicos.",
-    "PROIBIDO copiar fatos, nomes, números de processo, valores ou pedidos da amostra — esses vêm dos AUTOS deste caso.",
+    "Use só como referência suave de tom/organização, se ajudar o caso.",
+    "Liberdade total: AUTOS + lastro FACTO prevalecem. NÃO amarre a estrutura ao modelo.",
+    "PROIBIDO copiar fatos, nomes, números de processo, valores ou pedidos da amostra.",
     "Se conflitar com os autos, prevalecem os AUTOS.",
     "",
     "<MODELO_PECA_CASO>",

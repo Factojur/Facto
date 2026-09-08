@@ -1,7 +1,5 @@
 /**
- * Mesmo fluxo do seed-juris-diario (faixa → atualiza estado → reindex embeddings),
- * sem a pausa de vencimento−7d. Uso na última semana / reforço 789+.
- *
+ * Mesmo fluxo do seed-juris-diario (faixa → atualiza estado → reindex embeddings).
  * Uso: npm run seed:juris-faixa-agora
  *      (ou) npx tsx scripts/seed-juris-faixa-agora.ts
  */

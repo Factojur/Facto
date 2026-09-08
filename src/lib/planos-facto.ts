@@ -1,6 +1,6 @@
 /**
  * Preços, cotas e benefícios comerciais FACTO (landing + área logada + webhook).
- * JEC 79,90/40 · Completo 139,90/100 · Pro 279,90/200 ·
+ * JEC/Essencial 79,90/30 · Completo 139,90/100 · Pro 279,90/200 ·
  * Completo Anual 1.399/100 · Pro Anual 2.799/200 ·
  * Escritório S 749,90 / M 1.299,90 · anuais S 7.499 / M 12.999 (10× mensal).
  * Valores legados continuam reconhecidos em planoPorValor (assinantes antigos).
@@ -9,6 +9,8 @@
  * Assistente + plano do caso não consomem peça.
  * Só a Minuta / redação confirmada = 1 peça.
  * custoPorPecaAprox = preço do ciclo ÷ peças do ciclo (anuais: preço/ano ÷ 12×cota).
+ *
+ * Id interno `jec` = Plano Essencial (todas as áreas; entry).
  */
 
 import { ESCRITORIO_VENDA_ATIVA } from "@/lib/feature-flags";
@@ -20,24 +22,30 @@ export const BENEFICIO_ASSISTENTE_PREVIEW =
 export const PLANO_JEC = {
   id: "jec" as const,
   preco: 79.9,
-  pecasPorMes: 40,
+  pecasPorMes: 30,
   /** @deprecated Entrada não consome análise; mantido 0 para compat. */
   analisesPorMes: 0,
   rotuloPreco: "R$ 79,90",
   rotuloPeriodo: "/mês",
-  rotulo: "Plano JEC",
-  /** 79,90 ÷ 40 */
-  custoPorPecaAprox: "R$ 2,00",
+  /** Rótulo comercial — id interno permanece `jec` (Mercado Pago / DB). */
+  rotulo: "Plano Essencial",
+  /** 79,90 ÷ 30 */
+  custoPorPecaAprox: "R$ 2,66",
   beneficios: [
-    "Para a própria parte no Juizado — sem OAB",
-    "40 peças/mês — ≈ R$ 2,00 por peça na cota",
+    "Todas as áreas do FACTO",
+    "30 peças/mês — ≈ R$ 2,66 por peça na cota",
     BENEFICIO_ASSISTENTE_PREVIEW,
-    "Equipe FACTO: análise, súmulas da base curada e redação",
-    "Timbre e dados do seu perfil na peça",
+    "Redator avançado em parte das peças (cota Essencial)",
+    "Equipe FACTO: análise, súmulas da base e redação",
+    "Tom do escritório como parâmetro (opcional)",
+    "Word/PDF com timbre do perfil",
     "Pacotes extras se a cota do mês acabar",
     "Cancele quando quiser — sem fidelidade",
   ],
 };
+
+/** Alias comercial do entry (mesmo id `jec`). */
+export const PLANO_ESSENCIAL = PLANO_JEC;
 
 export const PLANO_MENSAL = {
   id: "mensal" as const,
@@ -50,9 +58,10 @@ export const PLANO_MENSAL = {
   /** 139,90 ÷ 100 */
   custoPorPecaAprox: "R$ 1,40",
   beneficios: [
-    "Para advogados (OAB) · todas as áreas no FACTO",
+    "Todas as áreas · mais volume que o Essencial",
     "100 peças/mês — ≈ R$ 1,40 por peça na cota",
     BENEFICIO_ASSISTENTE_PREVIEW,
+    "Maior cota de redator avançado",
     "Equipe completa: Analista, Pesquisa & súmulas, Redator e Auditor",
     "Base curada de leis e súmulas + fundamentos do seu caso",
     "Formatação forense (PDF/Word); revise antes de protocolar",
@@ -72,11 +81,11 @@ export const PLANO_PRO = {
   /** 279,90 ÷ 200 */
   custoPorPecaAprox: "R$ 1,40",
   beneficios: [
-    "Para advogados (OAB) · tudo do Plano Completo",
+    "Tudo do Completo, com alto volume",
     "200 peças/mês — ≈ R$ 1,40 por peça na cota",
     BENEFICIO_ASSISTENTE_PREVIEW,
     "Prioridade na fila de geração e pesquisa reforçada",
-    "Mesma base curada e equipe FACTO, com mais capacidade",
+    "Maior teto de redator avançado",
     "Pacotes extras se ainda precisar de mais peças",
     "Cancele quando quiser — sem fidelidade",
   ],
@@ -100,7 +109,7 @@ export const PLANO_ANUAL = {
   /** 1.399 ÷ (100 × 12) */
   custoPorPecaAprox: "R$ 1,17",
   beneficios: [
-    "Para advogados (OAB) · tudo do Completo mensal, no anual",
+    "Tudo do Completo mensal, no anual",
     "100 peças/mês — mesma cota do mensal · ≈ R$ 1,17 por peça",
     BENEFICIO_ASSISTENTE_PREVIEW,
     "Equivalente a R$ 116,58/mês — economia de R$ 279,80/ano",
@@ -127,7 +136,7 @@ export const PLANO_PRO_ANUAL = {
   /** 2.799 ÷ (200 × 12) */
   custoPorPecaAprox: "R$ 1,17",
   beneficios: [
-    "Para advogados (OAB) · tudo do Pro mensal, no anual",
+    "Tudo do Pro mensal, no anual",
     "200 peças/mês — mesma cota do mensal · ≈ R$ 1,17 por peça",
     BENEFICIO_ASSISTENTE_PREVIEW,
     "Equivalente a R$ 233,25/mês — economia de R$ 559,80/ano",
@@ -219,7 +228,7 @@ export type PlanoId =
   | "escritorio_s_anual"
   | "escritorio_m_anual";
 
-/** Teste grátis: 3 peças · 7 dias · sem cartão · plano do caso incluso. */
+/** Teste grátis: 3 peças · 7 dias · todas as áreas · Flash · sem cartão. */
 export const PLANO_TRIAL = {
   id: "trial" as const,
   preco: 0,
@@ -232,11 +241,11 @@ export const PLANO_TRIAL = {
   custoPorPecaAprox: "—",
   beneficios: [
     "3 peças · 7 dias · sem cartão",
-    BENEFICIO_ASSISTENTE_PREVIEW,
     "Todas as áreas no período de teste",
+    BENEFICIO_ASSISTENTE_PREVIEW,
     "Plano do caso antes de gastar o crédito",
-    "Exportação Word/PDF protocolável nos planos pagos",
-    "Sem OAB no início — informe só ao assinar",
+    "Word/PDF protocolável nos planos pagos",
+    "OAB opcional no perfil (assinatura da peça)",
     "Sem compromisso — cancele não renovando",
   ],
 };

@@ -1,5 +1,5 @@
 /**
- * Teste grátis: 1 área · 2 peças · 7 dias · export limpo (protocolável).
+ * Teste grátis: todas as áreas · 3 peças · 7 dias · Flash · export Word/PDF nos planos pagos.
  */
 
 import { PLANO_TRIAL } from "@/lib/planos-facto";
@@ -30,7 +30,9 @@ export function emailDescartavel(email: string): boolean {
   return DOMINIOS_DESCARTAVEIS.has(dominio);
 }
 
+/** Área ainda pode ser gravada como preferência; não restringe o acesso. */
 export function areaValidaParaTrial(areaId: string): boolean {
+  if (!areaId.trim()) return true;
   const area = getAreaById(areaId);
   return Boolean(area?.available && area.href);
 }

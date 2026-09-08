@@ -673,6 +673,25 @@ function rotuloEpigrafeERecursal(ativo: string): boolean {
 }
 
 /**
+ * Petições intermediárias curtas: só Processo nº (sem polos na epígrafe).
+ * Manifestação, juntada, ciência, memorial, informações em MS, etc.
+ */
+export function especieEpigrafeSoNumeroProcesso(especie: string): boolean {
+  const e = String(especie ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "");
+  if (!e) return false;
+  return (
+    /^(memorial|manifestacao|juntada|ciencia|informacoes|peticao-intermediaria|peticao-simples|simples-peticao|requerimento)$/.test(
+      e
+    ) ||
+    /^(manifestacao|juntada|ciencia|informacoes)-/.test(e) ||
+    /-manifestacao$|-juntada$|-ciencia$/.test(e)
+  );
+}
+
+/**
  * Rótulos da epígrafe (Autor/Réu, Apelante/Apelado, Exequente/Executado…).
  * Fase de cumprimento (Exequente/Executado) prevalece sobre embargos no mesmo
  * incidente; apelação/agravo/recurso usam o par recursal do CPC/rito.
@@ -710,8 +729,40 @@ export function rotulosEpigrafePeca(
   if (e.includes("impugn")) {
     return { ativo: "Impugnante", passivo: "Impugnado" };
   }
+  if (/habeas.?corpus|^hc$/.test(e) || /\bhabeas corpus\b/.test(blob)) {
+    return { ativo: "Impetrante", passivo: "Paciente" };
+  }
+  if (
+    /mandado.?seguranca|^ms$|habeas.?data|mandado.?injuncao/.test(e) ||
+    /\bmandado de seguranca\b|\bhabeas data\b/.test(blob)
+  ) {
+    return { ativo: "Impetrante", passivo: "Impetrado" };
+  }
+  if (/queixa/.test(e) || /\bqueixa.?crime\b/.test(blob)) {
+    return { ativo: "Querelante", passivo: "Querelado" };
+  }
+  if (
+    /resposta.?acusacao|defesa|alegacoes.?finais/.test(e) &&
+    (areaId === "criminal" || areaId === "jecr")
+  ) {
+    return { ativo: "Acusado", passivo: "Ministério Público" };
+  }
+  if (/aije|representacao|representacao-eleitoral/.test(e)) {
+    return { ativo: "Representante", passivo: "Representado" };
+  }
   if (areaId === "trabalhista") {
     return { ativo: "Reclamante", passivo: "Reclamado" };
+  }
+  if (areaId === "jecr" || /querelante|querelado/.test(blob)) {
+    return {
+      ativo: capitalizarRotulo(modulo.rotuloPoloAtivo.split("/")[0]!.trim()),
+      passivo: capitalizarRotulo(
+        (modulo.rotuloPoloPassivo.includes("querelado")
+          ? "querelado"
+          : modulo.rotuloPoloPassivo.split("/")[0]!
+        ).trim()
+      ),
+    };
   }
   return {
     ativo: capitalizarRotulo(modulo.rotuloPoloAtivo.split("/")[0]!.trim()),
@@ -731,6 +782,14 @@ export function linhasEpigrafePeca(opcoes: {
 }): string[] {
   if (opcoes.pecaInaugural) return [];
   const n = String(opcoes.numeroProcesso ?? "").trim();
+  const linhas: string[] = [];
+  if (n) {
+    linhas.push(/^processo/i.test(n) ? n : `Processo nº: ${n}`);
+  }
+  if (especieEpigrafeSoNumeroProcesso(opcoes.especie)) {
+    return linhas;
+  }
+
   const rotulos = rotulosEpigrafePeca(
     opcoes.areaId,
     opcoes.especie,
@@ -759,10 +818,6 @@ export function linhasEpigrafePeca(opcoes: {
     }
   }
 
-  const linhas: string[] = [];
-  if (n) {
-    linhas.push(/^processo/i.test(n) ? n : `Processo nº: ${n}`);
-  }
   if (nomeLinhaAtivo) linhas.push(`${rotulos.ativo}: ${nomeLinhaAtivo}`);
   if (nomeLinhaPassivo) linhas.push(`${rotulos.passivo}: ${nomeLinhaPassivo}`);
   return linhas;

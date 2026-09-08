@@ -12,7 +12,8 @@ import {
 } from "@/lib/trial";
 
 /**
- * Ativa trial na conta Google já autenticada (área + termos).
+ * Ativa trial na conta Google já autenticada (termos).
+ * Todas as áreas no período; `trial_area_id` é preferência opcional (default jec).
  */
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
   }
 
-  const areaId = String(body.areaId ?? "").trim().toLowerCase();
+  let areaId = String(body.areaId ?? "").trim().toLowerCase();
   const nomeCompleto = String(body.nomeCompleto ?? "").trim();
 
   if (!body.termoAceito) {
@@ -45,11 +46,8 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!areaValidaParaTrial(areaId)) {
-    return NextResponse.json(
-      { error: "Escolha uma área disponível para o teste." },
-      { status: 400 }
-    );
+  if (!areaId || !areaValidaParaTrial(areaId)) {
+    areaId = "jec";
   }
 
   const email = user.email.trim().toLowerCase();
@@ -90,7 +88,7 @@ export async function POST(request: Request) {
 
   const trial = perfil as TrialPerfil | null;
 
-  if (trialAindaValido(trial) && trial?.trial_area_id) {
+  if (trialAindaValido(trial)) {
     return NextResponse.json({ ok: true, redirect: "/dashboard" });
   }
 

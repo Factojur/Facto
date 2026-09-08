@@ -77,7 +77,7 @@ export function TrialEsgotadoBanner({
           >
             {loading === "jec"
               ? "Abrindo Mercado Pago…"
-              : `Assinar JEC · ${PLANO_JEC.rotuloPreco}/mês`}
+              : `Assinar Essencial · ${PLANO_JEC.rotuloPreco}/mês`}
           </button>
           <button
             type="button"

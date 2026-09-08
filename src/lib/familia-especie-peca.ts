@@ -328,6 +328,8 @@ export function tituloPecaFamilia(
       return "Cumprimento de Sentença de Alimentos";
     case "inventario":
       return String(tipoSugerido ?? "Inventário").trim() || "Inventário";
+    case "peticao-inicial":
+      return String(tipoSugerido ?? "").trim() || "Petição Inicial";
     default:
       return String(tipoSugerido ?? "").trim();
   }

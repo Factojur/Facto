@@ -152,9 +152,12 @@ function limparAsteriscosMarkdownOrfaos(texto: string): string {
     .split("\n")
     .map((linha) => {
       let l = linha;
-      // **sem fechamento no fim da palavra
+      // **sem fechamento no fim da palavra / meio da frase
       l = l.replace(/(\w)\*\*(?!\*)(?=\s|$|[.,;:)\]])/g, "$1");
-      // **órfão no início sem par na mesma linha
+      l = l.replace(/(?<=\s|^)\*\*(?!\*)(?=\w)/g, "");
+      // *"HABEAS CORPUS"* partido como *"HABEAS CORPUS"* com aspas tipográficas
+      l = l.replace(/\*"\s*\*\*"([^"]+)"\*"\*/g, '*"$1"*');
+      // **órfão ímpar na linha
       if ((l.match(/\*\*/g) ?? []).length % 2 === 1) {
         l = l.replace(/\*\*/, "");
       }

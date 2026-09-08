@@ -1,7 +1,6 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { getAreaById } from "@/lib/areas-atuacao";
 import { AssistenteFactoDestaque } from "@/components/dashboard/assistente-facto-destaque";
 import { EstiloRedacaoDestaque } from "@/components/dashboard/estilo-redacao-destaque";
 import { FluxoFactoSection } from "@/components/dashboard/fluxo-facto-section";
@@ -62,7 +61,6 @@ export function DashboardHome({
 }) {
   const primeiroNome = nome.split(" ")[0];
   const [workspaceFixado, setWorkspaceFixado] = useState(false);
-  const areaJec = getAreaById("jec");
 
   /** Atualizar / entrar na home: topo se chat ocioso; chat se já houver conversa. */
   useEffect(() => {
@@ -105,14 +103,10 @@ export function DashboardHome({
                   <span className="assistente-ia-shimmer">{primeiroNome}</span>
                 </h1>
                 <p className="mt-5 max-w-2xl text-2xl font-bold leading-[1.15] tracking-tight text-facto-gold md:text-[1.75rem] lg:text-3xl">
-                  {leigo
-                    ? "Você relata o caso. O FACTO redige a minuta."
-                    : "Você advoga. O FACTO redige."}
+                  Você relata o caso. O FACTO redige a minuta.
                 </p>
                 <p className="mt-3 max-w-lg text-sm leading-relaxed text-stone-400 md:text-base">
-                  {leigo
-                    ? "Peças do Juizado no padrão forense — revise, baixe e protocole."
-                    : "Peças completas no padrão forense — revise e protocole no ritmo do seu escritório."}
+                  Peças no padrão forense — revise e protocole no seu ritmo.
                 </p>
               </div>
 
@@ -159,24 +153,19 @@ export function DashboardHome({
         </section>
 
         <div className="mx-auto max-w-7xl space-y-10 px-6 pt-8 md:px-10">
-          {leigo && areaJec ? (
+          {leigo ? (
             <section className="relative overflow-hidden rounded-2xl border border-facto-gold/30 bg-gradient-to-br from-stone-900 to-stone-950 p-8 shadow-xl">
               <span className="inline-flex rounded-full bg-facto-gold/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-facto-gold">
-                Seu acesso
+                Perfil
               </span>
               <h2 className="mt-4 text-2xl font-bold text-white">
-                {areaJec.title}
+                OAB opcional
               </h2>
-              {areaJec.law && (
-                <p className="mt-1 text-xs font-medium text-stone-500">
-                  {areaJec.law}
-                </p>
-              )}
               <p className="mt-4 max-w-xl text-sm leading-relaxed text-stone-400">
-                Seu cadastro foi feito sem OAB, por isso o FACTO libera o
-                Juizado Especial Cível para causas de até 20 salários mínimos
-                nacionais (Lei nº 9.099/95). Valores acima desse teto e as
-                demais áreas exigem cadastro com OAB e plano Completo ou Pro.
+                A OAB no perfil serve à assinatura da minuta. Se você não for
+                advogado(a), observe os limites legais de uso (Termos de Uso) e
+                revise sempre antes de protocolar. Complete a OAB em Meu perfil
+                quando quiser.
               </p>
               <a
                 href="#assistente-workspace"
