@@ -17,6 +17,11 @@ Ordem fechada — **não inverter**:
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
 
+### Feito nesta rodada (08/09 — copy home sem “Diferencial”)
+
+- [x] Banner estilo: **Tom do escritório** (sai “Diferencial FACTO”); CTA **Configurar tom**
+- [x] Como funciona: Assistente / Gerar preview / sem “minuta” nem “Redija”; título passo 04 “Exporte e protocole”
+
 ### Feito nesta rodada (08/09 — remover `/` + empty state)
 
 - [x] Removida paleta `/` (comandos, UI, testes); help sem menção a atalho

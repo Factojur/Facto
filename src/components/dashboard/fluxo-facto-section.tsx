@@ -5,9 +5,9 @@ import { useEffect, useRef } from "react";
 const PASSOS = [
   {
     passo: "01",
-    titulo: "Conte o caso no chat",
+    titulo: "Conte o caso no Assistente",
     texto:
-      "Relato, voz ou PDF/Word no assistente. A área e a espécie saem da conversa — sem escolher módulo na mão.",
+      "Relato, voz ou PDF/Word. A área e a espécie saem da conversa — sem escolher módulo na mão.",
     icone: (
       <svg
         viewBox="0 0 24 24"
@@ -29,7 +29,7 @@ const PASSOS = [
     passo: "02",
     titulo: "Confira o plano",
     texto:
-      "Partes, fatos, pedidos e teses na aba Plano — sem gastar crédito de peça. Só então peça a minuta.",
+      "Partes, fatos, pedidos e teses na aba Plano — sem gastar crédito. Só então use Gerar preview.",
     icone: (
       <svg
         viewBox="0 0 24 24"
@@ -47,9 +47,9 @@ const PASSOS = [
   },
   {
     passo: "03",
-    titulo: "Redija com lastro",
+    titulo: "Gere o preview com lastro",
     texto:
-      "Peça (1 crédito no Gerar preview): texto no painel com lastro da base FACTO e da jurisprudência anexada ao caso.",
+      "1 crédito no Gerar preview: a peça sobe no painel com lastro da base FACTO e da juris anexada ao caso.",
     destaque: true,
     icone: (
       <svg
@@ -69,9 +69,9 @@ const PASSOS = [
   },
   {
     passo: "04",
-    titulo: "Exporte e protocolo",
+    titulo: "Exporte e protocole",
     texto:
-      "Word ou PDF timbrado; ajustes pontuais de trecho e checklist final antes de protocolar fora do FACTO.",
+      "Word ou PDF timbrado; Aplicar ajuste nos trechos e checklist final antes de protocolar fora do FACTO.",
     icone: (
       <svg
         viewBox="0 0 24 24"

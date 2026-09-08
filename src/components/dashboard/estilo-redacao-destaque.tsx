@@ -109,16 +109,16 @@ export function EstiloRedacaoDestaque() {
           <div className="relative flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div className="max-w-2xl">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-facto-gold">
-                Diferencial FACTO
+                Tom do escritório
               </p>
               <h2 className="mt-2 text-xl font-bold text-white md:text-2xl">
-                Peças no tom do seu escritório{" "}
+                Peças no seu tom{" "}
                 <span className="font-normal text-stone-400">(opcional)</span>
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-stone-400">
-                Envie até três peças de referência. O FACTO interpreta tom,
-                extensão e forma dos pedidos — sem copiar fatos — e aplica nas
-                próximas gerações, com o rito forense intacto.
+                Envie até três peças de referência. O FACTO lê tom, extensão e
+                forma dos pedidos — sem copiar fatos — e usa isso como parâmetro
+                nas próximas gerações, com o rito forense intacto.
               </p>
             </div>
             <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
@@ -126,7 +126,7 @@ export function EstiloRedacaoDestaque() {
                 href="/dashboard/perfil#estilo-redacao"
                 className="inline-flex items-center justify-center rounded-lg bg-facto-gold px-5 py-2.5 text-sm font-semibold text-facto-dark transition hover:bg-[#a39a78]"
               >
-                Configurar estilo
+                Configurar tom
               </Link>
               <button
                 type="button"
