@@ -8,11 +8,11 @@ type Props = {
   onModoChange: (modo: ModoConversaChat) => void;
   modoWorkspace?: boolean;
   compacto?: boolean;
-  /** Instantâneo/Planejado só no modo Minuta. */
+  /** Direto/Aprofundado só no modo Peça. */
   desabilitado?: boolean;
 };
 
-/** Toggle Instantâneo / Planejado. */
+/** Toggle Direto / Aprofundado. */
 export function ChatModoConversaToggle({
   modo,
   onModoChange,
@@ -43,12 +43,12 @@ export function ChatModoConversaToggle({
     <div
       className={`inline-flex items-center gap-0.5 rounded-full border p-0.5 ${shell}`}
       role="group"
-      aria-label="Modo da conversa"
+      aria-label="Modo Direto ou Aprofundado"
       aria-disabled={desabilitado}
     >
       <button
         type="button"
-        title={desabilitado ? "Disponível no modo Minuta" : instantaneo.dica}
+        title={desabilitado ? "Disponível no modo Peça" : instantaneo.dica}
         aria-pressed={modo === "instantaneo"}
         disabled={desabilitado}
         onClick={() => onModoChange("instantaneo")}
@@ -56,11 +56,11 @@ export function ChatModoConversaToggle({
           desabilitado ? "cursor-not-allowed opacity-40" : ""
         }`}
       >
-        Instantâneo
+        {instantaneo.rotulo}
       </button>
       <button
         type="button"
-        title={desabilitado ? "Disponível no modo Minuta" : planejado.dica}
+        title={desabilitado ? "Disponível no modo Peça" : planejado.dica}
         aria-pressed={modo === "planejado"}
         disabled={desabilitado}
         onClick={() => onModoChange("planejado")}
@@ -68,7 +68,7 @@ export function ChatModoConversaToggle({
           desabilitado ? "cursor-not-allowed opacity-40" : ""
         }`}
       >
-        Planejado
+        {planejado.rotulo}
       </button>
     </div>
   );

@@ -17,6 +17,23 @@ Ordem fechada — **não inverter**:
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
 
+### Feito nesta rodada (08/09 — Assistente/Peça + gate de crédito)
+
+- [x] **Nomenclatura:** Assistente / Peça · Direto / Aprofundado · Gerar preview / Montar a peça · Usar meu modelo · Profundidade: completa · Aplicar ajuste
+- [x] **Crédito:** Assistente + plano sem débito; −1 só em **Gerar preview** confirmado (abre Peça); “redija” vira convite ao gate, não debita
+- [x] Mensagens de sistema no tom FACTO; slash `/preview` `/peca`; Termos + help atualizados
+- Em aberto (depois): chips pós-peça → Aplicar ajuste gratuito; biblioteca Tom
+
+### Feito nesta rodada (08/09 — decisão copy chat/crédito)
+
+- [x] **Nomenclatura (fechada):** Assistente / **Peça** · CTA **Gerar preview** / **Montar a peça** · **Usar meu modelo** · **Aplicar ajuste** · gate no lugar de “Redigir” · **Profundidade: completa** · **Direto / Aprofundado**
+- [x] **Crédito:** conversa no Assistente **sem** abater; −1 crédito só ao confirmar **Gerar preview** → abre área **Peça**
+- [x] Implementação na mesma rodada (ver bloco acima)
+
+### Feito nesta rodada (08/09 — artes Ribeiro fora do código)
+
+- [x] 3 opções de timbre (cabeçalho / rodapé / marca d’água) em `C:\Users\jefee\Projects\artes-ribeiro-associados\` — sem alteração de código de timbre no FACTO
+
 ### Feito nesta rodada (08/09 — copy landing microajustes)
 
 - [x] Landing: remove “só” (estilo do escritório como parâmetro) e “se você quiser” (passo Confirme)
@@ -43,7 +60,8 @@ Ordem fechada — **não inverter**:
 
 - [x] Nav/CTAs rolam sem `#beneficios` / `#precos` na barra (URL limpa `factoia.com.br`)
 - [x] Copy planos (Essencial/Completo/Pro/trial) sem “1 área” / sem “Plano JEC” no rótulo
-- Em andamento (próximo): biblioteca de modelos no Tom + pergunta opt-in no chat (Fiel já enfraquecido); **timbre Ribeiro & Associados** (3 opções)
+- Em andamento (próximo): biblioteca de modelos no Tom + pergunta opt-in no chat (Fiel já enfraquecido)
+- **Ribeiro & Associados (timbre):** artes geradas em `C:\Users\jefee\Projects\artes-ribeiro-associados\` (3 opções × cabeçalho/rodapé/marca d’água) — **sem** código no FACTO; Jefferson revisa e sobe no perfil
 
 ### Feito nesta rodada (08/09 — landing AIDA)
 
@@ -193,8 +211,8 @@ Duas simulações reais em [factoia.com.br/dashboard](https://factoia.com.br/das
 2. **P0** Compra **MP** ponta a ponta (bloqueio comercial)
 3. **P1** Tom: modelos por espécie + opt-in no chat (Fiel já leve)
 4. **P1** 2ª API juris (TRE/TSE + TJs/TRFs ausentes) — só com ok
-5. **P2** Timbre **Ribeiro & Associados** (3 opções cabeçalho/rodapé/marca d’água) + teste no FACTO
-6. **P2** ABNT pixel / amostragem humana E2E · `tsc` antes do push em mudanças de tipo
+5. **P2** ABNT pixel / amostragem humana E2E · `tsc` antes do push em mudanças de tipo
+6. **Ops (fora do código)** — [x] 3 artes Ribeiro & Associados em `C:\Users\jefee\Projects\artes-ribeiro-associados\` (Jefferson sobe no perfil)
 
 **Generalista (pesos iguais):** FACTO **≈ 8,16** vs MinutaIA **≈ 6,80** (**+1,36**).
 

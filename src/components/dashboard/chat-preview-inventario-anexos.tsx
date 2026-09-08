@@ -26,7 +26,7 @@ export function ChatPreviewInventarioAnexos({
       </p>
       <p className="mt-2 text-sm leading-relaxed text-stone-600">
         {mensagem?.trim() ||
-          "O arquivo entrou no contexto. Oriente no chat o que pretende (ex.: agravo, contestação). A peça só aparece aqui depois do modo Minuta."}
+          "O arquivo entrou no contexto. Oriente no Assistente o que pretende (ex.: agravo, contestação). A peça só aparece aqui depois de **Gerar preview**."}
       </p>
 
       {(temMeta || temArquivos) && (

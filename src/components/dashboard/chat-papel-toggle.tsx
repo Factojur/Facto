@@ -8,7 +8,7 @@ type Props = {
   modoWorkspace?: boolean;
 };
 
-/** Chat vs Minuta — seletor FACTO. */
+/** Assistente vs Peça — seletor FACTO. */
 export function ChatPapelToggle({
   papel,
   onPapelChange,
@@ -32,7 +32,7 @@ export function ChatPapelToggle({
     <div
       className={`inline-flex items-center gap-0.5 rounded-full border p-0.5 ${shell}`}
       role="group"
-      aria-label="Chat ou Minuta"
+      aria-label="Assistente ou Peça"
     >
       <button
         type="button"
@@ -41,16 +41,16 @@ export function ChatPapelToggle({
         onClick={() => onPapelChange("chat")}
         className={`${btn} ${papel === "chat" ? ativo : inativo}`}
       >
-        Chat
+        Assistente
       </button>
       <button
         type="button"
-        title="Gera a peça forense no preview (1 crédito)."
+        title="Área do preview da peça. Gere com o botão Gerar preview (1 crédito)."
         aria-pressed={papel === "minuta"}
         onClick={() => onPapelChange("minuta")}
         className={`${btn} ${papel === "minuta" ? ativo : inativo}`}
       >
-        Minuta
+        Peça
       </button>
     </div>
   );

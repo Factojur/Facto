@@ -18,7 +18,7 @@ export const ROTULO_ADESAO: Record<AdesaoRedacao, string> = {
 export const ROTULO_ESFORCO: Record<EsforcoRedacao, string> = {
   agil: "Expressa",
   padrao: "Equilíbrio",
-  fundo: "Detalhada",
+  fundo: "Profundidade: completa",
 };
 
 export function normalizarAdesaoRedacao(v: unknown): AdesaoRedacao {

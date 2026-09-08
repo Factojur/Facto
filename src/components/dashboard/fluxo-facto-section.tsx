@@ -49,7 +49,7 @@ const PASSOS = [
     passo: "03",
     titulo: "Redija com lastro",
     texto:
-      "Minuta (1 crédito): peça no painel com lastro da base FACTO e da jurisprudência anexada ao caso.",
+      "Peça (1 crédito no Gerar preview): texto no painel com lastro da base FACTO e da jurisprudência anexada ao caso.",
     destaque: true,
     icone: (
       <svg
@@ -125,12 +125,12 @@ export function FluxoFactoSection({ leigo = false }: { leigo?: boolean }) {
           Como funciona
         </p>
         <h2 className="mt-2 text-xl font-semibold text-white md:text-2xl">
-          Relate o caso no chat. Revise a minuta. Protocole.
+          Relate o caso no Assistente. Revise a peça. Protocole.
         </h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-500 md:text-base">
           {leigo
-            ? "Chat interativo, plano do caso e minuta com lastro — revise sempre e protocole fora do FACTO."
-            : "Chat interativo, plano do caso e minuta com lastro (1 crédito na redação)."}
+            ? "Assistente, plano do caso e preview da peça com lastro — revise sempre e protocole fora do FACTO."
+            : "Assistente, plano do caso e preview da peça com lastro (1 crédito no Gerar preview)."}
         </p>
 
         {/* Trilho conectando as etapas (desktop) */}

@@ -1,4 +1,4 @@
-/** Papel da barra: Chat conversa; Minuta redige a peça. */
+/** Papel da barra: Assistente conversa; Peça = área do preview (após Gerar preview). */
 export type PapelInteracaoChat = "chat" | "minuta";
 
 export const PAPEL_INTERACAO_PADRAO: PapelInteracaoChat = "chat";
@@ -29,7 +29,7 @@ export function salvarPapelInteracaoStorage(papel: PapelInteracaoChat): void {
   }
 }
 
-/** Instantâneo vs Planejado — só no modo Minuta. */
+/** Direto vs Aprofundado — só no modo Peça. */
 export type ModoConversaChat = "instantaneo" | "planejado";
 
 export const MODO_CONVERSA_PADRAO: ModoConversaChat = "instantaneo";
@@ -75,15 +75,16 @@ export function configModoConversa(modo: ModoConversaChat): ConfigModoConversa {
   if (modo === "planejado") {
     return {
       modo,
-      rotulo: "Planejado",
-      dica: "No modo Minuta: refina a estratégia e redige quando o lastro da peça estiver completo.",
+      rotulo: "Aprofundado",
+      dica: "No modo Peça: plano e fundamentação mais densos antes do preview.",
       maxOutputTokens: 2400,
       temperature: 0.5,
       instrucoesSistema: [
-        "Modo PLANEJADO: resposta reflexiva e estratégica.",
+        "Modo APROFUNDADO: resposta reflexiva e estratégica.",
         "2–4 parágrafos fluidos (até 12 frases). Organize teses, riscos e próximos passos.",
         "Relacione com o plano à direita quando fizer sentido.",
-        "NÃO redija a petição inteira. A peça só nasce no modo Minuta.",
+        "NÃO redija a petição inteira. A peça só nasce com Gerar preview (1 crédito).",
+        "Se o caso já tiver lastro, diga que pode gerar o preview ou complementar.",
         "Termine com pergunta útil ou próximo passo quando faltar dado relevante.",
       ],
       forcarPlanoAposTurno: false,
@@ -93,15 +94,16 @@ export function configModoConversa(modo: ModoConversaChat): ConfigModoConversa {
 
   return {
     modo,
-    rotulo: "Instantâneo",
-    dica: "No modo Minuta: gera a peça logo após a instrução.",
+    rotulo: "Direto",
+    dica: "No modo Peça: caminho mais curto até o preview da peça.",
     maxOutputTokens: 900,
     temperature: 0.35,
     instrucoesSistema: [
-      "Modo INSTANTÂNEO: resposta curta e direta.",
+      "Modo DIRETO: resposta curta e objetiva.",
       "1–2 parágrafos (até 6 frases). Priorize clareza e velocidade.",
       "Uma pergunta objetiva no fim, se faltar dado crítico.",
-      "NÃO redija a petição aqui. A peça só nasce no modo Minuta.",
+      "NÃO redija a petição aqui. A peça só nasce com Gerar preview (1 crédito).",
+      "Se o caso já tiver lastro, diga que pode gerar o preview ou complementar.",
     ],
     forcarPlanoAposTurno: false,
     debouncePlanoMs: 400,

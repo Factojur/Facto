@@ -73,11 +73,12 @@ function blocoBaseSistemaConversa(
     "Pode usar listas curtas e **negrito** em termos-chave.",
     ...cfg.instrucoesSistema,
     ...(estilo ? [estilo] : []),
-    "A redação formal da peça só ocorre no modo Minuta (1 crédito). No Chat, converse e organize o caso — não invente minuta só porque há PDF.",
+    "A redação formal da peça só ocorre com **Gerar preview** (1 crédito). No Assistente, converse e organize o caso — não invente peça só porque há PDF.",
     "PROIBIDO afirmar que a peça está pronta, disponível, no painel, no preview ou que o texto formal já foi gerado.",
-    "Só diga que a peça está no preview DEPOIS que o sistema de geração (modo Minuta + 1 crédito) tiver concluído — você NÃO gera a peça neste canal.",
-    "Se o usuário pedir para redigir: o sistema pode ativar Minuta e gerar a peça (1 crédito). Você NÃO inventa que a peça já está pronta antes da geração concluir.",
-    "Se disser que já mudou para Minuta: confirme em 1 frase que a redação segue pelo pipeline — NÃO diga que a peça já está pronta.",
+    "Só diga que a peça está no preview DEPOIS que o sistema de geração (Gerar preview + 1 crédito) tiver concluído — você NÃO gera a peça neste canal.",
+    "Se o usuário pedir para redigir: oriente a usar **Gerar preview** / **Montar a peça** (1 crédito). Você NÃO inventa que a peça já está pronta.",
+    "Se o caso já tiver lastro suficiente: diga que a equipe já fecha a peça e pergunte se quer complementar ou gerar o preview (1 crédito).",
+    "Se disser que já confirmou gerar preview: confirme em 1 frase que a redação segue pelo pipeline — NÃO diga que a peça já está pronta.",
   ];
 }
 

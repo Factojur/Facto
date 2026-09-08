@@ -126,7 +126,7 @@ export function ChatRedacaoOpcoes({
               }`}
               onClick={() => inputRef.current?.click()}
             >
-              {carregandoModelo ? "Lendo…" : "+ Modelo"}
+              {carregandoModelo ? "Lendo…" : "Usar meu modelo"}
             </button>
           )}
           {erroModelo ? (
@@ -150,7 +150,7 @@ export function ChatRedacaoOpcoes({
                 : id === "fiel"
                   ? temModelo
                     ? "Segue de perto o modelo anexado (forma); fatos vêm dos autos."
-                    : "Segue tom e ordem do estilo do escritório (anexe + Modelo para este caso)."
+                    : "Segue tom e ordem do estilo do escritório (anexe Usar meu modelo para este caso)."
                   : temModelo
                     ? "Mantém o modelo e troca só o que os autos exigem."
                     : "Mantém o modelo/estilo e troca só o que os autos exigem."

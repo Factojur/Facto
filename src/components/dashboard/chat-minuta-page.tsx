@@ -121,8 +121,9 @@ import {
 import {
   deveEntregarPecaAposPlano,
   pedidoExplicitoRedacao,
-  confirmouModoMinuta,
+  confirmouGerarPreview,
   casoTemLastroMinimoParaPeca,
+  mensagemGateGerarPreview,
 } from "@/lib/chat-minuta-redacao";
 import {
   deveChamarEntradaCaso,
@@ -244,7 +245,7 @@ const MSG_BOAS_VINDAS: MensagemChat = {
   id: "welcome",
   papel: "assistente",
   texto:
-    "Anexe os autos para o **contexto**. No **Chat**, conversamos e organizamos o caso. No **Minuta**, a instrução redige a peça no preview (**1 crédito**).",
+    "Anexe os autos para o **contexto**. No **Assistente**, conversamos e organizamos o caso. Quando houver lastro, use **Gerar preview** / **Montar a peça** (**1 crédito**) — o texto sobe na área **Peça**.",
   ts: Date.now(),
 };
 
@@ -402,6 +403,7 @@ export function ChatMinutaPage({
   const [mostrarMinutasNuvem, setMostrarMinutasNuvem] = useState(false);
   const [syncNuvemOptIn, setSyncNuvemOptIn] = useState(false);
   const sessaoInicialCarregada = useRef(false);
+  const gatePreviewAvisadoRef = useRef(false);
   const [workspaceFixado, setWorkspaceFixado] = useState(false);
   const [portalMontado, setPortalMontado] = useState(false);
 
@@ -1191,7 +1193,7 @@ export function ChatMinutaPage({
       {
         id: idMensagemChat(),
         papel: "sistema",
-        texto: `Contexto de **${rotulo}** carregado dos Meus casos. Revise e diga **redija** ou use **Criar minuta** (1 crédito).`,
+        texto: `Contexto de **${rotulo}** carregado dos Meus casos. Revise no Assistente; quando estiver pronto, use **Gerar preview** (1 crédito).`,
         ts: Date.now(),
       },
     ]);
@@ -1344,6 +1346,7 @@ export function ChatMinutaPage({
     leituraAnexoExibidaRef.current = null;
     setVisualizadorAnexo(null);
     planoUltimoFingerprintRef.current = null;
+    gatePreviewAvisadoRef.current = false;
     setVersoesPlano([]);
     const estadoZerado = estadoCasoChatVazio(area);
     estadoRef.current = estadoZerado;
@@ -1709,7 +1712,7 @@ export function ChatMinutaPage({
         filtrarRiscosParaRodape(triagemNova.analiseEstrategica?.riscosOuLacunas)
       );
       setPreviewPainel("plano");
-      // Sem scaffold/molde no preview — a peça só sobe após Minuta (1 crédito).
+      // Sem scaffold/molde no preview — a peça só sobe após Gerar preview (1 crédito).
       setScaffoldPeca("");
       setScaffoldPecaHtml("");
       setScaffoldAviso(null);
@@ -1784,6 +1787,14 @@ export function ChatMinutaPage({
               }))
           ) {
             entregarPecaNoPreview(cache, fp, true);
+          } else if (
+            !opts?.silencioso &&
+            !opts?.entregarPeca &&
+            casoTemLastroMinimoParaPeca(estadoRef.current) &&
+            !gatePreviewAvisadoRef.current
+          ) {
+            gatePreviewAvisadoRef.current = true;
+            adicionarMensagem("sistema", mensagemGateGerarPreview());
           }
           return cache;
         }
@@ -1864,7 +1875,7 @@ export function ChatMinutaPage({
             });
             if (data.fallbackLocal && !opts?.silencioso) {
               setAvisos(
-                "Plano preliminar no painel. No modo Minuta, envie a instrução para redigir (1 crédito)."
+                "Plano preliminar no painel. Quando o lastro estiver ok, use **Gerar preview** (1 crédito)."
               );
             }
             const deveEntregar =
@@ -1879,6 +1890,16 @@ export function ChatMinutaPage({
                 }));
             if (aplicado && deveEntregar) {
               entregarPecaNoPreview(aplicado, fp, true);
+            } else if (
+              aplicado &&
+              !opts?.silencioso &&
+              !opts?.entregarPeca &&
+              casoTemLastroMinimoParaPeca(estadoRef.current) &&
+              !geradoPorIA &&
+              !gatePreviewAvisadoRef.current
+            ) {
+              gatePreviewAvisadoRef.current = true;
+              adicionarMensagem("sistema", mensagemGateGerarPreview());
             }
             return aplicado;
           }
@@ -1973,7 +1994,7 @@ export function ChatMinutaPage({
     const texto =
       textoDigitado ||
       (opts?.forcarMinuta
-        ? "Redija a peça cabível com base no contexto e na conversa."
+        ? "Gerar o preview da peça com base no contexto e na conversa."
         : "");
     if (!texto && filesNow.length === 0) return;
     if (enviando || redigindoRef.current) return;
@@ -2027,7 +2048,7 @@ export function ChatMinutaPage({
           setAjustesFeitos((n) => n + 1);
           adicionarMensagem(
             "assistente",
-            "Ajuste aplicado na peça à direita. Peça outro refinamento se precisar."
+            "Ajuste aplicado na peça à direita. Peça outro refinamento se precisar — isso não gasta crédito."
           );
         } catch {
           setErro("Falha de rede no ajuste.");
@@ -2053,13 +2074,11 @@ export function ChatMinutaPage({
       }
     }
 
-    // Pedido de peça / "já alterei" → redação real (sem conversa fingindo que a peça está pronta).
+    // Gerar preview confirmado (botão / "gerar preview" / "montar a peça") → 1 crédito.
     if (
       filesNow.length === 0 &&
       texto &&
-      (opts?.forcarMinuta ||
-        confirmouModoMinuta(texto) ||
-        pedidoExplicitoRedacao(texto))
+      (opts?.forcarMinuta || confirmouGerarPreview(texto))
     ) {
       if (papelRef.current !== "minuta") {
         setPapelInteracao("minuta");
@@ -2068,14 +2087,14 @@ export function ChatMinutaPage({
       if (!casoTemLastroMinimoParaPeca(estadoRef.current)) {
         adicionarMensagem(
           "assistente",
-          "Ainda falta lastro mínimo (autos/fatos). Anexe o PDF ou descreva o caso; depois diga **redija** ou use **Criar minuta**."
+          "Ainda falta lastro mínimo (autos/fatos). Anexe o PDF ou descreva o caso; depois use **Gerar preview**."
         );
         return;
       }
       textoPedidoRedacaoRef.current = texto;
       adicionarMensagem(
         "assistente",
-        "Redigindo a peça no preview (**1 crédito**). O texto aparece à direita quando a geração concluir."
+        "Gerando o preview da peça (**1 crédito**). O texto aparece na área **Peça** quando a geração concluir."
       );
       setEnviando(true);
       void executarPlano({
@@ -2084,6 +2103,27 @@ export function ChatMinutaPage({
         entregarPeca: true,
         textoUsuario: texto,
       }).finally(() => setEnviando(false));
+      return;
+    }
+
+    // Pediu redigir sem confirmar o gate → convite, sem debitar.
+    if (
+      filesNow.length === 0 &&
+      texto &&
+      pedidoExplicitoRedacao(texto) &&
+      !opts?.forcarMinuta
+    ) {
+      if (!casoTemLastroMinimoParaPeca(estadoRef.current)) {
+        adicionarMensagem(
+          "assistente",
+          "Ainda falta lastro mínimo (autos/fatos). Anexe o PDF ou descreva o caso; depois use **Gerar preview**."
+        );
+        return;
+      }
+      if (!gatePreviewAvisadoRef.current) {
+        gatePreviewAvisadoRef.current = true;
+      }
+      adicionarMensagem("assistente", mensagemGateGerarPreview());
       return;
     }
 
@@ -2117,7 +2157,7 @@ export function ChatMinutaPage({
         "assistente",
         [
           `Incluí no plano: ${novosPedidos.map((p) => `“${p}”`).join(", ") || "pedido complementar"}.`,
-          "O plano à direita será atualizado. No modo Minuta a peça sobe com 1 crédito.",
+          "O plano à direita será atualizado. Quando quiser, use **Gerar preview** (1 crédito).",
         ].join("\n\n")
       );
       void executarPlano({
@@ -2540,7 +2580,7 @@ export function ChatMinutaPage({
       const corpoGeracao = {
         ...payload,
         stream: true,
-        /** 1 crédito = geração da minuta (modo Minuta). */
+        /** 1 crédito = Gerar preview (área Peça). */
         adiarDebitoCota: false,
         adesaoRedacao,
         esforcoRedacao,
@@ -3191,8 +3231,8 @@ export function ChatMinutaPage({
                       : "mt-2 max-w-md text-xs text-stone-600 sm:text-sm"
                   }
                 >
-                  O PDF fica no contexto. No Chat alinhe o caso; diga
-                  &quot;redija&quot; ou use Criar minuta (1 crédito). Digite{" "}
+                  O PDF fica no contexto. No Assistente alinhe o caso; use{" "}
+                  <strong>Gerar preview</strong> (1 crédito) para a peça. Digite{" "}
                   <kbd className="rounded border px-1 text-[10px]">/</kbd> para
                   espécie ou atalho.
                 </p>
@@ -3253,7 +3293,8 @@ export function ChatMinutaPage({
               casoJaOrganizado &&
               !geradoPorIA &&
               !redigindo &&
-              mensagens.length > 1 && (
+              mensagens.length > 1 &&
+              casoTemLastroMinimoParaPeca(estado) && (
               <div className="flex flex-col items-start gap-2 pt-1">
                 <p
                   className={
@@ -3262,20 +3303,56 @@ export function ChatMinutaPage({
                       : "text-[11px] text-stone-500"
                   }
                 >
-                  Caso alinhado. Diga <strong>redija</strong> ou use o botão —
-                  ativa Minuta e gera a peça (1 crédito).
+                  Com o que você passou, a equipe já fecha a peça. Quer
+                  complementar ou <strong>gerar o preview</strong> (1 crédito)?
                 </p>
-                <button
-                  type="button"
-                  onClick={() => void handleEnviarMensagem({ forcarMinuta: true })}
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void handleEnviarMensagem({ forcarMinuta: true })
+                    }
+                    className={
+                      modoWorkspace
+                        ? "rounded-lg border border-facto-gold/40 bg-facto-gold/15 px-3 py-1.5 text-[12px] font-semibold text-facto-gold"
+                        : "rounded-lg border border-facto-gold/50 bg-amber-50 px-3 py-1.5 text-[12px] font-semibold text-stone-800"
+                    }
+                  >
+                    Gerar preview
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void handleEnviarMensagem({ forcarMinuta: true })
+                    }
+                    className={
+                      modoWorkspace
+                        ? "rounded-lg border border-white/15 bg-white/[0.06] px-3 py-1.5 text-[12px] font-medium text-stone-300"
+                        : "rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-[12px] font-medium text-stone-700"
+                    }
+                  >
+                    Montar a peça
+                  </button>
+                </div>
+              </div>
+            )}
+            {papelInteracao === "chat" &&
+              casoJaOrganizado &&
+              !geradoPorIA &&
+              !redigindo &&
+              mensagens.length > 1 &&
+              !casoTemLastroMinimoParaPeca(estado) && (
+              <div className="flex flex-col items-start gap-2 pt-1">
+                <p
                   className={
                     modoWorkspace
-                      ? "rounded-lg border border-facto-gold/40 bg-facto-gold/15 px-3 py-1.5 text-[12px] font-semibold text-facto-gold"
-                      : "rounded-lg border border-facto-gold/50 bg-amber-50 px-3 py-1.5 text-[12px] font-semibold text-stone-800"
+                      ? "text-[11px] text-stone-500"
+                      : "text-[11px] text-stone-500"
                   }
                 >
-                  Criar minuta
-                </button>
+                  Caso em organização. Anexe autos ou complemente fatos antes de
+                  gerar o preview.
+                </p>
               </div>
             )}
             {geradoPorIA && peca.trim() && !redigindo && ajustesRestantes > 0 && (
@@ -3478,7 +3555,7 @@ export function ChatMinutaPage({
             }}
             placeholder={
               papelInteracao === "minuta"
-                ? "Instrução para a minuta (1 crédito) — ou / para atalhos…"
+                ? "Instrução na Peça — Gerar preview consome 1 crédito…"
                 : "Anexe os autos e descreva o caso — ou / para espécie/atalho…"
             }
             className={`w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 sm:text-[15px] ${tema.input}`}
@@ -3514,8 +3591,8 @@ export function ChatMinutaPage({
               onClick={() => void handleEnviarMensagem()}
               title={
                 papelInteracao === "minuta"
-                  ? "Enviar no modo Minuta: redige a peça no preview (1 crédito)."
-                  : "Enviar no modo Chat: conversa e contexto — não gera a peça."
+                  ? "Enviar no modo Peça: conversa na área da peça. Use Gerar preview para debitar 1 crédito."
+                  : "Enviar no Assistente: conversa e contexto — não gera a peça."
               }
               className={
                 modoWorkspace
@@ -3528,7 +3605,7 @@ export function ChatMinutaPage({
                 : planoLoading
                   ? "Plano…"
                   : redigindo
-                    ? "Redigindo…"
+                    ? "Gerando preview…"
                     : "Enviar"}
             </button>
           </div>
@@ -3557,7 +3634,7 @@ export function ChatMinutaPage({
               {geradoPorIA
                 ? "Peça redigida"
                 : previewTemPeca
-                  ? "Redigindo…"
+                  ? "Gerando preview…"
                   : "Documento"}
             </h2>
             <div className="flex flex-wrap items-center gap-1.5">
@@ -3749,7 +3826,7 @@ export function ChatMinutaPage({
               foro={estado.comarca.foro}
               mensagem={
                 anexosMemoria.length || casoJaOrganizado
-                  ? "Abra a aba Plano para a estratégia. A peça completa só aparece no modo Minuta (1 crédito)."
+                  ? "Abra a aba Plano para a estratégia. A peça completa só aparece após Gerar preview (1 crédito)."
                   : "Anexe os autos ou descreva o caso à esquerda."
               }
             />

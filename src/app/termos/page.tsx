@@ -152,10 +152,10 @@ export default function TermosPage() {
             protocolável (Word/PDF).
           </li>
           <li>
-            Em regra, o <strong>assistente</strong> (relato/anexo) e o{" "}
+            Em regra, o <strong>Assistente</strong> (relato/anexo) e o{" "}
             <strong>plano do caso</strong> não consomem cota de peça; o débito
-            ocorre na <strong>Minuta</strong> (redação confirmada da peça
-            completa), conforme regras do plano. A Entrada do caso no formulário
+            ocorre ao confirmar <strong>Gerar preview</strong> (peça completa na
+            área Peça), conforme regras do plano. A Entrada do caso no formulário
             de laboratório, quando disponível, também não debita cota.
           </li>
           <li>

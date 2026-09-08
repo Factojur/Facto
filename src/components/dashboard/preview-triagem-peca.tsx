@@ -232,7 +232,8 @@ export function PreviewTriagemPeca({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-stone-900">
-            Plano estratégico — conferir antes de redigir
+            Plano estratégico — conferir antes de gerar o preview
+
           </h2>
           <p className="mt-1 text-sm text-stone-600">
             A triagem leu o dossiê inteiro e definiu tópicos, teses e pedidos.
@@ -268,7 +269,7 @@ export function PreviewTriagemPeca({
           disabled={confirmando}
           className="rounded-lg bg-stone-700 px-6 py-2.5 text-sm font-semibold text-amber-50 shadow-sm hover:bg-stone-600 disabled:opacity-60"
         >
-          {confirmando ? "Redigindo a peça…" : "Confirmar e redigir peça"}
+          {confirmando ? "Gerando o preview…" : "Gerar preview (1 crédito)"}
         </button>
       </div>
     </section>

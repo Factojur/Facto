@@ -1,17 +1,17 @@
 /**
- * Critérios FACTO: quando anexar vs quando redigir a peça no preview.
+ * Critérios FACTO: quando anexar vs quando gerar o preview da peça (1 crédito).
  */
 
 import type { EstadoCasoChat } from "@/lib/chat-minuta";
 
-/** Pedido explícito de minuta (modo planejado / reforço). */
+/** Pedido de redação no texto — NÃO debita sozinho; só convida ao Gerar preview. */
 export function pedidoExplicitoRedacao(texto: string): boolean {
   const t = texto.trim();
   if (!t) return false;
 
-  // Negação: "não redija", "ainda não quero a redação" — não força Minuta.
+  // Negação: "não redija", "ainda não quero a redação" — não força Peça.
   if (
-    /\b(n[aã]o\s+(quero\s+)?(a\s+)?(redi|elabore|escreva|gere|gerar|minuta|pe[cç]a|reda)|ainda\s+n[aã]o\s+quero\s+(a\s+)?reda|sem\s+redigir)/i.test(
+    /\b(n[aã]o\s+(quero\s+)?(a\s+)?(redi|elabore|escreva|gere|gerar|minuta|pe[cç]a|reda|preview)|ainda\s+n[aã]o\s+quero\s+(a\s+)?reda|sem\s+redigir)/i.test(
       t
     )
   ) {
@@ -21,16 +21,16 @@ export function pedidoExplicitoRedacao(texto: string): boolean {
   // "monte/prepare o plano" organiza o caso — não é pedido de peça.
   if (
     /\b(monte|prepare)\s+(o\s+)?plano\b/i.test(t) &&
-    !/\b(redi[gj]\w*|elabore\w*|escreva|gere|gerar|minuta)\b/i.test(t)
+    !/\b(redi[gj]\w*|elabore\w*|escreva|gere|gerar|minuta|preview)\b/i.test(t)
   ) {
     return false;
   }
 
   const verboRedacao =
-    /\b(redi[gj]\w*|elabore\w*|escreva|fa[cç]a|gere|gerar|monte|prepare|minuta)\b/i.test(
+    /\b(redi[gj]\w*|elabore\w*|escreva|fa[cç]a|gere|gerar|monte|prepare|minuta|preview)\b/i.test(
       t
     );
-  // Relato longo citando "petição"/"peça" sem verbo de redação → Chat organiza.
+  // Relato longo citando "petição"/"peça" sem verbo de redação → Assistente organiza.
   if (!verboRedacao) {
     if (t.length > 160) return false;
     return /\b(contest\w*|agravo\w*|embargos|recurso\s+inominado|habeas|mandado\s+de\s+seguran[cç]a)\b/i.test(
@@ -38,23 +38,28 @@ export function pedidoExplicitoRedacao(texto: string): boolean {
     );
   }
 
-  return /\b(redi[gj]\w*|elabore\w*|escreva|fa[cç]a|gere|gerar|monte|prepare|minuta|pe[cç]a|peti[cç][aã]o|contest\w*|agravo\w*|embargos|recurso\s+inominado|habeas|mandado\s+de\s+seguran[cç]a)\b/i.test(
+  return /\b(redi[gj]\w*|elabore\w*|escreva|fa[cç]a|gere|gerar|monte|prepare|minuta|pe[cç]a|peti[cç][aã]o|preview|contest\w*|agravo\w*|embargos|recurso\s+inominado|habeas|mandado\s+de\s+seguran[cç]a)\b/i.test(
     t
   );
 }
 
 /**
- * Confirmação de que o advogado já mudou o toggle Chat→Minuta
- * (ex.: "já alterei", "já estou no minuta") — deve disparar redação real.
+ * Confirmação explícita de gerar o preview (1 crédito) —
+ * "gerar preview", "montar a peça", "já alterei", "pronto, pode gerar".
  */
-export function confirmouModoMinuta(texto: string): boolean {
+export function confirmouGerarPreview(texto: string): boolean {
   const t = texto.trim();
-  if (!t || t.length > 160) return false;
+  if (!t || t.length > 200) return false;
   return (
-    /\b(j[aá]\s+(alterei|mudei|troquei|selecionei|estive|estou)|alterei\s+(para\s+)?(o\s+)?modo|mudei\s+para\s+(o\s+)?minuta|modo\s+minuta\s+(ligado|ativo)|pronto\s*,?\s*pode\s+(gerar|redig))\b/i.test(
+    /\b(gerar?\s+(o\s+)?preview|montar?\s+(a\s+)?pe[cç]a|confirmo\s+(a\s+)?gera|pode\s+gerar(\s+o\s+preview)?|j[aá]\s+(alterei|mudei|troquei|selecionei|estive|estou)|alterei\s+(para\s+)?(o\s+)?modo|mudei\s+para\s+(o\s+)?(minuta|pe[cç]a)|modo\s+(minuta|pe[cç]a)\s+(ligado|ativo)|pronto\s*,?\s*pode\s+(gerar|redig|montar))\b/i.test(
       t
     ) || /^j[aá]\s+alterei\.?$/i.test(t)
   );
+}
+
+/** @deprecated use confirmouGerarPreview */
+export function confirmouModoMinuta(texto: string): boolean {
+  return confirmouGerarPreview(texto);
 }
 
 /**
@@ -85,26 +90,30 @@ export function casoTemLastroMinimoParaPeca(estado: EstadoCasoChat): boolean {
   return false;
 }
 
+/** Copy do gate quando o caso já tem lastro (Assistente, sem debitar). */
+export function mensagemGateGerarPreview(): string {
+  return [
+    "Com o que você passou, a equipe já fecha a peça.",
+    "Quer acrescentar algo ou **gerar o preview** (1 crédito)?",
+    "Use o botão **Gerar preview** / **Montar a peça**, ou diga *gerar preview*.",
+  ].join(" ");
+}
+
 /**
- * Só o modo Minuta entrega peça. Instantâneo gera após o plano;
- * Planejado gera quando há lastro mínimo (peça completa) ou pedido explícito.
+ * Peça no preview só sobe com CTA explícito (`entregarPeca` / Gerar preview).
+ * Não debita só por estar no modo Peça ou por lastro.
  */
-export function deveEntregarPecaAposPlano(input: {
+export function deveEntregarPecaAposPlano(_input: {
   papel: "chat" | "minuta";
   modo: "instantaneo" | "planejado";
   estado: EstadoCasoChat;
   textoUsuario?: string;
 }): boolean {
-  if (input.papel !== "minuta") return false;
-  if (!casoTemLastroMinimoParaPeca(input.estado)) return false;
-  if (input.modo === "instantaneo") return true;
-  const t = input.textoUsuario?.trim() ?? "";
-  if (!t || pedidoExplicitoRedacao(t) || confirmouModoMinuta(t)) return true;
-  return casoTemLastroMinimoParaPeca(input.estado);
+  return false;
 }
 
 /**
- * Dispara redação real (cota) sem passar pela conversa que alucina “peça pronta”.
+ * Dispara redação real (cota) só com Gerar preview / confirmação explícita.
  */
 export function deveDispararRedacaoImediata(input: {
   papel: "chat" | "minuta";
@@ -112,10 +121,9 @@ export function deveDispararRedacaoImediata(input: {
   textoUsuario?: string;
   estado: EstadoCasoChat;
 }): boolean {
-  if (input.forcarMinuta) return casoTemLastroMinimoParaPeca(input.estado);
-  if (input.papel !== "minuta") return false;
   if (!casoTemLastroMinimoParaPeca(input.estado)) return false;
+  if (input.forcarMinuta) return true;
   const t = input.textoUsuario?.trim() ?? "";
   if (!t) return false;
-  return pedidoExplicitoRedacao(t) || confirmouModoMinuta(t);
+  return confirmouGerarPreview(t);
 }

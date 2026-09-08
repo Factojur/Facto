@@ -113,9 +113,23 @@ const ESPECIES: SlashComando[] = [
 const ACOES: SlashComando[] = [
   {
     id: "ac-minuta",
+    alias: "preview",
+    rotulo: "Gerar preview",
+    dica: "Monta a peça no painel (1 crédito)",
+    acao: "criar_minuta",
+  },
+  {
+    id: "ac-montar-peca",
+    alias: "peca",
+    rotulo: "Montar a peça",
+    dica: "Mesmo que Gerar preview — 1 crédito",
+    acao: "criar_minuta",
+  },
+  {
+    id: "ac-minuta-legado",
     alias: "minuta",
-    rotulo: "Criar minuta",
-    dica: "Gera a peça no preview (1 crédito)",
+    rotulo: "Gerar preview",
+    dica: "Atalho legado — gera a peça (1 crédito)",
     acao: "criar_minuta",
   },
   {

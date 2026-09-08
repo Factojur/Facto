@@ -85,7 +85,7 @@ export function montarRespostaTurnoLocal(input: {
   }
 
   linhas.push(
-    "O plano à direita será atualizado em instantes. Quando estiver bom, **Redigir (1 peça)**."
+    "O plano à direita será atualizado em instantes. Quando estiver bom, use **Gerar preview** (1 crédito)."
   );
 
   return linhas.join("\n\n");

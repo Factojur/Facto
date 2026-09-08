@@ -64,7 +64,7 @@ export function TrialEsgotadoBanner({
         <p className="mt-1.5 max-w-2xl text-sm text-slate-600">
           {usoLabel ? `${usoLabel}. ` : ""}
           Assine na mesma conta e continue no assistente — plano do caso sem
-          gastar cota; a Minuta consome 1 crédito. O acesso libera após a
+          gastar cota; Gerar preview consome 1 crédito. O acesso libera após a
           confirmação do Mercado Pago (pode pagar com outro cartão/e-mail; o
           vínculo é desta conta). Sem e-mail de convite.
         </p>

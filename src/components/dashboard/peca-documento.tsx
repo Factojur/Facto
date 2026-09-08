@@ -337,7 +337,7 @@ export function PecaDocumentoView({
             disabled={confirmandoRedacao}
             className="w-full rounded-lg bg-stone-800 px-5 py-2.5 text-sm font-semibold text-amber-50 shadow-sm hover:bg-stone-700 disabled:opacity-60"
           >
-            {confirmandoRedacao ? "Redigindo a peça…" : "Redigir (1 peça)"}
+            {confirmandoRedacao ? "Gerando o preview…" : "Gerar preview (1 crédito)"}
           </button>
         </div>
       ) : null}

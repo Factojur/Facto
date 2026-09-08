@@ -73,7 +73,7 @@ export function respostaMetaLeiJuris(): string {
     "Não consulto a web nem invento ementa neste chat.",
     "Se você **já tem** a lei municipal ou um acórdão/súmula do caso, abra **Provas / lei e juris** e cole/anexe — entra só nesta peça.",
     "Citar só o **número da lei** no chat ajuda a organizar o caso; o **texto integral** vai em Provas / lei e juris.",
-    "O **plano** à direita mostra teses e lastro sugerido; a peça completa vem no **modo Minuta** (1 crédito).",
+    "O **plano** à direita mostra teses e lastro sugerido; a peça completa vem com **Gerar preview** (1 crédito).",
   ].join("\n\n");
 }
 
@@ -81,11 +81,11 @@ export function respostaMetaAjuda(): string {
   return [
     "Fluxo rápido no FACTO:",
     "1. Anexe os autos — ficam no contexto (ainda sem peça).",
-    "2. No **Chat**, alinhe o caso; diga **redija** (ou use **Criar minuta**) para gerar no preview (**1 crédito**).",
-    "3. Digite **/** no composer para espécie ou atalho (ex.: `/contestacao`, `/minuta`).",
-    "4. **+ Modelo** (PDF/DOCX) = referência de forma só neste caso; Livre/Fiel/Recorte definem a adesão.",
+    "2. No **Assistente**, alinhe o caso. Quando houver lastro, use **Gerar preview** / **Montar a peça** (**1 crédito**).",
+    "3. Digite **/** no composer para espécie ou atalho (ex.: `/contestacao`, `/preview`).",
+    "4. **Usar meu modelo** (PDF/DOCX) = referência de forma só neste caso; Livre/Guia/Recorte definem a adesão.",
     "5. O **plano** à direita acompanha a estratégia; lei/juris do caso → complementos.",
-    "6. Depois da peça, peça **ajustes** no chat (sem novo crédito de peça).",
+    "6. Depois do preview, use **Aplicar ajuste** no chat (sem novo crédito de peça).",
   ].join("\n");
 }
 

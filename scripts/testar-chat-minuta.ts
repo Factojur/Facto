@@ -31,7 +31,7 @@ import { extrairPartesDoRelato } from "../src/lib/extrair-partes-relato";
 import { detectarRelatoMistoAreas } from "../src/lib/chat-anti-contaminacao";
 import { autoresAPartirDosNomes, reusAPartirDosNomes } from "../src/lib/partes-ja-qualificadas";
 import { configModoConversa } from "../src/lib/modo-conversa-chat";
-import { deveEntregarPecaAposPlano } from "../src/lib/chat-minuta-redacao";
+import { deveEntregarPecaAposPlano, confirmouGerarPreview } from "../src/lib/chat-minuta-redacao";
 import { pecaUsaEmFaceDeReu } from "../src/lib/peca-especie-area";
 import {
   extrairQualificacaoDoRelato,
@@ -497,12 +497,21 @@ function main() {
     especiePeca: "peticao-inicial",
   };
   assert(
-    deveEntregarPecaAposPlano({
+    !deveEntregarPecaAposPlano({
       papel: "minuta",
       modo: "instantaneo",
       estado: eRico,
     }),
-    "modo Minuta instantâneo entrega com lastro"
+    "Peça não sobe sozinha — só com Gerar preview (entregarPeca)"
+  );
+
+  assert(
+    confirmouGerarPreview("gerar preview"),
+    "confirmouGerarPreview reconhece gerar preview"
+  );
+  assert(
+    confirmouGerarPreview("montar a peça"),
+    "confirmouGerarPreview reconhece montar a peça"
   );
 
   assert(
