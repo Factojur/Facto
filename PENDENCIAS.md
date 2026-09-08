@@ -20,7 +20,7 @@ Ordem fechada — **não inverter**:
 ### Feito nesta rodada (08/09 — copy landing microajustes)
 
 - [x] Landing: remove “só” (estilo do escritório como parâmetro) e “se você quiser” (passo Confirme)
-- Deploy: commit + push até Ready
+- [x] **Deploy Ready** — `b0db900` · `dpl_BSds9i3CdREGg7mvaR2TbZUd6MUw` · [factoia.com.br](https://factoia.com.br)
 
 ### Feito nesta rodada (08/09 — scorecard noite + copy landing Ready)
 
