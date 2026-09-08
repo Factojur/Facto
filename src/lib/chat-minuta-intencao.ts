@@ -82,7 +82,7 @@ export function respostaMetaAjuda(): string {
     "Fluxo rápido no FACTO:",
     "1. Anexe os autos — ficam no contexto (ainda sem peça).",
     "2. No **Assistente**, alinhe o caso. Quando houver lastro, use **Gerar preview** / **Montar a peça** (**1 crédito**).",
-    "3. Digite **/** no composer para espécie ou atalho (ex.: `/contestacao`, `/preview`).",
+    "3. Confirme espécie/polo nos chips quando aparecerem.",
     "4. **Usar meu modelo** (PDF/DOCX) = referência de forma só neste caso; Livre/Guia/Recorte definem a adesão.",
     "5. O **plano** à direita acompanha a estratégia; lei/juris do caso → complementos.",
     "6. Depois do preview, use **Aplicar ajuste** no chat (sem novo crédito de peça).",

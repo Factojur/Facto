@@ -417,8 +417,8 @@ function main() {
     "ajuste pós-peça mesmo citando valor da causa"
   );
   assert(
-    respostaMetaAjuda().includes("/"),
-    "ajuda menciona atalho barra"
+    respostaMetaAjuda().includes("Gerar preview"),
+    "ajuda menciona Gerar preview"
   );
 
   const estadoVelho = {

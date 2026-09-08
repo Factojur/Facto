@@ -55,6 +55,7 @@ import {
 } from "@/components/dashboard/chat-fontes-flutuante";
 import { FactoWordmarkIa } from "@/components/brand/facto-wordmark";
 import { ChatPreviewInventarioAnexos } from "@/components/dashboard/chat-preview-inventario-anexos";
+import { ChatSugestoesInicio } from "@/components/dashboard/chat-sugestoes-inicio";
 import { ChatEstiloAtivoBadge } from "@/components/dashboard/chat-estilo-ativo-badge";
 import { ChatEsclarecimentoChips } from "@/components/dashboard/chat-esclarecimento-chips";
 import { precisaEsclarecimentoMinimoChat } from "@/lib/chat-esclarecimento-peca";
@@ -112,12 +113,6 @@ import {
   type EsforcoRedacao,
 } from "@/lib/chat-redacao-opcoes";
 import { ChatRedacaoOpcoes } from "@/components/dashboard/chat-redacao-opcoes";
-import { ChatSlashPalette } from "@/components/dashboard/chat-slash-palette";
-import {
-  extrairSlashAtivo,
-  filtrarSlashComandos,
-  type SlashComando,
-} from "@/lib/chat-slash-comandos";
 import {
   deveEntregarPecaAposPlano,
   pedidoExplicitoRedacao,
@@ -384,7 +379,6 @@ export function ChatMinutaPage({
     lerEsforcoRedacaoStorage()
   );
   const [carregandoModelo, setCarregandoModelo] = useState(false);
-  const [slashIndice, setSlashIndice] = useState(0);
   const papelRef = useRef<PapelInteracaoChat>(papelInteracao);
   papelRef.current = papelInteracao;
   const [anexosMemoria, setAnexosMemoria] = useState<AnexoMemoriaItem[]>([]);
@@ -800,16 +794,6 @@ export function ChatMinutaPage({
     setContextoPainelAberto(false);
   }, []);
 
-  const slashAtivo = useMemo(() => extrairSlashAtivo(input), [input]);
-  const slashItens = useMemo(
-    () => (slashAtivo ? filtrarSlashComandos(slashAtivo.query) : []),
-    [slashAtivo]
-  );
-
-  useEffect(() => {
-    setSlashIndice(0);
-  }, [slashAtivo?.query]);
-
   const aplicarModeloArquivo = useCallback(async (file: File) => {
     if (file.size > LIMITE_ARQUIVO_LOCAL_BYTES) {
       throw new Error("Arquivo grande demais (máx. 40 MB).");
@@ -837,31 +821,6 @@ export function ChatMinutaPage({
       modeloPecaTexto: "",
     }));
   }, []);
-
-  const aplicarSlashComando = useCallback(
-    (cmd: SlashComando) => {
-      const ativo = extrairSlashAtivo(input);
-      const prefixo = ativo?.prefixo ?? input;
-      if (cmd.acao === "criar_minuta") {
-        setInput("");
-        void handleEnviarMensagem({ forcarMinuta: true });
-        return;
-      }
-      if (cmd.especieId) {
-        setEstado((e) => ({
-          ...e,
-          especiePeca: cmd.especieId!,
-          tipoAcao: e.tipoAcao.trim() || cmd.rotulo,
-        }));
-      }
-      if (cmd.acao === "ajuste_prefill" || cmd.acao === "inserir" || cmd.acao === "especie") {
-        setInput(`${prefixo}${cmd.texto ?? ""}`.trimStart());
-      }
-    },
-    // handleEnviarMensagem is stable enough via closure; avoid TDZ by listing input only
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [input]
-  );
 
   useEffect(() => {
     salvarModoConversaStorage(modoConversa);
@@ -3218,8 +3177,17 @@ export function ChatMinutaPage({
                 <p
                   className={
                     modoWorkspace
-                      ? "text-base font-semibold text-stone-200 sm:text-lg"
-                      : "text-base font-semibold text-stone-800 sm:text-lg"
+                      ? "font-[family-name:var(--font-facto)] text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-facto-gold/75"
+                      : "font-[family-name:var(--font-facto)] text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-stone-500"
+                  }
+                >
+                  Assistente FACTO
+                </p>
+                <p
+                  className={
+                    modoWorkspace
+                      ? "mt-3 text-lg font-semibold tracking-tight text-stone-100 sm:text-xl"
+                      : "mt-3 text-lg font-semibold tracking-tight text-stone-800 sm:text-xl"
                   }
                 >
                   Anexe os autos e diga o que precisa
@@ -3227,43 +3195,21 @@ export function ChatMinutaPage({
                 <p
                   className={
                     modoWorkspace
-                      ? "mt-2 max-w-md text-xs text-stone-500 sm:text-sm"
-                      : "mt-2 max-w-md text-xs text-stone-600 sm:text-sm"
+                      ? "mt-2 max-w-md text-sm leading-relaxed text-stone-400"
+                      : "mt-2 max-w-md text-sm leading-relaxed text-stone-600"
                   }
                 >
-                  O PDF fica no contexto. No Assistente alinhe o caso; use{" "}
-                  <strong>Gerar preview</strong> (1 crédito) para a peça. Digite{" "}
-                  <kbd className="rounded border px-1 text-[10px]">/</kbd> para
-                  espécie ou atalho.
+                  O PDF entra no contexto sem gastar crédito. Alinhe o caso no
+                  Assistente; use <strong>Gerar preview</strong> quando quiser a
+                  peça (1 crédito).
                 </p>
               </div>
             )}
             {mensagens.length <= 1 && !casoJaOrganizado && (
-              <div className="flex flex-wrap gap-2 pt-1">
-                {(
-                  [
-                    "Corte indevido de água/energia — peço tutela e danos morais",
-                    "Rescisão trabalhista — verbas e FGTS",
-                    "Réplica à contestação — processo já em andamento",
-                  ] as const
-                ).map((sugestao) => (
-                  <button
-                    key={sugestao}
-                    type="button"
-                    onClick={() => {
-                      setInput(sugestao);
-                    }}
-                    data-testid="chat-sugestao"
-                    className={
-                      modoWorkspace
-                        ? "rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-left text-[11px] text-stone-300 backdrop-blur-sm transition hover:border-facto-gold/40 hover:text-facto-gold"
-                        : "rounded-full border border-stone-300 bg-white/80 px-3 py-1.5 text-left text-[11px] text-stone-600 transition hover:border-facto-gold/50 hover:text-stone-900"
-                    }
-                  >
-                    {sugestao}
-                  </button>
-                ))}
-              </div>
+              <ChatSugestoesInicio
+                modoWorkspace={modoWorkspace}
+                onEscolher={(sugestao) => setInput(sugestao)}
+              />
             )}
             {faseEquipe !== "idle" && (
                 <ChatEquipeTrabalhando fase={faseEquipe} />
@@ -3507,47 +3453,12 @@ export function ChatMinutaPage({
               }
             }}
           >
-          {slashItens.length > 0 ? (
-            <ChatSlashPalette
-              itens={slashItens}
-              indiceAtivo={Math.min(slashIndice, slashItens.length - 1)}
-              onEscolher={aplicarSlashComando}
-              modoWorkspace={modoWorkspace}
-            />
-          ) : null}
           <textarea
             rows={2}
             value={input}
             data-testid="chat-composer"
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
-              if (slashItens.length > 0) {
-                if (e.key === "ArrowDown") {
-                  e.preventDefault();
-                  setSlashIndice((i) => (i + 1) % slashItens.length);
-                  return;
-                }
-                if (e.key === "ArrowUp") {
-                  e.preventDefault();
-                  setSlashIndice(
-                    (i) => (i - 1 + slashItens.length) % slashItens.length
-                  );
-                  return;
-                }
-                if (e.key === "Escape") {
-                  e.preventDefault();
-                  const ativo = extrairSlashAtivo(input);
-                  if (ativo) setInput(ativo.prefixo.replace(/\/$/, ""));
-                  return;
-                }
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  const cmd =
-                    slashItens[Math.min(slashIndice, slashItens.length - 1)];
-                  if (cmd) aplicarSlashComando(cmd);
-                  return;
-                }
-              }
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 void handleEnviarMensagem();
@@ -3556,7 +3467,7 @@ export function ChatMinutaPage({
             placeholder={
               papelInteracao === "minuta"
                 ? "Instrução na Peça — Gerar preview consome 1 crédito…"
-                : "Anexe os autos e descreva o caso — ou / para espécie/atalho…"
+                : "Anexe os autos e descreva o caso…"
             }
             className={`w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 sm:text-[15px] ${tema.input}`}
           />
@@ -3824,10 +3735,11 @@ export function ChatMinutaPage({
               arquivos={anexosMemoria.map((a) => ({ nome: a.nome }))}
               numeroProcesso={estado.comarca.numeroProcesso}
               foro={estado.comarca.foro}
+              modoWorkspace={modoWorkspace}
               mensagem={
                 anexosMemoria.length || casoJaOrganizado
-                  ? "Abra a aba Plano para a estratégia. A peça completa só aparece após Gerar preview (1 crédito)."
-                  : "Anexe os autos ou descreva o caso à esquerda."
+                  ? "Abra a aba Plano para a estratégia. A peça completa sobe após Gerar preview (1 crédito)."
+                  : "Anexe os autos ou descreva o caso no Assistente. O texto da peça aparece aqui depois de Gerar preview."
               }
             />
           )}

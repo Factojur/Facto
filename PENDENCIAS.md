@@ -17,6 +17,12 @@ Ordem fechada — **não inverter**:
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
 
+### Feito nesta rodada (08/09 — remover `/` + empty state)
+
+- [x] Removida paleta `/` (comandos, UI, testes); help sem menção a atalho
+- [x] Copy/tipografia área vazia da Peça; exemplos atrás de **Ver exemplos de caso**
+- Deploy: commit + push até Ready
+
 ### Feito nesta rodada (08/09 — Assistente/Peça + gate de crédito)
 
 - [x] **Nomenclatura:** Assistente / Peça · Direto / Aprofundado · Gerar preview / Montar a peça · Usar meu modelo · Profundidade: completa · Aplicar ajuste
