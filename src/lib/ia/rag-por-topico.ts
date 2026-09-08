@@ -5,6 +5,7 @@
 
 import {
   buscarConhecimentoRelacionado,
+  type OpcoesBuscaConhecimento,
   type TrechoConhecimento,
 } from "@/lib/base-conhecimento";
 import type { TopicoPlanejado } from "@/lib/ia/plano-topicos-peca";
@@ -65,7 +66,7 @@ export async function buscarLastroPorTopicos(params: {
   fatos: string;
   topicos: TopicoPlanejado[];
   base: TrechoConhecimento[];
-  opcoesLastro?: { polo?: "ativo" | "passivo"; especie?: string };
+  opcoesLastro?: OpcoesBuscaConhecimento;
   enriquecerQuery: (areaId: string, q: string, fatos?: string | null) => string;
   maxPorConsulta?: number;
   maxTotal?: number;
