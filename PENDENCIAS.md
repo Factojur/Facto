@@ -21,7 +21,7 @@ Ordem fechada — **não inverter**:
 
 - [x] Removida paleta `/` (comandos, UI, testes); help sem menção a atalho
 - [x] Copy/tipografia área vazia da Peça; exemplos atrás de **Ver exemplos de caso**
-- Deploy: commit + push até Ready
+- [x] **Deploy Ready** — `4f3dce4` · `dpl_3xLZQLgPZUVBjQzBaZ9ay43Hv4Ya` · [factoia.com.br](https://factoia.com.br)
 
 ### Feito nesta rodada (08/09 — Assistente/Peça + gate de crédito)
 
