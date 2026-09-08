@@ -22,6 +22,7 @@ Ordem fechada — **não inverter**:
 - [x] **Conta teste** `nathalia.gomes1@gmail.com` — assinaturas/MP/pagamentos/convites/e-mails/cota/aceites/perfil/`auth.users` removidos (pronta para recompra)
 - [x] **PDF margem inferior 2 cm** — quebra de página **linha a linha** em `exportar-peca-pdf.ts` (parágrafos longos não invadem o rodapé); folga de descendente; exemplos E2E admin/empresarial regenerados e conferidos
 - [x] **Word** — margem inferior já em 2 cm (`formatacao-forense` → twips); sem alteração necessária
+- [x] **Deploy Ready** — `077cfe5` · `dpl_BJxAiUjPiqGFpocKjdhTq67G9U5N` · [factoia.com.br](https://factoia.com.br)
 - Prioridade produto: **aperfeiçoar antes de vender** (MP e2e / vendas ficam depois)
 
 ### Feito nesta rodada (08/09 — copy home sem “Diferencial”)
