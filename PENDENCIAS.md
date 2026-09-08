@@ -17,16 +17,24 @@ Ordem fechada — **não inverter**:
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
 
+### Feito nesta rodada (08/09 — copy landing microajustes)
+
+- [x] Landing: remove “só” (estilo do escritório como parâmetro) e “se você quiser” (passo Confirme)
+- Deploy: commit + push até Ready
+
+### Feito nesta rodada (08/09 — scorecard noite + copy landing Ready)
+
+- [x] **Scorecard 08/09 noite** — Iteração **8,9** · Lastro **7,8** · Formato **8,7** · Preço **8,2** · Gestão **7,2** · média **≈ 8,16** vs MinutaIA **≈ 6,80** (+1,36)
+- [x] Canvas `facto-vs-minutaia-scorecard.canvas.tsx` alinhado
+- [x] **Deploy Ready** copy landing — `7e3064e` · `dpl_5Xz2SvYEnfEf8cS99pUkTUr2Rcen` · [factoia.com.br](https://factoia.com.br)
+
 ### Feito nesta rodada (08/09 — copy landing sem “Minuta”)
 
 - [x] Landing: “Assistente FACTO”; tom = parâmetro; sem menção a cota/crédito nos passos; “minuta” → peça na copy comercial
 - Planos: “estruturam sua peça”; benefício assistente sem “Minuta”
-- **Deploy** — push `main` · aguardar Vercel Ready
+- [x] Deploy Ready (ver scorecard noite)
 
 ### Feito nesta rodada (08/09 — deploy Essencial + landing)
-
-- [x] **Deploy Ready** — `0851220` · `dpl_2P5h8ooDPQupXQk2k6u7DKzrxKNy` · [factoia.com.br](https://factoia.com.br)
-- 1º push (`da1566e`) falhou no typecheck: `tribunais`/`ufComarca` em `buscarLastroPorTopicos` sem tipo; corrigido em `0851220`
 
 - [x] **Deploy Ready** — `0851220` · `dpl_2P5h8ooDPQupXQk2k6u7DKzrxKNy` · [factoia.com.br](https://factoia.com.br)
 - 1º push (`da1566e`) falhou no typecheck: `tribunais`/`ufComarca` em `buscarLastroPorTopicos` sem tipo; corrigido em `0851220`
@@ -35,8 +43,7 @@ Ordem fechada — **não inverter**:
 
 - [x] Nav/CTAs rolam sem `#beneficios` / `#precos` na barra (URL limpa `factoia.com.br`)
 - [x] Copy planos (Essencial/Completo/Pro/trial) sem “1 área” / sem “Plano JEC” no rótulo
-- **Deploy** necessário para o site público refletir (produção ainda pode estar na versão antiga)
-- Em andamento (próximo): biblioteca de modelos no Tom + pergunta opt-in no chat (Fiel já enfraquecido)
+- Em andamento (próximo): biblioteca de modelos no Tom + pergunta opt-in no chat (Fiel já enfraquecido); **timbre Ribeiro & Associados** (3 opções)
 
 ### Feito nesta rodada (08/09 — landing AIDA)
 
@@ -72,8 +79,8 @@ Ordem fechada — **não inverter**:
 
 ### Feito nesta rodada (08/09 — scorecard pós-S1)
 
-- [x] **Scorecard 08/09** — Iteração **8,9** · Lastro **7,6** · Formato **8,6** · Preço **8,0** · Gestão **7,2** · média **≈ 8,06** vs MinutaIA **≈ 6,80** (+1,26)
-- [x] Canvas `facto-vs-minutaia-scorecard.canvas.tsx` alinhado
+- [x] **Scorecard 08/09 a.m.** — Iteração **8,9** · Lastro **7,6** · Formato **8,6** · Preço **8,0** · Gestão **7,2** · média **≈ 8,06** (ver **noite** no topo)
+- [x] Canvas alinhado (depois atualizado à noite)
 - Formato sobe com tipografia/___ª VARA/assinatura/inaugurais + E2E 186; lastro +0,1 (faixa 846–903)
 
 ### Feito nesta rodada (07/09 — deploy S1 Ready)
@@ -166,30 +173,48 @@ Duas simulações reais em [factoia.com.br/dashboard](https://factoia.com.br/das
 - [ ] **S3 smoke lastro** — após embeddings
 - Compra MP (S7) / 2ª API (S8): aguardam Jefferson
 
-### Scorecard FACTO vs MinutaIA (08/09 — S1 tipografia + seed 846–903)
+### Scorecard FACTO vs MinutaIA (08/09 noite — Essencial + lastro UF + landing)
 
-| Critério | MinutaIA | FACTO 06/09 | FACTO 08/09 | Δ vs Minuta |
-|----------|----------|-------------|-------------|-------------|
+| Critério | MinutaIA | FACTO 08/09 a.m. | FACTO 08/09 noite | Δ vs Minuta |
+|----------|----------|------------------|-------------------|-------------|
+| Iteração (chat, fluidez, preview) | 9,0 | 8,9 | **8,9** | −0,1 |
+| Lastro / fundamentação | 7,0 | 7,6 | **7,8** | **+0,8** |
+| Formato forense e entrega | 6,0 | 8,6 | **8,7** | **+2,7** |
+| Preço / custo por peça | 5,0 | 8,0 | **8,2** | **+3,2** |
+| Gestão + continuidade | 7,0 | 7,2 | **7,2** | +0,2 |
+
+**O que subiu (08/09 noite):**
+- **Lastro +0,2** — hard-drop TJ alheio à UF do foro; ementa `[[JURIS]]` ipsis litteris; testes `testar-lastro-tribunal-uf`
+- **Formato +0,1** — epígrafe fina (rótulos raros / petições curtas) + auditor
+- **Preço +0,2** — Essencial (30 peças, todas as áreas, Sonnet 10%); trial todas as áreas; copy comercial sem “1 área” / sem “Minuta”
+
+**Ainda melhorar (fila):**
+1. **P0** Seed **904→1500** + reindex · smoke lastro 20 áreas · diário 01h **sem pausa −7d**
+2. **P0** Compra **MP** ponta a ponta (bloqueio comercial)
+3. **P1** Tom: modelos por espécie + opt-in no chat (Fiel já leve)
+4. **P1** 2ª API juris (TRE/TSE + TJs/TRFs ausentes) — só com ok
+5. **P2** Timbre **Ribeiro & Associados** (3 opções cabeçalho/rodapé/marca d’água) + teste no FACTO
+6. **P2** ABNT pixel / amostragem humana E2E · `tsc` antes do push em mudanças de tipo
+
+**Generalista (pesos iguais):** FACTO **≈ 8,16** vs MinutaIA **≈ 6,80** (**+1,36**).
+
+Canvas: scorecard Cursor `facto-vs-minutaia-scorecard.canvas.tsx` (atualizado 08/09 noite).
+
+### Scorecard FACTO vs MinutaIA (08/09 — S1 tipografia + seed 846–903) — supersedido à noite
+
+| Critério | MinutaIA | FACTO 06/09 | FACTO 08/09 a.m. | Δ vs Minuta |
+|----------|----------|-------------|------------------|-------------|
 | Iteração (chat, fluidez, preview) | 9,0 | 8,9 | **8,9** | −0,1 |
 | Lastro / fundamentação | 7,0 | 7,5 | **7,6** | **+0,6** |
 | Formato forense e entrega | 6,0 | 8,2 | **8,6** | **+2,6** |
 | Preço / custo por peça | 5,0 | 8,0 | **8,0** | +3,0 |
 | Gestão + continuidade | 7,0 | 7,2 | **7,2** | +0,2 |
 
-**O que subiu (08/09):**
-- **Formato +0,4** — `DA ___ª VARA`; assinatura determinística; JURIS truncado; rodapé só nº; inaugurais por área (reclamação/queixa/MS…); E2E 186 espécies; S1 Ready em prod.
+**O que subiu (08/09 a.m.):**
+- **Formato +0,4** — `DA ___ª VARA`; assinatura determinística; JURIS truncado; rodapé só nº; inaugurais por área; E2E 186 espécies; S1 Ready em prod.
 - **Lastro +0,1** — faixa **846–903** inserida; fila **904→1500**.
 
-**Ainda melhorar (fila):**
-1. **P0** Seed **904→1500** + reindex · smoke lastro 20 áreas · diário 01h **sem pausa −7d** (só para quando você mandar)  
-2. **P0** Compra **MP** ponta a ponta (bloqueio comercial)  
-3. **P1** 2ª API juris (TRE/TSE + TJs/TRFs ausentes) — só com ok  
-4. [x] **P1** Epígrafe fina (rótulos raros; petições curtas só com nº) + JEC `1ª` + anti-slug título  
-5. [x] **P2** Auditor/prompts + higiene tipográfica + E2E 08/09 (2 casos) — ABNT pixel residual / tokens Flash ficam abertos
-
-**Generalista (pesos iguais):** FACTO **≈ 8,06** vs MinutaIA **≈ 6,80** (**+1,26**).
-
-Canvas: scorecard Cursor `facto-vs-minutaia-scorecard.canvas.tsx` (atualizar junto).
+**Generalista (a.m.):** FACTO **≈ 8,06** vs MinutaIA **≈ 6,80** (**+1,26**).
 
 ### Feito nesta rodada (06/09 — scorecard + juris + próximos)
 

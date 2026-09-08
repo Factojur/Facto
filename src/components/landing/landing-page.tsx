@@ -92,7 +92,7 @@ const PASSOS = [
     passo: "02",
     titulo: "Confirme e a equipe redige",
     texto:
-      "No chat FACTO, Analista, Pesquisa e Redator estruturam a peça com lastro da base — no tom do seu perfil, se você quiser.",
+      "No chat FACTO, Analista, Pesquisa e Redator estruturam a peça com lastro da base — no tom do seu perfil.",
   },
   {
     passo: "03",
@@ -207,7 +207,7 @@ export function LandingPage() {
               <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-stone-500 md:text-base">
                 O FACTO não substitui o advogado: organiza o caso, fundamenta
                 com a base curada e redige a peça para você revisar — com
-                Assistente FACTO e o estilo do escritório só como parâmetro.
+                Assistente FACTO e o estilo do escritório como parâmetro.
               </p>
             </div>
 
