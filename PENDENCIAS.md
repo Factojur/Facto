@@ -17,9 +17,19 @@ Ordem fechada — **não inverter**:
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
 
+### Feito nesta rodada (08/09 — copy landing sem “Minuta”)
+
+- [x] Landing: “Assistente FACTO”; tom = parâmetro; sem menção a cota/crédito nos passos; “minuta” → peça na copy comercial
+- Planos: “estruturam sua peça”; benefício assistente sem “Minuta”
+- **Deploy** — push `main` · aguardar Vercel Ready
+
 ### Feito nesta rodada (08/09 — deploy Essencial + landing)
 
-- [x] **Deploy** — commit + push `main` · aguardar Vercel Ready · [factoia.com.br](https://factoia.com.br)
+- [x] **Deploy Ready** — `0851220` · `dpl_2P5h8ooDPQupXQk2k6u7DKzrxKNy` · [factoia.com.br](https://factoia.com.br)
+- 1º push (`da1566e`) falhou no typecheck: `tribunais`/`ufComarca` em `buscarLastroPorTopicos` sem tipo; corrigido em `0851220`
+
+- [x] **Deploy Ready** — `0851220` · `dpl_2P5h8ooDPQupXQk2k6u7DKzrxKNy` · [factoia.com.br](https://factoia.com.br)
+- 1º push (`da1566e`) falhou no typecheck: `tribunais`/`ufComarca` em `buscarLastroPorTopicos` sem tipo; corrigido em `0851220`
 
 ### Feito nesta rodada (08/09 — landing URL + planos)
 

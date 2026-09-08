@@ -58,7 +58,7 @@ const BENEFICIOS = [
     icone: IconeRelogio,
     titulo: "Sai da página em branco",
     texto:
-      "Você narra o caso. O FACTO monta o plano e a minuta — você revisa e protocola, em vez de reescrever a peça do zero.",
+      "Você narra o caso. O FACTO monta o plano e a peça — você revisa e protocola, em vez de reescrever do zero.",
   },
   {
     icone: IconeBalanca,
@@ -70,7 +70,7 @@ const BENEFICIOS = [
     icone: IconeTom,
     titulo: "Tom do escritório (parâmetro)",
     texto:
-      "Preferência de tom e forma — nunca trava a IA. Você decide quando usar; o rito e os autos prevalecem.",
+      "Preferência de tom e forma — serve de parâmetro ao assistente, sem engessar a redação. Você decide quando usar; o rito e os autos prevalecem.",
   },
   {
     icone: IconeDocumento,
@@ -86,13 +86,13 @@ const PASSOS = [
     passo: "01",
     titulo: "Conte o caso uma vez",
     texto:
-      "Chat, PDF ou Word. O assistente organiza fatos, partes e rito e mostra o plano do caso — sem gastar cota de peça.",
+      "Chat, PDF ou Word. O assistente organiza fatos, partes e rito e mostra o plano do caso.",
   },
   {
     passo: "02",
     titulo: "Confirme e a equipe redige",
     texto:
-      "Na Minuta (1 crédito), Analista, Pesquisa e Redator estruturam a peça com lastro da base — no tom do seu perfil, se você quiser.",
+      "No chat FACTO, Analista, Pesquisa e Redator estruturam a peça com lastro da base — no tom do seu perfil, se você quiser.",
   },
   {
     passo: "03",
@@ -166,9 +166,9 @@ export function LandingPage() {
               <span className="text-facto-gold">redige suas peças jurídicas</span>
             </h1>
             <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-stone-400">
-              Conte o caso no assistente FACTO — plano do caso sem gastar cota,
-              redação com lastro da base curada e peça em Word ou PDF para
-              revisar e protocolar.
+              Conte o caso no assistente FACTO — plano do caso, redação com
+              lastro da base curada e peça em Word ou PDF para revisar e
+              protocolar.
             </p>
 
             <div className="mt-10 flex flex-col items-center gap-3">
@@ -206,8 +206,8 @@ export function LandingPage() {
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-stone-500 md:text-base">
                 O FACTO não substitui o advogado: organiza o caso, fundamenta
-                com a base curada e redige a minuta para você revisar — com
-                liberdade da IA e o estilo do escritório só como parâmetro.
+                com a base curada e redige a peça para você revisar — com
+                Assistente FACTO e o estilo do escritório só como parâmetro.
               </p>
             </div>
 
@@ -238,11 +238,11 @@ export function LandingPage() {
                 Como funciona
               </p>
               <h2 className="mt-3 text-3xl font-bold text-white md:text-4xl">
-                Do relato à minuta — com assistente e lastro
+                Do relato à peça — com assistente e lastro
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-stone-500 md:text-base">
                 Assistente primeiro: você narra o caso; o FACTO monta o plano e
-                só consome cota na Minuta (peça completa).
+                gera sua peça completa, pronta para conferência.
               </p>
             </div>
 

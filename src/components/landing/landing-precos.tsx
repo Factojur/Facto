@@ -143,7 +143,7 @@ export function LandingPrecos() {
           <p className="mt-4 text-stone-400">
             Teste grátis em todas as áreas. Essencial para começar; Completo e
             Pro para mais peças e redator avançado. Assistente e plano do caso
-            não consomem peça — só a Minuta. Sem fidelidade.
+            estruturam sua peça. Sem fidelidade.
           </p>
         </div>
 

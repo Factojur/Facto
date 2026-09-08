@@ -17,7 +17,7 @@ import { ESCRITORIO_VENDA_ATIVA } from "@/lib/feature-flags";
 
 /** Headline de benefício — experiência primeiro; cota fica nos detalhes do plano. */
 export const BENEFICIO_ASSISTENTE_PREVIEW =
-  "Assistente + plano do caso (cota só na Minuta)";
+  "Assistente + plano do caso antes da peça completa";
 
 export const PLANO_JEC = {
   id: "jec" as const,
