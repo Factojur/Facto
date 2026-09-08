@@ -21,6 +21,7 @@ Ordem fechada — **não inverter**:
 
 - [x] Banner estilo: **Tom do escritório** (sai “Diferencial FACTO”); CTA **Configurar tom**
 - [x] Como funciona: Assistente / Gerar preview / sem “minuta” nem “Redija”; título passo 04 “Exporte e protocole”
+- [x] **Deploy Ready** — `6274655` · `dpl_41PDHbgX7Yz55FsZZDcJxf2AEjEk` · [factoia.com.br](https://factoia.com.br)
 
 ### Feito nesta rodada (08/09 — remover `/` + empty state)
 
