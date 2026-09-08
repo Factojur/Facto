@@ -17,6 +17,13 @@ Ordem fechada — **não inverter**:
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
 
+### Feito nesta rodada (08/09 — limpeza compra teste + PDF margem)
+
+- [x] **Conta teste** `nathalia.gomes1@gmail.com` — assinaturas/MP/pagamentos/convites/e-mails/cota/aceites/perfil/`auth.users` removidos (pronta para recompra)
+- [x] **PDF margem inferior 2 cm** — quebra de página **linha a linha** em `exportar-peca-pdf.ts` (parágrafos longos não invadem o rodapé); folga de descendente; exemplos E2E admin/empresarial regenerados e conferidos
+- [x] **Word** — margem inferior já em 2 cm (`formatacao-forense` → twips); sem alteração necessária
+- Prioridade produto: **aperfeiçoar antes de vender** (MP e2e / vendas ficam depois)
+
 ### Feito nesta rodada (08/09 — copy home sem “Diferencial”)
 
 - [x] Banner estilo: **Tom do escritório** (sai “Diferencial FACTO”); CTA **Configurar tom**

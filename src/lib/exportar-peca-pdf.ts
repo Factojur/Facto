@@ -83,6 +83,7 @@ function tokensDeRuns(
  * Desenha parágrafo com runs Markdown, recuo só na 1ª linha.
  * Com `justify`, distribui espaço entre palavras nas linhas cheias
  * (última linha fica à esquerda — padrão tipográfico).
+ * Quebra de página linha a linha — senão o corpo invade a margem inferior.
  */
 function desenharParagrafoRuns(
   doc: JsPdfDoc,
@@ -97,17 +98,21 @@ function desenharParagrafoRuns(
     forceBold?: boolean;
     forceItalic?: boolean;
     justify?: boolean;
+    /** Antes de cada linha: pode adicionar página e devolver o Y do baseline. */
+    garantirEspacoLinha: (yAtual: number, lineH: number) => number;
   }
 ): number {
   doc.setFontSize(opts.fontSize);
   const tokens = tokensDeRuns(doc, texto, opts.forceBold, opts.forceItalic);
-  if (tokens.length === 0) return opts.y + opts.lineH;
+  if (tokens.length === 0) {
+    const y0 = opts.garantirEspacoLinha(opts.y, opts.lineH);
+    return y0 + opts.lineH;
+  }
 
   type Linha = { tokens: TokenPdf[]; indent: number };
   const linhas: Linha[] = [];
   let linhaAtual: TokenPdf[] = [];
   let larguraAtual = 0;
-  let naPrimeira = true;
   let indentAtual = opts.firstLineIndentMm;
 
   const larguraUtil = () => opts.maxWidth - indentAtual;
@@ -127,7 +132,6 @@ function desenharParagrafoRuns(
     }
     linhaAtual = [];
     larguraAtual = 0;
-    naPrimeira = false;
     indentAtual = 0;
   };
 
@@ -147,6 +151,7 @@ function desenharParagrafoRuns(
 
   let y = opts.y;
   for (let i = 0; i < linhas.length; i++) {
+    y = opts.garantirEspacoLinha(y, opts.lineH);
     const linha = linhas[i]!;
     const ultima = i === linhas.length - 1;
     const xBase = opts.x + linha.indent;
@@ -252,6 +257,12 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
     FORMATACAO_FORENSE.entrelinhasCitacao
   );
   let y = marginTop;
+  /**
+   * Reserva para descendentes da fonte (baseline jsPDF): o glifo passa um pouco
+   * abaixo de y — sem isso a última linha invade os 2 cm do rodapé.
+   */
+  const folgaDescendenteMm = 1.5;
+  const limiarCorpo = pageH - marginBottom - folgaDescendenteMm;
 
   const blocos = classificarPeca(pecaTexto);
   if (blocos.length === 0) {
@@ -259,10 +270,21 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
   }
 
   function novaPaginaSePreciso(altura: number) {
-    if (y + altura > pageH - marginBottom) {
+    // Reserva `altura` abaixo do baseline atual (blocos / anti-órfão).
+    if (y + altura > limiarCorpo) {
       doc.addPage();
       y = marginTop;
     }
+  }
+
+  /** Quebra no meio do parágrafo: baseline não passa do limiar (2 cm + folga). */
+  function garantirEspacoLinha(yAtual: number, _lineHLinha: number): number {
+    y = yAtual;
+    if (y > limiarCorpo) {
+      doc.addPage();
+      y = marginTop;
+    }
+    return y;
   }
 
   for (let bi = 0; bi < blocos.length; bi++) {
@@ -290,8 +312,8 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
       doc.setFont("times", "bold");
       doc.setFontSize(FORMATACAO_FORENSE.tamanhoPt);
       const lines = doc.splitTextToSize(limpo, maxWidth);
-      novaPaginaSePreciso(lines.length * lineH);
       for (const line of lines) {
+        y = garantirEspacoLinha(y, lineH);
         doc.text(line, pageW / 2, y, { align: "center" });
         y += lineH;
       }
@@ -303,8 +325,8 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
       doc.setFont("times", "normal");
       doc.setFontSize(FORMATACAO_FORENSE.tamanhoPt);
       const lines = doc.splitTextToSize(limpo, maxWidth);
-      novaPaginaSePreciso(lines.length * lineH);
       for (const line of lines) {
+        y = garantirEspacoLinha(y, lineH);
         doc.text(line, pageW / 2, y, { align: "center" });
         y += lineH;
       }
@@ -337,12 +359,12 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
         // Negrito só se a IA marcou (**…**); sem forçar molde.
         forceBold: false,
         justify: false,
+        garantirEspacoLinha,
       });
       continue;
     }
 
     if (b.tipo === "subtopico") {
-      novaPaginaSePreciso(lineH);
       y = desenharParagrafoRuns(doc, b.texto, {
         x: marginLeft,
         y,
@@ -352,12 +374,12 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
         firstLineIndentMm: indent,
         forceBold: false,
         justify: false,
+        garantirEspacoLinha,
       });
       continue;
     }
 
     if (b.tipo === "item-pedido") {
-      novaPaginaSePreciso(lineH);
       y = desenharParagrafoRuns(doc, b.texto, {
         x: marginLeft,
         y,
@@ -367,13 +389,13 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
         firstLineIndentMm: indent,
         forceBold: false,
         justify: true,
+        garantirEspacoLinha,
       });
       continue;
     }
 
     if (b.tipo === "citacao-juris") {
       const larguraJuris = maxWidth - indentJuris;
-      novaPaginaSePreciso(lineHCitacao * 2);
       y = desenharParagrafoRuns(doc, b.texto, {
         x: marginLeft + indentJuris,
         y,
@@ -382,12 +404,12 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
         fontSize: FORMATACAO_FORENSE.tamanhoCitacaoPt,
         firstLineIndentMm: 0,
         justify: true,
+        garantirEspacoLinha,
       });
       continue;
     }
 
     if (b.tipo === "prova-item") {
-      novaPaginaSePreciso(lineH);
       y = desenharParagrafoRuns(doc, b.texto, {
         x: marginLeft + 8,
         y,
@@ -396,12 +418,12 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
         fontSize: FORMATACAO_FORENSE.tamanhoPt,
         firstLineIndentMm: 0,
         justify: true,
+        garantirEspacoLinha,
       });
       continue;
     }
 
     // Corpo + abertura (já qualificado): justificado + recuo 1ª linha 2 cm
-    novaPaginaSePreciso(lineH);
     y = desenharParagrafoRuns(doc, b.texto, {
       x: marginLeft,
       y,
@@ -410,6 +432,7 @@ async function criarDoc(pecaTexto: string): Promise<JsPdfDoc> {
       fontSize: FORMATACAO_FORENSE.tamanhoPt,
       firstLineIndentMm: indent,
       justify: true,
+      garantirEspacoLinha,
     });
   }
 
