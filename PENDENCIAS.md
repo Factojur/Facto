@@ -23,6 +23,7 @@ Ordem fechada — **não inverter**:
 - [x] **PDF margem inferior 2 cm** — quebra de página **linha a linha** em `exportar-peca-pdf.ts` (parágrafos longos não invadem o rodapé); folga de descendente; exemplos E2E admin/empresarial regenerados e conferidos
 - [x] **Word** — margem inferior já em 2 cm (`formatacao-forense` → twips); sem alteração necessária
 - [x] **Deploy Ready** — `077cfe5` · `dpl_BJxAiUjPiqGFpocKjdhTq67G9U5N` · [factoia.com.br](https://factoia.com.br)
+- [x] **INPI** — pePI 08/09: FACTO **944677347** + protocolos FACTO/FACTOIA **constam** (pré-publicação); RPI **2904/2905** XML Marcas sem publicação
 - Prioridade produto: **aperfeiçoar antes de vender** (MP e2e / vendas ficam depois)
 
 ### Feito nesta rodada (08/09 — copy home sem “Diferencial”)
@@ -1323,26 +1324,29 @@ Ordem fechada 24/08: **receita + lastro + confiança na peça** antes de marketi
 - **Instalar:** `powershell -ExecutionPolicy Bypass -File scripts\instalar-tarefa-smoke-lastro.ps1`
 - **28/08:** execução manual **2 ok · 18 falhas** (Lei 9.099 no scaffold fora do JEC) — **corrigido** em `221239a`; revalidar na tarefa de 29/08 ou manual.
 
-## Marca INPI (FACTO / FACTOIA) — 24/08
+## Marca INPI (FACTO / FACTOIA) — 24/08 · **rechecagem 08/09**
 
 ### Já feito
-| Marca | Processo | Protocolo | Classe | Status pePI (25/08) |
-|-------|----------|-----------|--------|---------------------|
-| **FACTO** | **944677347** | **850260390405** | 42 nominativa | **Consta** na base; ficha/RPI ainda sem detalhe público (pré-publicação). Base até **25/08** · RPI **2903** |
-| **FACTOIA** | *(nº no recibo — informar)* | **850260430578** | 42 nominativa | Protocolo **não** busca no pePI (só nº de processo). Marca exata 42 ainda **0** |
+| Marca | Processo | Protocolo | Classe | Status pePI (25/08) | RPI até **2905** (08/09) |
+|-------|----------|-----------|--------|---------------------|---------------------------|
+| **FACTO** | **944677347** | **850260390405** | 42 nominativa | **Consta** na base (25/08); ficha/RPI sem detalhe público | **Ausente** em XML Marcas **2904** (01/09) e **2905** (08/09) |
+| **FACTOIA** | *(nº no recibo — informar)* | **850260430578** | 42 nominativa | Protocolo **não** busca no pePI | **Ausente** (mesmo critério) |
 
 Titular: PF Jefferson · GRU 389 · especificação SaaS/TI. Comprovante FACTO: `…\PROJETO FACTO\INPI\29409172362117530.pdf`
 
-### Situação pePI (consulta 24/08 ~11:05)
-- **FACTO 944677347:** pedido **consta**; acompanhar RPI + Meus pedidos (logado).
-- **Protocolo 850260430578** (FACTOIA): pePI por “nº processo” → **nenhum resultado** (protocolo ≠ processo).
-- Busca exata **FACTOIA** / classe 42 → **0** (ainda não indexado).
-- Interpretação: ambos **depositados / em fila**; sem indeferimento visível.
+### Situação pePI (rechecagem **08/09/2026** ~16:26)
+- **FACTO 944677347:** **consta** no banco; aviso padrão de **pré-publicação** (acompanhar RPI + Meus pedidos logado). Sem ficha pública de despachos ainda.
+- **Protocolo FACTO 850260390405:** também resolve para pedido **consta** (mesmo aviso).
+- **Protocolo FACTOIA 850260430578:** pePI responde **“pedido … consta”** (sem exibir nº de processo na tela anônima) — confirma depósito; **ainda falta anotar o nº de processo** do recibo.
+- Interpretação: ambos **depositados / em fila**; **sem 1ª publicação RPI** até 2905; sem indeferimento visível.
 
-### RPI 2903 (25/08/2026 — consulta ~19:37)
-- **XML Marcas** (`RM2903.zip`): **944677347** e **FACTOIA** **ausentes** (2902 também sem 944677347).
-- **Comunicados2903.pdf:** sem menção aos processos.
-- **Próxima checagem:** RPI **2904** (~**02/09/2026**, terça).
+### RPI — publicações (rechecagem 08/09)
+- **2903** (25/08): sem FACTO/FACTOIA (já conferido).
+- **2904** (01/09): XML Marcas `RM2904.zip` (~10,7 MB) — **0** hits `944677347` / `FACTOIA` / protocolos.
+- **2905** (08/09, terça de hoje): XML Marcas `RM2905.zip` (~12,1 MB) — **0** hits nos mesmos termos.
+- **Comunicados 2904** PDF baixado; **2905** Comunicados PDF falhou no download (0 bytes) — irrelevante se XML Marcas já cobre despachos de marca.
+- Interpretação **08/09:** ainda **sem 1ª publicação** na RPI (pedido em fila / pré-publicação). Sem despacho de indeferimento/exigência visível nessas revistas.
+- **Próxima checagem:** RPI **2906** (~**15/09/2026**, terça). Baixar `https://revistas.inpi.gov.br/txt/RMNNNN.zip` (tipo revista Marcas = 5).
 - Arquivos locais: `tmp/rpi-check/` (gitignored).
 
 ### Próximos registros — ordem
@@ -1354,8 +1358,10 @@ Titular: PF Jefferson · GRU 389 · especificação SaaS/TI. Comprovante FACTO: 
 
 ### Pendências marca
 - [ ] Anotar **nº do processo FACTOIA** do recibo e-Marcas (não só o protocolo)
-- [ ] Logado: Meus pedidos para **944677347** + processo FACTOIA
-- [ ] Conferir **RPI 2904** (~02/09) até 1ª publicação
+- [ ] Logado: Meus pedidos para **944677347** + processo FACTOIA (alertas de publicação)
+- [ ] Conferir **RPI 2906** (~15/09) até 1ª publicação
+- [x] pePI 08/09 — FACTO **944677347** e protocolos FACTO/FACTOIA **constam** (pré-publicação)
+- [x] RPI **2904** + **2905** conferidas (08/09) — sem publicação FACTO/FACTOIA
 - [x] RPI 2903 conferida — sem publicação FACTO/FACTOIA (25/08)
 - [x] FACTOIA 42 depositado (protocolo 850260430578) — 24/08
 
