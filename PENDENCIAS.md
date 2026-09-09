@@ -31,7 +31,7 @@ Ordem fechada — **não inverter**:
 - [x] **Scorecard 09/09 (previsto pós-reindex):** Iteração **8,9** · Lastro **8,2** · Formato **8,7** · Preço **8,2** · Gestão **7,2** · média **≈ 8,24** vs MinutaIA **≈ 6,80** (+1,44) — canvas alinhado
 - [x] **Ordem até auto-crítica** — ver seção **Fila de implementação (09/09)** abaixo (não ligar Fc2 em prod antes de O1–O3)
 - [x] **O2 Smoke lastro 20 áreas** — **20 ok · 0 lastro fraco · 0 falhas** (EXIT 0, ~12 min; 429 SEED com retry ok)
-- [x] **O3 F3+F4 soft** — pertinência tema×fatos no retrieve + ENCAIXE/lastro âmbar no preview (**sem** trava de Gerar)
+- [x] **O3 F3+F4 soft** — pertinência tema×fatos no retrieve + ENCAIXE/lastro âmbar no preview (**sem** trava de Gerar) · deploy **Ready** `6b71c11` / `dpl_2zcHgAC5NKpijHmpfpJp9L3KVi9A` · [factoia.com.br](https://factoia.com.br)
 - [x] Agenda amanhã intacta: **01h** juris · **02h** portal · **03h** smoke · **04h** súmulas
 - [x] Playwright Chromium em `%LOCALAPPDATA%\ms-playwright` + `PLAYWRIGHT_BROWSERS_PATH` na tarefa portal
 - [ ] **Próximo código: O5b** (profundidade fora do header → pergunta chat) — **hora de implementar** após O3; O4 ETL em paralelo (ops)
