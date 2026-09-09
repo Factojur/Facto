@@ -10,6 +10,9 @@ import {
 } from "@/lib/base-conhecimento";
 import type { TopicoPlanejado } from "@/lib/ia/plano-topicos-peca";
 
+/** Limiar local (O3/F3): antes 0.2 — menos ementa “quase”. */
+export const LIMIAR_SCORE_TOPICO = 0.28;
+
 function chaveItem(i: TrechoConhecimento): string {
   return `${i.categoria}|${i.titulo}|${i.texto.slice(0, 80)}`;
 }
@@ -27,25 +30,42 @@ function palavras(texto: string, min = 5): string[] {
     .filter((w) => w.length >= min);
 }
 
-/** Score local 0–1: título/encaixe/lastro × trecho da base. */
+/**
+ * Score local 0–1: título/encaixe/lastro × trecho (+ fatos do caso, O3/F3).
+ * Fatos aumentam o peso quando presentes; não bloqueiam retrieve vazio.
+ */
 export function scoreTrechoVsTopico(
   item: TrechoConhecimento,
-  topico: TopicoPlanejado
+  topico: TopicoPlanejado,
+  fatos?: string | null
 ): number {
   const blob = norm(`${item.titulo}\n${item.texto.slice(0, 600)}`);
-  const termos = [
+  const termosTopico = [
     ...palavras(topico.titulo),
     ...topico.subtitulos.flatMap((s) => palavras(s)),
     ...(topico.encaixe ? palavras(topico.encaixe) : []),
     ...(topico.lastro ?? []).flatMap((l) => palavras(l.ref, 4)),
   ];
-  if (!termos.length) return 0;
-  let hit = 0;
-  const uniq = [...new Set(termos)];
-  for (const t of uniq) {
-    if (blob.includes(t)) hit++;
+  const termosFatos = fatos?.trim() ? palavras(fatos, 5).slice(0, 20) : [];
+  const uniqTopico = [...new Set(termosTopico)];
+  if (!uniqTopico.length && !termosFatos.length) return 0;
+
+  let hitTopico = 0;
+  for (const t of uniqTopico) {
+    if (blob.includes(t)) hitTopico++;
   }
-  return hit / uniq.length;
+  const base = uniqTopico.length ? hitTopico / uniqTopico.length : 0;
+
+  if (!termosFatos.length) return base;
+
+  let hitFatos = 0;
+  const uniqFatos = [...new Set(termosFatos)];
+  for (const t of uniqFatos) {
+    if (blob.includes(t)) hitFatos++;
+  }
+  const fracaoFatos = hitFatos / uniqFatos.length;
+  // 70% tópico + 30% fatos — demove vizinho semântico sem caso
+  return base * 0.7 + fracaoFatos * 0.3;
 }
 
 function consultaDoTopico(t: TopicoPlanejado): string {
@@ -83,7 +103,8 @@ export async function buscarLastroPorTopicos(params: {
   const topicosFinos: TopicoPlanejado[] = [];
   for (const t of params.topicos) {
     const locais = params.base.filter(
-      (item) => scoreTrechoVsTopico(item, t) >= 0.2
+      (item) =>
+        scoreTrechoVsTopico(item, t, params.fatos) >= LIMIAR_SCORE_TOPICO
     );
     if (locais.length < minLocais) {
       topicosFinos.push(t);
@@ -116,15 +137,15 @@ export async function buscarLastroPorTopicos(params: {
     }
   }
 
-  // Preferência: trechos que casam com algum tópico do plano.
+  // Preferência: trechos que casam com algum tópico do plano (+ fatos).
   acumulado = [...acumulado].sort((a, b) => {
     const sa = Math.max(
       0,
-      ...params.topicos.map((t) => scoreTrechoVsTopico(a, t))
+      ...params.topicos.map((t) => scoreTrechoVsTopico(a, t, params.fatos))
     );
     const sb = Math.max(
       0,
-      ...params.topicos.map((t) => scoreTrechoVsTopico(b, t))
+      ...params.topicos.map((t) => scoreTrechoVsTopico(b, t, params.fatos))
     );
     return sb - sa;
   });

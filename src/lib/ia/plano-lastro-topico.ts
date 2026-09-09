@@ -239,7 +239,12 @@ export type LastroTopicoExibicao = {
   tesesOk: string[];
   tesesPend: string[];
   juris: string[];
+  /** Aviso soft (nunca bloqueia Gerar). */
   aviso?: string;
+  /** info = cinza; amber = lastro fraco / sem ENCAIXE útil. */
+  avisoNivel?: "info" | "amber";
+  /** true se há juris/lei/tese/anexo ou ENCAIXE + fonte útil. */
+  lastroUtil?: boolean;
 };
 
 const ROTULO_TIPO: Record<TipoLastroTopico, string> = {
@@ -252,8 +257,22 @@ const ROTULO_TIPO: Record<TipoLastroTopico, string> = {
   pedido: "Pedido",
 };
 
+const TIPOS_LASTRO_UTIL: TipoLastroTopico[] = [
+  "juris",
+  "lei",
+  "tese",
+  "anexo",
+];
+
 export function rotuloTipoLastro(tipo: TipoLastroTopico): string {
   return ROTULO_TIPO[tipo];
+}
+
+/** Fonte útil ≠ só relato/rito genérico (O3/F4). */
+export function lastroTopicoTemFonteUtil(
+  fontes: LastroTopicoItem[] | undefined
+): boolean {
+  return (fontes ?? []).some((f) => TIPOS_LASTRO_UTIL.includes(f.tipo));
 }
 
 export function montarLastroTopicoExibicao(
@@ -263,17 +282,43 @@ export function montarLastroTopicoExibicao(
   const relacionados = tesesRelacionadasAoTopico(topico, cobertura);
   const fontes = topico.lastro ?? [];
   const juris = fontes.filter((f) => f.tipo === "juris").map((f) => f.ref);
+  const encaixe = topico.encaixe?.trim() || undefined;
+  const fonteUtil = lastroTopicoTemFonteUtil(fontes);
+  const soRelatoOuRito =
+    fontes.length > 0 &&
+    !fonteUtil &&
+    fontes.every((f) => f.tipo === "relato" || f.tipo === "rito");
+
+  let aviso: string | undefined;
+  let avisoNivel: "info" | "amber" | undefined;
+
+  if (!encaixe && !fonteUtil) {
+    aviso =
+      "Lastro fraco neste tópico — confira anexos (fls.) e juris do caso antes de redigir.";
+    avisoNivel = "amber";
+  } else if (!encaixe && fonteUtil) {
+    aviso =
+      "Sem ENCAIXE explícito — confira se a ementa/lei casa com os fatos deste tópico.";
+    avisoNivel = "amber";
+  } else if (encaixe && soRelatoOuRito) {
+    aviso =
+      "Só relato/rito neste tópico — confira anexos (fls.) e juris da base FACTO.";
+    avisoNivel = "amber";
+  } else if (encaixe && !fonteUtil) {
+    aviso =
+      "ENCAIXE sem juris/lei/anexo estruturado — confira lastro antes de protocolar.";
+    avisoNivel = "amber";
+  }
 
   return {
-    encaixe: topico.encaixe?.trim() || undefined,
+    encaixe,
     fontes,
     tesesOk: relacionados.filter((c) => c.noPlano).map((c) => c.rotulo),
     tesesPend: relacionados.filter((c) => !c.noPlano).map((c) => c.rotulo),
     juris: juris.length ? juris : [],
-    aviso:
-      fontes.length === 0 && !topico.encaixe
-        ? "Sustentado pela estratégia geral — confira anexos (fls.) e juris do caso."
-        : undefined,
+    aviso,
+    avisoNivel,
+    lastroUtil: Boolean(encaixe && fonteUtil),
   };
 }
 

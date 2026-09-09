@@ -17,6 +17,95 @@ Ordem fechada — **não inverter**:
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
 
+### Feito nesta rodada (09/09 — catch-up seeds PC desligou)
+
+- [x] **Juris.ai 01h:** catch-up **967→1030** (cota esgotou no 1030) · **+2.732** inserts (`fonte=jurisprudencias.ai`) · próximo **1030→1500** amanhã 01h
+- [x] **Portal TSE 02h:** temas 1–4 · **+34** insert · 14 skip · 0 falha · `temaIndice`→**4** · total `tse-portal` **46**
+- [x] **Smoke 03h:** **20/20** ok (6 lastro/área)
+- [x] **Súmulas 04h:** fase `tst_pn` fechada · **+33** PN TST · próxima fase **`tse_portal`** (súmulas TSE)
+- [x] **P2 seed fixado:** meta **27 UFs de TJ** — P2b = **17 TJs faltantes** (AC AL AP AM BA DF ES MS PA PB PE PI RN RO RR SE TO) + P2a TRF1/2/5/6; abastecimento contínuo pós-comercialização
+- [x] **Copy/lastro contínuo:** Juris.ai + portal diários após abertura comercial = sensação de busca “ao vivo” na base FACTO (sem confundir com consulta live aos tribunais)
+- [x] **Prioridade agora:** inflar base (todos os temas possíveis) — frescor ≤1 ano ficou **pendência futura** (seção Jurisprudência)
+- [x] **Fundamentação vs MinutaIA:** fila P0/P1 **zero custo** + custos futuros estimados — ver seção **Fundamentação (todas as peças)** abaixo
+- [x] **Reindex paygo catch-up (09/09):** **concluído** — **+20.591** indexados · **0** falhas · ~6h · `npm run reindex:embeddings:paygo-catchup`; **próximos** reindex = só `GEMINI_API_KEY_SEED` (free)
+- [x] **Scorecard 09/09 (previsto pós-reindex):** Iteração **8,9** · Lastro **8,2** · Formato **8,7** · Preço **8,2** · Gestão **7,2** · média **≈ 8,24** vs MinutaIA **≈ 6,80** (+1,44) — canvas alinhado
+- [x] **Ordem até auto-crítica** — ver seção **Fila de implementação (09/09)** abaixo (não ligar Fc2 em prod antes de O1–O3)
+- [x] **O2 Smoke lastro 20 áreas** — **20 ok · 0 lastro fraco · 0 falhas** (EXIT 0, ~12 min; 429 SEED com retry ok)
+- [x] **O3 F3+F4 soft** — pertinência tema×fatos no retrieve + ENCAIXE/lastro âmbar no preview (**sem** trava de Gerar)
+- [x] Agenda amanhã intacta: **01h** juris · **02h** portal · **03h** smoke · **04h** súmulas
+- [x] Playwright Chromium em `%LOCALAPPDATA%\ms-playwright` + `PLAYWRIGHT_BROWSERS_PATH` na tarefa portal
+- [ ] **Próximo código: O5b** (profundidade fora do header → pergunta chat) — **hora de implementar** após O3; O4 ETL em paralelo (ops)
+
+### Fila de implementação (09/09) — até auto-crítica e além
+
+**Decisão:** auto-crítica (**Fc2**) = **fase interna** na geração da peça (1 pass Flash pós-Redator / só DO DIREITO + cobertura de teses), **não** nova skin/agente. Prompt: peça **completa** (não enxugar); cobrir teses do plano; só corrigir incoerência/citação/lacuna. **Não implementar em prod agora** — ordem abaixo. Sonnet **% 10/20/26**; **não** subir para 15/25/30 como plano (nem futuro padrão). **Não** “Sonnet em quase tudo”.
+
+**Decisão O5b (09/09 — conceito fechado):** remover Expressa/Equilíbrio/Detalhada do header. Roteadores ativos. Se roteador indicar Sonnet **e** houver teto: pergunta no chat — *“Para esta peça, é recomendável utilizar a função detalhada”* · **manter no padrão** (Flash) / **ir para o detalhado** (Sonnet); usuário pode recusar. Sem teto ou roteador negativo → Flash silencioso, sem pergunta. Teto esgotado → não sugere mais (sensação: restante do mês não exige aprofundado).
+
+| # | Item | Tipo | Notas | Status |
+|---|------|------|-------|--------|
+| **O1** | Reindex paygo catch-up zerar + conferir `sem_embedding`≈0 | P0 ops | **+20.591** · 0 falhas (09/09); próximos = SEED free | **Feito** |
+| **O2** | Smoke lastro 20 áreas | P0 | **20/20** ok · 0 fraco · 0 falhas (09/09 pós-reindex) | **Feito** |
+| **O3** | **F3+F4** pertinência retrieve + ENCAIXE por romano | P1 código **0 tokens** | Soft ranking + aviso âmbar preview; sem trava Gerar | **Feito 09/09** |
+| **O4** | **ETL gaps** (paralelo a O3+) | P1 ops/código | TSE feito → **TRE** → **TNU** → TRFs → 17 TJs (UFs de clientes primeiro). **Não** esperar “base 100%” | Pendente (fila portal 02h · paralelo) |
+| **O5** | Fluidez residual (−0,1 vs MinutaIA) | P1 UX | Já bem avançado; polish fino (stream, menos atrito). Discutir quando O3 ok | Pendente (baixa urgência) |
+| **O5b** | **Profundidade fora do header → pergunta chat** | P1 UX + margem | Conceito **fechado 09/09**: só se roteador+teto; copy “recomendável função detalhada”; padrão vs detalhado; sem teto = sem pergunta. Telemetria (% aceite) | Pendente ← **próximo código** |
+| **O6** | Tom / modelos por espécie | P1 produto | **Usar meu modelo** + Fiel/Livre/Recorte já ok; falta **biblioteca por espécie** + opt-in no chat. Discutir no momento | Pendente (discutir) |
+| **O7** | Comparativo 5–10 peças FACTO × MinutaIA | P1 ops | **Depois** O1–O3 (e idealmente lastro mais denso). Calibra lastro 8,2 | Pendente (após melhorias) |
+| **O8** | **Auto-crítica Flash** (Fc2) — desenho → ok Jefferson → prod | P1/P2 custo ~R$ 0,01–0,05/peça | Só após O1–O3. Sem skin nova | **Aguardando O5b** (O1–O3 ok; desenhar Fc2 depois) |
+| **O9** | Frescor ≤1 ano | P2 | Só após base densa | Futuro |
+| **O10** | ABNT pixel / paginação preview | P2 | Residual; **manter como está** até doer em E2E humano — não priorizar | Adiado (opinião 09/09) |
+| — | MP ponta a ponta | P0 comercial | Paralelo (bloqueio venda) | Pendente |
+| — | INPI / RPI | ops | Acompanhar | Em curso |
+
+**Meta margem (fechada 09/09):** pior caso **sempre 35–40% líquido**. Stress: 100% do teto Sonnet (10/20/26), não necessariamente 100% das peças. **O5b** reduz Sonnet por hábito e **ajuda** margem. **Não** subir % Sonnet (15/25/30) como plano — só reabrir com dados pós-venda se qualidade exigir.
+
+### Fundamentação (todas as peças) — vs MinutaIA (fixado 09/09)
+
+Scorecard lastro **~8,2 previsto** (pós-reindex) vs MinutaIA **~7,0** (antes 7,8 com vetores incompletos). Pipeline já forte (ementa integral, TJ certo, polo, RAG por tópico, Auditor). Foco restante: **densidade + pertinência** + ETL gaps.
+
+**Agora — zero custo extra** (só cota Juris.ai / Gemini SEED / tempo PC já contratados; ETL portais públicos):
+
+| # | Item | Por quê | Status |
+|---|------|---------|--------|
+| F1 | **Inflar base** — Juris.ai **1030→1500+** + temas novos; portal TSE→TRE→TNU→TRFs→17 TJs | Volume = fundamentação sentida | Em curso (diário 01h/02h) · **O4** |
+| F2 | **Reindex embeddings** — zerar ~21k sem vetor | Retrieve semântico deixa de cair em keyword genérico | **O1 feito** (+20.591); diário = SEED free |
+| F3 | **Pertinência tema×fatos no retrieve** — score/heurística local mais dura; menos ementa “quase” | Citação do caso, não do tema vizinho | **O3 feito** — soft, sem trava de Gerar |
+| F4 | **ENCAIXE por romano** — cada tópico do plano com lastro útil ou aviso honesto no preview | Plano→peça coerente | **O3 feito** — aviso âmbar, não bloqueio |
+| F5 | **Súmulas/OJs** — completar fila 04h + peso no retrieve | Enunciados vinculantes na peça | Em curso (`tse_portal` súmulas) |
+| F6 | **Smoke lastro 20 áreas** após reindex | Garante área não “morta” | **O2 feito** (20/20) |
+| F7 | **Comparativo 5–10 peças** FACTO × MinutaIA (amostra humana) | Calibra se lastro **8,2** é sentido | **O7** — após melhorias |
+
+**Futuro — com custo** (só com ok explícito; ordem de grandeza):
+
+| # | Item | Custo estimado | Benefício | Pri |
+|---|------|----------------|-----------|-----|
+| Fc1 | **Reindex paygo** (~21k itens) | **~R$ 10–40** uma vez; depois SEED free | Zera backlog | **Feito 09/09** (+20.591) — **não repetir** sem ok |
+| Fc2 | **Auto-crítica 1 pass Flash** (fase na peça, não skin) | **+R$ 0,01–0,05 / peça** | Completude tese↔citação (sem enxugar) | **O8** após O1–O3 |
+| Fc3 | **Subir % Sonnet** (ex. 15/25/30) | Peça Sonnet ~R$ 0,69 | — | **Não agora nem como plano padrão** — 10/20/26; preferir **O5b**; só reabrir com dados pós-venda |
+| Fc4 | **Modo frescor ≤1 ano** | ≈0 API nova | Sensação “ao vivo” | **O9** após base densa |
+| Fc5 | **2ª API juris paga** | Assinatura a cotar | Atalho | Só se ETL falhar |
+
+**Não fazer agora:** Fc2 em prod · Fc3 · Fc5. **Agora:** **O5b** (pergunta detalhada no chat) — O1–O3 fechados; **hora de implementar**. O4 ETL em paralelo (ops).
+
+### Feito nesta rodada (08/09 — P0 TSE portal seed)
+
+- [x] **`.env.local`:** `GEMINI_API_KEY_SEED` ok (free, ≠ paygo); `DATAJUD_API_KEY` criada (wiki CNJ)
+- [x] **P0 TSE:** `src/lib/scrapers/tse.ts` + `seed-juris-portal-diario.ts` + 20 temas · `fonte=tse-portal`
+- [x] **Smoke:** tema `inelegibilidade` → **+12 insert** na base (Playwright + SJUR; hCaptcha ok headless)
+- [x] Agenda **02h** portal / **03h** smoke; npm `seed:juris-portal-diario`
+- [ ] Reindex embeddings (SEED free) — backlog alto; ver rodada 09/09
+
+### Feito nesta rodada (08/09 — plano 2ª fonte juris gaps)
+
+- [x] **Decisão:** gaps (TSE/TRE/TNU/TRFs ausentes) = **ETL próprio** (custo×qualidade), não Jusbrasil agora
+- [x] **Desenho + plano P0→P2** — ver seção **2ª fonte juris (ETL gaps)** abaixo
+- [x] **Agenda:** portal **02h** · smoke **03h** · súmulas **04h** (próxima: TSE súmulas)
+- [x] **Mapeamento browser:** SJUR `jurisprudencia.tse.jus.br` + API + hCaptcha; TNU sem login; Datajud OK
+- [x] **Gemini:** seeds só `GEMINI_API_KEY_SEED` (free) — paygo bloqueado
+- [ ] Jefferson: ok temas P0 + conferir reindex SEED
+- [x] Agente: coletor TSE (captcha via Playwright) + `seed-juris-portal-diario.ts` — smoke +12; catch-up 09/09 +34
+
 ### Feito nesta rodada (08/09 — limpeza compra teste + PDF margem)
 
 - [x] **Conta teste** `nathalia.gomes1@gmail.com` — assinaturas/MP/pagamentos/convites/e-mails/cota/aceites/perfil/`auth.users` removidos (pronta para recompra)
@@ -213,7 +302,30 @@ Duas simulações reais em [factoia.com.br/dashboard](https://factoia.com.br/das
 - [ ] **S3 smoke lastro** — após embeddings
 - Compra MP (S7) / 2ª API (S8): aguardam Jefferson
 
-### Scorecard FACTO vs MinutaIA (08/09 noite — Essencial + lastro UF + landing)
+### Scorecard FACTO vs MinutaIA (09/09 — previsto pós-reindex paygo)
+
+| Critério | MinutaIA | FACTO 08/09 noite | FACTO 09/09 previsto | Δ vs Minuta |
+|----------|----------|-------------------|----------------------|-------------|
+| Iteração (chat, fluidez, preview) | 9,0 | 8,9 | **8,9** | −0,1 |
+| Lastro / fundamentação | 7,0 | 7,8 | **8,2** | **+1,2** |
+| Formato forense e entrega | 6,0 | 8,7 | **8,7** | **+2,7** |
+| Preço / custo por peça | 5,0 | 8,2 | **8,2** | **+3,2** |
+| Gestão + continuidade | 7,0 | 7,2 | **7,2** | +0,2 |
+
+**O que sobe (previsto ao zerar embeddings):**
+- **Lastro +0,4** — catch-up paygo (~21k vetores): retrieve semântico deixa de ignorar metade do acervo; + volume 09/09 (**+2.732** juris.ai, TSE **+34**, súmulas **+33**)
+- Reindex em curso (~metade); nota **8,2** assume conclusão sem regressão. Confirmar com smoke 20 áreas + amostra humana (F7).
+
+**Ainda melhorar (fila):**
+1. **P0** Seed **1030→1500** + diário contínuo · smoke pós-reindex · MP ponta a ponta
+2. **P1** F3/F4 pertinência + ENCAIXE · ETL TRE/TNU/TRFs/17 TJs (meta 27 UFs)
+3. **P2** Frescor ≤1 ano · comparativo 5–10 peças · ABNT pixel
+
+**Generalista (pesos iguais):** FACTO **≈ 8,24** vs MinutaIA **≈ 6,80** (**+1,44**).
+
+Canvas: `facto-vs-minutaia-scorecard.canvas.tsx` (atualizado 09/09 previsto).
+
+### Scorecard FACTO vs MinutaIA (08/09 noite — Essencial + lastro UF + landing) — supersedido 09/09
 
 | Critério | MinutaIA | FACTO 08/09 a.m. | FACTO 08/09 noite | Δ vs Minuta |
 |----------|----------|------------------|-------------------|-------------|
@@ -238,7 +350,7 @@ Duas simulações reais em [factoia.com.br/dashboard](https://factoia.com.br/das
 
 **Generalista (pesos iguais):** FACTO **≈ 8,16** vs MinutaIA **≈ 6,80** (**+1,36**).
 
-Canvas: scorecard Cursor `facto-vs-minutaia-scorecard.canvas.tsx` (atualizado 08/09 noite).
+Canvas: scorecard Cursor `facto-vs-minutaia-scorecard.canvas.tsx` (histórico 08/09 noite).
 
 ### Scorecard FACTO vs MinutaIA (08/09 — S1 tipografia + seed 846–903) — supersedido à noite
 
@@ -940,7 +1052,7 @@ Ordem sugerida: lastro/prompts → autos/último ato → auditor→ajuste → pa
 
 | # | Item | Benefício | Status |
 |---|------|-----------|--------|
-| G1 | **Lastro + seed** até meta / lacunas (TRE/TSE etc. em paralelo) | Fundamentação sentida; menos peça genérica | Em curso (**846**/1500; cota dia esgotada 06/09) |
+| G1 | **Lastro + seed** até meta / lacunas (TRE/TSE/TJs P2b etc.) | Fundamentação sentida; menos peça genérica | Em curso — ver **Fundamentação** F1–F7 (**1030**/1500; 09/09) |
 | G2 | **Prompts por área** — rito, endereçamento, pedidos típicos mais duros | Qualidade sem +tokens | Feito 01/09 (`blocoRitoArea`) |
 | G3 | **Último ato / espécie em autos longos** — extração CNJ e ato decisivo | Menos espécie errada | Feito 01/09 (`extrairUltimoAtoDoTexto`) |
 | G4 | **Qualificação local** — regex/ViaCEP/partes (refino contínuo) | Menos buraco sem token | Parcial (30/08 noite: Enel PJ, BPC autor, split “cortou”; deploy pendente) |
@@ -954,8 +1066,8 @@ Ordem sugerida: lastro/prompts → autos/último ato → auditor→ajuste → pa
 |---|----------|-------|-----------|-----|--------|
 | C1 | OCR Gemini em PDF de RG/comprovante só para endereço | Flash-Lite ~1–3k tokens/doc (fora da cota de peça, **API Gemini**) | Qualificação completa sem digitar | P2 | Aguardando ok |
 | C2 | Claude Sonnet no Redator para mais áreas (hoje Completo/Pro c/ gatilho) | Anthropic + % teto plano | Peça mais densa em áreas complexas | P1 | **Feito 04/09** — área densa + 3,5k / Fundo; apelação já dispara |
-| C3 | 2ª API juris (TRE/TSE, TRF1/2/5/6) | Assinatura nova (R$ a cotar) | Lastro eleitoral/federal fora do Juris.ai | P1 pós-788 | Aguardando ok |
-| C4 | Auto-crítica pós-redação (1 pass leve Flash) | +tokens por peça | Menos erro de coerência | P2 | Aguardando ok |
+| C3 | 2ª fonte juris gaps | **ETL próprio** (custo≈0 API) — TSE feito; TRE/TNU/TRFs/17 TJs na fila. Jusbrasil só se ETL falhar (R$ a cotar) | Lastro eleitoral/federal/UF | P1 | Em curso (ETL; ver 2ª fonte) |
+| C4 | Auto-crítica pós-redação (1 pass leve Flash) | **~R$ 0,01–0,05/peça** | Menos erro tese↔citação | P2 | Aguardando ok — **Fc2** na seção Fundamentação |
 
 ### Roadmap — o que podemos fazer (01/09)
 
@@ -1958,18 +2070,25 @@ Se contribuição &lt; 40–50% (stress), **não** dá meta líquida em escala n
 
 ## Jurisprudência
 
-_Estratégia:_ esgotar Jurisprudências.ai nos tribunais que ela tem; lacunas (TRE/TSE, TRFs ausentes, TNU…) → **outra API depois**, mesma `base_conhecimento`. Lookup (10 mil) = só ementa, não inteiro teor. Cliente na peça usa a base; lookup some se cancelar o plano.
+_Estratégia:_ esgotar Jurisprudências.ai nos tribunais que ela tem; lacunas (TRE/TSE, TRFs ausentes, TNU…) → **ETL próprio**, mesma `base_conhecimento`. Lookup (10 mil) = só ementa, não inteiro teor. Cliente na peça usa a base; lookup some se cancelar o plano.
+
+**Abastecimento contínuo pós-comercialização (fixado 09/09):** Juris.ai **01h** + portal gaps **02h** seguem **para sempre** (PC/worker), não só na fase de montagem. Base densa + lotes diários → sensação de **busca “ao vivo”** no produto (retrieve na base FACTO atualizada), sem gastar cota “Buscar nos tribunais”. **Copy/divulgação:** ok usar “base atualizada todos os dias / jurisprudência fresca na FACTO” — **não** dizer que a peça consulta o tribunal em tempo real no clique (isso é outra feature, com cota).
+
+**Agora (prioridade):** **inflar** a base FACTO — todos os temas/lotes possíveis (Juris.ai até 1500+, portal TSE→TRE→TNU→TRFs→17 TJs), densidade por área/UF; não restringir a “só recentes”.
+
+**Pendência futura (só depois da base densa/completa):**
+- [ ] **Modo frescor ≤1 ano** — diário Juris.ai/portal prioriza `pub_from` ~último ano e ordena por data (mais recentes por tema); calibrar copy “jurisprudência recente”; **não** implementar enquanto a meta for volume/cobertura 27 UFs + gaps P1/P2.
 
 ### Lacunas da base (áreas falhas) — atualizar após cada seed
 
-API **não tem:** TSE, TRE-*, TRF1/2/5/6, TNU, STM; TJs ausentes: AC AL AP AM BA DF ES MS PA PB PE PI RN RO RR SE TO. Tem: `stf stj tst trf3 trf4 tjce tjgo tjma tjmg tjmt tjpr tjrj tjrs tjsc tjsp carf`.
+API **não tem:** TSE, TRE-*, TRF1/2/5/6, TNU, STM; TJs ausentes (**P2b, meta 09/09**): AC AL AP AM BA DF ES MS PA PB PE PI RN RO RR SE TO. Tem: `stf stj tst trf3 trf4 tjce tjgo tjma tjmg tjmt tjpr tjrj tjrs tjsc tjsp carf`. **Meta TJ:** 10 (API) + 17 (ETL P2b) = **27 UFs** (26 estados + DF).
 
 **Diagnóstico 06/09 (pós 789–845):** a base **não está “morta”** nas 20 áreas do smoke (29/08: 20 ok). O que ainda é **fraco de verdade**:
 
 | Área / gap | Evidência 06/09 | Status |
 |------------|-----------------|--------|
 | **Eleitoral** | TRE/TSE **fora da API**. Lotes 792–793 (STJ espelho): inserts baixos / muitos 0 úteis ou só skip. | **Mais frágil** do catálogo. Honestidade no prompt. Só 2ª API fecha. |
-| **TJs / TRFs ausentes** | Cliente de BA/PE/DF/etc. não tem ementa daquele TJ na base. | Estrutural até 2ª fonte / DataJud. |
+| **TJs / TRFs ausentes** | Cliente de BA/PE/DF/etc. não tem ementa daquele TJ na base. | **P2a** TRF1/2/5/6 + **P2b** 17 TJs (meta **27 UFs**, fixada 09/09). |
 | **Constitucional / STF** | Reforço 789–791 (+inserts bons). Volume 825+ ainda na fila. | **Melhorou**; profundidade ≠ MinutaIA 100k. |
 | **Previdenciário** | Histórico STJ fraco; reforço 789–824 + TRF3/4 na fila volume. | **Melhorando**; JEF/TRF1/2/5/6 ainda raso. |
 | **Trabalhista** | TST reforçado na FASE4; volume segue. | Aceitável → bom; continuar 846+. |
@@ -1978,6 +2097,67 @@ API **não tem:** TSE, TRE-*, TRF1/2/5/6, TNU, STM; TJs ausentes: AC AL AP AM BA
 | **Marítimo / Internacional** | Volume niche; pouca demanda comercial. | P2; 2ª fonte se vender. |
 
 Critério de “falha”: lote com **0** insert, ou &lt;10 insert em tema que deveria ter acórdão no tribunal usado, ou tribunal inexistente na API.
+
+### 2ª fonte juris (ETL gaps) — decisão 08/09
+
+**Escolha:** combinação **custo × qualidade no molde FACTO** (não Jusbrasil agora).  
+**Meta de qualidade:** mesmo contrato do seed Juris.ai — ementa ≥100 chars sem HTML, tribunal + nº processo (CNJ quando houver), URL oficial, relator/data se existirem, `fonte` distinta, upsert + dedup + reindex.
+
+#### Arquitetura
+
+```
+temas (JSON/TS) → coletor portal (TSE/TRE/TNU…) → JulgadoScrape
+  → validar (julgadoScrapeValido / ementaValida)
+  → PrecedenteInterno → upsert base_conhecimento (categoria Jurisprudência)
+  → reindex:embeddings
+```
+
+- Reusar: `src/lib/scrapers/types.ts`, `validar-ementa.ts`, padrão `seed-juris-ai-lote.ts` / `salvar-na-base`.
+- **Não** misturar com categoria Súmula (fila 04h TSE súmulas continua separada).
+- Datajud: **opcional** (só achar processo / filtrar movimento) — **nunca** como ementa.
+- Juris.ai: **inalterado** nos 16 tribunais atuais (diário 01h).
+
+#### Fases
+
+| Fase | Escopo | Critério de pronto |
+|------|--------|-------------------|
+| **P0** | Coletor **TSE** (SJUR 4.0) + `scripts/seed-juris-portal-diario.ts` + estado + 20 temas | **Feito** — smoke +12 (08/09); diário +34 (09/09); total **46** `tse-portal`; faltam temas **4→19** (~4 noites) |
+| **P1a** | Coletor **TRE-XX** (27 TREs; prioridade inicial SP/MG/RJ/RS/PR ou UF de clientes, depois o resto) | Lastro eleitoral estadual em todas as UFs |
+| **P1b** | Coletor **TNU** (eProc juris) + temas previdenciários JEF | Smoke área previdenciário sobe |
+| **P2a** | **TRF1 / TRF2 / TRF5 / TRF6** (fora da Juris.ai) | Lastro federal nas regiões sem TRF3/4 |
+| **P2b** | **17 TJs faltantes** (fora da Juris.ai): **AC AL AP AM BA DF ES MS PA PB PE PI RN RO RR SE TO** | **Meta fechada (09/09):** mapa **26 estados + DF** = 27 UFs de TJ (10 já na API + estes 17) |
+
+**Meta de cobertura TJ (fixada 09/09):** P0–P2b + Juris.ai nos 10 TJs atuais → **todos os Tribunais de Justiça do país** (27 UFs). Ordem sugerida no P2b: UFs dos primeiros clientes, depois volume (BA, PE, DF, ES…), depois o restante. Abastecimento **contínuo** (diário 02h / fila portal) mantém-se **após comercialização** — dado fica na `base_conhecimento`; scraper é ops permanente.
+
+Agenda sugerida: Juris.ai **01h** · portal gaps (**TSE → TRE → TNU → TRFs → TJs P2b**) **02h** · smoke lastro **03h** · súmulas **04h** (até zerar fila).
+
+#### Achados técnicos (08/09 — browser)
+
+- **Fonte correta TSE:** https://jurisprudencia.tse.jus.br/#/jurisprudencia/pesquisa (SJUR) — **não** a lupa `@@search-es` do site nem “jurisprudência por e-mail/assunto”.
+- API REST: `POST https://sjur-pesquisa-api.tse.jus.br/tse/sjur-pesquisa-backend/rest/public/pesquisa` — sem token de captcha responde `"Falha na verificação antirrobô"` (hCaptcha). Browser OK (~12k acórdãos p/ `inelegibilidade`).
+- **TNU:** https://eproctnu-jur.cjf.jus.br/…/pesquisar — abre **sem login**.
+- **Datajud:** chave pública wiki funciona (`api_publica_tse`) — só metadados; auxiliar.
+- **Gemini:** seeds/reindex/smoke **só** `GEMINI_API_KEY_SEED` (free); `exigirGeminiApenasSeed` bloqueia paygo (`factoassessoria…`).
+
+#### Checklist Jefferson (habilitar o trabalho)
+
+1. **Nada a pagar** neste P0 — portais públicos (+ Datajud grátis).
+2. **PC ligado** 01h–04h (na tomada).
+3. ~~Explorar SJUR~~ — **feito no browser do agente** (URL + API + captcha mapeados).
+4. **Lista de temas P0** — confirmar ou ajustar…
+5. **Supabase** — mesmas credenciais do seed atual.
+6. **Datajud (opcional):** `DATAJUD_API_KEY` no `.env.local` (chave da wiki CNJ) — auxiliar; não bloqueia P0.
+7. **TNU:** OK sem login (confirmado).
+8. **Não contratar Jusbrasil** até P0/P1 falharem.
+9. **Gemini free:** garantir `GEMINI_API_KEY_SEED` no `.env.local` (contas free); **não** usar paygo.
+10. Agendar: já instalados **smoke 03h** + script **portal 02h** (tarefa sobe mesmo antes do `.ts` P0).
+11. Pedir no chat: **“pode implementar P0 TSE”** (estratégia captcha/headless na implementação).
+
+#### Riscos
+
+- SJUR 4.0 (abr/2026) pode exigir headless + seletor frágil (igual e-SAJ/TJSP).
+- CNJ eleitoral às vezes em formato próprio — validação pode aceitar NUPR do espelho se CNJ padrão falhar (regra explícita no coletor).
+- Rate limit / WAF: backoff + cache em disco (`tmp/cache-juris-portal/`).
 
 ### Seed (progresso)
 
@@ -1996,8 +2176,9 @@ Critério de “falha”: lote com **0** insert, ou &lt;10 insert em tema que de
 - [x] **789–824** reforço + **825–845** volume baixados 06/09; cota esgotou no **846** (`proximoLote` **846** / `ate` **1500`). Vencimento **13/09**.
 - [x] **Lotes 789–1500 definidos** — reforço lacunas 789–824 (`pub_from` 2021) + volume 825–1500 (`pub_from` 2023); `LOTE_MAX=1500`.
 - [x] Após seed diário 17/08: `reindex:embeddings` (+1607).
-- [ ] Retomar **846→1500** na próxima cota (meia-noite ou pós-renovação) + conferir reindex.
-- [ ] Segunda API (pós-1500 ou lacunas): priorizar **eleitoral (TRE/TSE)** e TRF1/2/5/6 / TNU / TJs ausentes.
+- [ ] Retomar **1030→1500** na próxima cota (01h) + conferir reindex; **prioridade = volume/temas** (inflar base), não frescor.
+- [ ] Segunda fonte ETL: P1a TRE · P1b TNU · P2a TRF1/2/5/6 · P2b 17 TJs (meta 27 UFs).
+- [ ] **Pós-base densa:** modo frescor ≤1 ano (ver pendência em Jurisprudência / abastecimento contínuo).
 - [ ] Reaquecer cache TJSP (`npm run aquecer:cache-tjsp`) — 14/08 cache vazio; scrape 0/15 (captcha). Base_conhecimento intacta.
 - [ ] **7º token** Jurisprudências.ai — menos urgente com plano pago no `.env.local` (não precisa ir à Vercel se o plano for cancelado pós-seed).
 - [ ] Provedor secundário STJ estável em prod.

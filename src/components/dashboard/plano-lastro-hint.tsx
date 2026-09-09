@@ -80,7 +80,20 @@ function PlanoLastroCorpo({
       )}
 
       {ex.aviso && (
-        <p className={compacto ? "text-stone-500" : "text-sm text-stone-500"}>
+        <p
+          className={
+            compacto
+              ? ex.avisoNivel === "amber"
+                ? "text-amber-800"
+                : "text-stone-500"
+              : ex.avisoNivel === "amber"
+                ? "rounded-md border border-amber-200 bg-amber-50/90 px-2 py-1.5 text-sm text-amber-950"
+                : "text-sm text-stone-500"
+          }
+        >
+          {ex.avisoNivel === "amber" && !compacto ? (
+            <span className="font-semibold">Atenção: </span>
+          ) : null}
           {ex.aviso}
         </p>
       )}
@@ -133,11 +146,19 @@ export function PlanoLastroHint({
           className={`inline-flex h-4 w-4 items-center justify-center rounded-full border text-[9px] font-bold shadow-sm ring-1 transition ${
             inspectorAberto
               ? "border-facto-gold bg-amber-100 text-amber-950 ring-amber-300"
-              : "border-facto-gold/50 bg-amber-50/90 text-amber-900 ring-amber-200/60 hover:border-facto-gold hover:bg-amber-100"
+              : ex.avisoNivel === "amber"
+                ? "border-amber-400 bg-amber-100 text-amber-950 ring-amber-300/80 hover:border-amber-500 hover:bg-amber-200/80"
+                : "border-facto-gold/50 bg-amber-50/90 text-amber-900 ring-amber-200/60 hover:border-facto-gold hover:bg-amber-100"
           }`}
-          aria-label={`Ver lastro FACTO do tópico ${topico.romano}. ${topico.titulo}`}
+          aria-label={`Ver lastro FACTO do tópico ${topico.romano}. ${topico.titulo}${
+            ex.avisoNivel === "amber" ? " — lastro fraco ou sem ENCAIXE" : ""
+          }`}
           aria-expanded={inspectorAberto}
-          title="Lastro FACTO (base + anexos) — clique para abrir"
+          title={
+            ex.avisoNivel === "amber"
+              ? "Lastro fraco / sem ENCAIXE — clique para conferir (não bloqueia Gerar)"
+              : "Lastro FACTO (base + anexos) — clique para abrir"
+          }
           onClick={(e) => {
             e.stopPropagation();
             setInspectorAberto(true);

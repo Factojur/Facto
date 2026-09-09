@@ -10,9 +10,12 @@ import {
   complementarLastroTopico,
   complementarLastroTopicos,
   extrairBlocoEstrategiaTopico,
+  montarLastroTopicoExibicao,
   montarLastroTopicoTexto,
 } from "../src/lib/ia/plano-lastro-topico";
 import type { ItemCoberturaTese } from "../src/lib/ia/cobertura-teses-peca";
+import { scoreTrechoVsTopico, LIMIAR_SCORE_TOPICO } from "../src/lib/ia/rag-por-topico";
+import type { TrechoConhecimento } from "../src/lib/base-conhecimento";
 
 let ok = 0;
 let fail = 0;
@@ -113,6 +116,57 @@ test("montarLastroTopicoTexto — encaixe + fontes", () => {
   const texto = montarLastroTopicoTexto(topico, []);
   assert.match(texto, /Encaixe: Cobrança indevida/);
   assert.match(texto, /Anexo: fls\. 3/);
+});
+
+test("montarLastroTopicoExibicao — aviso amber sem ENCAIXE (F4 soft)", () => {
+  const ex = montarLastroTopicoExibicao(
+    {
+      romano: "II",
+      titulo: "DO DIREITO",
+      subtitulos: [],
+      lastro: [{ tipo: "juris", ref: "TJSP — CDC art. 14" }],
+    },
+    []
+  );
+  assert.equal(ex.avisoNivel, "amber");
+  assert.match(ex.aviso ?? "", /ENCAIXE/);
+  assert.equal(ex.lastroUtil, false);
+});
+
+test("montarLastroTopicoExibicao — lastro útil com ENCAIXE + juris", () => {
+  const ex = montarLastroTopicoExibicao(
+    {
+      romano: "II",
+      titulo: "DO DIREITO",
+      subtitulos: [],
+      encaixe: "Cobrança sem lastro contratual.",
+      lastro: [{ tipo: "juris", ref: "TJSP — CDC art. 14" }],
+    },
+    []
+  );
+  assert.equal(ex.aviso, undefined);
+  assert.equal(ex.lastroUtil, true);
+});
+
+test("scoreTrechoVsTopico — fatos demovem vizinho (F3 soft)", () => {
+  const item: TrechoConhecimento = {
+    titulo: "TJSP — contrato bancário genérico",
+    categoria: "Jurisprudência",
+    texto: "Empréstimo consignado e revisão de juros abusivos em contrato bancário.",
+  };
+  const topico = {
+    romano: "II",
+    titulo: "DO DANO MORAL",
+    subtitulos: [],
+    encaixe: "Negativação indevida por dívida inexistente",
+  };
+  const semFatos = scoreTrechoVsTopico(item, topico);
+  const comFatos = scoreTrechoVsTopico(
+    item,
+    topico,
+    "Negativação indevida no Serasa por cobrança de dívida já paga em 2023"
+  );
+  assert.ok(comFatos < semFatos || comFatos < LIMIAR_SCORE_TOPICO);
 });
 
 console.log(`\nLastro tópico A+B: ${ok} ok · ${fail} falha(s)`);

@@ -5,7 +5,7 @@ import type { ItemCoberturaTese } from "@/lib/ia/cobertura-teses-peca";
 import type { AnaliseEstrategica } from "@/lib/ia/triagem-caso-peca";
 import { TextoJuridicoInline } from "@/components/dashboard/texto-juridico-inline";
 import { PlanoLastroHint } from "@/components/dashboard/plano-lastro-hint";
-import { complementarLastroTopicos } from "@/lib/plano-lastro-hint";
+import { complementarLastroTopicos, montarLastroTopicoExibicao } from "@/lib/plano-lastro-hint";
 import { useMemo } from "react";
 
 export type PreviewTriagemData = {
@@ -86,10 +86,17 @@ export function PlanoEstrategicoCorpo({
             Plano de tópicos
           </h3>
           <ol className="mt-2 space-y-2">
-            {topicosComLastro.map((t) => (
+            {topicosComLastro.map((t) => {
+              const ex = montarLastroTopicoExibicao(t, triagem.cobertura);
+              const lastroFraco = ex.avisoNivel === "amber";
+              return (
               <li
                 key={`${t.romano}-${t.titulo}`}
-                className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm"
+                className={
+                  lastroFraco
+                    ? "rounded-lg border border-amber-300 bg-amber-50/40 px-3 py-2 text-sm"
+                    : "rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm"
+                }
               >
                 <span className="font-medium text-stone-900">
                   {t.romano}. {t.titulo}
@@ -101,6 +108,11 @@ export function PlanoEstrategicoCorpo({
                     jurisTitulos={triagem.jurisTitulos}
                     onAbrirFls={onAbrirFls}
                   />
+                  {lastroFraco && (
+                    <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
+                      lastro a conferir
+                    </span>
+                  )}
                 </span>
                 {t.subtitulos.length > 0 && (
                   <ul className="mt-1 list-inside list-disc text-stone-600">
@@ -111,8 +123,12 @@ export function PlanoEstrategicoCorpo({
                     ))}
                   </ul>
                 )}
+                {lastroFraco && ex.aviso && (
+                  <p className="mt-1.5 text-xs text-amber-900/90">{ex.aviso}</p>
+                )}
               </li>
-            ))}
+              );
+            })}
           </ol>
         </div>
       )}

@@ -284,6 +284,56 @@ function pontuarTrecho(trechoNormalizado: string, palavras: string[]): number {
   return pontos;
 }
 
+/** Tokens dos fatos (sem expansão) — F3: penaliza ementa “quase” sem overlap com o caso. */
+function palavrasFatosLocais(textoExtra?: string): string[] {
+  if (!textoExtra?.trim()) return [];
+  return Array.from(
+    new Set(
+      normalizar(textoExtra)
+        .split(/[^a-z0-9]+/)
+        .filter((p) => p.length > 4 && !STOPWORDS.has(p))
+    )
+  ).slice(0, 24);
+}
+
+/**
+ * Ajuste local tema×fatos (O3/F3): reforça overlap com fatos; demove
+ * hit só semântico sem palavra do caso. Nunca aborta a busca.
+ */
+function ajustePertinenciaFatos(
+  scoreKw: number,
+  scoreFatos: number,
+  boostSemantico: number,
+  nPalavrasFatos: number
+): number {
+  if (nPalavrasFatos < 3) return 0;
+  if (scoreFatos > 0 && scoreKw > 0) return Math.min(4, 1 + scoreFatos);
+  if (scoreFatos > 0) return Math.min(2, scoreFatos);
+  // Embedding alto sem nenhum token dos fatos → tema vizinho
+  if (boostSemantico >= 4 && scoreFatos === 0) return -4;
+  if (boostSemantico >= 2 && scoreKw <= 1 && scoreFatos === 0) return -2;
+  return 0;
+}
+
+/** Admissão soft: evita encher o contexto só com vizinho semântico. */
+function admiteCandidatoLastro(
+  score: number,
+  scoreKw: number,
+  scoreFatos: number,
+  boostSemantico: number,
+  nPalavrasFatos: number
+): boolean {
+  if (score <= 0 && boostSemantico < 4) return false;
+  if (nPalavrasFatos >= 3) {
+    // Com fatos: precisa overlap lexical (fatos ou query) OU semântico muito alto + kw
+    if (scoreFatos > 0 || scoreKw >= 2) return score > 0;
+    if (boostSemantico >= 6 && scoreKw >= 1) return true;
+    if (boostSemantico >= 7) return score > -2;
+    return false;
+  }
+  return score > 0 || boostSemantico >= 4;
+}
+
 /** Prioriza súmulas no ranking. Lei não entra no retrieve. */
 function bonusCategoria(categoria: string): number {
   const c = normalizar(categoria);
@@ -592,6 +642,7 @@ export async function buscarConhecimentoRelacionado(
     .join("\n");
   const palavras = palavrasChave(tipoComPolo, textoExtra, areaId);
   if (palavras.length === 0) return [];
+  const palavrasFatos = palavrasFatosLocais(textoExtra);
 
   const expansao = expandirQueryLastro(areaId, tipoComPolo, textoExtra);
   const consulta = [tipoComPolo, textoExtra ?? "", expansao.blocoSemantico]
@@ -668,7 +719,9 @@ export async function buscarConhecimentoRelacionado(
       const boostSemantico = (documento.similarity ?? 0) * 12;
       const trechos = dividirEmTrechos(documento.texto);
       for (const trecho of trechos) {
-        const scoreKw = pontuarTrecho(normalizar(trecho), palavras);
+        const trechoNorm = normalizar(`${documento.titulo}\n${trecho}`);
+        const scoreKw = pontuarTrecho(trechoNorm, palavras);
+        const scoreFatos = pontuarTrecho(trechoNorm, palavrasFatos);
         const scorePolo = bonusLastroPolo(
           `${documento.titulo}\n${trecho}`,
           documento.categoria,
@@ -687,8 +740,22 @@ export async function buscarConhecimentoRelacionado(
           bonusCategoria(documento.categoria) +
           boostSemantico +
           scorePolo +
-          scoreTribunal;
-        if (score > 0 || boostSemantico >= 4) {
+          scoreTribunal +
+          ajustePertinenciaFatos(
+            scoreKw,
+            scoreFatos,
+            boostSemantico,
+            palavrasFatos.length
+          );
+        if (
+          admiteCandidatoLastro(
+            score,
+            scoreKw,
+            scoreFatos,
+            boostSemantico,
+            palavrasFatos.length
+          )
+        ) {
           candidatos.push({
             titulo: documento.titulo,
             categoria: documento.categoria,

@@ -1,8 +1,8 @@
-/** Reexport — lastro por tópico (camadas A+B). */
 export {
   complementarLastroTopico,
   complementarLastroTopicos,
   extrairBlocoEstrategiaTopico,
+  lastroTopicoTemFonteUtil,
   montarLastroTopicoExibicao,
   montarLastroTopicoTexto,
   rotuloTipoLastro,
