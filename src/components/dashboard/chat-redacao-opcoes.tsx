@@ -36,9 +36,8 @@ function inativoCls(modoWorkspace?: boolean) {
 }
 
 /**
- * Modelo do caso + adesão (Livre / Fiel / Recorte).
- * O5b: profundidade (Expressa/Equilíbrio/Detalhada) saiu do header —
- * pergunta no chat quando o roteador recomenda função detalhada.
+ * Modelo do caso + adesão (Livre / Guia / Recorte) só quando há modelo anexado.
+ * O5b: profundidade saiu do header — pergunta no chat se o roteador recomenda detalhada.
  */
 export function ChatRedacaoOpcoes({
   adesao,
@@ -126,34 +125,32 @@ export function ChatRedacaoOpcoes({
         </>
       ) : null}
 
-      <div
-        className={`inline-flex items-center gap-0.5 rounded-full border p-0.5 ${shell}`}
-        role="group"
-        aria-label="Adesão ao modelo do escritório"
-      >
-        {ADESAO.map((id) => (
-          <button
-            key={id}
-            type="button"
-            title={
-              id === "livre"
-                ? "A IA estrutura a peça pelo caso. Modelo/estilo, se houver, é só tom."
-                : id === "fiel"
-                  ? temModelo
+      {temModelo ? (
+        <div
+          className={`inline-flex items-center gap-0.5 rounded-full border p-0.5 ${shell}`}
+          role="group"
+          aria-label="Adesão ao modelo do escritório"
+        >
+          {ADESAO.map((id) => (
+            <button
+              key={id}
+              type="button"
+              title={
+                id === "livre"
+                  ? "A IA estrutura a peça pelo caso. O modelo anexado é só tom."
+                  : id === "fiel"
                     ? "Segue de perto o modelo anexado (forma); fatos vêm dos autos."
-                    : "Segue tom e ordem do estilo do escritório (anexe Usar meu modelo para este caso)."
-                  : temModelo
-                    ? "Mantém o modelo e troca só o que os autos exigem."
-                    : "Mantém o modelo/estilo e troca só o que os autos exigem."
-            }
-            aria-pressed={adesao === id}
-            className={`${btn} ${adesao === id ? ativoCls(modoWorkspace) : inativoCls(modoWorkspace)}`}
-            onClick={() => onAdesao(id)}
-          >
-            {ROTULO_ADESAO[id]}
-          </button>
-        ))}
-      </div>
+                    : "Mantém o modelo e troca só o que os autos exigem."
+              }
+              aria-pressed={adesao === id}
+              className={`${btn} ${adesao === id ? ativoCls(modoWorkspace) : inativoCls(modoWorkspace)}`}
+              onClick={() => onAdesao(id)}
+            >
+              {ROTULO_ADESAO[id]}
+            </button>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

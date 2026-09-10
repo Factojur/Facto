@@ -35,6 +35,7 @@ Ordem fechada — **não inverter**:
 - [x] **O5b** — Expressa/Equilíbrio/Detalhada fora do header; pergunta no chat se roteador+teto; padrão=Flash · detalhado=Sonnet · deploy **Ready** `c50db1f` / `dpl_6Kb8za2HqCZCdui2beXeFdhTJvRy` · [factoia.com.br](https://factoia.com.br)
 - [x] Agenda amanhã intacta: **01h** juris · **02h** portal · **03h** smoke · **04h** súmulas
 - [x] Playwright Chromium em `%LOCALAPPDATA%\ms-playwright` + `PLAYWRIGHT_BROWSERS_PATH` na tarefa portal
+- [x] **Header UX:** Livre/Guia/Recorte só com modelo anexado; Nuvem/Conversas/Entendimento/Timbre centrados na coluna Documento (workspace)
 - [ ] **Próximo:** **O8** auto-crítica (Fc2) — **desenhar/implementar ok**; **ligar em prod só com ok Jefferson** (custo ~R$ 0,01–0,05/peça). Paralelo zero-custo: **O4** ETL TRE
 
 ### Fila de implementação (09/09) — até auto-crítica e além

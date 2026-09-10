@@ -830,6 +830,7 @@ export function ChatMinutaPage({
       modeloPecaNome: "",
       modeloPecaTexto: "",
     }));
+    setAdesaoRedacao("livre");
   }, []);
 
   useEffect(() => {
@@ -3062,8 +3063,15 @@ export function ChatMinutaPage({
             modoWorkspace ? "lg:col-span-2 lg:row-start-1 lg:border-white/10" : ""
           }`}
         >
-          <div className="flex flex-wrap items-center justify-between gap-1.5">
-            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
+          <div
+            className={
+              modoWorkspace
+                ? "grid grid-cols-1 items-center gap-2 lg:grid-cols-2"
+                : "flex flex-wrap items-center justify-between gap-1.5"
+            }
+          >
+            {/* Sobre o chat: Assistente/Peça, Direto/Aprofundado, modelo, adesão */}
+            <div className="flex min-w-0 flex-wrap items-center gap-1">
               {!modoWorkspace && (
                 <>
                   <h1 className="mr-1 text-sm font-semibold tracking-tight sm:text-base">
@@ -3111,79 +3119,136 @@ export function ChatMinutaPage({
                   {tema.label}
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => setMostrarMinutasNuvem(true)}
-                title="Nuvem: minutas e sessões sincronizadas na sua conta (opt-in LGPD). Use para retomar o trabalho em outro dispositivo."
-                className={pillBtn}
-              >
-                Nuvem
-              </button>
-              <button
-                type="button"
-                onClick={() => setMostrarSessoes(true)}
-                title="Histórico de conversas e casos neste navegador (e na nuvem, se sincronizado)."
-                className={pillBtn}
-              >
-                Conversas
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setDrawerAba("resumo");
-                  setDrawerAberto(true);
-                }}
-                title="O que entendi do caso"
-                className={pillBtn}
-              >
-                Entendimento
-              </button>
-              {timbreConfigurado ? (
-                <label
-                  title="Timbre: liga ou desliga cabeçalho, rodapé e marca d'água do escritório na peça. Configure as imagens em Meu perfil."
-                  className={`flex cursor-pointer items-center gap-1 ${pillBtn} has-[:checked]:border-facto-gold/45 has-[:checked]:text-amber-50`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={escritorio.usarTimbre}
-                    onChange={alternarTimbreEscritorio}
-                    className="h-3 w-3 rounded border-stone-500 text-facto-gold focus:ring-0 focus:ring-offset-0"
-                  />
-                  Timbre
-                </label>
-              ) : (
-                <Link
-                  href="/dashboard/perfil#timbre-escritorio"
-                  title="Timbre ainda não configurado. Abre o perfil para enviar cabeçalho, rodapé ou marca d'água do escritório."
-                  className={
-                    modoWorkspace
-                      ? `${pillBtn} text-stone-400`
-                      : "rounded-full border border-stone-600 bg-stone-800/90 px-2 py-0.5 text-[10px] font-medium text-stone-400 transition hover:border-facto-gold/45 hover:text-amber-50"
-                  }
-                >
-                  Timbre
-                </Link>
+              {!modoWorkspace && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setMostrarMinutasNuvem(true)}
+                    title="Nuvem: minutas e sessões sincronizadas na sua conta (opt-in LGPD). Use para retomar o trabalho em outro dispositivo."
+                    className={pillBtn}
+                  >
+                    Nuvem
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMostrarSessoes(true)}
+                    title="Histórico de conversas e casos neste navegador (e na nuvem, se sincronizado)."
+                    className={pillBtn}
+                  >
+                    Conversas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDrawerAba("resumo");
+                      setDrawerAberto(true);
+                    }}
+                    title="O que entendi do caso"
+                    className={pillBtn}
+                  >
+                    Entendimento
+                  </button>
+                  {timbreConfigurado ? (
+                    <label
+                      title="Timbre: liga ou desliga cabeçalho, rodapé e marca d'água do escritório na peça. Configure as imagens em Meu perfil."
+                      className={`flex cursor-pointer items-center gap-1 ${pillBtn} has-[:checked]:border-facto-gold/45 has-[:checked]:text-amber-50`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={escritorio.usarTimbre}
+                        onChange={alternarTimbreEscritorio}
+                        className="h-3 w-3 rounded border-stone-500 text-facto-gold focus:ring-0 focus:ring-offset-0"
+                      />
+                      Timbre
+                    </label>
+                  ) : (
+                    <Link
+                      href="/dashboard/perfil#timbre-escritorio"
+                      title="Timbre ainda não configurado. Abre o perfil para enviar cabeçalho, rodapé ou marca d'água do escritório."
+                      className="rounded-full border border-stone-600 bg-stone-800/90 px-2 py-0.5 text-[10px] font-medium text-stone-400 transition hover:border-facto-gold/45 hover:text-amber-50"
+                    >
+                      Timbre
+                    </Link>
+                  )}
+                </>
               )}
             </div>
+
+            {/* Workspace: Nuvem…Timbre centrados entre Documento (coluna) e Fixar */}
             {modoWorkspace && (
-              <button
-                type="button"
-                onClick={alternarWorkspaceFixado}
-                title={
-                  workspaceFixado
-                    ? "Desfixar: volta o assistente ao lugar na home. Atalho: Esc."
-                    : "Fixar: coloca o assistente em tela cheia (chat + documento), sem o restante da home."
-                }
-                aria-label={
-                  workspaceFixado
-                    ? "Desfixar área de trabalho"
-                    : "Fixar área de trabalho em tela cheia"
-                }
-                aria-pressed={workspaceFixado}
-                className={`shrink-0 ${classeBotaoFixarTexto(workspaceFixado)}`}
-              >
-                {workspaceFixado ? "Desfixar Área de Trabalho" : "Fixar Área de Trabalho"}
-              </button>
+              <div className="grid min-h-[1.75rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+                <div className="flex flex-wrap items-center justify-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setMostrarMinutasNuvem(true)}
+                    title="Nuvem: minutas e sessões sincronizadas na sua conta (opt-in LGPD). Use para retomar o trabalho em outro dispositivo."
+                    className={pillBtn}
+                  >
+                    Nuvem
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMostrarSessoes(true)}
+                    title="Histórico de conversas e casos neste navegador (e na nuvem, se sincronizado)."
+                    className={pillBtn}
+                  >
+                    Conversas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDrawerAba("resumo");
+                      setDrawerAberto(true);
+                    }}
+                    title="O que entendi do caso"
+                    className={pillBtn}
+                  >
+                    Entendimento
+                  </button>
+                  {timbreConfigurado ? (
+                    <label
+                      title="Timbre: liga ou desliga cabeçalho, rodapé e marca d'água do escritório na peça. Configure as imagens em Meu perfil."
+                      className={`flex cursor-pointer items-center gap-1 ${pillBtn} has-[:checked]:border-facto-gold/45 has-[:checked]:text-amber-50`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={escritorio.usarTimbre}
+                        onChange={alternarTimbreEscritorio}
+                        className="h-3 w-3 rounded border-stone-500 text-facto-gold focus:ring-0 focus:ring-offset-0"
+                      />
+                      Timbre
+                    </label>
+                  ) : (
+                    <Link
+                      href="/dashboard/perfil#timbre-escritorio"
+                      title="Timbre ainda não configurado. Abre o perfil para enviar cabeçalho, rodapé ou marca d'água do escritório."
+                      className={`${pillBtn} text-stone-400`}
+                    >
+                      Timbre
+                    </Link>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={alternarWorkspaceFixado}
+                  title={
+                    workspaceFixado
+                      ? "Desfixar: volta o assistente ao lugar na home. Atalho: Esc."
+                      : "Fixar: coloca o assistente em tela cheia (chat + documento), sem o restante da home."
+                  }
+                  aria-label={
+                    workspaceFixado
+                      ? "Desfixar área de trabalho"
+                      : "Fixar área de trabalho em tela cheia"
+                  }
+                  aria-pressed={workspaceFixado}
+                  className={`shrink-0 ${classeBotaoFixarTexto(workspaceFixado)}`}
+                >
+                  {workspaceFixado
+                    ? "Desfixar Área de Trabalho"
+                    : "Fixar Área de Trabalho"}
+                </button>
+              </div>
             )}
           </div>
         </header>
