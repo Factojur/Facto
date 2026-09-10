@@ -19,7 +19,7 @@ Ordem fechada — **não inverter**:
 
 ### Feito nesta rodada (09/09 — Tom 12 + scorecard + seeds SEED-only)
 
-- [x] **Tom do escritório:** copy/UI/API alinhados a **até 12** peças (`MAX_AMOSTRAS_ESTILO` / `MAX_MODELOS_TOM`) — sumiu o “três”
+- [x] **Tom do escritório:** copy/UI/API alinhados a **até 12** peças (`MAX_AMOSTRAS_ESTILO` / `MAX_MODELOS_TOM`) — sumiu o “três” · deploy **Ready** `7cd82ca` / `dpl_HyRTm4hqy9Q1epY8iv3EDYNAMpto` · [factoia.com.br](https://factoia.com.br)
 - [x] **O8** confirmado **Ready** em prod (`dpl_GwPetPJU64tyJYBkAnF6RKnND4vy` · [factoia.com.br](https://factoia.com.br))
 - [x] **Scorecard** atualizado (média ≈8,30 · Lastro **8,3** · O1–O3/O5b/O8 feitos)
 - [x] **Seeds agenda:** tarefas Pronto · 01h Juris.ai · 02h portal · 03h smoke · 04h súmulas — todas com `exigirGeminiApenasSeed` (só `GEMINI_API_KEY_SEED` + Juris.ai); **sem** `--paygo-catchup`
