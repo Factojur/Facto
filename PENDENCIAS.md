@@ -32,7 +32,7 @@ Ordem fechada — **não inverter**:
 - [x] **Ordem até auto-crítica** — ver seção **Fila de implementação (09/09)** abaixo (não ligar Fc2 em prod antes de O1–O3)
 - [x] **O2 Smoke lastro 20 áreas** — **20 ok · 0 lastro fraco · 0 falhas** (EXIT 0, ~12 min; 429 SEED com retry ok)
 - [x] **O3 F3+F4 soft** — pertinência tema×fatos no retrieve + ENCAIXE/lastro âmbar no preview (**sem** trava de Gerar) · deploy **Ready** `6b71c11` / `dpl_2zcHgAC5NKpijHmpfpJp9L3KVi9A` · [factoia.com.br](https://factoia.com.br)
-- [x] **O5b** — Expressa/Equilíbrio/Detalhada fora do header; pergunta no chat se roteador+teto; padrão=Flash · detalhado=Sonnet
+- [x] **O5b** — Expressa/Equilíbrio/Detalhada fora do header; pergunta no chat se roteador+teto; padrão=Flash · detalhado=Sonnet · deploy **Ready** `c50db1f` / `dpl_6Kb8za2HqCZCdui2beXeFdhTJvRy` · [factoia.com.br](https://factoia.com.br)
 - [x] Agenda amanhã intacta: **01h** juris · **02h** portal · **03h** smoke · **04h** súmulas
 - [x] Playwright Chromium em `%LOCALAPPDATA%\ms-playwright` + `PLAYWRIGHT_BROWSERS_PATH` na tarefa portal
 - [ ] **Próximo:** **O8** auto-crítica (Fc2) — **desenhar/implementar ok**; **ligar em prod só com ok Jefferson** (custo ~R$ 0,01–0,05/peça). Paralelo zero-custo: **O4** ETL TRE
@@ -87,7 +87,7 @@ Scorecard lastro **~8,2 previsto** (pós-reindex) vs MinutaIA **~7,0** (antes 7,
 | Fc4 | **Modo frescor ≤1 ano** | ≈0 API nova | Sensação “ao vivo” | **O9** após base densa |
 | Fc5 | **2ª API juris paga** | Assinatura a cotar | Atalho | Só se ETL falhar |
 
-**Não fazer agora:** Fc2 em prod · Fc3 · Fc5. **Agora:** **O5b** (pergunta detalhada no chat) — O1–O3 fechados; **hora de implementar**. O4 ETL em paralelo (ops).
+**Não fazer agora:** Fc2 em prod sem ok · Fc3 · Fc5. **Agora:** **O8** (auto-crítica) com ok de custo, ou **O4** ETL TRE (zero custo, paralelo).
 
 ### Feito nesta rodada (08/09 — P0 TSE portal seed)
 
