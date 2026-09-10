@@ -33,14 +33,15 @@ function IconPaperclip({ className }: { className?: string }) {
   );
 }
 
-/** Provas e teses — peça de quebra-cabeça clássica (silhueta legível). */
-function IconPuzzle({ className }: { className?: string }) {
+/** Provas e teses — lâmpada (tese/ideia), legível em 20px. */
+function IconLightbulb({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden>
       <path
-        d="M20.59 12.24a2 2 0 0 0-1.38-2.66 2 2 0 0 0-1.21.09V8a2 2 0 0 0-2-2h-1.67a2 2 0 1 0-3.66 0H9a2 2 0 0 0-2 2v1.67a2 2 0 1 0 0 3.66V15a2 2 0 0 0 2 2h1.67a2 2 0 1 0 3.66 0H16a2 2 0 0 0 2-2v-1.67c.4.16.84.18 1.26.05a2 2 0 0 0 1.33-2.14z"
+        d="M9 18h6M10 21h4M12 2a6.5 6.5 0 0 0-3.8 11.8c.5.4.8 1 .8 1.6V17h6v-1.6c0-.6.3-1.2.8-1.6A6.5 6.5 0 0 0 12 2z"
         {...stroke}
       />
+      <path d="M10 14h4" {...stroke} />
     </svg>
   );
 }
@@ -58,16 +59,19 @@ function IconScales({ className }: { className?: string }) {
   );
 }
 
-/** Jurisprudência — martelo + base (não parece rolo de tinta). */
+/** Jurisprudência — cabeça em paralelogramo + cabo + bloco (não parece rolo). */
 function IconGavel({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden>
-      <path d="M14.5 4.5l5 5" {...stroke} />
-      <path d="M12 7l5 5" {...stroke} />
-      <path d="M9.5 9.5l5 5" {...stroke} />
-      <path d="M8 16l-4.5 4.5" {...stroke} />
-      <path d="M3 21h8" {...stroke} />
-      <path d="M14 3.5l6.5 6.5-2 2L12 5.5z" {...stroke} />
+      {/* cabeça do martelo (paralelogramo ~40°) */}
+      <path d="M10.2 2.8l7.4 6.2-2.6 3.1-7.4-6.2z" {...stroke} />
+      {/* detalhe da cabeça */}
+      <path d="M11.6 4.6l4.6 3.9" {...stroke} />
+      {/* cabo */}
+      <path d="M10.8 11.4L5.4 16.8" {...stroke} />
+      {/* bloco de impacto */}
+      <path d="M3.2 18.4h10" {...stroke} strokeWidth={2.2} />
+      <path d="M4.5 17v3.2M11.8 17v3.2" {...stroke} />
     </svg>
   );
 }
@@ -215,7 +219,7 @@ export function ChatFontesFlutuante({
         modoWorkspace={modoWorkspace}
         onAbrir={onAbrir}
       >
-        <IconPuzzle className="h-5 w-5" />
+        <IconLightbulb className="h-5 w-5" />
       </BtnFonte>
       <BtnFonte
         aba="lei"
