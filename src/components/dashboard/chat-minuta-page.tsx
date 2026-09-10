@@ -280,14 +280,20 @@ function fingerprintPlanoEstado(
  * Alfinete clássico em contorno (ref. pushpin), espelhado à direita,
  * paleta FACTO + leve brilho — sem caixa de botão.
  */
-function IconeFixarWorkspace({ fixado }: { fixado: boolean }) {
+function IconeFixarWorkspace({
+  fixado,
+  className = "h-5 w-5",
+}: {
+  fixado: boolean;
+  className?: string;
+}) {
   const glow = fixado
     ? "drop-shadow-[0_1px_3px_rgba(144,139,106,0.55)] drop-shadow-[0_0_6px_rgba(196,191,154,0.45)]"
     : "drop-shadow-[0_1px_2px_rgba(144,139,106,0.35)]";
   return (
     <svg
       viewBox="0 0 24 24"
-      className={`h-5 w-5 ${glow}`}
+      className={`${className} ${glow}`}
       fill="none"
       stroke="currentColor"
       strokeWidth={1.45}
@@ -307,10 +313,10 @@ function IconeFixarWorkspace({ fixado }: { fixado: boolean }) {
 }
 
 function classeBotaoFixarTexto(fixado: boolean) {
-  return `shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-facto-gold/40 ${
+  return `shrink-0 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold tracking-wide transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-facto-gold/50 ${
     fixado
-      ? "border-facto-gold/50 bg-facto-gold/20 text-facto-gold"
-      : "border-stone-600 bg-stone-800/90 text-stone-300 hover:border-facto-gold/45 hover:text-amber-50"
+      ? "border-facto-gold bg-facto-gold/30 text-facto-gold shadow-[0_0_12px_rgba(196,191,154,0.35)] ring-1 ring-facto-gold/40"
+      : "border-facto-gold/55 bg-facto-gold/15 text-facto-gold shadow-sm hover:border-facto-gold hover:bg-facto-gold/25 hover:shadow-[0_0_10px_rgba(196,191,154,0.28)]"
   }`;
 }
 
@@ -3244,6 +3250,7 @@ export function ChatMinutaPage({
                   aria-pressed={workspaceFixado}
                   className={`shrink-0 ${classeBotaoFixarTexto(workspaceFixado)}`}
                 >
+                  <IconeFixarWorkspace fixado={workspaceFixado} className="h-3.5 w-3.5" />
                   {workspaceFixado
                     ? "Desfixar Área de Trabalho"
                     : "Fixar Área de Trabalho"}

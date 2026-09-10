@@ -31,6 +31,8 @@ import {
 } from "@/lib/ia/gemini-client";
 import { gerarTextoComAnthropic } from "@/lib/ia/anthropic-client";
 import { decidirRedatorSonnet } from "@/lib/ia/roteador-redator";
+import { autocriticarSecaoDoDireito } from "@/lib/ia/autocritica-direito-peca";
+import { AUTOCRITICA_DIREITO_ATIVA } from "@/lib/feature-flags";
 import {
   blocoPromptAdesao,
   blocoModeloPecaCaso,
@@ -943,6 +945,38 @@ export async function gerarPecaComIA(params: {
       .join(" · "),
     modelo: redacaoModelo,
   });
+
+  // O8 — auto-crítica Flash do DO DIREITO (fail-open; sem skin nova).
+  if (AUTOCRITICA_DIREITO_ATIVA) {
+    try {
+      const critica = await autocriticarSecaoDoDireito({
+        peca: textoGerado,
+        topicos: topicosExtraidos,
+        cobertura: coberturaItens,
+        teses,
+        estrategiaJuridica: estrategiaParaRedator,
+        contextoLastro: contextoRedacao,
+      });
+      if (critica.ok && critica.aplicada) {
+        textoGerado = critica.peca;
+        const last = equipe[equipe.length - 1];
+        if (last?.id === "redator") {
+          last.detalhe = `${last.detalhe} · auto-crítica Flash`;
+          if (critica.modelo) {
+            last.modelo = `${redacaoModelo} → ${critica.modelo}`;
+          }
+        }
+        redacaoModelo = critica.modelo
+          ? `${redacaoModelo}+crítica`
+          : redacaoModelo;
+      }
+    } catch (e) {
+      console.warn(
+        "[autocritica] falha (fail-open):",
+        e instanceof Error ? e.message : e
+      );
+    }
+  }
 
   // Formatação forense fica a cargo do Redator (liberdade da IA).
   // Passo Gemini de diagramação (formatarPecaForense) desligado — evita molde rígido.

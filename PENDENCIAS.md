@@ -36,7 +36,10 @@ Ordem fechada — **não inverter**:
 - [x] Agenda amanhã intacta: **01h** juris · **02h** portal · **03h** smoke · **04h** súmulas
 - [x] Playwright Chromium em `%LOCALAPPDATA%\ms-playwright` + `PLAYWRIGHT_BROWSERS_PATH` na tarefa portal
 - [x] **Header UX:** Livre/Guia/Recorte só com modelo anexado; Nuvem/Conversas/Entendimento/Timbre centrados na coluna Documento (workspace)
-- [ ] **Próximo:** **O8** auto-crítica (Fc2) — **desenhar/implementar ok**; **ligar em prod só com ok Jefferson** (custo ~R$ 0,01–0,05/peça). Paralelo zero-custo: **O4** ETL TRE
+- [x] **Fixar** com destaque visual (ouro) · auto-fixar na 1ª entrada já existia
+- [x] **O8 auto-crítica Flash** — ligada em prod (`AUTOCRITICA_DIREITO_ATIVA`); fail-open; ~R$ 0,01–0,05/peça
+- [ ] Ícones fontes flutuantes — aguarda ok das sugestões
+- [ ] **Próximo:** **O4** ETL TRE (zero custo) · ou O5 fluidez / O6 Tom (discutir)
 
 ### Fila de implementação (09/09) — até auto-crítica e além
 
@@ -54,7 +57,7 @@ Ordem fechada — **não inverter**:
 | **O5b** | **Profundidade fora do header → pergunta chat** | P1 UX + margem | Header limpo; Sonnet só com `fundo` aceito; `recomendaFuncaoDetalhada` + chips | **Feito 09/09** |
 | **O6** | Tom / modelos por espécie | P1 produto | **Usar meu modelo** + Fiel/Livre/Recorte já ok; falta **biblioteca por espécie** + opt-in no chat. Discutir no momento | Pendente (discutir) |
 | **O7** | Comparativo 5–10 peças FACTO × MinutaIA | P1 ops | **Depois** O1–O3 (e idealmente lastro mais denso). Calibra lastro 8,2 | Pendente (após melhorias) |
-| **O8** | **Auto-crítica Flash** (Fc2) — desenho → ok Jefferson → prod | P1/P2 custo ~R$ 0,01–0,05/peça | Após O1–O5b. Sem skin nova | Pendente ← **próximo (custo: ok antes de prod)** |
+| **O8** | **Auto-crítica Flash** (Fc2) — fase interna DO DIREITO | P1/P2 custo ~R$ 0,01–0,05/peça | Fail-open; flag `AUTOCRITICA_DIREITO_ATIVA` | **Feito 09/09 · ON prod** |
 | **O9** | Frescor ≤1 ano | P2 | Só após base densa | Futuro |
 | **O10** | ABNT pixel / paginação preview | P2 | Residual; **manter como está** até doer em E2E humano — não priorizar | Adiado (opinião 09/09) |
 | — | MP ponta a ponta | P0 comercial | Paralelo (bloqueio venda) | Pendente |
@@ -83,12 +86,12 @@ Scorecard lastro **~8,2 previsto** (pós-reindex) vs MinutaIA **~7,0** (antes 7,
 | # | Item | Custo estimado | Benefício | Pri |
 |---|------|----------------|-----------|-----|
 | Fc1 | **Reindex paygo** (~21k itens) | **~R$ 10–40** uma vez; depois SEED free | Zera backlog | **Feito 09/09** (+20.591) — **não repetir** sem ok |
-| Fc2 | **Auto-crítica 1 pass Flash** (fase na peça, não skin) | **+R$ 0,01–0,05 / peça** | Completude tese↔citação (sem enxugar) | **O8** após O1–O3 |
+| Fc2 | **Auto-crítica 1 pass Flash** (fase na peça, não skin) | **+R$ 0,01–0,05 / peça** | Completude tese↔citação (sem enxugar) | **O8 feito** (ON) |
 | Fc3 | **Subir % Sonnet** (ex. 15/25/30) | Peça Sonnet ~R$ 0,69 | — | **Não agora nem como plano padrão** — 10/20/26; preferir **O5b**; só reabrir com dados pós-venda |
 | Fc4 | **Modo frescor ≤1 ano** | ≈0 API nova | Sensação “ao vivo” | **O9** após base densa |
 | Fc5 | **2ª API juris paga** | Assinatura a cotar | Atalho | Só se ETL falhar |
 
-**Não fazer agora:** Fc2 em prod sem ok · Fc3 · Fc5. **Agora:** **O8** (auto-crítica) com ok de custo, ou **O4** ETL TRE (zero custo, paralelo).
+**Não fazer agora:** Fc3 · Fc5. **Agora:** O4 ETL TRE (zero custo) ou polish UX (ícones fontes).
 
 ### Feito nesta rodada (08/09 — P0 TSE portal seed)
 
