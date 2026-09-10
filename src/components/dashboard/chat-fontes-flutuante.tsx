@@ -21,49 +21,53 @@ function IconMessage({ className }: { className?: string }) {
   );
 }
 
+/** Documentos — clipe (não confundir com livro genérico). */
+function IconPaperclip({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden>
+      <path
+        d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"
+        {...stroke}
+      />
+    </svg>
+  );
+}
+
+/** Provas e teses — peça de quebra-cabeça clássica (silhueta legível). */
 function IconPuzzle({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden>
       <path
-        d="M19.439 7.85c-.049.322.059.648.293.877l1.472 1.433a1.2 1.2 0 0 1 0 1.72l-1.472 1.433a1.01 1.01 0 0 0-.293.877c.017.11.017.221 0 .331a1.2 1.2 0 0 1-1.2 1.2 1.01 1.01 0 0 0-.877.293l-1.433 1.472a1.2 1.2 0 0 1-1.72 0l-1.433-1.472a1.01 1.01 0 0 0-.877-.293 1.2 1.2 0 0 1-1.2-1.2 1.01 1.01 0 0 0-.293-.877L5.85 12.56a1.2 1.2 0 0 1 0-1.72l1.433-1.472a1.01 1.01 0 0 0 .293-.877 1.2 1.2 0 0 1 1.2-1.2c.11-.017.221-.017.331 0a1.01 1.01 0 0 0 .877-.293l1.472-1.433a1.2 1.2 0 0 1 1.72 0l1.472 1.433c.23.234.555.342.877.293z"
+        d="M20.59 12.24a2 2 0 0 0-1.38-2.66 2 2 0 0 0-1.21.09V8a2 2 0 0 0-2-2h-1.67a2 2 0 1 0-3.66 0H9a2 2 0 0 0-2 2v1.67a2 2 0 1 0 0 3.66V15a2 2 0 0 0 2 2h1.67a2 2 0 1 0 3.66 0H16a2 2 0 0 0 2-2v-1.67c.4.16.84.18 1.26.05a2 2 0 0 0 1.33-2.14z"
         {...stroke}
       />
-      <path d="M12 8v8 M8 12h8" {...stroke} />
     </svg>
   );
 }
 
-function IconBook({ className }: { className?: string }) {
+/** Legislação — balança (lei), sem pergaminho que parece pasta. */
+function IconScales({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden>
-      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" {...stroke} />
-      <path
-        d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
-        {...stroke}
-      />
+      <path d="M12 3v18" {...stroke} />
+      <path d="M5 7h14" {...stroke} />
+      <path d="M5 7l-3 6a3.5 3.5 0 0 0 7 0L6 7" {...stroke} />
+      <path d="M19 7l-3 6a3.5 3.5 0 0 0 7 0l-3-6" {...stroke} />
+      <path d="M9 21h6" {...stroke} />
     </svg>
   );
 }
 
-function IconScroll({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden>
-      <path
-        d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V3a2 2 0 1 0-4 0v9h12"
-        {...stroke}
-      />
-    </svg>
-  );
-}
-
+/** Jurisprudência — martelo + base (não parece rolo de tinta). */
 function IconGavel({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden>
-      <path d="m14 13-7.5 7.5c-.83.83-2.17.83-3 0 0 0 0 0 0 0a2.12 2.12 0 0 1 0-3L11 10" {...stroke} />
-      <path d="m16 16 6-6" {...stroke} />
-      <path d="m8 8 6-6" {...stroke} />
-      <path d="m9 7 8 8" {...stroke} />
-      <path d="m3 21 3-3" {...stroke} />
+      <path d="M14.5 4.5l5 5" {...stroke} />
+      <path d="M12 7l5 5" {...stroke} />
+      <path d="M9.5 9.5l5 5" {...stroke} />
+      <path d="M8 16l-4.5 4.5" {...stroke} />
+      <path d="M3 21h8" {...stroke} />
+      <path d="M14 3.5l6.5 6.5-2 2L12 5.5z" {...stroke} />
     </svg>
   );
 }
@@ -184,7 +188,7 @@ export function ChatFontesFlutuante({
         modoWorkspace={modoWorkspace}
         onAbrir={onAbrir}
       >
-        <IconMessage className="h-4.5 w-4.5" />
+        <IconMessage className="h-5 w-5" />
       </BtnFonte>
       <BtnFonte
         aba="anexos"
@@ -196,7 +200,7 @@ export function ChatFontesFlutuante({
         modoWorkspace={modoWorkspace}
         onAbrir={onAbrir}
       >
-        <IconBook className="h-4.5 w-4.5" />
+        <IconPaperclip className="h-5 w-5" />
       </BtnFonte>
       <BtnFonte
         aba="teses"
@@ -211,7 +215,7 @@ export function ChatFontesFlutuante({
         modoWorkspace={modoWorkspace}
         onAbrir={onAbrir}
       >
-        <IconPuzzle className="h-4.5 w-4.5" />
+        <IconPuzzle className="h-5 w-5" />
       </BtnFonte>
       <BtnFonte
         aba="lei"
@@ -223,7 +227,7 @@ export function ChatFontesFlutuante({
         modoWorkspace={modoWorkspace}
         onAbrir={onAbrir}
       >
-        <IconScroll className="h-4.5 w-4.5" />
+        <IconScales className="h-5 w-5" />
       </BtnFonte>
       <BtnFonte
         aba="juris"
@@ -235,7 +239,7 @@ export function ChatFontesFlutuante({
         modoWorkspace={modoWorkspace}
         onAbrir={onAbrir}
       >
-        <IconGavel className="h-4.5 w-4.5" />
+        <IconGavel className="h-5 w-5" />
       </BtnFonte>
     </div>
   );

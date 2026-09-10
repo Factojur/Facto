@@ -17,6 +17,10 @@ Ordem fechada — **não inverter**:
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
 
+### Feito nesta rodada (10/09 — ícones fontes flutuantes)
+
+- [x] **Ícones fontes flutuantes** — clipe (docs) · puzzle clássico (teses) · balança (lei) · martelo+base (juris); +1px; sem ambiguidade mapa/rolo
+
 ### Feito nesta rodada (09/09 — Tom 12 + scorecard + seeds SEED-only)
 
 - [x] **Tom do escritório:** copy/UI/API alinhados a **até 12** peças (`MAX_AMOSTRAS_ESTILO` / `MAX_MODELOS_TOM`) — sumiu o “três” · deploy **Ready** `7cd82ca` / `dpl_HyRTm4hqy9Q1epY8iv3EDYNAMpto` · [factoia.com.br](https://factoia.com.br)
@@ -46,7 +50,7 @@ Ordem fechada — **não inverter**:
 - [x] **Header UX:** Livre/Guia/Recorte só com modelo anexado; Nuvem/Conversas/Entendimento/Timbre centrados na coluna Documento (workspace)
 - [x] **Fixar** com destaque visual (ouro) · auto-fixar na 1ª entrada já existia
 - [x] **O8 auto-crítica Flash** — **ON** prod (`AUTOCRITICA_DIREITO_ATIVA`) · Ready `76e8eac` / `dpl_GwPetPJU64tyJYBkAnF6RKnND4vy`
-- [ ] Ícones fontes flutuantes — aguarda ok das sugestões
+- [x] **Ícones fontes flutuantes** — feitos 10/09 (clipe / puzzle / balança / martelo)
 - [ ] **Próximo:** **O4** ETL TRE (zero custo) · ou O5 fluidez / O6 Tom biblioteca por espécie (discutir)
 
 ### Fila de implementação (09/09) — até auto-crítica e além
@@ -99,7 +103,7 @@ Scorecard lastro **8,3** (pós-reindex + O3 soft) vs MinutaIA **~7,0**. Pipeline
 | Fc4 | **Modo frescor ≤1 ano** | ≈0 API nova | Sensação “ao vivo” | **O9** após base densa |
 | Fc5 | **2ª API juris paga** | Assinatura a cotar | Atalho | Só se ETL falhar |
 
-**Não fazer agora:** Fc3 · Fc5. **Agora:** O4 ETL TRE (zero custo) ou polish UX (ícones fontes).
+**Não fazer agora:** Fc3 · Fc5. **Agora:** O4 ETL TRE (zero custo) ou polish UX residual.
 
 ### Feito nesta rodada (08/09 — P0 TSE portal seed)
 
