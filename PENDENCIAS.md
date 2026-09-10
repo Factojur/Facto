@@ -32,9 +32,10 @@ Ordem fechada — **não inverter**:
 - [x] **Ordem até auto-crítica** — ver seção **Fila de implementação (09/09)** abaixo (não ligar Fc2 em prod antes de O1–O3)
 - [x] **O2 Smoke lastro 20 áreas** — **20 ok · 0 lastro fraco · 0 falhas** (EXIT 0, ~12 min; 429 SEED com retry ok)
 - [x] **O3 F3+F4 soft** — pertinência tema×fatos no retrieve + ENCAIXE/lastro âmbar no preview (**sem** trava de Gerar) · deploy **Ready** `6b71c11` / `dpl_2zcHgAC5NKpijHmpfpJp9L3KVi9A` · [factoia.com.br](https://factoia.com.br)
+- [x] **O5b** — Expressa/Equilíbrio/Detalhada fora do header; pergunta no chat se roteador+teto; padrão=Flash · detalhado=Sonnet
 - [x] Agenda amanhã intacta: **01h** juris · **02h** portal · **03h** smoke · **04h** súmulas
 - [x] Playwright Chromium em `%LOCALAPPDATA%\ms-playwright` + `PLAYWRIGHT_BROWSERS_PATH` na tarefa portal
-- [ ] **Próximo código: O5b** (profundidade fora do header → pergunta chat) — **hora de implementar** após O3; O4 ETL em paralelo (ops)
+- [ ] **Próximo:** **O8** auto-crítica (Fc2) — **desenhar/implementar ok**; **ligar em prod só com ok Jefferson** (custo ~R$ 0,01–0,05/peça). Paralelo zero-custo: **O4** ETL TRE
 
 ### Fila de implementação (09/09) — até auto-crítica e além
 
@@ -49,10 +50,10 @@ Ordem fechada — **não inverter**:
 | **O3** | **F3+F4** pertinência retrieve + ENCAIXE por romano | P1 código **0 tokens** | Soft ranking + aviso âmbar preview; sem trava Gerar | **Feito 09/09** |
 | **O4** | **ETL gaps** (paralelo a O3+) | P1 ops/código | TSE feito → **TRE** → **TNU** → TRFs → 17 TJs (UFs de clientes primeiro). **Não** esperar “base 100%” | Pendente (fila portal 02h · paralelo) |
 | **O5** | Fluidez residual (−0,1 vs MinutaIA) | P1 UX | Já bem avançado; polish fino (stream, menos atrito). Discutir quando O3 ok | Pendente (baixa urgência) |
-| **O5b** | **Profundidade fora do header → pergunta chat** | P1 UX + margem | Conceito **fechado 09/09**: só se roteador+teto; copy “recomendável função detalhada”; padrão vs detalhado; sem teto = sem pergunta. Telemetria (% aceite) | Pendente ← **próximo código** |
+| **O5b** | **Profundidade fora do header → pergunta chat** | P1 UX + margem | Header limpo; Sonnet só com `fundo` aceito; `recomendaFuncaoDetalhada` + chips | **Feito 09/09** |
 | **O6** | Tom / modelos por espécie | P1 produto | **Usar meu modelo** + Fiel/Livre/Recorte já ok; falta **biblioteca por espécie** + opt-in no chat. Discutir no momento | Pendente (discutir) |
 | **O7** | Comparativo 5–10 peças FACTO × MinutaIA | P1 ops | **Depois** O1–O3 (e idealmente lastro mais denso). Calibra lastro 8,2 | Pendente (após melhorias) |
-| **O8** | **Auto-crítica Flash** (Fc2) — desenho → ok Jefferson → prod | P1/P2 custo ~R$ 0,01–0,05/peça | Só após O1–O3. Sem skin nova | **Aguardando O5b** (O1–O3 ok; desenhar Fc2 depois) |
+| **O8** | **Auto-crítica Flash** (Fc2) — desenho → ok Jefferson → prod | P1/P2 custo ~R$ 0,01–0,05/peça | Após O1–O5b. Sem skin nova | Pendente ← **próximo (custo: ok antes de prod)** |
 | **O9** | Frescor ≤1 ano | P2 | Só após base densa | Futuro |
 | **O10** | ABNT pixel / paginação preview | P2 | Residual; **manter como está** até doer em E2E humano — não priorizar | Adiado (opinião 09/09) |
 | — | MP ponta a ponta | P0 comercial | Paralelo (bloqueio venda) | Pendente |

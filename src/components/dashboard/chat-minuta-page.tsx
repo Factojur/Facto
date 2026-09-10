@@ -106,13 +106,17 @@ import {
 } from "@/lib/modo-conversa-chat";
 import {
   lerAdesaoRedacaoStorage,
-  lerEsforcoRedacaoStorage,
   salvarAdesaoRedacaoStorage,
-  salvarEsforcoRedacaoStorage,
   type AdesaoRedacao,
   type EsforcoRedacao,
 } from "@/lib/chat-redacao-opcoes";
 import { ChatRedacaoOpcoes } from "@/components/dashboard/chat-redacao-opcoes";
+import { ChatFuncaoDetalhadaChips } from "@/components/dashboard/chat-funcao-detalhada-chips";
+import {
+  COPY_PERGUNTA_FUNCAO_DETALHADA,
+  recomendaFuncaoDetalhada,
+} from "@/lib/ia/roteador-redator";
+import type { PlanoCota } from "@/lib/cota-pecas";
 import {
   deveEntregarPecaAposPlano,
   pedidoExplicitoRedacao,
@@ -375,9 +379,14 @@ export function ChatMinutaPage({
   const [adesaoRedacao, setAdesaoRedacao] = useState<AdesaoRedacao>(() =>
     lerAdesaoRedacaoStorage()
   );
-  const [esforcoRedacao, setEsforcoRedacao] = useState<EsforcoRedacao>(() =>
-    lerEsforcoRedacaoStorage()
-  );
+  /** O5b: padrão Flash; `fundo` só após aceite da função detalhada. */
+  const [esforcoRedacao, setEsforcoRedacao] =
+    useState<EsforcoRedacao>("padrao");
+  const [pendenteDetalhada, setPendenteDetalhada] = useState<{
+    triagem: PreviewTriagemData;
+    payload: ReturnType<typeof montarPayloadGeracaoChat>;
+    fp: string;
+  } | null>(null);
   const [carregandoModelo, setCarregandoModelo] = useState(false);
   const papelRef = useRef<PapelInteracaoChat>(papelInteracao);
   papelRef.current = papelInteracao;
@@ -465,6 +474,7 @@ export function ChatMinutaPage({
     | ((overrides?: {
         triagem?: PreviewTriagemData;
         payload?: ReturnType<typeof montarPayloadGeracaoChat>;
+        esforcoRedacao?: EsforcoRedacao;
       }) => Promise<void>)
     | null
   >(null);
@@ -835,8 +845,21 @@ export function ChatMinutaPage({
   }, [adesaoRedacao]);
 
   useEffect(() => {
-    salvarEsforcoRedacaoStorage(esforcoRedacao);
-  }, [esforcoRedacao]);
+    let cancel = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/cota");
+        if (!res.ok || cancel) return;
+        const data = (await res.json()) as { cota?: ResumoCota };
+        if (data.cota && !cancel) setCota(data.cota);
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancel = true;
+    };
+  }, []);
 
   useEffect(() => {
     anexosMemoriaRef.current = anexosMemoria;
@@ -1294,6 +1317,8 @@ export function ChatMinutaPage({
     setAjustesFeitos(0);
     setTriagemPreview(null);
     setPayloadPendente(null);
+    setPendenteDetalhada(null);
+    setEsforcoRedacao("padrao");
     setErro(null);
     setAvisos(null);
     setLastroRedacao(null);
@@ -1704,10 +1729,55 @@ export function ChatMinutaPage({
     if (redigindoRef.current) return;
     if (!forcar && ultimaPecaFpRef.current === fp) return;
     ultimaPecaFpRef.current = fp;
+
+    const e = estadoRef.current;
+    const planoCota = (cota?.plano ?? plano ?? null) as PlanoCota;
+    const pedirDetalhada = recomendaFuncaoDetalhada({
+      plano: planoCota,
+      especie: e.especiePeca || aplicado.payload.especiePeca,
+      areaId: e.areaId,
+      charsRelato: (e.fatos ?? "").trim().length,
+      tutelaUrgencia: e.tutelaUrgencia,
+      sonnetUsadas: cota?.sonnetUsadas ?? 0,
+      anthropicOk: cota?.sonnetDisponivel ?? true,
+    });
+
+    if (pedirDetalhada) {
+      setPendenteDetalhada({
+        triagem: aplicado.triagem,
+        payload: aplicado.payload,
+        fp,
+      });
+      setEsforcoRedacao("padrao");
+      adicionarMensagem("sistema", COPY_PERGUNTA_FUNCAO_DETALHADA);
+      return;
+    }
+
+    setPendenteDetalhada(null);
+    setEsforcoRedacao("padrao");
     window.setTimeout(() => {
       void confirmarRedacaoRef.current?.({
         triagem: aplicado.triagem,
         payload: aplicado.payload,
+        esforcoRedacao: "padrao",
+      });
+    }, 50);
+  }
+
+  function responderFuncaoDetalhada(escolha: "padrao" | "fundo") {
+    const pend = pendenteDetalhada;
+    if (!pend) return;
+    setPendenteDetalhada(null);
+    setEsforcoRedacao(escolha);
+    adicionarMensagem(
+      "usuario",
+      escolha === "fundo" ? "Ir para o detalhado" : "Manter no padrão"
+    );
+    window.setTimeout(() => {
+      void confirmarRedacaoRef.current?.({
+        triagem: pend.triagem,
+        payload: pend.payload,
+        esforcoRedacao: escolha,
       });
     }, 50);
   }
@@ -2510,10 +2580,12 @@ export function ChatMinutaPage({
   async function confirmarRedacao(overrides?: {
     triagem?: PreviewTriagemData;
     payload?: ReturnType<typeof montarPayloadGeracaoChat>;
+    esforcoRedacao?: EsforcoRedacao;
   }) {
     const triagem = overrides?.triagem ?? triagemPreview;
     const payload = overrides?.payload ?? payloadPendente;
     if (!triagem || !payload) return;
+    const esforco = overrides?.esforcoRedacao ?? esforcoRedacao;
 
     const estadoAtual = sincronizarPoloAutomaticoChat(estadoRef.current);
     const avisoPolo = avisosPoloEspecieChat(estadoAtual);
@@ -2542,7 +2614,7 @@ export function ChatMinutaPage({
         /** 1 crédito = Gerar preview (área Peça). */
         adiarDebitoCota: false,
         adesaoRedacao,
-        esforcoRedacao,
+        esforcoRedacao: esforco,
         escritorio: escritorio.usarTimbre ? escritorio : undefined,
         triagemPrecalculada: {
           estrategiaJuridica: triagem.estrategiaJuridica,
@@ -3021,9 +3093,7 @@ export function ChatMinutaPage({
               />
               <ChatRedacaoOpcoes
                 adesao={adesaoRedacao}
-                esforco={esforcoRedacao}
                 onAdesao={setAdesaoRedacao}
-                onEsforco={setEsforcoRedacao}
                 modoWorkspace={modoWorkspace}
                 modeloNome={estado.modeloPecaNome || null}
                 onModeloArquivo={aplicarModeloArquivo}
@@ -3214,6 +3284,15 @@ export function ChatMinutaPage({
             {faseEquipe !== "idle" && (
                 <ChatEquipeTrabalhando fase={faseEquipe} />
               )}
+            {pendenteDetalhada &&
+              !redigindo &&
+              !geradoPorIA && (
+                <ChatFuncaoDetalhadaChips
+                  modoWorkspace={modoWorkspace}
+                  onManterPadrao={() => responderFuncaoDetalhada("padrao")}
+                  onIrDetalhado={() => responderFuncaoDetalhada("fundo")}
+                />
+              )}
             {papelInteracao === "chat" &&
               casoJaOrganizado &&
               !geradoPorIA &&
@@ -3239,6 +3318,7 @@ export function ChatMinutaPage({
               casoJaOrganizado &&
               !geradoPorIA &&
               !redigindo &&
+              !pendenteDetalhada &&
               mensagens.length > 1 &&
               casoTemLastroMinimoParaPeca(estado) && (
               <div className="flex flex-col items-start gap-2 pt-1">

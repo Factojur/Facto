@@ -143,7 +143,7 @@ type GerarPecaBody = GerarPecaJecInput & {
   adiarDebitoCota?: boolean;
   /** Livre | Fiel | Recorte — adesão ao modelo/estilo. */
   adesaoRedacao?: "livre" | "fiel" | "recorte";
-  /** Expressa | Equilíbrio | Detalhada — profundidade (tokens / Sonnet). */
+  /** Expressa | Equilíbrio | Detalhada — O5b: só `fundo` (detalhada aceita) usa Sonnet. */
   esforcoRedacao?: "agil" | "padrao" | "fundo";
   /** Modelo de peça do advogado (só este caso). */
   modeloPeca?: { nome: string; texto: string } | null;

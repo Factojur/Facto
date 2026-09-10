@@ -7,6 +7,7 @@ import {
   decidirRedatorSonnet,
   especieExigeSonnet,
   LIMITE_CHARS_RELATO_SONNET_AREA_DENSA,
+  recomendaFuncaoDetalhada,
 } from "../src/lib/ia/roteador-redator";
 import {
   anthropicConfigurado,
@@ -30,10 +31,11 @@ async function main() {
     plano: "jec",
     especie: "apelacao",
     sonnetUsadas: 0,
+    esforco: "fundo",
   });
   assert(
     essencial.usarSonnet && essencial.motivo === "especie_complexa",
-    "Essencial + apelação → Sonnet (teto 10%)"
+    "Essencial + apelação + detalhada → Sonnet (teto 10%)"
   );
   assert(essencial.tetoMes === 3, "Essencial teto Sonnet = floor(30×10%) = 3");
 
@@ -41,17 +43,38 @@ async function main() {
     plano: "trial",
     especie: "apelacao",
     sonnetUsadas: 0,
+    esforco: "fundo",
   });
   assert(!trial.usarSonnet, "trial nunca Sonnet");
 
-  const apel = decidirRedatorSonnet({
+  const padraoFlash = decidirRedatorSonnet({
     plano: "mensal",
     especie: "apelacao",
     areaId: "familia",
     sonnetUsadas: 0,
     esforco: "padrao",
   });
-  assert(apel.usarSonnet && apel.motivo === "especie_complexa", "Completo + apelação → Sonnet");
+  assert(
+    !padraoFlash.usarSonnet,
+    "O5b: padrão = Flash mesmo com apelação"
+  );
+
+  const sugerir = recomendaFuncaoDetalhada({
+    plano: "mensal",
+    especie: "apelacao",
+    areaId: "familia",
+    sonnetUsadas: 0,
+    anthropicOk: true,
+  });
+  assert(sugerir, "O5b: apelação + teto → sugere detalhada");
+
+  const semTeto = recomendaFuncaoDetalhada({
+    plano: "mensal",
+    especie: "apelacao",
+    sonnetUsadas: 99,
+    anthropicOk: true,
+  });
+  assert(!semTeto, "O5b: teto esgotado → não pergunta");
 
   const densa = decidirRedatorSonnet({
     plano: "pro",
@@ -59,9 +82,9 @@ async function main() {
     areaId: "familia",
     charsRelato: LIMITE_CHARS_RELATO_SONNET_AREA_DENSA,
     sonnetUsadas: 0,
-    esforco: "padrao",
+    esforco: "fundo",
   });
-  assert(densa.usarSonnet && densa.motivo === "relato_longo", "área densa + 3,5k → Sonnet");
+  assert(densa.usarSonnet && densa.motivo === "relato_longo", "área densa + 3,5k + detalhada → Sonnet");
 
   const fundo = decidirRedatorSonnet({
     plano: "pro",

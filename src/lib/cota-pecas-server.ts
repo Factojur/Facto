@@ -11,6 +11,8 @@ import {
   type ResumoCota,
 } from "@/lib/cota-pecas";
 import { isEmailAcessoLivre } from "@/lib/emails-acesso-livre";
+import { anthropicConfigurado } from "@/lib/ia/anthropic-client";
+import { tetoSonnetDoPlano } from "@/lib/ia/roteador-redator";
 
 type Admin = ReturnType<typeof createAdminClient>;
 
@@ -162,6 +164,9 @@ export async function obterResumoCotaUsuario(opcoes: {
       extras: 0,
       ciclo,
       trackingAtivo: false,
+      sonnetUsadas: 0,
+      tetoSonnet: 0,
+      sonnetDisponivel: anthropicConfigurado(),
     });
   }
 
@@ -178,6 +183,9 @@ export async function obterResumoCotaUsuario(opcoes: {
         extras: 0,
         ciclo,
         trackingAtivo: false,
+        sonnetUsadas: 0,
+        tetoSonnet: tetoSonnetDoPlano(plano),
+        sonnetDisponivel: anthropicConfigurado(),
       });
     }
 
@@ -189,6 +197,9 @@ export async function obterResumoCotaUsuario(opcoes: {
       extrasAnalises: linha.extrasAnalises,
       ciclo,
       trackingAtivo: limiteDoPlano(plano) != null,
+      sonnetUsadas: linha.sonnetRedacoes,
+      tetoSonnet: tetoSonnetDoPlano(plano),
+      sonnetDisponivel: anthropicConfigurado(),
     });
   } catch (erro) {
     console.warn("[cota] exceção (fail-open):", erro);
@@ -198,6 +209,9 @@ export async function obterResumoCotaUsuario(opcoes: {
       extras: 0,
       ciclo,
       trackingAtivo: false,
+      sonnetUsadas: 0,
+      tetoSonnet: 0,
+      sonnetDisponivel: anthropicConfigurado(),
     });
   }
 }

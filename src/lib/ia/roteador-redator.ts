@@ -7,12 +7,10 @@
  * - Completo (mensal/anual): 20%
  * - Pro (mensal/anual) + escritórios: 26%
  *
- * Gatilhos (precisa de ≥1 + saldo do teto + ANTHROPIC_API_KEY):
- * - espécie complexa (recurso, agravo, embargos, remédios, defesa densa etc.)
- * - relato longo (≥ 5.500 chars; áreas densas ≥ 3.500)
- * - área densa + esforço Detalhada (fundo)
- * - tutela de urgência (Pro / escritório)
- * - esforço Detalhada / Fundo (se ainda houver teto)
+ * O5b (09/09): Expressa/Equilíbrio/Detalhada saem do header.
+ * - Padrão (padrao/agil) = sempre Flash.
+ * - Sonnet só com esforço `fundo` (função detalhada aceita no chat) + teto + API.
+ * - Pergunta no chat quando `recomendaFuncaoDetalhada` (gatilhos + teto).
  */
 
 import type { PlanoCota } from "@/lib/cota-pecas";
@@ -95,6 +93,64 @@ export function especieExigeSonnet(especie: string | null | undefined): boolean 
   );
 }
 
+/** Gatilho de mérito para Sonnet / pergunta detalhada. */
+export function motivoGatilhoSonnet(opcoes: {
+  especie?: string | null;
+  areaId?: string | null;
+  charsRelato?: number;
+  tutelaUrgencia?: boolean;
+  plano?: PlanoCota;
+  /** Se true, área densa sozinha conta (uso com esforço fundo). */
+  incluirAreaDensa?: boolean;
+}): MotivoSonnet {
+  const densa = areaDensaSonnet(opcoes.areaId);
+  const limRelato = densa
+    ? LIMITE_CHARS_RELATO_SONNET_AREA_DENSA
+    : LIMITE_CHARS_RELATO_SONNET;
+
+  if (especieExigeSonnet(opcoes.especie)) return "especie_complexa";
+  if ((opcoes.charsRelato ?? 0) >= limRelato) return "relato_longo";
+  if (
+    opcoes.tutelaUrgencia &&
+    fracaoTetoSonnet(opcoes.plano ?? null) >= TETO_SONNET_PRO
+  ) {
+    return "tutela_pro";
+  }
+  if (opcoes.incluirAreaDensa && densa) return "area_densa";
+  return null;
+}
+
+/**
+ * O5b — vale perguntar “função detalhada?” no chat.
+ * Gatilhos = o que antes disparava Sonnet no padrão (espécie/relato/tutela).
+ * Sem teto / Anthropic → não pergunta (Flash silencioso).
+ */
+export function recomendaFuncaoDetalhada(opcoes: {
+  plano: PlanoCota;
+  especie?: string | null;
+  areaId?: string | null;
+  charsRelato?: number;
+  tutelaUrgencia?: boolean;
+  sonnetUsadas: number;
+  /** Se omitido, usa anthropicConfigurado() (só no servidor). */
+  anthropicOk?: boolean;
+}): boolean {
+  const anthropicOk = opcoes.anthropicOk ?? anthropicConfigurado();
+  if (!anthropicOk) return false;
+  const tetoMes = tetoSonnetDoPlano(opcoes.plano);
+  if (tetoMes <= 0) return false;
+  if (opcoes.sonnetUsadas >= tetoMes) return false;
+  return (
+    motivoGatilhoSonnet({
+      ...opcoes,
+      incluirAreaDensa: false,
+    }) != null
+  );
+}
+
+export const COPY_PERGUNTA_FUNCAO_DETALHADA =
+  "Para esta peça, é recomendável utilizar a função detalhada.";
+
 export function decidirRedatorSonnet(opcoes: {
   plano: PlanoCota;
   especie?: string | null;
@@ -102,7 +158,7 @@ export function decidirRedatorSonnet(opcoes: {
   charsRelato?: number;
   tutelaUrgencia?: boolean;
   sonnetUsadas: number;
-  /** Expressa nunca usa Sonnet; Detalhada usa se ainda houver teto. */
+  /** O5b: só `fundo` (detalhada aceita) usa Sonnet; padrao/agil = Flash. */
   esforco?: "agil" | "padrao" | "fundo";
 }): DecisaoRedator {
   const tetoMes = tetoSonnetDoPlano(opcoes.plano);
@@ -118,13 +174,16 @@ export function decidirRedatorSonnet(opcoes: {
     };
   }
 
-  if (opcoes.esforco === "agil") {
+  if (opcoes.esforco !== "fundo") {
     return {
       usarSonnet: false,
       motivo: null,
       tetoMes,
       sonnetUsadas,
-      detalhe: "Esforço Expressa — Redator em Flash.",
+      detalhe:
+        opcoes.esforco === "agil"
+          ? "Esforço Expressa — Redator em Flash."
+          : "Padrão (Flash) — Sonnet só com função detalhada aceita.",
     };
   }
 
@@ -148,36 +207,9 @@ export function decidirRedatorSonnet(opcoes: {
     };
   }
 
-  const densa = areaDensaSonnet(opcoes.areaId);
-  const limRelato = densa
-    ? LIMITE_CHARS_RELATO_SONNET_AREA_DENSA
-    : LIMITE_CHARS_RELATO_SONNET;
-
-  let motivo: MotivoSonnet = null;
-  if (especieExigeSonnet(opcoes.especie)) {
-    motivo = "especie_complexa";
-  } else if ((opcoes.charsRelato ?? 0) >= limRelato) {
-    motivo = "relato_longo";
-  } else if (densa && opcoes.esforco === "fundo") {
-    motivo = "area_densa";
-  } else if (
-    opcoes.tutelaUrgencia &&
-    fracaoTetoSonnet(opcoes.plano) >= TETO_SONNET_PRO
-  ) {
-    motivo = "tutela_pro";
-  } else if (opcoes.esforco === "fundo") {
-    motivo = "esforco_fundo";
-  }
-
-  if (!motivo) {
-    return {
-      usarSonnet: false,
-      motivo: null,
-      tetoMes,
-      sonnetUsadas,
-      detalhe: "Sem gatilho — Redator em Flash.",
-    };
-  }
+  const motivo =
+    motivoGatilhoSonnet({ ...opcoes, incluirAreaDensa: true }) ??
+    ("esforco_fundo" as MotivoSonnet);
 
   return {
     usarSonnet: true,

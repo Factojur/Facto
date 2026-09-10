@@ -1,20 +1,12 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type {
-  AdesaoRedacao,
-  EsforcoRedacao,
-} from "@/lib/chat-redacao-opcoes";
-import {
-  ROTULO_ADESAO,
-  ROTULO_ESFORCO,
-} from "@/lib/chat-redacao-opcoes";
+import type { AdesaoRedacao } from "@/lib/chat-redacao-opcoes";
+import { ROTULO_ADESAO } from "@/lib/chat-redacao-opcoes";
 
 type Props = {
   adesao: AdesaoRedacao;
-  esforco: EsforcoRedacao;
   onAdesao: (v: AdesaoRedacao) => void;
-  onEsforco: (v: EsforcoRedacao) => void;
   modoWorkspace?: boolean;
   /** Modelo de peça só deste caso. */
   modeloNome?: string | null;
@@ -24,7 +16,6 @@ type Props = {
 };
 
 const ADESAO: AdesaoRedacao[] = ["livre", "fiel", "recorte"];
-const ESFORCO: EsforcoRedacao[] = ["agil", "padrao", "fundo"];
 
 function shellCls(modoWorkspace?: boolean) {
   return modoWorkspace
@@ -45,13 +36,13 @@ function inativoCls(modoWorkspace?: boolean) {
 }
 
 /**
- * Modelo do caso + adesão (Livre / Fiel / Recorte) + profundidade.
+ * Modelo do caso + adesão (Livre / Fiel / Recorte).
+ * O5b: profundidade (Expressa/Equilíbrio/Detalhada) saiu do header —
+ * pergunta no chat quando o roteador recomenda função detalhada.
  */
 export function ChatRedacaoOpcoes({
   adesao,
-  esforco,
   onAdesao,
-  onEsforco,
   modoWorkspace,
   modeloNome,
   onModeloArquivo,
@@ -163,30 +154,7 @@ export function ChatRedacaoOpcoes({
           </button>
         ))}
       </div>
-      <div
-        className={`inline-flex items-center gap-0.5 rounded-full border p-0.5 ${shell}`}
-        role="group"
-        aria-label="Profundidade da redação"
-      >
-        {ESFORCO.map((id) => (
-          <button
-            key={id}
-            type="button"
-            title={
-              id === "agil"
-                ? "Mais rápida e enxuta. Ideal para peça simples ou ajuste de ritmo."
-                : id === "fundo"
-                  ? "Mais extensão e cuidado argumentativo. Preferível em recurso, MS, HC ou autos longos."
-                  : "Equilíbrio entre profundidade e tempo. Recomendado na maioria dos casos."
-            }
-            aria-pressed={esforco === id}
-            className={`${btn} ${esforco === id ? ativoCls(modoWorkspace) : inativoCls(modoWorkspace)}`}
-            onClick={() => onEsforco(id)}
-          >
-            {ROTULO_ESFORCO[id]}
-          </button>
-        ))}
-      </div>
     </div>
   );
 }
+

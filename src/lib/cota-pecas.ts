@@ -49,6 +49,12 @@ export type ResumoCota = {
   esgotadaAnalises: boolean;
   percentualAnalisesUsado: number | null;
   usoLabelAnalises: string;
+  /** O5b — teto Sonnet do mês (0 = trial / sem). */
+  tetoSonnet?: number;
+  /** Redações Sonnet já usadas no ciclo. */
+  sonnetUsadas?: number;
+  /** Anthropic configurada no servidor (sem expor a chave). */
+  sonnetDisponivel?: boolean;
 };
 
 export function cicloAtualSaoPaulo(agora = new Date()): string {
@@ -88,6 +94,9 @@ export function montarResumoCota(opcoes: {
   extrasAnalises?: number;
   ciclo?: string;
   trackingAtivo?: boolean;
+  sonnetUsadas?: number;
+  tetoSonnet?: number;
+  sonnetDisponivel?: boolean;
 }): ResumoCota {
   const ciclo = opcoes.ciclo ?? cicloAtualSaoPaulo();
   const limitePlano = limiteDoPlano(opcoes.plano);
@@ -96,6 +105,9 @@ export function montarResumoCota(opcoes: {
   const extras = Math.max(0, opcoes.extras);
   const analisesUsadas = Math.max(0, opcoes.analisesUsadas ?? 0);
   const extrasAnalises = Math.max(0, opcoes.extrasAnalises ?? 0);
+  const sonnetUsadas = Math.max(0, opcoes.sonnetUsadas ?? 0);
+  const tetoSonnet = Math.max(0, opcoes.tetoSonnet ?? 0);
+  const sonnetDisponivel = opcoes.sonnetDisponivel ?? false;
 
   if (!trackingAtivo || limitePlano == null) {
     return {
@@ -118,6 +130,9 @@ export function montarResumoCota(opcoes: {
       esgotadaAnalises: false,
       percentualAnalisesUsado: null,
       usoLabelAnalises: "",
+      tetoSonnet,
+      sonnetUsadas,
+      sonnetDisponivel,
     };
   }
 
@@ -148,5 +163,8 @@ export function montarResumoCota(opcoes: {
     esgotadaAnalises: false,
     percentualAnalisesUsado: null,
     usoLabelAnalises: "",
+    tetoSonnet,
+    sonnetUsadas,
+    sonnetDisponivel,
   };
 }
