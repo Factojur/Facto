@@ -13,6 +13,10 @@ import {
   rotuloEstiloAtivo,
 } from "@/lib/estilo-presets-facto";
 import { resumoEstiloParaPrompt } from "@/lib/estilo-presets-facto";
+import {
+  MAX_AMOSTRAS_ESTILO,
+  MIN_AMOSTRAS_ESTILO,
+} from "@/lib/estilo-amostras-limite";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -125,10 +129,14 @@ export async function POST(request: Request) {
     );
   }
 
-  const amostras = Array.isArray(body.amostras) ? body.amostras.slice(0, 3) : [];
-  if (amostras.length < 1) {
+  const amostras = Array.isArray(body.amostras)
+    ? body.amostras.slice(0, MAX_AMOSTRAS_ESTILO)
+    : [];
+  if (amostras.length < MIN_AMOSTRAS_ESTILO) {
     return NextResponse.json(
-      { error: "Envie de 1 a 3 peças suas (Word ou PDF)." },
+      {
+        error: `Envie de ${MIN_AMOSTRAS_ESTILO} a ${MAX_AMOSTRAS_ESTILO} peças suas (Word ou PDF).`,
+      },
       { status: 400 }
     );
   }

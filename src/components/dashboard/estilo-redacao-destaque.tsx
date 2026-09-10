@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { useCallback, useEffect, useState } from "react";
+import {
+  MAX_AMOSTRAS_ESTILO,
+  MIN_AMOSTRAS_ESTILO,
+} from "@/lib/estilo-amostras-limite";
 
 const CHAVE_OCULTAR_SEMPRE = "facto-estilo-cta-ocultar-sempre";
 const CHAVE_OCULTAR_SESSAO = "facto-estilo-cta-ocultar-sessao";
@@ -116,9 +120,10 @@ export function EstiloRedacaoDestaque() {
                 <span className="font-normal text-stone-400">(opcional)</span>
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-stone-400">
-                Envie até três peças de referência. O FACTO lê tom, extensão e
-                forma dos pedidos — sem copiar fatos — e usa isso como parâmetro
-                nas próximas gerações, com o rito forense intacto.
+                Envie até {MAX_AMOSTRAS_ESTILO} peças de referência. O FACTO lê
+                tom, extensão e forma dos pedidos — sem copiar fatos — e usa
+                isso como parâmetro nas próximas gerações, com o rito forense
+                intacto.
               </p>
             </div>
             <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
@@ -185,8 +190,8 @@ export function EstiloRedacaoDestaque() {
                     .
                   </li>
                   <li>
-                    Marque a autorização e envie de 1 a 3 peças suas (PDF ou
-                    Word).
+                    Marque a autorização e envie de {MIN_AMOSTRAS_ESTILO} a{" "}
+                    {MAX_AMOSTRAS_ESTILO} peças suas (PDF ou Word).
                   </li>
                   <li>
                     Clique em <strong className="font-medium text-stone-200">Gerar meu perfil</strong>.

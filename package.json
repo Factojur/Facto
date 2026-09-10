@@ -60,10 +60,12 @@
     "seed:juris-ai-lote-6": "cross-env SEED_JURIS_LOTE=6 npx tsx scripts/seed-juris-ai-lote.ts",
     "seed:juris-diario": "npx tsx scripts/seed-juris-diario.ts",
     "seed:juris-faixa-agora": "npx tsx scripts/seed-juris-faixa-agora.ts",
+    "seed:juris-portal-diario": "npx tsx scripts/seed-juris-portal-diario.ts",
     "seed:sumulas-diario": "npx tsx scripts/seed-sumulas-diario.ts",
     "seed:sumulas-tst-tse": "npx tsx scripts/seed-sumulas-tst-tse.ts",
     "enriquecer:juris-ementas": "npx tsx scripts/enriquecer-juris-ementas.ts",
     "reindex:embeddings": "npx tsx scripts/reindex-embeddings.ts",
+    "reindex:embeddings:paygo-catchup": "npx tsx scripts/reindex-embeddings.ts --paygo-catchup",
     "backfill:juris-metadados": "npx tsx scripts/backfill-juris-metadados.ts",
     "corrigir-metadados": "node scripts/limpar-metadados-perfil.mjs"
   },

@@ -2,13 +2,22 @@
  * Reindexa embeddings da base_conhecimento.
  * Uso: npx tsx scripts/reindex-embeddings.ts
  *      npx tsx scripts/reindex-embeddings.ts --forcar
- * Requer GEMINI_API_KEY_SEED (free) + SUPABASE_* no .env.local.
- * Seeds/reindex/smokes NÃO usam GEMINI_API_KEY paygo.
+ *      npx tsx scripts/reindex-embeddings.ts --paygo-catchup   ← ÚNICA vez: zera backlog com paygo
+ *
+ * Default: GEMINI_API_KEY_SEED (free). Paygo só com --paygo-catchup.
  */
 
-import { exigirGeminiApenasSeed } from "./lib/gemini-env-seed";
+import {
+  exigirGeminiApenasSeed,
+  exigirGeminiPaygoCatchupReindex,
+} from "./lib/gemini-env-seed";
 
-exigirGeminiApenasSeed("reindex");
+const paygoCatchup = process.argv.includes("--paygo-catchup");
+if (paygoCatchup) {
+  exigirGeminiPaygoCatchupReindex("reindex");
+} else {
+  exigirGeminiApenasSeed("reindex");
+}
 
 async function main() {
   const { reindexarBaseConhecimento } = await import(
@@ -17,16 +26,18 @@ async function main() {
   const forcar = process.argv.includes("--forcar");
   console.log(
     "Reindexando embeddings…",
-    forcar ? "(forçar todos)" : "(só sem embedding)"
+    forcar ? "(forçar todos)" : "(só sem embedding)",
+    paygoCatchup ? "· PAYGO CATCH-UP" : "· SEED free"
   );
 
   let totalIndexados = 0;
   let totalFalhas = 0;
   const avisos: string[] = [];
   const lote = 400;
+  // Catch-up: ~21k itens → precisa de mais rodadas que o diário free (20×400).
+  const maxRodadas = paygoCatchup ? 80 : 20;
 
-  // Continua em lotes até acabar (ou falhar o lote inteiro).
-  for (let rodada = 1; rodada <= 20; rodada++) {
+  for (let rodada = 1; rodada <= maxRodadas; rodada++) {
     const r = await reindexarBaseConhecimento({ forcar, limite: lote });
     totalIndexados += r.indexados;
     totalFalhas += r.falhas;
@@ -43,7 +54,12 @@ async function main() {
 
   console.log(
     JSON.stringify(
-      { indexados: totalIndexados, falhas: totalFalhas, avisos },
+      {
+        modo: paygoCatchup ? "paygo-catchup" : "seed-free",
+        indexados: totalIndexados,
+        falhas: totalFalhas,
+        avisos,
+      },
       null,
       2
     )

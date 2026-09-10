@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ESTILO_PRESETS_FACTO } from "@/lib/estilo-presets-facto";
+import {
+  MAX_AMOSTRAS_ESTILO,
+  MIN_AMOSTRAS_ESTILO,
+} from "@/lib/estilo-amostras-limite";
 
 function lerArquivoBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -81,8 +85,10 @@ export function EstiloEscritorioPanel() {
       setErro("Autorize o uso das amostras antes de continuar.");
       return;
     }
-    if (arquivos.length < 1) {
-      setErro("Selecione de 1 a 3 peças suas (PDF ou Word).");
+    if (arquivos.length < MIN_AMOSTRAS_ESTILO) {
+      setErro(
+        `Selecione de ${MIN_AMOSTRAS_ESTILO} a ${MAX_AMOSTRAS_ESTILO} peças suas (PDF ou Word).`
+      );
       return;
     }
     setProcessando(true);
@@ -150,10 +156,11 @@ export function EstiloEscritorioPanel() {
         Tom do escritório (opcional)
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-slate-600">
-        Escolha um preset FACTO (zero custo) ou envie até 3 peças que você já
-        protocolou. O FACTO extrai <strong>como</strong> você escreve — não copia
-        fatos nem textos inteiros. Nas gerações seguintes isso entra
-        automaticamente; o esqueleto forense e o rito permanecem iguais.
+        Escolha um preset FACTO (zero custo) ou envie até {MAX_AMOSTRAS_ESTILO}{" "}
+        peças que você já protocolou. O FACTO extrai <strong>como</strong> você
+        escreve — não copia fatos nem textos inteiros. Nas gerações seguintes
+        isso entra automaticamente; o esqueleto forense e o rito permanecem
+        iguais.
       </p>
 
       {carregando ? (
@@ -234,14 +241,17 @@ export function EstiloEscritorioPanel() {
 
           <div className="mt-4">
             <label className="mb-1.5 block text-sm font-medium text-slate-700">
-              Amostras (1–3 · PDF ou Word)
+              Amostras ({MIN_AMOSTRAS_ESTILO}–{MAX_AMOSTRAS_ESTILO} · PDF ou Word)
             </label>
             <input
               type="file"
               accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
               multiple
               onChange={(e) => {
-                const lista = Array.from(e.target.files ?? []).slice(0, 3);
+                const lista = Array.from(e.target.files ?? []).slice(
+                  0,
+                  MAX_AMOSTRAS_ESTILO
+                );
                 setArquivos(lista);
               }}
               className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-stone-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-stone-800"
@@ -252,7 +262,8 @@ export function EstiloEscritorioPanel() {
               </p>
             ) : null}
             <p className="mt-2 text-xs text-slate-500">
-              Dica: misture tipos (ex.: 1 inicial + 1 contestação + 1 recurso).
+              Dica: misture tipos (ex.: inicial, contestação, recurso) — até{" "}
+              {MAX_AMOSTRAS_ESTILO} arquivos.
             </p>
           </div>
 

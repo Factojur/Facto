@@ -1,0 +1,10 @@
+{
+  "temaIndice": 4,
+  "ultimaRodada": "2026-09-09",
+  "ultimoResultado": {
+    "temas": 4,
+    "inserts": 34,
+    "skips": 14,
+    "falhas": 0
+  }
+}

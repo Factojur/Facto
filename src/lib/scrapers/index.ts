@@ -2,6 +2,7 @@ export {
   buscarTjsp,
   scraperTjspHabilitado,
 } from "@/lib/scrapers/tjsp";
+export { buscarTseJuris, ementaTseValida } from "@/lib/scrapers/tse";
 export type { JulgadoScrape, ResultadoScrape } from "@/lib/scrapers/types";
 export {
   ANOS_MAX_JULGADO,

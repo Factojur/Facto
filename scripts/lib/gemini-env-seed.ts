@@ -42,3 +42,33 @@ export function exigirGeminiApenasSeed(contexto = "seed"): void {
   process.env.GEMINI_API_KEY = seed;
   console.log(`[${contexto}] Gemini embeddings via GEMINI_API_KEY_SEED (free) — paygo bloqueado.`);
 }
+
+/**
+ * Exceção pontual: reindex catch-up do backlog com GEMINI_API_KEY (paygo).
+ * Só com flag explícita `--paygo-catchup`. Seeds/smokes/diários continuam no SEED.
+ * Depois do catch-up, voltar a `exigirGeminiApenasSeed` / `npm run reindex:embeddings`.
+ */
+export function exigirGeminiPaygoCatchupReindex(contexto = "reindex-paygo-catchup"): void {
+  carregarEnvLocal();
+  // Relê o .env.local com override para não herdar GEMINI_API_KEY=SEED de processo anterior.
+  config({ path: resolve(process.cwd(), ".env.local"), override: true });
+  const paygo = process.env.GEMINI_API_KEY?.trim();
+  const seed = process.env.GEMINI_API_KEY_SEED?.trim();
+  if (!paygo) {
+    console.error(
+      `[${contexto}] ABORTADO: defina GEMINI_API_KEY (paygo / Facto Assessoria) no .env.local.`
+    );
+    process.exit(1);
+  }
+  if (seed && paygo === seed) {
+    console.error(
+      `[${contexto}] ABORTADO: GEMINI_API_KEY está igual à SEED — catch-up exige a chave paygo distinta.`
+    );
+    process.exit(1);
+  }
+  process.env.GEMINI_API_KEY = paygo;
+  console.warn(
+    `[${contexto}] ATENÇÃO: embeddings via GEMINI_API_KEY (paygo) — catch-up ÚNICO do backlog. ` +
+      "Próximos reindex: só GEMINI_API_KEY_SEED (free)."
+  );
+}

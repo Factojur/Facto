@@ -17,6 +17,14 @@ Ordem fechada — **não inverter**:
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
 
+### Feito nesta rodada (09/09 — Tom 12 + scorecard + seeds SEED-only)
+
+- [x] **Tom do escritório:** copy/UI/API alinhados a **até 12** peças (`MAX_AMOSTRAS_ESTILO` / `MAX_MODELOS_TOM`) — sumiu o “três”
+- [x] **O8** confirmado **Ready** em prod (`dpl_GwPetPJU64tyJYBkAnF6RKnND4vy` · [factoia.com.br](https://factoia.com.br))
+- [x] **Scorecard** atualizado (média ≈8,30 · Lastro **8,3** · O1–O3/O5b/O8 feitos)
+- [x] **Seeds agenda:** tarefas Pronto · 01h Juris.ai · 02h portal · 03h smoke · 04h súmulas — todas com `exigirGeminiApenasSeed` (só `GEMINI_API_KEY_SEED` + Juris.ai); **sem** `--paygo-catchup`
+- [x] Estado: juris `1030→1500` · portal `temaIndice` **4** · súmulas próxima **`tse_portal`** · reindex backlog **≈0**
+
 ### Feito nesta rodada (09/09 — catch-up seeds PC desligou)
 
 - [x] **Juris.ai 01h:** catch-up **967→1030** (cota esgotou no 1030) · **+2.732** inserts (`fonte=jurisprudencias.ai`) · próximo **1030→1500** amanhã 01h
@@ -28,7 +36,7 @@ Ordem fechada — **não inverter**:
 - [x] **Prioridade agora:** inflar base (todos os temas possíveis) — frescor ≤1 ano ficou **pendência futura** (seção Jurisprudência)
 - [x] **Fundamentação vs MinutaIA:** fila P0/P1 **zero custo** + custos futuros estimados — ver seção **Fundamentação (todas as peças)** abaixo
 - [x] **Reindex paygo catch-up (09/09):** **concluído** — **+20.591** indexados · **0** falhas · ~6h · `npm run reindex:embeddings:paygo-catchup`; **próximos** reindex = só `GEMINI_API_KEY_SEED` (free)
-- [x] **Scorecard 09/09 (previsto pós-reindex):** Iteração **8,9** · Lastro **8,2** · Formato **8,7** · Preço **8,2** · Gestão **7,2** · média **≈ 8,24** vs MinutaIA **≈ 6,80** (+1,44) — canvas alinhado
+- [x] **Scorecard 09/09 (noite):** Iteração **9,0** · Lastro **8,3** · Formato **8,7** · Preço **8,3** · Gestão **7,2** · média **≈ 8,30** vs MinutaIA **≈ 6,80** (+1,50) — canvas alinhado
 - [x] **Ordem até auto-crítica** — ver seção **Fila de implementação (09/09)** abaixo (não ligar Fc2 em prod antes de O1–O3)
 - [x] **O2 Smoke lastro 20 áreas** — **20 ok · 0 lastro fraco · 0 falhas** (EXIT 0, ~12 min; 429 SEED com retry ok)
 - [x] **O3 F3+F4 soft** — pertinência tema×fatos no retrieve + ENCAIXE/lastro âmbar no preview (**sem** trava de Gerar) · deploy **Ready** `6b71c11` / `dpl_2zcHgAC5NKpijHmpfpJp9L3KVi9A` · [factoia.com.br](https://factoia.com.br)
@@ -37,9 +45,9 @@ Ordem fechada — **não inverter**:
 - [x] Playwright Chromium em `%LOCALAPPDATA%\ms-playwright` + `PLAYWRIGHT_BROWSERS_PATH` na tarefa portal
 - [x] **Header UX:** Livre/Guia/Recorte só com modelo anexado; Nuvem/Conversas/Entendimento/Timbre centrados na coluna Documento (workspace)
 - [x] **Fixar** com destaque visual (ouro) · auto-fixar na 1ª entrada já existia
-- [x] **O8 auto-crítica Flash** — ligada em prod (`AUTOCRITICA_DIREITO_ATIVA`); fail-open; ~R$ 0,01–0,05/peça
+- [x] **O8 auto-crítica Flash** — **ON** prod (`AUTOCRITICA_DIREITO_ATIVA`) · Ready `76e8eac` / `dpl_GwPetPJU64tyJYBkAnF6RKnND4vy`
 - [ ] Ícones fontes flutuantes — aguarda ok das sugestões
-- [ ] **Próximo:** **O4** ETL TRE (zero custo) · ou O5 fluidez / O6 Tom (discutir)
+- [ ] **Próximo:** **O4** ETL TRE (zero custo) · ou O5 fluidez / O6 Tom biblioteca por espécie (discutir)
 
 ### Fila de implementação (09/09) — até auto-crítica e além
 
@@ -67,7 +75,7 @@ Ordem fechada — **não inverter**:
 
 ### Fundamentação (todas as peças) — vs MinutaIA (fixado 09/09)
 
-Scorecard lastro **~8,2 previsto** (pós-reindex) vs MinutaIA **~7,0** (antes 7,8 com vetores incompletos). Pipeline já forte (ementa integral, TJ certo, polo, RAG por tópico, Auditor). Foco restante: **densidade + pertinência** + ETL gaps.
+Scorecard lastro **8,3** (pós-reindex + O3 soft) vs MinutaIA **~7,0**. Pipeline já forte (ementa integral, TJ certo, polo, RAG por tópico, Auditor, F3/F4 soft, O8). Foco restante: **densidade + ETL gaps**.
 
 **Agora — zero custo extra** (só cota Juris.ai / Gemini SEED / tempo PC já contratados; ETL portais públicos):
 
@@ -2092,7 +2100,7 @@ API **não tem:** TSE, TRE-*, TRF1/2/5/6, TNU, STM; TJs ausentes (**P2b, meta 09
 
 | Área / gap | Evidência 06/09 | Status |
 |------------|-----------------|--------|
-| **Eleitoral** | TRE/TSE **fora da API**. Lotes 792–793 (STJ espelho): inserts baixos / muitos 0 úteis ou só skip. | **Mais frágil** do catálogo. Honestidade no prompt. Só 2ª API fecha. |
+| **Eleitoral** | TRE/TSE **fora da API**. **P0 TSE portal** no ar (46 ementas; temaIndice 4/20). TRE ainda não. | **Melhorou (TSE)**; TRE continua frágil. |
 | **TJs / TRFs ausentes** | Cliente de BA/PE/DF/etc. não tem ementa daquele TJ na base. | **P2a** TRF1/2/5/6 + **P2b** 17 TJs (meta **27 UFs**, fixada 09/09). |
 | **Constitucional / STF** | Reforço 789–791 (+inserts bons). Volume 825+ ainda na fila. | **Melhorou**; profundidade ≠ MinutaIA 100k. |
 | **Previdenciário** | Histórico STJ fraco; reforço 789–824 + TRF3/4 na fila volume. | **Melhorando**; JEF/TRF1/2/5/6 ainda raso. |
