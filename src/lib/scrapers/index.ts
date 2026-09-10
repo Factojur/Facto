@@ -3,6 +3,13 @@ export {
   scraperTjspHabilitado,
 } from "@/lib/scrapers/tjsp";
 export { buscarTseJuris, ementaTseValida } from "@/lib/scrapers/tse";
+export {
+  buscarTreJuris,
+  buscarTreSpJuris,
+  ementaTreValida,
+  siglaTre,
+} from "@/lib/scrapers/tre";
+export type { UfTre } from "@/lib/scrapers/tre";
 export type { JulgadoScrape, ResultadoScrape } from "@/lib/scrapers/types";
 export {
   ANOS_MAX_JULGADO,

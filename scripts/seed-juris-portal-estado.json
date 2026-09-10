@@ -1,10 +1,13 @@
 {
-  "temaIndice": 4,
-  "ultimaRodada": "2026-09-09",
+  "temaIndice": 10,
+  "treSpTemaIndice": 1,
+  "ultimaRodada": "2026-09-10",
   "ultimoResultado": {
-    "temas": 4,
-    "inserts": 34,
-    "skips": 14,
-    "falhas": 0
+    "temas": 3,
+    "inserts": 24,
+    "skips": 12,
+    "falhas": 0,
+    "tseInserts": 12,
+    "treSpInserts": 12
   }
 }

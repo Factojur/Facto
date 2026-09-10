@@ -1,4 +1,4 @@
-# Agenda seed de juris por portal (TSE/TRE/TNU) as 02:00 — gaps fora do Jurisprudencias.ai.
+# Agenda seed de juris por portal (TSE + TRE-SP) as 02:00 — gaps fora do Jurisprudencias.ai.
 # Usa so GEMINI_API_KEY_SEED (free) no reindex; nunca paygo.
 # Execute uma vez no PowerShell, na pasta do repo:
 #   powershell -ExecutionPolicy Bypass -File scripts\instalar-tarefa-seed-portal.ps1

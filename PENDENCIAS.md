@@ -17,6 +17,12 @@ Ordem fechada — **não inverter**:
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
 
+### Feito nesta rodada (10/09 — O4 P1a TRE-SP)
+
+- [x] **O4 P1a TRE-SP:** host `jurisprudencia.tre-sp.jus.br` · scraper `src/lib/scrapers/tre.ts` · diário 02h TSE(2)+TRE-SP(2) · `fonte=tre-sp-portal`
+- [x] Smoke: **+12 TRE-SP** (inelegibilidade) · 0 falha · estado `treSpTemaIndice`→1 · TSE temaIndice→10
+- [ ] Ampliar TREs (MG/RJ…) depois do ciclo SP; TNU = P1b
+
 ### Feito nesta rodada (10/09 — ícones fontes flutuantes)
 
 - [x] **Ícones fontes flutuantes** — clipe (docs) · **lâmpada** (teses) · balança (lei) · martelo redesenhado (juris) · Ready `11cada8` / `dpl_5yrNHmbxJmSdS2aCX46tDeJbteTd` · [factoia.com.br](https://factoia.com.br)
@@ -51,7 +57,7 @@ Ordem fechada — **não inverter**:
 - [x] **Fixar** com destaque visual (ouro) · auto-fixar na 1ª entrada já existia
 - [x] **O8 auto-crítica Flash** — **ON** prod (`AUTOCRITICA_DIREITO_ATIVA`) · Ready `76e8eac` / `dpl_GwPetPJU64tyJYBkAnF6RKnND4vy`
 - [x] **Ícones fontes flutuantes** — feitos 10/09 (clipe / puzzle / balança / martelo)
-- [ ] **Próximo:** **O4** ETL TRE (zero custo) · ou O5 fluidez / O6 Tom biblioteca por espécie (discutir)
+- [ ] **Próximo:** demais TREs / **P1b TNU** · ou O5 fluidez / O6 Tom biblioteca por espécie (discutir)
 
 ### Fila de implementação (09/09) — até auto-crítica e além
 
@@ -64,7 +70,7 @@ Ordem fechada — **não inverter**:
 | **O1** | Reindex paygo catch-up zerar + conferir `sem_embedding`≈0 | P0 ops | **+20.591** · 0 falhas (09/09); próximos = SEED free | **Feito** |
 | **O2** | Smoke lastro 20 áreas | P0 | **20/20** ok · 0 fraco · 0 falhas (09/09 pós-reindex) | **Feito** |
 | **O3** | **F3+F4** pertinência retrieve + ENCAIXE por romano | P1 código **0 tokens** | Soft ranking + aviso âmbar preview; sem trava Gerar | **Feito 09/09** |
-| **O4** | **ETL gaps** (paralelo a O3+) | P1 ops/código | TSE feito → **TRE** → **TNU** → TRFs → 17 TJs (UFs de clientes primeiro). **Não** esperar “base 100%” | Pendente (fila portal 02h · paralelo) |
+| **O4** | **ETL gaps** (paralelo a O3+) | P1 ops/código | TSE feito → **TRE-SP feito (P1a piloto)** → demais TREs → **TNU** → TRFs → 17 TJs | **P1a SP em curso** (diário 02h) |
 | **O5** | Fluidez residual (−0,1 vs MinutaIA) | P1 UX | Já bem avançado; polish fino (stream, menos atrito). Discutir quando O3 ok | Pendente (baixa urgência) |
 | **O5b** | **Profundidade fora do header → pergunta chat** | P1 UX + margem | Header limpo; Sonnet só com `fundo` aceito; `recomendaFuncaoDetalhada` + chips | **Feito 09/09** |
 | **O6** | Tom / modelos por espécie | P1 produto | **Usar meu modelo** + Fiel/Livre/Recorte já ok; falta **biblioteca por espécie** + opt-in no chat. Discutir no momento | Pendente (discutir) |
@@ -2104,7 +2110,7 @@ API **não tem:** TSE, TRE-*, TRF1/2/5/6, TNU, STM; TJs ausentes (**P2b, meta 09
 
 | Área / gap | Evidência 06/09 | Status |
 |------------|-----------------|--------|
-| **Eleitoral** | TRE/TSE **fora da API**. **P0 TSE portal** no ar (46 ementas; temaIndice 4/20). TRE ainda não. | **Melhorou (TSE)**; TRE continua frágil. |
+| **Eleitoral** | TRE/TSE **fora da API**. **P0 TSE** no ar · **P1a TRE-SP** no ar (`tre-sp-portal`, smoke +12). Demais TREs na fila. | **Melhorou (TSE+TRE-SP)**; outros TREs ainda fracos. |
 | **TJs / TRFs ausentes** | Cliente de BA/PE/DF/etc. não tem ementa daquele TJ na base. | **P2a** TRF1/2/5/6 + **P2b** 17 TJs (meta **27 UFs**, fixada 09/09). |
 | **Constitucional / STF** | Reforço 789–791 (+inserts bons). Volume 825+ ainda na fila. | **Melhorou**; profundidade ≠ MinutaIA 100k. |
 | **Previdenciário** | Histórico STJ fraco; reforço 789–824 + TRF3/4 na fila volume. | **Melhorando**; JEF/TRF1/2/5/6 ainda raso. |
@@ -2139,7 +2145,7 @@ temas (JSON/TS) → coletor portal (TSE/TRE/TNU…) → JulgadoScrape
 | Fase | Escopo | Critério de pronto |
 |------|--------|-------------------|
 | **P0** | Coletor **TSE** (SJUR 4.0) + `scripts/seed-juris-portal-diario.ts` + estado + 20 temas | **Feito** — smoke +12 (08/09); diário +34 (09/09); total **46** `tse-portal`; faltam temas **4→19** (~4 noites) |
-| **P1a** | Coletor **TRE-XX** (27 TREs; prioridade inicial SP/MG/RJ/RS/PR ou UF de clientes, depois o resto) | Lastro eleitoral estadual em todas as UFs |
+| **P1a** | Coletor **TRE-XX** (27 TREs; prioridade inicial SP/MG/RJ/RS/PR ou UF de clientes, depois o resto) | **Piloto TRE-SP feito** (10/09) — host `jurisprudencia.tre-sp.jus.br`; diário 02h; ampliar UFs |
 | **P1b** | Coletor **TNU** (eProc juris) + temas previdenciários JEF | Smoke área previdenciário sobe |
 | **P2a** | **TRF1 / TRF2 / TRF5 / TRF6** (fora da Juris.ai) | Lastro federal nas regiões sem TRF3/4 |
 | **P2b** | **17 TJs faltantes** (fora da Juris.ai): **AC AL AP AM BA DF ES MS PA PB PE PI RN RO RR SE TO** | **Meta fechada (09/09):** mapa **26 estados + DF** = 27 UFs de TJ (10 já na API + estes 17) |

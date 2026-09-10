@@ -24,14 +24,16 @@ Não muda a minuta sozinho. Alimenta a base que a Pesquisa usa.
 - Parou no 429: retomar **do lote que falhou**.
 - Depois de cada dia: o diário já chama `reindex:embeddings`.
 - API Juris.ai: `stf stj tst trf3 trf4 tjce tjgo tjma tjmg tjmt tjpr tjrj tjrs tjsc tjsp carf`. Sem TSE, TRE, TRF1/2/5/6, TNU.
-- **SJUR TSE (P0):** UI `https://jurisprudencia.tse.jus.br/#/jurisprudencia/pesquisa` · Playwright + intercept API (`fonte=tse-portal`). `npm run seed:juris-portal-diario` · tarefa `FACTO-seed-portal-02h`. Smoke 08/09: +12 (inelegibilidade).
+- **SJUR TSE (P0):** UI `https://jurisprudencia.tse.jus.br/#/jurisprudencia/pesquisa` · Playwright + intercept API (`fonte=tse-portal`).
+- **SJUR TRE-SP (P1a):** UI `https://jurisprudencia.tre-sp.jus.br/#/jurisprudencia/pesquisa` · mesmo Playwright (`fonte=tre-sp-portal`). Diário 02h: **2 temas TSE + 2 TRE-SP**.
+- `npm run seed:juris-portal-diario` · tarefa `FACTO-seed-portal-02h`.
 - Embeddings: **somente** `GEMINI_API_KEY_SEED` (free). Paygo bloqueado.
 
 ## Estado (09/09 noite)
 
 - `proximoLote` **1030**, `ate` **1500**, vencimento **2026-09-13** (só referência).
 - Catch-up 09/09: **967–1030** · **+2.732** juris.ai; cota no **1030**.
-- Portal TSE: **46** total (`temaIndice` **4**/20). Súmulas: próxima fase **`tse_portal`** (`faseIndice` 7).
+- Portal TSE: em curso (`temaIndice` **10**/20). **TRE-SP P1a:** `treSpTemaIndice` **1**/12 · smoke +12 (`fonte=tre-sp-portal`).
 - Regra −7d **desligada**: diário 01h segue normalmente.
 - Lacunas estruturais: TRE/TNU/TRF1/2/5/6/STM + **17 TJs** fora da API; **P0 TSE** no ar; P1a/P1b não iniciados.
 - **P2 seed (fixado 09/09):** P2a = TRF1/2/5/6 · P2b = 17 TJs → **27 UFs de TJ**; abastecimento contínuo pós-venda.
