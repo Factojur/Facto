@@ -19,7 +19,7 @@ Ordem fechada — **não inverter**:
 
 ### Feito nesta rodada (10/09 — ícones fontes flutuantes)
 
-- [x] **Ícones fontes flutuantes** — clipe (docs) · puzzle clássico (teses) · balança (lei) · martelo+base (juris); +1px; sem ambiguidade mapa/rolo
+- [x] **Ícones fontes flutuantes** — clipe (docs) · puzzle clássico (teses) · balança (lei) · martelo+base (juris); +1px · deploy **Ready** `4818f5c` / `dpl_kSw98WUxtrXAodWxa4AtzrsMAHFH` · [factoia.com.br](https://factoia.com.br)
 
 ### Feito nesta rodada (09/09 — Tom 12 + scorecard + seeds SEED-only)
 
