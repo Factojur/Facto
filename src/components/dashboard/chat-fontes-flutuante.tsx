@@ -59,28 +59,28 @@ function IconScales({ className }: { className?: string }) {
   );
 }
 
-/** Jurisprudência — martelo de juiz (cabeça + cabo + bloco retangular). */
+/** Jurisprudência — martelo estilo referência (só o martelo, sem bloco). */
 function IconGavel({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden>
-      {/* cabeça (cilindro visto de lado, inclinado) */}
-      <path
-        d="M13.2 3.4c.9-.9 2.4-.9 3.3 0l3.1 3.1c.9.9.9 2.4 0 3.3l-.8.8c-.9.9-2.4.9-3.3 0L12.4 7.5c-.9-.9-.9-2.4 0-3.3l.8-.8z"
-        {...stroke}
-      />
-      {/* anel / face da cabeça */}
-      <path d="M14.1 5.2l3.7 3.7" {...stroke} />
-      {/* cabo */}
-      <path d="M12.6 10.2L6.2 16.6" {...stroke} strokeWidth={2} />
-      {/* bloco de batida — retângulo baixo (não linha com “setas”) */}
-      <rect
-        x="3.2"
-        y="17.6"
-        width="11.2"
-        height="3.2"
-        rx="0.7"
-        {...stroke}
-      />
+      <g transform="rotate(-42 12 12)">
+        {/* cabo */}
+        <rect
+          x="10.1"
+          y="8.5"
+          width="3.8"
+          height="13"
+          rx="1.9"
+          {...stroke}
+        />
+        {/* cilindro da cabeça */}
+        <rect x="5.8" y="5.1" width="12.4" height="5.4" rx="1.2" {...stroke} />
+        {/* tampas / anéis das extremidades */}
+        <rect x="4" y="4.2" width="3.6" height="7.2" rx="1.6" {...stroke} />
+        <rect x="16.4" y="4.2" width="3.6" height="7.2" rx="1.6" {...stroke} />
+        {/* detalhe no cilindro */}
+        <path d="M8.8 6.9h6.4" {...stroke} />
+      </g>
     </svg>
   );
 }
