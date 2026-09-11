@@ -1833,7 +1833,7 @@ Ordem realista: **receita e lastro primeiro**; diferenciação visível em segui
 | 3 | **Seed / lastro** lotes **488–683** + meta **100k+** juris na abertura + lacunas vitrine + mapa `tribunal`/`area_tags` | Em curso (488; retomar na cota) | “Buscar na base FACTO” fraco = peça fraca |
 | 4 | **Testes reais Constitucional + Previdenciário** após lastro | Pendente | Áreas abertas sem validação de usuário |
 | 5 | **LGPD — memória de cliente** | Parcial (aviso local 28/08) | Sync nuvem + termo opt-in pendente |
-| 6 | **Rodar migrations trial / tribunal / escritório no Supabase** | Pendente (ops) | Código já no repo |
+| 6 | **Rodar migrations trial / tribunal / escritório no Supabase** | Trial **feita 11/09** · demais se pendentes | Código já no repo |
 
 ### P1 — Diferenciação vs MinutaIA (impacto alto, escopo médio)
 
