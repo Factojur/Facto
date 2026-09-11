@@ -263,7 +263,7 @@ export function PacotesExtrasPainel({
               }`}
             >
               {esgotada
-                ? "Sua cota do ciclo acabou. Escolha +50 ou +100 peças — o crédito entra após a confirmação do pagamento, sem mudar de plano. Não acumulam para o próximo mês."
+                ? "Sua cota do ciclo acabou. Escolha +20 ou +40 peças — o crédito entra após a confirmação do pagamento, sem mudar de plano. Não acumulam para o próximo mês."
                 : "Contrate um pacote sem alterar sua assinatura. Ideal para picos de demanda. Extras valem só no ciclo atual."}
             </p>
             {cota && <BarraUso cota={cota} tema={tema} />}
@@ -274,7 +274,7 @@ export function PacotesExtrasPainel({
               <CardPacote
                 key={p.id}
                 pacote={p}
-                destaque={p.id === "extra-100"}
+                destaque={p.id === "extra-40"}
                 tema={tema}
               />
             ))}
@@ -325,7 +325,7 @@ export function PacotesExtrasPainel({
                 escuro ? "text-stone-400" : "text-slate-600"
               }`}
             >
-              +50 peças por R$ 49,90 ou +100 por R$ 89,90. Créditos válidos só no
+              +20 peças por R$ 49,90 ou +40 por R$ 89,90. Créditos válidos só no
               ciclo atual (não acumulam para o próximo mês).
             </p>
           </div>
@@ -349,7 +349,7 @@ export function PacotesExtrasPainel({
           <CardPacote
             key={p.id}
             pacote={p}
-            destaque={p.id === "extra-100"}
+            destaque={p.id === "extra-40"}
             tema={tema}
           />
         ))}

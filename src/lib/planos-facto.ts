@@ -166,8 +166,39 @@ export const PRECOS_LEADOS = {
   pro_anual_2990: 2990,
 } as const;
 
-/** Pacotes avulsos (área logada) — compra eventual, não assinatura. */
+/** Pacotes avulsos (área logada) — compra eventual, não assinatura. Emergência / pico. */
 export const PACOTES_EXTRA = [
+  {
+    id: "extra-20" as const,
+    pecas: 20,
+    analises: 0,
+    preco: 49.9,
+    rotuloPreco: "R$ 49,90",
+    rotulo: "+20 peças",
+    /** 49,90 ÷ 20 */
+    custoPorPecaAprox: "R$ 2,50",
+    descricao: "Para fechar o mês em emergência, sem mudar de plano.",
+    linkMp: (process.env.NEXT_PUBLIC_MP_LINK_EXTRA_20 ?? process.env.NEXT_PUBLIC_MP_LINK_EXTRA_50 ?? "").trim(),
+  },
+  {
+    id: "extra-40" as const,
+    pecas: 40,
+    analises: 0,
+    preco: 89.9,
+    rotuloPreco: "R$ 89,90",
+    rotulo: "+40 peças",
+    /** 89,90 ÷ 40 */
+    custoPorPecaAprox: "R$ 2,25",
+    descricao: "Melhor custo por peça entre os pacotes extras (ainda para pico).",
+    linkMp: (process.env.NEXT_PUBLIC_MP_LINK_EXTRA_40 ?? process.env.NEXT_PUBLIC_MP_LINK_EXTRA_100 ?? "").trim(),
+  },
+] as const;
+
+/**
+ * Pacotes antigos (+50/+100) — só webhook/legado de checkouts em voo.
+ * Não aparecem na UI.
+ */
+export const PACOTES_EXTRA_LEGADO = [
   {
     id: "extra-50" as const,
     pecas: 50,
@@ -175,10 +206,9 @@ export const PACOTES_EXTRA = [
     preco: 49.9,
     rotuloPreco: "R$ 49,90",
     rotulo: "+50 peças",
-    /** 49,90 ÷ 50 */
     custoPorPecaAprox: "R$ 1,00",
-    descricao: "Ideal para fechar o mês sem mudar de plano.",
-    linkMp: (process.env.NEXT_PUBLIC_MP_LINK_EXTRA_50 ?? "").trim(),
+    descricao: "Legado — substituído por +20.",
+    linkMp: "",
   },
   {
     id: "extra-100" as const,
@@ -187,10 +217,9 @@ export const PACOTES_EXTRA = [
     preco: 89.9,
     rotuloPreco: "R$ 89,90",
     rotulo: "+100 peças",
-    /** 89,90 ÷ 100 */
     custoPorPecaAprox: "R$ 0,90",
-    descricao: "Melhor custo por peça entre os pacotes extras.",
-    linkMp: (process.env.NEXT_PUBLIC_MP_LINK_EXTRA_100 ?? "").trim(),
+    descricao: "Legado — substituído por +40.",
+    linkMp: "",
   },
 ] as const;
 
@@ -212,9 +241,11 @@ export const PACOTE_EXTRA_ANALISES_LEGADO = {
 
 export type PacoteExtraId =
   | (typeof PACOTES_EXTRA)[number]["id"]
+  | (typeof PACOTES_EXTRA_LEGADO)[number]["id"]
   | typeof PACOTE_EXTRA_ANALISES_LEGADO.id;
 export type PacoteExtra =
   | (typeof PACOTES_EXTRA)[number]
+  | (typeof PACOTES_EXTRA_LEGADO)[number]
   | typeof PACOTE_EXTRA_ANALISES_LEGADO;
 export type PlanoId =
   | "jec"
@@ -351,6 +382,8 @@ export const PLANO_ESCRITORIO_M_ANUAL = {
 export function pacoteExtraPorId(id: string): PacoteExtra | null {
   const ativo = PACOTES_EXTRA.find((p) => p.id === id);
   if (ativo) return ativo;
+  const legado = PACOTES_EXTRA_LEGADO.find((p) => p.id === id);
+  if (legado) return legado;
   if (id === PACOTE_EXTRA_ANALISES_LEGADO.id) return PACOTE_EXTRA_ANALISES_LEGADO;
   return null;
 }
@@ -360,15 +393,16 @@ export function pacoteExtraPorValor(
   valor: number | null | undefined
 ): PacoteExtra | null {
   if (typeof valor !== "number" || Number.isNaN(valor)) return null;
+  // Preferir pacotes ativos (mesmo preço do legado +50/+100).
   for (const p of PACOTES_EXTRA) {
     if (Math.abs(valor - p.preco) < 0.05) return p;
   }
   if (Math.abs(valor - PACOTE_EXTRA_ANALISES_LEGADO.preco) < 0.05) {
     return PACOTE_EXTRA_ANALISES_LEGADO;
   }
-  // Legado
-  if (Math.abs(valor - 39.9) < 0.05) return pacoteExtraPorId("extra-50");
-  if (Math.abs(valor - 79.9) < 0.05) return pacoteExtraPorId("extra-100");
+  // Legado de preços anteriores
+  if (Math.abs(valor - 39.9) < 0.05) return pacoteExtraPorId("extra-20");
+  if (Math.abs(valor - 79.9) < 0.05) return pacoteExtraPorId("extra-40");
   return null;
 }
 
@@ -377,8 +411,8 @@ export function ehPacoteAnalises(pacote: PacoteExtra): boolean {
 }
 
 /**
- * external_reference: facto_extra_50_<userId> | facto_extra_100_<userId> |
- * facto_extra_analises_10_<userId>
+ * external_reference: facto_extra_20_<userId> | facto_extra_40_<userId> |
+ * legado 50/100 | facto_extra_analises_10_<userId>
  */
 export function montarExternalReferenceExtra(
   pacoteId: PacoteExtraId,
@@ -387,12 +421,21 @@ export function montarExternalReferenceExtra(
   if (pacoteId === "extra-analises-10") {
     return `facto_extra_analises_10_${userId}`;
   }
-  const sufixo = pacoteId === "extra-50" ? "50" : "100";
+  const sufixo =
+    pacoteId === "extra-20"
+      ? "20"
+      : pacoteId === "extra-40"
+        ? "40"
+        : pacoteId === "extra-50"
+          ? "50"
+          : "100";
   return `facto_extra_${sufixo}_${userId}`;
 }
 
 function pacoteIdPorSufixoRef(sufixo: string): PacoteExtraId | null {
   if (sufixo === "analises_10") return "extra-analises-10";
+  if (sufixo === "20") return "extra-20";
+  if (sufixo === "40") return "extra-40";
   if (sufixo === "50") return "extra-50";
   if (sufixo === "100") return "extra-100";
   return null;
@@ -407,11 +450,11 @@ export function parseExternalReferenceExtra(
   if (!ref) return null;
   const m = ref
     .trim()
-    .match(/^facto_extra_(analises_10|50|100)_([0-9a-f-]{36})$/i);
+    .match(/^facto_extra_(analises_10|20|40|50|100)_([0-9a-f-]{36})$/i);
   if (!m) {
     const soPacote = ref
       .trim()
-      .match(/^facto_extra_(analises_10|50|100)$/i);
+      .match(/^facto_extra_(analises_10|20|40|50|100)$/i);
     if (!soPacote) return null;
     const id = pacoteIdPorSufixoRef(soPacote[1].toLowerCase());
     const pacote = id ? pacoteExtraPorId(id) : null;

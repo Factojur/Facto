@@ -31,6 +31,10 @@ Ordem fechada — **não inverter**:
 
 - [x] Scrapers BA/RN/PE/ES + e-SAJ/validação ementa + seed P2b + regras Cursor + scripts audit/limpeza portal (sem tmp/probe; pacotes extras ficam locais)
 
+### Feito nesta rodada (11/09 — pacotes extras +20/+40 no main)
+
+- [x] Commit + push `PACOTES_EXTRA` +20/+40 · legado +50/+100 só webhook · painel/checkout atualizados
+
 ### Feito nesta rodada (11/09 — qualidade fundamentação)
 
 - [x] Portal TJ: filtro `ementaJurisPortalValida` (rejeita `Rel.`/colagem multi-TJ/`ler mais`)

@@ -589,7 +589,7 @@ async function processarPayment(admin: AdminClient, id: string) {
       ? (payment.metadata as Record<string, unknown>)
       : null;
 
-  // Compra avulsa (+50 / +100) — não gera convite de assinatura.
+  // Compra avulsa (+20 / +40; legado +50/+100) — não gera convite de assinatura.
   const extra = await processarPagamentoPacoteExtra({
     mpPaymentId: String(id),
     email,

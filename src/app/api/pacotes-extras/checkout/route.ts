@@ -6,7 +6,7 @@ import { obterResumoCotaUsuario } from "@/lib/cota-pecas-server";
 
 /**
  * Checkout avulso (Checkout Pro) — não cria assinatura.
- * Body: { pacoteId: "extra-50" | "extra-100" }
+ * Body: { pacoteId: "extra-20" | "extra-40" }
  */
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -28,11 +28,11 @@ export async function POST(request: Request) {
   const pacoteId = body.pacoteId as PacoteExtraId | undefined;
   if (
     !pacoteId ||
-    (pacoteId !== "extra-50" && pacoteId !== "extra-100") ||
+    (pacoteId !== "extra-20" && pacoteId !== "extra-40") ||
     !pacoteExtraPorId(pacoteId)
   ) {
     return NextResponse.json(
-      { error: "Pacote inválido. Use extra-50 ou extra-100." },
+      { error: "Pacote inválido. Use extra-20 ou extra-40." },
       { status: 400 }
     );
   }
