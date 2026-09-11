@@ -236,7 +236,11 @@ for (const area of AREAS_ATUACAO) {
         !/SUPERIOR TRIBUNAL DE JUSTI[CÇ]A/i.test(end),
         `internacional/${esp.id} não vai ao STJ (só homologação)`
       );
-      assert(/VARA C[IÍ]VEL/i.test(end), `internacional/${esp.id} → vara cível`);
+      // Com número de vara e sem especialidade nos autos: "DA Nª VARA" (não inventa Cível).
+      assert(
+        /\bVARA\b/i.test(end) && !/TRIBUNAL DE JUSTI[CÇ]A|SUPERIOR TRIBUNAL/i.test(end),
+        `internacional/${esp.id} → 1ª instância (vara), não tribunal`
+      );
     }
 
     if (areaId === "criminal" && esp.id === "revisao-criminal") {

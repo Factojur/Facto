@@ -124,7 +124,7 @@ export function blocoPromptPoloAdvocacia(opcoes: {
 }
 
 /** Indica se o polo ativo/passivo foi informado quando a espécie exige escolha.
- * MinutaIA-style: não bloqueia geração — o caller deve defaultar o polo.
+ * Soft (MinutaIA): APIs não bloqueiam; retorna aviso para UI/conferência.
  */
 export function mensagemPoloObrigatorioGeracao(
   areaId: string,
@@ -134,8 +134,9 @@ export function mensagemPoloObrigatorioGeracao(
   if (!areaUsaPoloAdvocacia(areaId)) return null;
   if (ladoPoloDaEspecie(areaId, especie) !== "ambos") return null;
   if (polo === "ativo" || polo === "passivo") return null;
-  // Aviso soft — APIs de peça não devem mais retornar 400 por isso.
-  return null;
+  return (
+    "Confirme o polo (autor/réu ou equivalente) — a espécie cabe nos dois lados."
+  );
 }
 
 /** Resolve polo para geração: inferido pela espécie ou explícito quando ambíguo. */

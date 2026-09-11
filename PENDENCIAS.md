@@ -95,6 +95,14 @@ Não implementar sem alinhamento. Ordem sugerida = impacto × honestidade juríd
 
 **Próximo:** Jefferson compra real (teste) → retomar **A4** (auth/planos/extras/webhook).
 
+#### Correções pós-conferência A1/A2 (11/09)
+
+- [x] Polo: matriz prev sem `peticao-inicial-previdenciaria` órfã · aviso soft de polo em espécie “ambos”
+- [x] Teses canônicas: pistas no relato restauradas
+- [x] Organização local: espécie/remédio do último ato (0006509 → agravo)
+- [x] Auditoria internacional: 1ª instância sem inventar Cível; assert alinhado
+- [x] **Re-run A1+A2:** todos ✅ (qualificação, cabível, auditor, skins, polo, lastro-polo, ouro, formatação, auditoria 1320/0, entrada, prazo, chat, fluidez, plano, briefing, alerta, 0006509)
+
 ### Feito nesta rodada (11/09 — scorecard + consolidado)
 
 - [x] Scorecard **11/09** · canvas alinhado · lacunas / O4 atualizados

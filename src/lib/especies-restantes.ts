@@ -1439,6 +1439,12 @@ export function inferirEspecieKit(
     .replace(/\p{M}/gu, "")
     .replace(/\s+/g, "-");
   if (raw && k.especies.some((e) => e.id === raw)) return raw;
+  if (
+    areaId === "previdenciario" &&
+    (raw === "peticao-inicial-previdenciaria" || raw === "acao-previdenciaria")
+  ) {
+    return "peticao-inicial";
+  }
   // Chat/IA manda “peticao-inicial” em área sem essa espécie → inaugural do módulo
   if (
     (raw === "peticao-inicial" || raw === "inicial") &&

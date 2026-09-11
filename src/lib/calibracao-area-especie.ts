@@ -141,7 +141,7 @@ export function especieExplicitaNoRelato(
         t
       )
     ) {
-      return "peticao-inicial-previdenciaria";
+      return "peticao-inicial";
     }
   }
 

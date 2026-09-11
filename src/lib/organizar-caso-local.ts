@@ -127,13 +127,13 @@ export type ResultadoOrganizacaoLocal = {
 
 /**
  * Extração local (partes, foro, último ato, pedidos) — 0 tokens.
- * NÃO define espécie/remédio: IA ou chips do advogado.
+ * Espécie/remédio: sugestão heurística do último ato (0 tokens); chat/IA pode sobrescrever.
  */
 export function organizarCasoLocal(params: {
   relato: string;
   areaId: string;
   poloAdvocacia?: "ativo" | "passivo" | null;
-  /** @deprecated Sem efeito — espécie local desligada. */
+  /** @deprecated Sem efeito — mantido por compat. */
   semRemedio?: boolean;
 }): ResultadoOrganizacaoLocal {
   const relato = filtrarRuidoOcrRelato(params.relato.trim());
@@ -151,12 +151,13 @@ export function organizarCasoLocal(params: {
     poloAdvocacia: params.poloAdvocacia ?? null,
   });
   const areaResolvida = normalizarAreaIdMinuta(resolvido.areaId);
+  const especieSugestao = (resolvido.especie || "").trim();
 
   return {
     areaIdResolvida: areaResolvida,
     preenchimento: {
-      especiePeca: "",
-      tipoAcao: "",
+      especiePeca: especieSugestao,
+      tipoAcao: (resolvido.tipoAcao || "").trim(),
       fatos: narrativaFatos(relato),
       autoresNomes: partes.autoresNomes,
       reusNomes: partes.reusNomes,
@@ -168,7 +169,7 @@ export function organizarCasoLocal(params: {
       especialidadeVara: meta.especialidadeVara,
       especieDoProcesso: null,
       ultimoAto,
-      pedidos: extrairPedidosDoRelato(relato, ""),
+      pedidos: extrairPedidosDoRelato(relato, especieSugestao),
       pedirJusticaGratuita: /justi[cç]a\s+gratuita|gratuidade|hipossufici|jg\b/.test(
         n
       )
@@ -189,7 +190,7 @@ export function organizarCasoLocal(params: {
       tesesIds: teses.map((t) => t.id),
       camposIncertos: partes.autoresNomes.length ? [] : ["partes"],
       resumoConferencia:
-        "Caso lido — peça e polo: IA ou escolha do advogado (chips)." +
+        "Caso lido — peça sugerida pelo último ato (revise no chat)." +
         (ultimoAto ? ` Último ato: ${ultimoAto.slice(0, 120)}` : ""),
     },
   };

@@ -219,10 +219,13 @@ export function tesePorId(id: string): TeseCanonica | undefined {
   return TESES_CANONICAS.find((t) => t.id === id);
 }
 
-/** Só teses que o advogado/IA marcou por id — sem pista automática no relato. */
+/**
+ * Teses do código: ids marcados (chips/IA) + pistas no relato da área.
+ * Sem analogia entre áreas.
+ */
 export function detectarTesesCanonicas(
   areaId: string,
-  _relato: string,
+  relato: string,
   idsExtra: string[] = []
 ): TeseCanonica[] {
   const vistos = new Set<string>();
@@ -233,6 +236,18 @@ export function detectarTesesCanonicas(
     if (t && t.areas.includes(areaId) && !vistos.has(t.id)) {
       vistos.add(t.id);
       out.push(t);
+    }
+  }
+
+  const blob = normalizar(relato || "");
+  if (blob.length >= 12) {
+    for (const t of tesesDaArea(areaId)) {
+      if (vistos.has(t.id)) continue;
+      const bate = t.pistas.some((p) => blob.includes(normalizar(p)));
+      if (bate) {
+        vistos.add(t.id);
+        out.push(t);
+      }
     }
   }
 

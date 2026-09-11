@@ -584,6 +584,7 @@ export function formatarEnderecamentoPadrao(opcoes: {
     areaId === "propriedade-intelectual" ||
     areaId === "internacional"
   ) {
+    // Sem especialidade nos autos: não inventar CÍVEL só porque há número de vara.
     const fallback = vara === "___" ? "VARA CÍVEL" : "VARA";
     return (
       `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO ` +
