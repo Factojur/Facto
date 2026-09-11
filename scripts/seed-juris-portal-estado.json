@@ -1,17 +1,17 @@
 {
-  "temaIndice": 10,
-  "treUfIndice": 0,
+  "temaIndice": 12,
+  "treUfIndice": 1,
   "treTemaPorUf": {
-    "sp": 1
+    "sp": 3
   },
-  "ultimaRodada": "2026-09-10",
+  "ultimaRodada": "2026-09-11",
   "ultimoResultado": {
-    "temas": 3,
-    "inserts": 24,
-    "skips": 12,
+    "temas": 4,
+    "inserts": 40,
+    "skips": 8,
     "falhas": 0,
-    "tseInserts": 12,
-    "treInserts": 12,
+    "tseInserts": 22,
+    "treInserts": 18,
     "treUf": "TRE-SP",
     "proximoTre": "TRE-MG"
   }

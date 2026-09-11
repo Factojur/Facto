@@ -44,9 +44,9 @@ export function exigirGeminiApenasSeed(contexto = "seed"): void {
 }
 
 /**
- * Exceção pontual: reindex catch-up do backlog com GEMINI_API_KEY (paygo).
- * Só com flag explícita `--paygo-catchup`. Seeds/smokes/diários continuam no SEED.
- * Depois do catch-up, voltar a `exigirGeminiApenasSeed` / `npm run reindex:embeddings`.
+ * Exceção: reindex com GEMINI_API_KEY (paygo).
+ * Flags: `--paygo-catchup` (backlog geral) ou `--paygo-portal-tj` (só tj%-portal / P2b).
+ * Seeds Juris.ai / smoke / 23h continuam no SEED free.
  */
 export function exigirGeminiPaygoCatchupReindex(contexto = "reindex-paygo-catchup"): void {
   carregarEnvLocal();
@@ -67,8 +67,11 @@ export function exigirGeminiPaygoCatchupReindex(contexto = "reindex-paygo-catchu
     process.exit(1);
   }
   process.env.GEMINI_API_KEY = paygo;
+  const soTj = /portal-tj/i.test(contexto);
   console.warn(
-    `[${contexto}] ATENÇÃO: embeddings via GEMINI_API_KEY (paygo) — catch-up ÚNICO do backlog. ` +
-      "Próximos reindex: só GEMINI_API_KEY_SEED (free)."
+    soTj
+      ? `[${contexto}] embeddings via GEMINI_API_KEY (paygo) — só fonte tj%-portal (P2b). Juris.ai permanece na SEED.`
+      : `[${contexto}] ATENÇÃO: embeddings via GEMINI_API_KEY (paygo) — catch-up de backlog. ` +
+          "Juris.ai/diário 23h: preferir GEMINI_API_KEY_SEED (free)."
   );
 }

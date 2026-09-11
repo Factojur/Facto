@@ -59,19 +59,28 @@ function IconScales({ className }: { className?: string }) {
   );
 }
 
-/** Jurisprudência — cabeça em paralelogramo + cabo + bloco (não parece rolo). */
+/** Jurisprudência — martelo de juiz (cabeça + cabo + bloco retangular). */
 function IconGavel({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden>
-      {/* cabeça do martelo (paralelogramo ~40°) */}
-      <path d="M10.2 2.8l7.4 6.2-2.6 3.1-7.4-6.2z" {...stroke} />
-      {/* detalhe da cabeça */}
-      <path d="M11.6 4.6l4.6 3.9" {...stroke} />
+      {/* cabeça (cilindro visto de lado, inclinado) */}
+      <path
+        d="M13.2 3.4c.9-.9 2.4-.9 3.3 0l3.1 3.1c.9.9.9 2.4 0 3.3l-.8.8c-.9.9-2.4.9-3.3 0L12.4 7.5c-.9-.9-.9-2.4 0-3.3l.8-.8z"
+        {...stroke}
+      />
+      {/* anel / face da cabeça */}
+      <path d="M14.1 5.2l3.7 3.7" {...stroke} />
       {/* cabo */}
-      <path d="M10.8 11.4L5.4 16.8" {...stroke} />
-      {/* bloco de impacto */}
-      <path d="M3.2 18.4h10" {...stroke} strokeWidth={2.2} />
-      <path d="M4.5 17v3.2M11.8 17v3.2" {...stroke} />
+      <path d="M12.6 10.2L6.2 16.6" {...stroke} strokeWidth={2} />
+      {/* bloco de batida — retângulo baixo (não linha com “setas”) */}
+      <rect
+        x="3.2"
+        y="17.6"
+        width="11.2"
+        height="3.2"
+        rx="0.7"
+        {...stroke}
+      />
     </svg>
   );
 }

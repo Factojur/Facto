@@ -1,0 +1,14 @@
+{
+  "tjUfIndice": 1,
+  "tjTemaPorUf": {
+    "ms": 2
+  },
+  "ultimaRodada": "2026-09-11 09:30:42",
+  "ultimoResultado": {
+    "inserts": 0,
+    "skips": 0,
+    "falhas": 2,
+    "tjUf": "TJBA",
+    "proximoTj": "TJBA"
+  }
+}

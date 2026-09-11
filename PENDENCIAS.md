@@ -17,6 +17,41 @@ Ordem fechada — **não inverter**:
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
 
+### Feito nesta rodada (11/09 — ícone martelo juris)
+
+- [x] **Ícone jurisprudência:** martelo redesenhado — cabeça cilíndrica + cabo + **bloco retangular** (sumiu a “linha com setas” que parecia cota)
+
+### Feito nesta rodada (11/09 — seed TJ 09:30)
+
+- [x] **09:30** `FACTO-seed-tj-portal-3h`: **TJBA** · +0 insert · 2 falha (form e-SAJ timeout; HTTP abre mas layout/campo diferente) · retry BA · próxima agenda **12:30**
+- [x] Manhã: smoke **TJMS +11** + paygo ok · BA HTTPS reset → HTTP (ainda frágil)
+
+### Feito nesta rodada (11/09 — P2b prioridade + backlog Juris.ai)
+
+- [x] **Prioridade ops:** **TJs novos (P2b)** + UFs/hosts com falha · TRE/TSE/súmula seguem no ritmo atual
+- [x] **Backlog Juris.ai** (~1k sem vetor): **ficar na SEED/23h** por enquanto · paygo geral **só se acumular muito** (Jefferson autoriza)
+- [x] TJBA: scraper usa **HTTP** (`esaj.tjba…`) — HTTPS resetava conexão
+
+### Feito nesta rodada (11/09 — P2b TJs: decisão + pipeline)
+
+- [x] **Decisão Jefferson:** abastecer **17 TJs** em paralelo ao seed atual · **paygo só** embeddings `fonte=tj*-portal` (não Juris.ai) · janela **3 anos** na 1ª fase · depois frescor ≤1 ano
+- [x] **Cadência fechada:** **a cada 3 h** (não 1 h) · tarefa `FACTO-seed-tj-portal-3h` instalada
+- [x] Coletor e-SAJ multi-UF · seed `seed-juris-tj-portal-diario.ts` · reindex `--paygo-portal-tj`
+- [x] Smoke **TJMS:** **+11** insert · **+11** paygo indexados · 0 falha · `fonte=tjms-portal`
+- [x] Fila e-SAJ: MS → BA → PE → … · **DF** fora (portal distinto) · hosts BA/PE a calibrar se WAF
+- [ ] Próximo: calibrar hosts BA/PE/ES (não-e-SAJ ou HTTP) nas próximas rodadas se falhar
+
+### Feito nesta rodada (10/09 — reindex diário 23h)
+
+- [x] **Regra:** reindex automático ≥**1×/dia** · tarefa `FACTO-reindex-embeddings-23h` · só `GEMINI_API_KEY_SEED` · log `reindex-embeddings-diario.log`
+- [x] Instalar: `powershell -ExecutionPolicy Bypass -File scripts\instalar-tarefa-reindex-embeddings.ps1` (remove 05h antiga se houver)
+- [x] Reindex manual SEED (10→11/09): **+255** indexados · 16 falhas (429) · `sem_embedding` residual **≈695** → retoma na **23h**
+
+### Feito nesta rodada (10/09 — fila portal P1→P2 fixada)
+
+- [x] **Fila portal gaps (ordem fechada, não misturar blocos na mesma 02h):** ver **Fila portal ETL (P0→P2c)** abaixo
+- [x] Conferência reindex: catch-up paygo **ok** (09/09); noite 10/09 `^C` no reindex pós-seed → backlog `sem_embedding` a zerar com SEED free
+
 ### Feito nesta rodada (10/09 — rodízio TRE)
 
 - [x] **Rodízio:** cada noite **1 TRE** (2 temas) + TSE (2) · progresso por UF (`treTemaPorUf`) · ~27 noites = 1ª passagem nacional
@@ -25,8 +60,7 @@ Ordem fechada — **não inverter**:
 
 ### Feito nesta rodada (10/09 — temas TRE densos)
 
-- [x] **Temas TRE:** piloto 12 → **~75 temas** (mesma ordem inicial; estado SP válido) · 2/noite seguro · ≈38 noites/UF
-- [x] Objetivo = inflar lastro (julgados/teses), não “fechar 12 e pronto”; após 27 UFs dá para 2º ciclo ou mais temas
+- [x] **Temas TRE:** piloto 12 → **78 temas** · 2/noite · rodízio nacional (profundidade nas voltas)
 
 ### Feito nesta rodada (10/09 — fila TRE / rodízio)
 
@@ -44,12 +78,29 @@ Ordem fechada — **não inverter**:
 Para os seeds rodarem corretos **sem sua intervenção noite a noite**:
 
 1. **PC ligado** e **na tomada** ~00:50–04:30 (sem hibernar/dormir).
-2. Tarefas agendadas **Pronto:** `FACTO-seed-juris-01h` · `FACTO-seed-portal-02h` · `FACTO-smoke-lastro-03h` · `FACTO-seed-sumulas-04h`.
-3. `.env.local` com: `NEXT_PUBLIC_SUPABASE_URL` · `SUPABASE_SERVICE_ROLE_KEY` · `GEMINI_API_KEY_SEED` (free) · pool Juris.ai (`JURISPRUDENCIAS_AI_API_KEY` + `…_KEYS`).
-4. **Nunca** usar `reindex:embeddings:paygo-catchup` no diário.
-5. Se uma noite falhar (captcha/WAF): avisar no chat com o trecho do log `scripts/seed-juris-portal-diario.log` — a gente corrige; **não** precisa mudar UF na mão.
+2. Tarefas agendadas **Pronto:** `FACTO-testes-pecas-22h` · **`FACTO-reindex-embeddings-23h`** · `FACTO-seed-juris-01h` · `FACTO-seed-portal-02h` · `FACTO-smoke-lastro-03h` · `FACTO-seed-sumulas-04h` · **`FACTO-seed-tj-portal-3h`** (a cada 3 h).
+3. `.env.local` com: `NEXT_PUBLIC_SUPABASE_URL` · `SUPABASE_SERVICE_ROLE_KEY` · `GEMINI_API_KEY_SEED` (free) · `GEMINI_API_KEY` (paygo — **só** P2b TJ) · pool Juris.ai.
+4. **Nunca** usar `reindex:embeddings:paygo-catchup` no diário geral. **OK** `reindex:embeddings:paygo-portal-tj` no seed TJ 3h.
+5. Se uma noite falhar (captcha/WAF): avisar no chat com o trecho do log — a gente corrige; **não** precisa mudar UF na mão.
 
-**Agora (10/09):** rodízio ativo (SP → MG → …). Nada a configurar. Aviso prévio no chat só se formos ligar **TNU** ou mudar a ordem da fila.
+**Reindex:** ≥**1×/dia** às **23h** (SEED). **P2b:** paygo filtrado `tj%-portal` após cada lote 3h. Backlog Juris.ai: SEED primeiro; **não** `paygo-catchup` sem ok. Log TJ: `scripts/seed-juris-tj-portal-diario.log`.
+
+**Agora (10/09):** rodízio **P1a TRE** ativo (SP → MG → …). Nada a configurar. Aviso prévio no chat só se formos **ligar o próximo bloco** (P1b TNU) ou mudar a ordem.
+
+### Fila portal ETL (P0→P2c) — ordem fechada 10/09
+
+**Modelo operacional (igual TRE):** 1 tribunal (ou 1 UF) por noite · **2 temas** · progresso por tribunal · PC 01h–04h · só `GEMINI_API_KEY_SEED` · **sem** misturar blocos na mesma 02h.
+
+| Bloco | Escopo | Status | Quando |
+|-------|--------|--------|--------|
+| **P0** | **TSE** (SJUR) | **Em curso** (temas + diário 02h) | Agora (junto com P1a) |
+| **P1a** | **27 TREs** rodízio | **Em curso** | Agora |
+| **P1b** | **TNU** (eProc juris / previdenciário JEF) | Pendente coletor | Após 1ª passagem TRE (~27 noites) **ou** aviso no chat para ligar antes |
+| **P2a** | **TRF1 / TRF2 / TRF5 / TRF6** | Pendente | Após TNU estável · rodízio entre os 4 |
+| **P2b** | **17 TJs** faltantes · **a cada 3 h** · 1 TJ/rodada · 2 temas · **pub ~3 anos** · paygo só `tj*-portal` | Pendente → **ligar 11/09** | Agora (paralelo a P1a) |
+| **P2c** | **TJM** (SP, MG, RS) + **STM** | Pendente (nicho) | **Por último** — não na frente de TJ/TNU |
+
+**Não fazer:** TRE+TJ+TJM na mesma 02h. **Sim:** mesmo rodízio quando o bloco anterior estiver no ar.
 
 ### Fila portal TRE P1a (rodízio — 1 UF/noite)
 
@@ -104,7 +155,7 @@ Estado: `treUfIndice` + `treTemaPorUf` em `scripts/seed-juris-portal-estado.json
 | **O1** | Reindex paygo catch-up zerar + conferir `sem_embedding`≈0 | P0 ops | **+20.591** · 0 falhas (09/09); próximos = SEED free | **Feito** |
 | **O2** | Smoke lastro 20 áreas | P0 | **20/20** ok · 0 fraco · 0 falhas (09/09 pós-reindex) | **Feito** |
 | **O3** | **F3+F4** pertinência retrieve + ENCAIXE por romano | P1 código **0 tokens** | Soft ranking + aviso âmbar preview; sem trava Gerar | **Feito 09/09** |
-| **O4** | **ETL gaps** (paralelo a O3+) | P1 ops/código | TSE feito → **TRE-SP feito (P1a piloto)** → demais TREs → **TNU** → TRFs → 17 TJs | **P1a SP em curso** (diário 02h) |
+| **O4** | **ETL gaps** (paralelo a O3+) | P1 ops/código | **P0 TSE** + **P1a TRE** rodízio → **P1b TNU** → **P2a TRFs** → **P2b 17 TJs** → **P2c TJM/STM** | **P1a em curso** · fila fixada 10/09 |
 | **O5** | Fluidez residual (−0,1 vs MinutaIA) | P1 UX | Já bem avançado; polish fino (stream, menos atrito). Discutir quando O3 ok | Pendente (baixa urgência) |
 | **O5b** | **Profundidade fora do header → pergunta chat** | P1 UX + margem | Header limpo; Sonnet só com `fundo` aceito; `recomendaFuncaoDetalhada` + chips | **Feito 09/09** |
 | **O6** | Tom / modelos por espécie | P1 produto | **Usar meu modelo** + Fiel/Livre/Recorte já ok; falta **biblioteca por espécie** + opt-in no chat. Discutir no momento | Pendente (discutir) |
@@ -2181,12 +2232,13 @@ temas (JSON/TS) → coletor portal (TSE/TRE/TNU…) → JulgadoScrape
 | **P0** | Coletor **TSE** (SJUR 4.0) + `scripts/seed-juris-portal-diario.ts` + estado + 20 temas | **Feito** — smoke +12 (08/09); diário +34 (09/09); total **46** `tse-portal`; faltam temas **4→19** (~4 noites) |
 | **P1a** | Coletor **TRE-XX** (27 TREs; prioridade inicial SP/MG/RJ/RS/PR ou UF de clientes, depois o resto) | **Piloto TRE-SP feito** (10/09) — host `jurisprudencia.tre-sp.jus.br`; diário 02h; ampliar UFs |
 | **P1b** | Coletor **TNU** (eProc juris) + temas previdenciários JEF | Smoke área previdenciário sobe |
-| **P2a** | **TRF1 / TRF2 / TRF5 / TRF6** (fora da Juris.ai) | Lastro federal nas regiões sem TRF3/4 |
-| **P2b** | **17 TJs faltantes** (fora da Juris.ai): **AC AL AP AM BA DF ES MS PA PB PE PI RN RO RR SE TO** | **Meta fechada (09/09):** mapa **26 estados + DF** = 27 UFs de TJ (10 já na API + estes 17) |
+| **P2a** | **TRF1 / TRF2 / TRF5 / TRF6** (fora da Juris.ai) · rodízio 1/noite | Lastro federal nas regiões sem TRF3/4 |
+| **P2b** | **17 TJs faltantes** · e-SAJ a cada **3 h** · 1 TJ · 2 temas · **~3 anos** · paygo `tj%-portal` · DF depois | **No ar 11/09** — smoke TJMS +11; fila MS→BA→… |
+| **P2c** | **TJM-SP / TJM-MG / TJM-RS** + **STM** (nicho militar) · rodízio curto | Só após P2b; não priorizar na frente de TJ civil / TNU |
 
-**Meta de cobertura TJ (fixada 09/09):** P0–P2b + Juris.ai nos 10 TJs atuais → **todos os Tribunais de Justiça do país** (27 UFs). Ordem sugerida no P2b: UFs dos primeiros clientes, depois volume (BA, PE, DF, ES…), depois o restante. Abastecimento **contínuo** (diário 02h / fila portal) mantém-se **após comercialização** — dado fica na `base_conhecimento`; scraper é ops permanente.
+**Meta de cobertura TJ (fixada 09/09):** P0–P2b + Juris.ai nos 10 TJs atuais → **todos os Tribunais de Justiça do país** (27 UFs). Ordem sugerida no P2b: UFs dos primeiros clientes, depois volume (BA, PE, DF, ES…), depois o restante. **P2c (TJM/STM)** = cobertura militar residual. Abastecimento **contínuo** (diário 02h / fila portal) mantém-se **após comercialização** — dado fica na `base_conhecimento`; scraper é ops permanente.
 
-Agenda sugerida: Juris.ai **01h** · portal gaps (**TSE → TRE → TNU → TRFs → TJs P2b**) **02h** · smoke lastro **03h** · súmulas **04h** (até zerar fila).
+Agenda sugerida: **testes 22h** · **reindex embeddings 23h** (garantia diária SEED free) · Juris.ai **01h** · portal gaps (**P0 TSE → P1a TRE → P1b TNU → P2a TRFs → P2b TJs → P2c TJM/STM**) **02h** · smoke lastro **03h** · súmulas **04h**.
 
 #### Achados técnicos (08/09 — browser)
 

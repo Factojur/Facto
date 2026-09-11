@@ -57,6 +57,11 @@ export async function indexarConhecimentoPorId(
 export async function reindexarBaseConhecimento(opcoes?: {
   forcar?: boolean;
   limite?: number;
+  /**
+   * Filtra por padrão SQL LIKE em `fonte` (ex.: `tj%-portal`).
+   * Usado no paygo só dos TJs P2b — não toca Juris.ai.
+   */
+  fonteLike?: string;
 }): Promise<{ indexados: number; falhas: number; avisos: string[] }> {
   const admin = createAdminClient();
   const limite = opcoes?.limite ?? 500;
@@ -71,6 +76,9 @@ export async function reindexarBaseConhecimento(opcoes?: {
   // Sem forçar: só quem ainda não tem vetor (evita reprocessar os recentes).
   if (!opcoes?.forcar) {
     query = query.is("embedding", null);
+  }
+  if (opcoes?.fonteLike) {
+    query = query.like("fonte", opcoes.fonteLike);
   }
 
   const { data, error } = await query;

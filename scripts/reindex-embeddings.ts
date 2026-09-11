@@ -2,9 +2,10 @@
  * Reindexa embeddings da base_conhecimento.
  * Uso: npx tsx scripts/reindex-embeddings.ts
  *      npx tsx scripts/reindex-embeddings.ts --forcar
- *      npx tsx scripts/reindex-embeddings.ts --paygo-catchup   ← ÚNICA vez: zera backlog com paygo
+ *      npx tsx scripts/reindex-embeddings.ts --paygo-catchup   ← backlog geral (cuidado)
+ *      npx tsx scripts/reindex-embeddings.ts --paygo-portal-tj ← só fonte tj%-portal (P2b)
  *
- * Default: GEMINI_API_KEY_SEED (free). Paygo só com --paygo-catchup.
+ * Default: GEMINI_API_KEY_SEED (free). Paygo só com flags --paygo-*.
  */
 
 import {
@@ -13,8 +14,13 @@ import {
 } from "./lib/gemini-env-seed";
 
 const paygoCatchup = process.argv.includes("--paygo-catchup");
-if (paygoCatchup) {
-  exigirGeminiPaygoCatchupReindex("reindex");
+const paygoPortalTj = process.argv.includes("--paygo-portal-tj");
+const paygo = paygoCatchup || paygoPortalTj;
+
+if (paygo) {
+  exigirGeminiPaygoCatchupReindex(
+    paygoPortalTj ? "reindex-paygo-portal-tj" : "reindex-paygo-catchup"
+  );
 } else {
   exigirGeminiApenasSeed("reindex");
 }
@@ -24,21 +30,31 @@ async function main() {
     "../src/lib/ia/indexar-conhecimento"
   );
   const forcar = process.argv.includes("--forcar");
+  const fonteLike = paygoPortalTj ? "tj%-portal" : undefined;
   console.log(
     "Reindexando embeddings…",
     forcar ? "(forçar todos)" : "(só sem embedding)",
-    paygoCatchup ? "· PAYGO CATCH-UP" : "· SEED free"
+    paygoPortalTj
+      ? "· PAYGO tj%-portal"
+      : paygoCatchup
+        ? "· PAYGO CATCH-UP"
+        : "· SEED free",
+    fonteLike ? `· filtro fonte LIKE ${fonteLike}` : ""
   );
 
   let totalIndexados = 0;
   let totalFalhas = 0;
   const avisos: string[] = [];
   const lote = 400;
-  // Catch-up: ~21k itens → precisa de mais rodadas que o diário free (20×400).
-  const maxRodadas = paygoCatchup ? 80 : 20;
+  // Portal TJ: lotes pequenos (~20–40/rodada); catch-up geral precisa de mais rodadas.
+  const maxRodadas = paygoCatchup ? 80 : paygoPortalTj ? 40 : 20;
 
   for (let rodada = 1; rodada <= maxRodadas; rodada++) {
-    const r = await reindexarBaseConhecimento({ forcar, limite: lote });
+    const r = await reindexarBaseConhecimento({
+      forcar,
+      limite: lote,
+      fonteLike,
+    });
     totalIndexados += r.indexados;
     totalFalhas += r.falhas;
     for (const a of r.avisos) {
@@ -48,14 +64,19 @@ async function main() {
       `  rodada ${rodada}: +${r.indexados} indexados, ${r.falhas} falhas`
     );
     if (r.indexados === 0 && r.falhas === 0) break;
-    if (forcar) break; // forçar: uma passada no limite basta
+    if (forcar) break;
     if (r.indexados === 0 && r.falhas > 0) break;
   }
 
   console.log(
     JSON.stringify(
       {
-        modo: paygoCatchup ? "paygo-catchup" : "seed-free",
+        modo: paygoPortalTj
+          ? "paygo-portal-tj"
+          : paygoCatchup
+            ? "paygo-catchup"
+            : "seed-free",
+        fonteLike: fonteLike ?? null,
         indexados: totalIndexados,
         falhas: totalFalhas,
         avisos,

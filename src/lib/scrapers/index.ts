@@ -1,4 +1,11 @@
 export {
+  buscarEsajTjJuris,
+  ementaTjEsajValida,
+  fonteTjPortal,
+  siglaTj,
+} from "@/lib/scrapers/esaj-tj";
+export type { UfTjEsaj } from "@/lib/scrapers/esaj-tj";
+export {
   buscarTjsp,
   scraperTjspHabilitado,
 } from "@/lib/scrapers/tjsp";

@@ -1,12 +1,12 @@
 {
-  "faseIndice": 7,
-  "offset": 0,
+  "faseIndice": 8,
+  "offset": 80,
   "concluido": false,
-  "ultimaRodada": "2026-09-09",
+  "ultimaRodada": "2026-09-11",
   "ultimoResultado": {
-    "fase": "tst_pn",
-    "ok": 33,
+    "fase": "tjsp_arquivo",
+    "ok": 80,
     "falha": 0,
-    "avanco": 33
+    "avanco": 80
   }
 }
