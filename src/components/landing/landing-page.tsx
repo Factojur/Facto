@@ -176,8 +176,6 @@ export function LandingPage({
               protocolar.
             </p>
 
-            <ContadorJurisLanding total={totalLastro} />
-
             <div className="mt-10 flex flex-col items-center gap-3">
               <div className="flex w-full flex-col gap-4 sm:w-auto sm:flex-row sm:justify-center">
                 <Link
@@ -198,6 +196,8 @@ export function LandingPage({
                 caso incluso. Export Word/PDF nos planos pagos.
               </p>
             </div>
+
+            <ContadorJurisLanding total={totalLastro} />
           </div>
         </section>
 
