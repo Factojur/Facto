@@ -53,6 +53,26 @@ Não implementar sem alinhamento. Ordem sugerida = impacto × honestidade juríd
 4. **Mapa súmula × julgado** — vincular súmula (STF/STJ/TJ) aos acórdãos de aplicação no plano do caso.
 5. **Frescor ≤1 ano** — só após base densa (já P2/O9).
 
+### Plano de conferência / verificação do sistema (11/09 — enquanto lastro abastece)
+
+**Decisão:** montar e executar relatório de funcionamento **completo** do produto (minuta + comercial + landing + ops seed), em paralelo aos seeds — **sem** gastar Sonnet/paygo sem ok. Gestão: só smoke local se Jefferson pedir (fora do foco).
+
+| Fase | Escopo | Como | Custo | Entrega |
+|------|--------|------|-------|---------|
+| **A0** | Build + tipos | `tsc` / deploy Ready | 0 | Build verde |
+| **A1** | Suíte determinística | `npm run test:pecas` (+ formatacao, auditor, polo, lastro-polo, casos-ouro…) | 0 | Log PASS/FAIL |
+| **A2** | Chat / plano / fluidez (offline) | `test:chat-minuta` · `test:chat-fluidez` · `test:plano-lastro` · `test:briefing-caso` · `test:alerta-fatos-pedidos` · `test:caso-0006509` | 0 | Log |
+| **A3** | Lastro retrieve (SEED) | `test:smoke-areas-lastro` · `test:lastro-tribunal-uf` · `test:expansao-lastro` · `auditar-tj-portal-qualidade` | Gemini **SEED** | 20 áreas + portal 0 ruins |
+| **A4** | Auth / planos / extras | `test:acesso-contas` · trial · checkout extras UI (manual) · webhook legado | 0 / 1 compra teste | Checklist comercial |
+| **A5** | Landing + prod | Contador lastro · CTAs · planos · HTTPS | 0 | Checklist factoia |
+| **A6** | E2E humano (amostra) | 4–6 peças em prod (JEC, Trab, Penal HC, Prev, Família, Const) · Word/PDF/checklist | **cota peça** | Relatório achados |
+| **A7** | Amostra densa (opcional) | `test:amostra-densas` / Sonnet | **ok Jefferson** | Comparativo qualidade |
+| **A8** | Ops seed | Estado filas 01h/02h/03h/04h/3h · `seed-juris-estado` · portal TJ estado | 0 | Snapshot ops |
+
+**Critério de pronto do relatório:** cada fase A0–A6 com ✅/⚠️/❌ + lista de ajustes P0/P1/P2. A7 só com autorização.
+
+**Status:** plano aprovado em conceito (11/09) · execução sob pedido (“rodar conferência fase A…”).
+
 ### Feito nesta rodada (11/09 — scorecard + consolidado)
 
 - [x] Scorecard **11/09** · canvas alinhado · lacunas / O4 atualizados
