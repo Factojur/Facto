@@ -139,6 +139,7 @@ export async function POST(request: Request) {
       id: userId,
       nome_completo: nomeCompleto,
       email,
+      cpf: `pending-${userId}`,
       tipo_usuario: "leigo",
       termo_leigo_aceito_em: new Date().toISOString(),
       termo_leigo_versao: TERMO_LEIGO_VERSAO,

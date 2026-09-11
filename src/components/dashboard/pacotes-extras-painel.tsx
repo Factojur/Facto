@@ -81,24 +81,21 @@ function CardPacote({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pacoteId: pacote.id as PacoteExtraId }),
       });
-      const data = (await res.json()) as {
+      const data = (await res.json().catch(() => null)) as {
         initPoint?: string;
         error?: string;
-      };
-      if (res.ok && data.initPoint) {
+      } | null;
+      if (res.ok && data?.initPoint) {
         window.location.href = data.initPoint;
         return;
       }
-      if (linkEstatico) {
+      // 401: visitante raro no painel — link estático sem token. Demais erros: exibir (ex.: 403 sem assinatura).
+      if (res.status === 401 && linkEstatico) {
         window.open(linkEstatico, "_blank", "noopener,noreferrer");
         return;
       }
-      setErro(data.error ?? "Não foi possível abrir o checkout.");
+      setErro(data?.error ?? "Não foi possível abrir o checkout.");
     } catch {
-      if (linkEstatico) {
-        window.open(linkEstatico, "_blank", "noopener,noreferrer");
-        return;
-      }
       setErro("Falha de rede ao abrir o checkout.");
     } finally {
       setLoading(false);

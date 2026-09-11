@@ -71,7 +71,39 @@ Não implementar sem alinhamento. Ordem sugerida = impacto × honestidade juríd
 
 **Critério de pronto do relatório:** cada fase A0–A6 com ✅/⚠️/❌ + lista de ajustes P0/P1/P2. A7 só com autorização.
 
-**Status:** plano aprovado em conceito (11/09) · **A0–A3 executados 11/09** · A4+ pausados (Jefferson fará compra real teste e retoma).
+**Status:** plano aprovado em conceito (11/09) · **A0–A3 executados 11/09** · **A4 pré-check UX (sem pagamento) 11/09** · compra real (Jefferson) ainda pendente · A5+ depois.
+
+#### A4 pré-check comercial UX (11/09 — sem compra real)
+
+Percorrido em [factoia.com.br](https://factoia.com.br) como visitante + 1 tentativa de trial/login. **Não** paguei MP. Extras/upgrade logados: só revisão de código (sem conta paga de teste).
+
+| Caminho | Resultado | Nota |
+|---------|-----------|------|
+| Landing `#precos` · Essencial / Completo / Pro / Anual | ✅ | Abre checkout MP (`preapproval_plan_id` distinto por plano) · pará antes de pagar |
+| Aba Escritório | ✅ | Contato + suporte · sem checkout |
+| `/cadastro` sem token | ✅ | Gate correto → trial / login / suporte |
+| `/trial` formulário | ❌ **P0** | Conta Auth criada · perfil trial **não gravou** |
+| Login pós-falha trial | ⚠️ | `?acesso=expirado` (copy de assinatura) · sem dashboard |
+| `/dashboard/planos` deslogado | ✅ | Redirect `/login` |
+| Termos / Privacidade / Esqueci senha | ✅ | Páginas ok |
+| Pacotes extras + upgrade logado | ⏸️ | Depende de assinatura ativa · ver achados código |
+
+**P0 — Trial quebrado em produção**
+1. UI: *“Conta criada, mas o trial não gravou. Confirme a migration-trial.sql no Supabase.”*
+2. Cascata: Auth user órfão → login → middleware sem `trial_ate` → `acesso=expirado` → e-mail não pode re-trial (`JA_CADASTRADO`).
+3. Ops já listado: **rodar `supabase/migration-trial.sql` (e correlatas) no Supabase** (fila item 6).
+4. Conta de teste órfã a apagar no Auth: `facto.a4.ux.20260911@gmail.com`.
+
+**P1 — antes / durante a compra real (A4)**
+1. **Assinar logado** (upgrade): preferir checkout API com token `userId` — visitante usa link estático (vínculo por e-mail FACTO no MP).
+2. `BotaoAssinarPlano` e `PacotesExtrasPainel`: em falha da API (≠ 401), **fallback silencioso** para link estático MP — pode perder vínculo userId / ignorar 403 de extras sem assinatura. Ajustar: mostrar erro; fallback estático só em 401 (visitante).
+3. Copy `acesso=expirado`: fala em “assinatura expirou” também para conta sem plano/trial — misturar “sem plano ativo / teste não liberado”.
+
+**P2 — polish**
+1. Benefícios trial: “Assistente + plano do caso…” e “Plano do caso antes de gastar o crédito” quase duplicados.
+2. Rótulos “Plano Completo Pro” / “Completo Pro Anual” (intencional no `planos-facto`) — pode confundir com Completo.
+
+**Para a compra real (Jefferson):** logar com conta boa **depois** do fix do trial/migration · assinar Essencial (ou Completo) **logado** · conferir webhook + `/dashboard/planos` · pacote `extra-20` · return `upgrade=ok` / `extra=ok`.
 
 #### Relatório conferência A0–A3 (11/09)
 
@@ -93,7 +125,7 @@ Não implementar sem alinhamento. Ordem sugerida = impacto × honestidade juríd
 
 **A3:** flag `scripts/testar-smoke-areas-lastro.ts --paygo` (somente conferência; default continua SEED).
 
-**Próximo:** Jefferson compra real (teste) → retomar **A4** (auth/planos/extras/webhook).
+**Próximo:** **P0** rodar migration trial no Supabase + apagar user órfão do pré-check → Jefferson compra real → fechar **A4** (webhook/extras/upgrade logado).
 
 #### Correções pós-conferência A1/A2 (11/09)
 
@@ -102,6 +134,12 @@ Não implementar sem alinhamento. Ordem sugerida = impacto × honestidade juríd
 - [x] Organização local: espécie/remédio do último ato (0006509 → agravo)
 - [x] Auditoria internacional: 1ª instância sem inventar Cível; assert alinhado
 - [x] **Re-run A1+A2:** todos ✅ (qualificação, cabível, auditor, skins, polo, lastro-polo, ouro, formatação, auditoria 1320/0, entrada, prazo, chat, fluidez, plano, briefing, alerta, 0006509)
+
+### Feito nesta rodada (11/09 — A4 pré-check comercial)
+
+- [x] Walkthrough UX: trial, cadastro gate, login, landing Assinar (Essencial/Completo/Pro/Anual → MP), Escritório, termos/privacidade, esqueci senha, `/dashboard/planos` deslogado
+- [x] **P0** trial prod: conta Auth ok · `profiles` trial não grava (migration) · login vira `acesso=expirado`
+- [x] Achados P1/P2 no bloco A4 pré-check acima · compra real ainda com Jefferson
 
 ### Feito nesta rodada (11/09 — scorecard + consolidado)
 

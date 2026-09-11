@@ -228,8 +228,9 @@ function LoginForm() {
 
           {acessoExpirado && (
             <div className="mb-4 rounded-lg border border-amber-800/60 bg-amber-950/40 px-4 py-3 text-sm text-amber-200">
-              Sua assinatura do FACTO expirou, foi cancelada ou esta conta não
-              tem plano ativo. Renove ou pague um plano para continuar.{" "}
+              Esta conta não tem acesso ativo no momento — teste grátis
+              encerrado, plano ainda não liberado, ou assinatura expirada /
+              cancelada. Assine um plano para continuar.{" "}
               <button
                 type="button"
                 className="font-semibold underline"
