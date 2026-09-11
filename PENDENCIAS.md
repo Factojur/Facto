@@ -24,6 +24,7 @@ Ordem fechada — **não inverter**:
 - [x] Benefício lastro: “base FACTO em expansão”
 - [x] Commit + push `main` `27de189` · deploy **Ready** `dpl_5fiK9KKqGsXeytvciotDd8ge62Wy` · [factoia.com.br](https://factoia.com.br)
 - [x] Destaque tipográfico do contador (mesmo tamanho do nº; label mais clara; linha diária mais quieta)
+- [x] Commit + push `3c1cc74` · deploy **Ready** `dpl_ARrTome5bYLRc41iqHMDUFfzutpc` · [factoia.com.br](https://factoia.com.br)
 
 ### Feito nesta rodada (11/09 — qualidade fundamentação)
 
