@@ -5,6 +5,10 @@ export {
   siglaTj,
 } from "@/lib/scrapers/esaj-tj";
 export type { UfTjEsaj } from "@/lib/scrapers/esaj-tj";
+export { buscarTjbaJuris, ementaTjbaValida } from "@/lib/scrapers/tjba";
+export { buscarTjrnJuris, ementaTjrnValida } from "@/lib/scrapers/tjrn";
+export { buscarTjpeJuris, ementaTjpeValida } from "@/lib/scrapers/tjpe";
+export { buscarTjesJuris, ementaTjesValida } from "@/lib/scrapers/tjes";
 export {
   buscarTjsp,
   scraperTjspHabilitado,
@@ -30,6 +34,8 @@ export {
 } from "@/lib/scrapers/afinidade";
 export {
   ementaPareceLixo,
+  ementaJurisPortalValida,
+  normalizarEmentaPortal,
   julgadoScrapeValido,
 } from "@/lib/scrapers/validar-ementa";
 

@@ -27,7 +27,9 @@ Não muda a minuta sozinho. Alimenta a base que a Pesquisa usa.
 - API Juris.ai: `stf stj tst trf3 trf4 tjce tjgo tjma tjmg tjmt tjpr tjrj tjrs tjsc tjsp carf`. Sem TSE, TRE, TRF1/2/5/6, TNU.
 - **SJUR TRE (P1a rodízio):** 1 TRE/noite (`FILA_TRE_P1A`). Host `jurisprudencia.tre-{uf}.jus.br`. Diário 02h: **2 TSE + 2 temas do TRE da vez**. Tema por UF; cicla as 27 UFs.
 - `npm run seed:juris-portal-diario` · tarefa `FACTO-seed-portal-02h`.
-- **P2b TJs e-SAJ:** `npm run seed:juris-tj-portal-diario` · **a cada 3 h** · 1 TJ · 2 temas · **3 anos** · `fonte=tj{uf}-portal` · reindex `--paygo-portal-tj`. Fila BA→PE→… (DF fora — portal distinto). Instalar: `scripts/instalar-tarefa-seed-tj-portal.ps1`.
+- **P2b TJs e-SAJ:** `npm run seed:juris-tj-portal-diario` · **a cada 3 h** · 1 TJ · 2 temas · **3 anos** · `fonte=tj{uf}-portal` · reindex `--paygo-portal-tj`. Portais próprios: BA/RN/PE/ES. AM = `consultasaj`. Instalar: `scripts/instalar-tarefa-seed-tj-portal.ps1`.
+- **Regra Jefferson (11/09):** seed falhou ou **+0 insert** → **corrigir e re-rodar** até inserir (não deixar só para a próxima janela), preservando a fila agendada seguinte.
+- **Qualidade ementa portal:** `ementaJurisPortalValida` em `validar-ementa.ts` — rejeita `ler mais`, cabeçalho curto e cadeia `Rel. Des.…`; seed P2b só upserta se passar.
 - **Jefferson:** PC ligado (seeds + TJ 3h); SEED free + Juris.ai; paygo **só** P2b TJ portal.
 - Embeddings gerais: **somente** `GEMINI_API_KEY_SEED` (free). Paygo bloqueado exceto `--paygo-portal-tj` / catch-up explícito.
 

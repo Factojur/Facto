@@ -27,6 +27,10 @@ Ordem fechada — **não inverter**:
 - [x] Commit + push `3c1cc74` · deploy **Ready** `dpl_ARrTome5bYLRc41iqHMDUFfzutpc` · [factoia.com.br](https://factoia.com.br)
 - [x] Contador reposicionado abaixo dos CTAs / texto do trial
 
+### Feito nesta rodada (11/09 — commit WIP seed/qualidade)
+
+- [x] Scrapers BA/RN/PE/ES + e-SAJ/validação ementa + seed P2b + regras Cursor + scripts audit/limpeza portal (sem tmp/probe; pacotes extras ficam locais)
+
 ### Feito nesta rodada (11/09 — qualidade fundamentação)
 
 - [x] Portal TJ: filtro `ementaJurisPortalValida` (rejeita `Rel.`/colagem multi-TJ/`ler mais`)

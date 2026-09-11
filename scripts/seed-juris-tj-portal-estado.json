@@ -1,14 +1,36 @@
 {
-  "tjUfIndice": 1,
+  "tjUfIndice": 11,
   "tjTemaPorUf": {
-    "ms": 2
+    "ms": 2,
+    "ac": 2,
+    "ba": 2,
+    "rn": 2,
+    "am": 2,
+    "pe": 2,
+    "es": 2,
+    "pa": 0,
+    "pb": 0,
+    "al": 0,
+    "se": 0
   },
-  "ultimaRodada": "2026-09-11 09:30:42",
+  "falhasPorUf": {
+    "pa": 1,
+    "pb": 1,
+    "al": 1,
+    "se": 1
+  },
+  "ultimaRodada": "2026-09-11 15:30:17",
   "ultimoResultado": {
     "inserts": 0,
     "skips": 0,
-    "falhas": 2,
-    "tjUf": "TJBA",
-    "proximoTj": "TJBA"
+    "falhas": 8,
+    "tjUf": "TJSE",
+    "proximoTj": "TJPI",
+    "tentativas": [
+      "TJPA",
+      "TJPB",
+      "TJAL",
+      "TJSE"
+    ]
   }
 }

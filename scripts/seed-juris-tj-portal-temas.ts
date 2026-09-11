@@ -5,25 +5,32 @@
 import type { UfTjEsaj } from "../src/lib/scrapers/esaj-tj";
 import type { TemaPortal } from "./seed-juris-portal-temas";
 
-/** Ordem: UFs cujo e-SAJ responde primeiro (MS ok 11/09); BA/PE/… calibrar host depois. */
+/**
+ * Ordem: e-SAJ que responde (MS/AC) + portais próprios (BA/RN/PE/ES).
+ * Host override: AM → consultasaj.tjam.jus.br.
+ * BA/RN/PE/ES: scrapers dedicados (não usar esaj.tjXX quando DNS/portal distinto).
+ */
 export const FILA_TJ_P2B_ESAJ: UfTjEsaj[] = [
   "ms",
+  "ac",
   "ba",
+  "rn",
+  "am",
   "pe",
   "es",
   "pa",
   "pb",
   "al",
   "se",
-  "rn",
   "pi",
-  "am",
   "to",
   "ro",
-  "ac",
   "ap",
   "rr",
 ];
+
+/** Se o TJ da vez falhar, tenta os próximos na mesma invocação (não atrasar o dia). */
+export const TJ_PORTAL_MAX_UF_POR_RODADA = 4;
 
 export const TJ_PORTAL_TEMAS_POR_RODADA = 2;
 export const TJ_PORTAL_POR_TEMA = 12;

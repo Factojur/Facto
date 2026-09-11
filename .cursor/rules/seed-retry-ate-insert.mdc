@@ -1,0 +1,16 @@
+---
+description: Seed/juris — falhou ou +0 insert → corrigir e re-rodar até inserir
+alwaysApply: true
+---
+
+# Seed: corrigir e repetir até insert
+
+Sempre que **qualquer** seed/ops de jurisprudência (Juris.ai, portal TSE/TRE, P2b TJ, súmulas, reindex ligado ao lote) **falhar** ou fechar com **0 insert** (quando o esperado era inserir):
+
+1. **Diagnosticar** a causa (host, layout, DNS, captcha, validação, cota, estado).
+2. **Corrigir** no código/config (scraper, URL, fila, validação) — não só anotar.
+3. **Re-rodar** o mesmo escopo (UF/temas/lote) até obter inserts úteis **ou** até bloqueio externo explícito (captcha humano, PC off, cota 429 de todas as chaves, Jefferson mandar parar).
+4. **Preservar** a fila agendada seguinte (ex.: 15:30) — repor pontual sem “queimar” o próximo TJ da tarefa, salvo o usuário pedir avançar.
+5. Atualizar `PENDENCIAS.md` (Lacunas / Feito nesta rodada) com o resultado.
+
+Não encerrar o turno com “falhou, próxima rodada resolve” se ainda dá para corrigir e repetir agora.

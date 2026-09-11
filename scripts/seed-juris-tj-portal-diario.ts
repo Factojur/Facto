@@ -1,6 +1,6 @@
 /**
  * Seed P2b — TJs e-SAJ (fora da Juris.ai).
- * Cadência: a cada 3 h · 1 TJ · 2 temas · julgados ~3 anos · reindex paygo só tj*-portal.
+ * Cadência: a cada 3 h · 1 TJ (ou até 4 se falhar) · 2 temas · ~3 anos · paygo tj*-portal.
  *
  * Uso: npm run seed:juris-tj-portal-diario
  * Instalar: powershell -ExecutionPolicy Bypass -File scripts\instalar-tarefa-seed-tj-portal.ps1
@@ -18,12 +18,18 @@ import {
   siglaTj,
   type UfTjEsaj,
 } from "../src/lib/scrapers/esaj-tj";
+import { buscarTjbaJuris, ementaTjbaValida } from "../src/lib/scrapers/tjba";
+import { buscarTjrnJuris, ementaTjrnValida } from "../src/lib/scrapers/tjrn";
+import { buscarTjpeJuris, ementaTjpeValida } from "../src/lib/scrapers/tjpe";
+import { buscarTjesJuris, ementaTjesValida } from "../src/lib/scrapers/tjes";
+import { ementaJurisPortalValida } from "../src/lib/scrapers/validar-ementa";
 import type { JulgadoScrape } from "../src/lib/scrapers/types";
 import type { TemaPortal } from "./seed-juris-portal-temas";
 import {
   FILA_TJ_P2B_ESAJ,
   TEMAS_TJ_P2B,
   TJ_PORTAL_ANOS,
+  TJ_PORTAL_MAX_UF_POR_RODADA,
   TJ_PORTAL_POR_TEMA,
   TJ_PORTAL_TEMAS_POR_RODADA,
 } from "./seed-juris-tj-portal-temas";
@@ -38,6 +44,7 @@ const estadoPath = resolve(
 type EstadoTj = {
   tjUfIndice: number;
   tjTemaPorUf: Partial<Record<UfTjEsaj, number>>;
+  falhasPorUf?: Partial<Record<UfTjEsaj, number>>;
   ultimaRodada: string | null;
   ultimoResultado?: {
     inserts: number;
@@ -45,6 +52,7 @@ type EstadoTj = {
     falhas: number;
     tjUf: string;
     proximoTj: string;
+    tentativas?: string[];
   };
 };
 
@@ -61,11 +69,17 @@ function lerEstado(): EstadoTj {
       tjUfIndice:
         Math.max(0, Number(j.tjUfIndice) || 0) % FILA_TJ_P2B_ESAJ.length,
       tjTemaPorUf: j.tjTemaPorUf || {},
+      falhasPorUf: j.falhasPorUf || {},
       ultimaRodada: j.ultimaRodada ?? null,
       ultimoResultado: j.ultimoResultado,
     };
   } catch {
-    return { tjUfIndice: 0, tjTemaPorUf: {}, ultimaRodada: null };
+    return {
+      tjUfIndice: 0,
+      tjTemaPorUf: {},
+      falhasPorUf: {},
+      ultimaRodada: null,
+    };
   }
 }
 
@@ -111,7 +125,7 @@ async function upsertJulgados(opts: {
   let falhas = 0;
 
   for (const j of opts.julgados) {
-    if (!ementaTjEsajValida(j.ementa)) {
+    if (!ementaJurisPortalValida(j.ementa)) {
       skips++;
       continue;
     }
@@ -154,6 +168,91 @@ async function upsertJulgados(opts: {
   return { inserts, skips, falhas };
 }
 
+async function rodarUf(opts: {
+  supabase: SupabaseClient;
+  uf: UfTjEsaj;
+  temaIndice: number;
+}): Promise<{
+  inserts: number;
+  skips: number;
+  falhas: number;
+  temaProximo: number;
+  temaDe: number;
+  temaAte: number;
+}> {
+  const sigla = siglaTj(opts.uf);
+  const fonte = fonteTjPortal(opts.uf);
+  const fatia = fatiaTemas(
+    TEMAS_TJ_P2B,
+    opts.temaIndice,
+    TJ_PORTAL_TEMAS_POR_RODADA
+  );
+
+  console.log(
+    `[tj-portal] ${agoraSp()} · ${sigla} temas ${fatia.de}..${Math.max(fatia.de, fatia.ate - 1)} (${fatia.fatia.length}) · ${TJ_PORTAL_ANOS} anos · por tema até ${TJ_PORTAL_POR_TEMA}`
+  );
+
+  let inserts = 0;
+  let skips = 0;
+  let falhas = 0;
+
+  for (const tema of fatia.fatia) {
+    console.log(`\n→ ${sigla} «${tema.q}»`);
+    const r =
+      opts.uf === "ba"
+        ? await buscarTjbaJuris(tema.q, {
+            limite: TJ_PORTAL_POR_TEMA,
+            anos: TJ_PORTAL_ANOS,
+          })
+        : opts.uf === "rn"
+          ? await buscarTjrnJuris(tema.q, {
+              limite: TJ_PORTAL_POR_TEMA,
+              anos: TJ_PORTAL_ANOS,
+            })
+          : opts.uf === "pe"
+            ? await buscarTjpeJuris(tema.q, {
+                limite: TJ_PORTAL_POR_TEMA,
+                anos: TJ_PORTAL_ANOS,
+              })
+            : opts.uf === "es"
+              ? await buscarTjesJuris(tema.q, {
+                  limite: TJ_PORTAL_POR_TEMA,
+                  anos: TJ_PORTAL_ANOS,
+                })
+              : await buscarEsajTjJuris(opts.uf, tema.q, {
+                  limite: TJ_PORTAL_POR_TEMA,
+                  anos: TJ_PORTAL_ANOS,
+                });
+    if (r.erro) {
+      console.error(`  ERRO: ${r.erro}`);
+      falhas++;
+      continue;
+    }
+    if (r.aviso && !r.julgados.length) {
+      console.warn(`  ${r.aviso}`);
+    }
+    const u = await upsertJulgados({
+      supabase: opts.supabase,
+      julgados: r.julgados,
+      tema,
+      fonte,
+      tribunalDefault: sigla,
+    });
+    inserts += u.inserts;
+    skips += u.skips;
+    falhas += u.falhas;
+  }
+
+  return {
+    inserts,
+    skips,
+    falhas,
+    temaProximo: inserts > 0 || skips > 0 ? fatia.proximo : opts.temaIndice,
+    temaDe: fatia.de,
+    temaAte: fatia.ate,
+  };
+}
+
 async function main() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -166,75 +265,67 @@ async function main() {
     auth: { persistSession: false },
   });
   const estado = lerEstado();
-  const ufIndice = estado.tjUfIndice % FILA_TJ_P2B_ESAJ.length;
-  const uf = FILA_TJ_P2B_ESAJ[ufIndice]!;
-  const sigla = siglaTj(uf);
-  const fonte = fonteTjPortal(uf);
-  const temaUf = estado.tjTemaPorUf[uf] ?? 0;
-  const fatia = fatiaTemas(
-    TEMAS_TJ_P2B,
-    temaUf,
-    TJ_PORTAL_TEMAS_POR_RODADA
-  );
-  const proximaUfIndice = (ufIndice + 1) % FILA_TJ_P2B_ESAJ.length;
-  const proximaSigla = siglaTj(FILA_TJ_P2B_ESAJ[proximaUfIndice]!);
+  const falhasPorUf = { ...(estado.falhasPorUf || {}) };
+  const tentativas: string[] = [];
 
-  console.log(
-    `[tj-portal] ${agoraSp()} · ${sigla} temas ${fatia.de}..${Math.max(fatia.de, fatia.ate - 1)} (${fatia.fatia.length}) · ${TJ_PORTAL_ANOS} anos · por tema até ${TJ_PORTAL_POR_TEMA} · próximo ${proximaSigla}`
-  );
+  let ufIndice = estado.tjUfIndice % FILA_TJ_P2B_ESAJ.length;
+  let totalInserts = 0;
+  let totalSkips = 0;
+  let totalFalhas = 0;
+  let ufOk: UfTjEsaj | null = null;
 
-  let inserts = 0;
-  let skips = 0;
-  let falhas = 0;
+  for (let t = 0; t < TJ_PORTAL_MAX_UF_POR_RODADA; t++) {
+    const uf = FILA_TJ_P2B_ESAJ[ufIndice]!;
+    const sigla = siglaTj(uf);
+    tentativas.push(sigla);
 
-  for (const tema of fatia.fatia) {
-    console.log(`\n→ ${sigla} «${tema.q}»`);
-    const r = await buscarEsajTjJuris(uf, tema.q, {
-      limite: TJ_PORTAL_POR_TEMA,
-      anos: TJ_PORTAL_ANOS,
+    const r = await rodarUf({
+      supabase,
+      uf,
+      temaIndice: estado.tjTemaPorUf[uf] ?? 0,
     });
-    if (r.erro) {
-      console.error(`  ERRO: ${r.erro}`);
-      falhas++;
+
+    totalInserts += r.inserts;
+    totalSkips += r.skips;
+    totalFalhas += r.falhas;
+    estado.tjTemaPorUf[uf] = r.temaProximo;
+
+    const proximaUfIndice = (ufIndice + 1) % FILA_TJ_P2B_ESAJ.length;
+
+    if (r.inserts === 0 && (r.falhas > 0 || r.skips === 0)) {
+      falhasPorUf[uf] = (falhasPorUf[uf] ?? 0) + 1;
+      console.warn(
+        `  → ${sigla} sem insert — substitui pelo próximo (falhas acumuladas=${falhasPorUf[uf]})`
+      );
+      ufIndice = proximaUfIndice;
       continue;
     }
-    if (r.aviso && !r.julgados.length) {
-      console.warn(`  ${r.aviso}`);
-    }
-    const u = await upsertJulgados({
-      supabase,
-      julgados: r.julgados,
-      tema,
-      fonte,
-      tribunalDefault: sigla,
-    });
-    inserts += u.inserts;
-    skips += u.skips;
-    falhas += u.falhas;
+
+    delete falhasPorUf[uf];
+    ufOk = uf;
+    ufIndice = proximaUfIndice;
+    break;
   }
 
-  // Só avança UF/tema se houve insert ou skip útil (hit no portal).
-  // Falha total (captcha/WAF/rede) → mantém o mesmo TJ para a próxima rodada.
-  const avançou = inserts > 0 || skips > 0;
-  if (avançou) {
-    estado.tjTemaPorUf[uf] = fatia.proximo;
-    estado.tjUfIndice = proximaUfIndice;
-  }
+  const proximaSigla = siglaTj(FILA_TJ_P2B_ESAJ[ufIndice]!);
+  estado.tjUfIndice = ufIndice;
+  estado.falhasPorUf = falhasPorUf;
   estado.ultimaRodada = agoraSp();
   estado.ultimoResultado = {
-    inserts,
-    skips,
-    falhas,
-    tjUf: sigla,
-    proximoTj: avançou ? proximaSigla : sigla,
+    inserts: totalInserts,
+    skips: totalSkips,
+    falhas: totalFalhas,
+    tjUf: ufOk ? siglaTj(ufOk) : tentativas[tentativas.length - 1]!,
+    proximoTj: proximaSigla,
+    tentativas,
   };
   gravarEstado(estado);
 
   console.log(
-    `\nResumo: +${inserts} insert · ${skips} skip · ${falhas} falha · próximo ${avançou ? proximaSigla : `${sigla} (retry — sem avanço)`}`
+    `\nResumo: +${totalInserts} insert · ${totalSkips} skip · ${totalFalhas} falha · tentou [${tentativas.join(", ")}] · próximo ${proximaSigla}`
   );
 
-  if (inserts > 0) {
+  if (totalInserts > 0) {
     console.log("Reindex paygo (só fonte tj*-portal)…");
     const reindex = spawnSync(
       "npx",
@@ -256,7 +347,7 @@ async function main() {
     }
   }
 
-  process.exit(falhas && !inserts ? 1 : 0);
+  process.exit(totalInserts === 0 && totalFalhas > 0 ? 1 : 0);
 }
 
 main().catch((e) => {

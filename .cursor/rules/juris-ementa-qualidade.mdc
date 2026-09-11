@@ -1,0 +1,14 @@
+---
+description: Ementas portal TJ — só qualidade (sem ler mais / Rel. / cabeçalho)
+alwaysApply: true
+---
+
+# Qualidade de ementa (portal TJ / P2b)
+
+Todo insert `tj*-portal` deve passar por `ementaJurisPortalValida` (`validar-ementa.ts`).
+
+**Rejeitar no portal:** `ler mais`, cabeçalho curto, cadeia `Rel. Des.…` / colagem multi-TJ, “Voto servindo como ementa”.
+
+**NÃO** aplicar limpeza em massa em `jurisprudencias.ai` com o mesmo critério (gera falso positivo). Limpeza: `npx tsx scripts/limpar-so-portal-tj-inaptas.ts`.
+
+Auditoria: `npx tsx scripts/auditar-tj-portal-qualidade.ts`.

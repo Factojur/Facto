@@ -4,7 +4,11 @@
  * Uso: seed P2b local — não na Vercel.
  */
 import type { JulgadoScrape, ResultadoScrape } from "@/lib/scrapers/types";
-import { filtrarJulgadosScrape } from "@/lib/scrapers/validar-ementa";
+import {
+  ementaJurisPortalValida,
+  filtrarJulgadosScrape,
+  normalizarEmentaPortal,
+} from "@/lib/scrapers/validar-ementa";
 
 /** UFs P2b com e-SAJ típico (DF costuma ser outro portal — fora desta lista). */
 export type UfTjEsaj =
@@ -68,12 +72,16 @@ export function siglaTj(uf: UfTjEsaj): string {
   return `TJ${uf.toUpperCase()}`;
 }
 
+/** Hosts e-SAJ que não seguem o padrão `esaj.tj{uf}.jus.br`. */
+const ESAJ_HOST_OVERRIDE: Partial<Record<UfTjEsaj, string>> = {
+  am: "https://consultasaj.tjam.jus.br/cjsg/consultaCompleta.do",
+};
+
 export function urlConsultaEsaj(uf: UfTjEsaj): string {
-  // TJBA: HTTPS reseta a conexão; o e-SAJ responde em HTTP.
-  if (uf === "ba") {
-    return "http://esaj.tjba.jus.br/cjsg/consultaCompleta.do";
-  }
-  return `https://esaj.tj${uf}.jus.br/cjsg/consultaCompleta.do`;
+  return (
+    ESAJ_HOST_OVERRIDE[uf] ??
+    `https://esaj.tj${uf}.jus.br/cjsg/consultaCompleta.do`
+  );
 }
 
 export function fonteTjPortal(uf: UfTjEsaj): string {
@@ -81,8 +89,7 @@ export function fonteTjPortal(uf: UfTjEsaj): string {
 }
 
 export function ementaTjEsajValida(texto: string): boolean {
-  const t = (texto || "").trim();
-  return t.length >= 100 && !/<[a-z][\s\S]*>/i.test(t);
+  return ementaJurisPortalValida(texto);
 }
 
 async function extrairJulgadosDaPagina(
@@ -95,8 +102,11 @@ async function extrairJulgadosDaPagina(
       /esajCelula|escolhaBeta|Identificar-se|Peticionamento Eletr|downloadEmenta|ementaClass|\{[\s\S]*position:\s*relative/i;
     const cnjRe = /\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/;
 
+    // TJSP/MS: fundocin · TJAM e variantes: fundocinza1
     const linhas = Array.from(
-      document.querySelectorAll("tr.fundocin, .fundocin")
+      document.querySelectorAll(
+        "tr.fundocin, .fundocin, tr.fundocinza1, .fundocinza1"
+      )
     );
     const fallbackLinhas: Element[] = [];
     if (linhas.length === 0) {
@@ -116,24 +126,69 @@ async function extrairJulgadosDaPagina(
       vistos.add(el);
       const txt = (el.textContent || "").replace(/\s+/g, " ").trim();
       if (txt.length < 80 || lixo.test(txt)) continue;
-      const cnj = txt.match(cnjRe)?.[0];
+      const cnj =
+        el
+          .querySelector("a.downloadEmenta, a.esajLinkLogin")
+          ?.textContent?.replace(/\s+/g, " ")
+          .trim()
+          .match(cnjRe)?.[0] || txt.match(cnjRe)?.[0];
       if (!cnj) continue;
 
       let ementa = "";
-      const emEl = el.querySelector(".ementaClass2, td.ementaClass2, .ementa");
-      if (emEl) ementa = (emEl.textContent || "").replace(/\s+/g, " ").trim();
-      if (!ementa || ementa.length < 80) {
+      const semFmt = el.querySelector(".mensagemSemFormatacao");
+      if (semFmt) {
+        ementa = (semFmt.textContent || "").replace(/\s+/g, " ").trim();
+      }
+      // Evita pegar só "Classe/Assunto" / metadados em ementaClass2.
+      if (!ementa || ementa.length < 120) {
+        const blocos = Array.from(
+          el.querySelectorAll(".mensagemSemFormatacao, td.ementaClass2, .ementa")
+        )
+          .map((n) => (n.textContent || "").replace(/\s+/g, " ").trim())
+          .filter((s) => s.length >= 120 && !/^Classe\/Assunto/i.test(s));
+        // Preferir o mais longo que pareça ementa.
+        blocos.sort((a, b) => b.length - a.length);
+        ementa = blocos[0] || ementa;
+      }
+      if (!ementa || ementa.length < 120) {
         const idx = txt.indexOf(cnj);
         ementa = (idx >= 0 ? txt.slice(idx + cnj.length) : txt)
           .replace(/\s+/g, " ")
           .trim();
       }
-      if (ementa.length < 80 || lixo.test(ementa)) continue;
+      // Normalização leve no browser (espelha validar-ementa).
+      ementa = ementa.replace(/^Ementa\s*:?\s*/i, "").trim();
+      if (/^[,;.\s]*Rel\.?\s*/i.test(ementa)) {
+        const m = ementa.match(
+          /\b(EMENTA\s*:|DIREITO\s|RECURSO\s|APELA|AGRAVO\s|EMBARGOS\s|A[CÇ][AÃ]O\s|DECLARAT|INDENIZA|RESPONSABIL|CONSUMIDOR|DANOS?\s)/i
+        );
+        if (m && m.index != null && m.index > 0) {
+          ementa = ementa.slice(m.index).replace(/^Ementa\s*:?\s*/i, "");
+        }
+      }
+      if (ementa.length < 120 || lixo.test(ementa)) continue;
 
-      const dataM = txt.match(/(\d{2}\/\d{2}\/\d{4})/);
-      const relM = txt.match(/Relator(?:\(a\))?\s*:?\s*([A-ZÀ-Ú][^.]{5,60})/i);
-      const a = el.querySelector("a[href*='abrirDocumento'], a[href*='espelho']");
+      const dataM =
+        txt.match(
+          /Data do julgamento:\s*(\d{2}\/\d{2}\/\d{4})/i
+        ) ||
+        txt.match(/Data de registro:\s*(\d{2}\/\d{2}\/\d{4})/i) ||
+        txt.match(/(\d{2}\/\d{2}\/\d{4})/);
+      const relM = txt.match(
+        /Relator(?:\(a\))?\s*:?\s*([A-ZÀ-Ú][^.]{5,80})/i
+      );
+      const a = el.querySelector(
+        "a[href*='abrirDocumento'], a[href*='espelho'], a.downloadEmenta"
+      );
       const href = a?.getAttribute("href") || undefined;
+      const cd = a?.getAttribute("cdacordao");
+      const urlDoc = href
+        ? href.startsWith("http")
+          ? href
+          : new URL(href, location.origin).href
+        : cd
+          ? `${location.origin}/cjsg/getArquivo.do?cdAcordao=${cd}`
+          : undefined;
 
       out.push({
         titulo: cnj,
@@ -141,11 +196,7 @@ async function extrairJulgadosDaPagina(
         data: dataM?.[1],
         numeroProcesso: cnj,
         relator: relM?.[1]?.trim(),
-        url: href
-          ? href.startsWith("http")
-            ? href
-            : new URL(href, location.origin).href
-          : undefined,
+        url: urlDoc,
       });
     }
     return out;
@@ -154,6 +205,7 @@ async function extrairJulgadosDaPagina(
 
 /**
  * Busca acórdãos no e-SAJ do TJ da UF (live Playwright).
+ * TJBA: use `buscarTjbaJuris` (portal próprio) — e-SAJ BA não expõe CJSG.
  */
 export async function buscarEsajTjJuris(
   uf: UfTjEsaj,
@@ -235,7 +287,7 @@ export async function buscarEsajTjJuris(
     await page.waitForLoadState("domcontentloaded");
     await page
       .waitForSelector(
-        ".fundocin, tr.fundocin, .ementaClass2, #divDadosResultado-A, td.ementaClass2",
+        ".fundocin, tr.fundocin, tr.fundocinza1, .ementaClass2, #divDadosResultado-A, td.ementaClass2",
         { timeout: 25_000 }
       )
       .catch(() => undefined);
@@ -267,18 +319,18 @@ export async function buscarEsajTjJuris(
 
     const pool = filtrarJulgadosScrape(
       brutos
-        .filter(
-          (j) =>
-            dentroDeAnos(j.data, anos) &&
-            cnjDentroDeAnos(j.numeroProcesso || j.titulo, anos)
-        )
-        .map(
-          (j): JulgadoScrape => ({
-            ...j,
-            titulo: `${tribunal} — ${j.numeroProcesso || j.titulo}`,
-            tribunal,
-          })
-        )
+        .filter((j) => {
+          // Preferir data do julgado; CNJ só se não houver data (processo antigo ≠ julgamento velho).
+          if (j.data) return dentroDeAnos(j.data, anos);
+          return cnjDentroDeAnos(j.numeroProcesso || j.titulo, anos);
+        })
+        .map((j): JulgadoScrape => ({
+          ...j,
+          ementa: normalizarEmentaPortal(j.ementa),
+          titulo: `${tribunal} — ${j.numeroProcesso || j.titulo}`,
+          tribunal,
+        }))
+        .filter((j) => ementaTjEsajValida(j.ementa))
     ).slice(0, limite);
 
     if (!pool.length) {
