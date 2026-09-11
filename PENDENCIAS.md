@@ -19,8 +19,8 @@ Ordem fechada — **não inverter**:
 
 ### Feito nesta rodada (11/09 — ícone martelo juris)
 
-- [x] **Ícone jurisprudência:** martelo redesenhado — cabeça cilíndrica + cabo + **bloco retangular** (sumiu a “linha com setas” que parecia cota)
-- [x] Commit `cc7b483` · push `main` · deploy **Ready** (Vercel prod)
+- [x] **Ícone jurisprudência:** martelo no estilo da referência (**só martelo**, sem bloco de baixo)
+- [x] Commit + push `main` · deploy Ready
 
 ### Feito nesta rodada (11/09 — seed TJ 09:30)
 
