@@ -1,8 +1,8 @@
 /**
- * Temas e fila portal SJUR (TSE + TREs um-a-um) → base_conhecimento.
+ * Temas e fila portal SJUR (TSE + TREs em **rodízio**).
  *
- * Modo seguro (Jefferson 10/09): **um TRE por vez** — só avança de UF
- * quando o ciclo de temas da UF atual termina. TSE segue em paralelo (2/noite).
+ * Modo (Jefferson 10/09): cada noite **1 TRE diferente** (2 temas) + TSE (2).
+ * Progresso de tema guardado **por UF**. Cobertura nacional rápida; profundidade nas voltas.
  */
 import type { UfTre } from "../src/lib/scrapers/tre";
 
@@ -128,9 +128,8 @@ export const TEMAS_TRE_P1A: TemaPortal[] = [
 export const TEMAS_TRE_SP_P1A = TEMAS_TRE_P1A;
 
 /**
- * Fila P1a — **um TRE por vez**.
+ * Fila P1a — rodízio: 1 UF por noite.
  * Ordem: SP (piloto) → volume/clientes → demais UFs.
- * Não misturar UFs na mesma noite.
  */
 export const FILA_TRE_P1A: UfTre[] = [
   "sp",

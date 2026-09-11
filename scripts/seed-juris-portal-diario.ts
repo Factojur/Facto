@@ -1,9 +1,10 @@
 /**
- * Seed diário 02h — portais SJUR (TSE + **um TRE por vez**) → base_conhecimento.
+ * Seed diário 02h — portais SJUR (TSE + TRE em **rodízio**).
  *
- * Modo seguro: só a UF atual da FILA_TRE_P1A; ao fechar os 12 temas, avança UF.
+ * Cada noite: 2 temas TSE + 2 temas de **1 TRE** (UF da fila).
+ * Noite seguinte: próximo TRE. Tema guardado por UF (cobertura nacional rápida).
+ *
  * Gemini: só GEMINI_API_KEY_SEED (free) no reindex.
- *
  * Uso: npm run seed:juris-portal-diario
  * Instalar: powershell -ExecutionPolicy Bypass -File scripts\instalar-tarefa-seed-portal.ps1
  */
@@ -41,14 +42,10 @@ const FONTE_TSE = "tse-portal";
 type EstadoPortal = {
   /** Índice no lote TSE (cicla). */
   temaIndice: number;
-  /** Índice na FILA_TRE_P1A (UF atual). */
+  /** Próxima UF da FILA_TRE_P1A a rodar nesta noite. */
   treUfIndice: number;
-  /** Índice de tema dentro da UF atual. */
-  treTemaIndice: number;
-  /** true quando todos os 27 TREs fecharam 1 ciclo — para TRE até ok Jefferson (TNU). */
-  treFilaConcluida?: boolean;
-  /** Legado (migrado → treTemaIndice). */
-  treSpTemaIndice?: number;
+  /** Progresso de tema por UF (`sp`, `mg`, …). */
+  treTemaPorUf: Partial<Record<UfTre, number>>;
   ultimaRodada: string | null;
   ultimoResultado?: {
     temas: number;
@@ -58,7 +55,14 @@ type EstadoPortal = {
     tseInserts?: number;
     treInserts?: number;
     treUf?: string;
+    proximoTre?: string;
   };
+};
+
+type EstadoLegado = EstadoPortal & {
+  treTemaIndice?: number;
+  treSpTemaIndice?: number;
+  treFilaConcluida?: boolean;
 };
 
 function hojeSp(): string {
@@ -73,16 +77,22 @@ function fonteTre(uf: UfTre): string {
 
 function lerEstado(): EstadoPortal {
   try {
-    const j = JSON.parse(readFileSync(estadoPath, "utf8")) as EstadoPortal;
-    const treTema =
-      j.treTemaIndice != null
-        ? Number(j.treTemaIndice)
-        : Number(j.treSpTemaIndice) || 0;
+    const j = JSON.parse(readFileSync(estadoPath, "utf8")) as EstadoLegado;
+    const porUf: Partial<Record<UfTre, number>> = {
+      ...(j.treTemaPorUf || {}),
+    };
+    // Migração legado → progresso SP
+    if (porUf.sp == null) {
+      const legado =
+        j.treTemaIndice != null
+          ? Number(j.treTemaIndice)
+          : Number(j.treSpTemaIndice) || 0;
+      if (legado > 0) porUf.sp = legado;
+    }
     return {
       temaIndice: Math.max(0, Number(j.temaIndice) || 0),
-      treUfIndice: Math.max(0, Number(j.treUfIndice) || 0),
-      treTemaIndice: Math.max(0, treTema),
-      treFilaConcluida: Boolean(j.treFilaConcluida),
+      treUfIndice: Math.max(0, Number(j.treUfIndice) || 0) % FILA_TRE_P1A.length,
+      treTemaPorUf: porUf,
       ultimaRodada: j.ultimaRodada ?? null,
       ultimoResultado: j.ultimoResultado,
     };
@@ -90,8 +100,7 @@ function lerEstado(): EstadoPortal {
     return {
       temaIndice: 0,
       treUfIndice: 0,
-      treTemaIndice: 0,
-      treFilaConcluida: false,
+      treTemaPorUf: {},
       ultimaRodada: null,
     };
   }
@@ -101,8 +110,7 @@ function gravarEstado(e: EstadoPortal) {
   const out = {
     temaIndice: e.temaIndice,
     treUfIndice: e.treUfIndice,
-    treTemaIndice: e.treTemaIndice,
-    treFilaConcluida: Boolean(e.treFilaConcluida),
+    treTemaPorUf: e.treTemaPorUf,
     ultimaRodada: e.ultimaRodada,
     ultimoResultado: e.ultimoResultado,
   };
@@ -229,43 +237,40 @@ async function main() {
       ? Number(tseRaw)
       : PORTAL_TEMAS_TSE_POR_NOITE
   );
-  let treN = Math.max(
+  const treN = Math.max(
     0,
     treRaw != null && treRaw !== ""
       ? Number(treRaw)
       : PORTAL_TEMAS_TRE_POR_NOITE
   );
 
-  if (estado.treFilaConcluida) {
-    console.log(
-      "[portal-diario] Fila TRE P1a concluída (27 UFs). TRE pausado — próximo passo = TNU (P1b) com ok Jefferson."
-    );
-    treN = 0;
-  }
-
   if (tseN + treN < 1) {
-    console.error("Nada a rodar (TSE=0 e TRE pausado/0).");
+    console.error("Nada a rodar (TSE=0 e TRE=0).");
     process.exit(0);
   }
 
   const tse = fatiaTemas(TEMAS_TSE_P0, estado.temaIndice, tseN);
 
-  const ufIndice = Math.min(estado.treUfIndice, FILA_TRE_P1A.length - 1);
+  const ufIndice = estado.treUfIndice % FILA_TRE_P1A.length;
   const ufAtual = FILA_TRE_P1A[ufIndice]!;
   const sigla = siglaTre(ufAtual);
+  const temaUf = Math.max(0, Number(estado.treTemaPorUf[ufAtual]) || 0);
   const tre =
     treN > 0
-      ? fatiaTemas(TEMAS_TRE_P1A, estado.treTemaIndice, treN)
+      ? fatiaTemas(TEMAS_TRE_P1A, temaUf, treN)
       : {
           fatia: [] as TemaPortal[],
-          proximo: estado.treTemaIndice,
+          proximo: temaUf,
           de: 0,
           ate: 0,
           fechouCiclo: false,
         };
 
+  const proximaUfIndice = (ufIndice + 1) % FILA_TRE_P1A.length;
+  const proximaSigla = siglaTre(FILA_TRE_P1A[proximaUfIndice]!);
+
   console.log(
-    `[portal-diario] ${new Date().toISOString()} · TSE ${tse.de}..${Math.max(tse.de, tse.ate - 1)} (${tse.fatia.length}) · ${sigla} temas ${tre.de}..${Math.max(tre.de, tre.ate - 1)} (${tre.fatia.length}) · UF ${ufIndice + 1}/${FILA_TRE_P1A.length} · por tema até ${PORTAL_POR_TEMA}`
+    `[portal-diario] ${new Date().toISOString()} · rodízio · TSE ${tse.de}..${Math.max(tse.de, tse.ate - 1)} (${tse.fatia.length}) · ${sigla} temas ${tre.de}..${Math.max(tre.de, tre.ate - 1)} (${tre.fatia.length}) · UF ${ufIndice + 1}/${FILA_TRE_P1A.length} · amanhã ${proximaSigla} · por tema até ${PORTAL_POR_TEMA}`
   );
 
   let inserts = 0;
@@ -331,33 +336,19 @@ async function main() {
   }
 
   estado.temaIndice = tse.proximo;
-
-  let proximaUf = ufIndice;
-  let proximoTemaTre = tre.proximo;
-  let treFilaConcluida = Boolean(estado.treFilaConcluida);
-
-  if (tre.fatia.length > 0 && tre.fechouCiclo) {
-    const nextUf = ufIndice + 1;
-    if (nextUf >= FILA_TRE_P1A.length) {
-      treFilaConcluida = true;
-      proximaUf = ufIndice;
-      proximoTemaTre = 0;
+  if (tre.fatia.length > 0) {
+    estado.treTemaPorUf = {
+      ...estado.treTemaPorUf,
+      [ufAtual]: tre.proximo,
+    };
+    if (tre.fechouCiclo) {
       console.log(
-        `\n✔ Ciclo ${sigla} fechado. Fila TRE P1a COMPLETA (27 UFs). TRE pausa até ok para P1b TNU.`
-      );
-    } else {
-      proximaUf = nextUf;
-      proximoTemaTre = 0;
-      const nextSigla = siglaTre(FILA_TRE_P1A[nextUf]!);
-      console.log(
-        `\n✔ Ciclo ${sigla} fechado. Próxima UF automática: ${nextSigla} (índice ${nextUf + 1}/${FILA_TRE_P1A.length}).`
+        `\n✔ ${sigla}: ciclo de ${TEMAS_TRE_P1A.length} temas fechado — na próxima passagem reinicia (inflar contínuo).`
       );
     }
   }
-
-  estado.treUfIndice = proximaUf;
-  estado.treTemaIndice = proximoTemaTre;
-  estado.treFilaConcluida = treFilaConcluida;
+  // Rodízio: sempre avança UF para a próxima noite
+  estado.treUfIndice = proximaUfIndice;
   estado.ultimaRodada = hojeSp();
   estado.ultimoResultado = {
     temas: tse.fatia.length + tre.fatia.length,
@@ -367,11 +358,12 @@ async function main() {
     tseInserts,
     treInserts,
     treUf: sigla,
+    proximoTre: proximaSigla,
   };
   gravarEstado(estado);
 
   console.log(
-    `\nResumo: +${inserts} insert (TSE ${tseInserts} · ${sigla} ${treInserts}) · ${skips} skip · ${falhas} falha · próximo TSE=${estado.temaIndice} · TRE ${siglaTre(FILA_TRE_P1A[estado.treUfIndice]!)} tema=${estado.treTemaIndice}${treFilaConcluida ? " · FILA_TRE_DONE" : ""}`
+    `\nResumo: +${inserts} insert (TSE ${tseInserts} · ${sigla} ${treInserts}) · ${skips} skip · ${falhas} falha · próximo TSE=${estado.temaIndice} · amanhã TRE ${proximaSigla} (tema ${estado.treTemaPorUf[FILA_TRE_P1A[proximaUfIndice]!] ?? 0})`
   );
 
   if (inserts > 0) {

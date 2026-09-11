@@ -17,22 +17,27 @@ Ordem fechada — **não inverter**:
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
 
+### Feito nesta rodada (10/09 — rodízio TRE)
+
+- [x] **Rodízio:** cada noite **1 TRE** (2 temas) + TSE (2) · progresso por UF (`treTemaPorUf`) · ~27 noites = 1ª passagem nacional
+- [x] Próxima noite: **TRE-SP** (tema 1+) → depois **MG → RJ → …** automático
+- [x] Jefferson: **só PC ligado** (igual antes)
+
 ### Feito nesta rodada (10/09 — temas TRE densos)
 
 - [x] **Temas TRE:** piloto 12 → **~75 temas** (mesma ordem inicial; estado SP válido) · 2/noite seguro · ≈38 noites/UF
 - [x] Objetivo = inflar lastro (julgados/teses), não “fechar 12 e pronto”; após 27 UFs dá para 2º ciclo ou mais temas
 
-### Feito nesta rodada (10/09 — fila TRE um-a-um)
+### Feito nesta rodada (10/09 — fila TRE / rodízio)
 
-- [x] **Modo seguro:** um TRE por vez (`FILA_TRE_P1A` 27 UFs) · fecha 12 temas ≈6 noites · só então avança UF
-- [x] Agora: **TRE-SP** (`treTemaIndice` 1/12) · TSE paralelo 2/noite · ao fim dos 27 → pausa TRE até ok **P1b TNU**
-- [x] **O que Jefferson precisa (só isso):** PC ligado 01h–04h na tomada · não dormir · Playwright em `%LOCALAPPDATA%\ms-playwright` · `.env.local` com Supabase + `GEMINI_API_KEY_SEED` + keys Juris.ai · **não** rodar paygo
+- [x] Fila 27 UFs + scraper TRE · evoluiu para **rodízio** (1 UF/noite) — ver seção acima
+- [x] **O que Jefferson precisa:** PC ligado 01h–04h na tomada · Playwright · `.env.local` (Supabase + `GEMINI_API_KEY_SEED` + Juris.ai) · **sem** paygo
 
 ### Feito nesta rodada (10/09 — O4 P1a TRE-SP)
 
 - [x] **O4 P1a TRE-SP:** host `jurisprudencia.tre-sp.jus.br` · scraper `src/lib/scrapers/tre.ts` · diário 02h · `fonte=tre-*-portal`
 - [x] Smoke: **+12 TRE-SP** (inelegibilidade) · 0 falha
-- [x] Fila completa dos 27 TREs montada (um por vez) — ver **Fila portal TRE P1a** abaixo
+- [x] Fila 27 TREs — ver **Fila portal TRE P1a** abaixo
 
 ### Aviso Jefferson — seeds (checklist permanente)
 
@@ -44,13 +49,13 @@ Para os seeds rodarem corretos **sem sua intervenção noite a noite**:
 4. **Nunca** usar `reindex:embeddings:paygo-catchup` no diário.
 5. Se uma noite falhar (captcha/WAF): avisar no chat com o trecho do log `scripts/seed-juris-portal-diario.log` — a gente corrige; **não** precisa mudar UF na mão.
 
-**Agora (10/09):** nada extra a configurar — fila TRE-SP já em andamento. Quando SP fechar (~5 noites), o script **sozinho** passa para TRE-MG; você só mantém o PC ligado. Aviso prévio no chat só se formos ligar **TNU** ou mudar a ordem da fila.
+**Agora (10/09):** rodízio ativo (SP → MG → …). Nada a configurar. Aviso prévio no chat só se formos ligar **TNU** ou mudar a ordem da fila.
 
-### Fila portal TRE P1a (um por vez)
+### Fila portal TRE P1a (rodízio — 1 UF/noite)
 
 Ordem: SP → MG → RJ → RS → PR → BA → PE → DF → CE → GO → SC → ES → MT → MS → PA → AM → MA → PB → RN → AL → PI → SE → TO → RO → AC → AP → RR (27).  
-Por UF: **~75 temas** × 2/noite ≈ **~38 noites** (modo seguro). Pode acrescentar mais temas a qualquer momento sem quebrar a fila.  
-Estado: `scripts/seed-juris-portal-estado.json` (`treUfIndice` · `treTemaIndice`).
+Cada noite: **2 temas** do TRE da vez (+ 2 TSE). Progresso por UF. **~78 temas**/UF → várias voltas para densificar.  
+Estado: `treUfIndice` + `treTemaPorUf` em `scripts/seed-juris-portal-estado.json`.
 
 ### Feito nesta rodada (10/09 — ícones fontes flutuantes)
 

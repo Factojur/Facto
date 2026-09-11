@@ -24,7 +24,7 @@ Não muda a minuta sozinho. Alimenta a base que a Pesquisa usa.
 - Parou no 429: retomar **do lote que falhou**.
 - Depois de cada dia: o diário já chama `reindex:embeddings`.
 - API Juris.ai: `stf stj tst trf3 trf4 tjce tjgo tjma tjmg tjmt tjpr tjrj tjrs tjsc tjsp carf`. Sem TSE, TRE, TRF1/2/5/6, TNU.
-- **SJUR TRE (P1a seguro):** um TRE por vez (`FILA_TRE_P1A`). Host `jurisprudencia.tre-{uf}.jus.br`. Diário 02h: **2 TSE + 2 temas do TRE atual**. Fecha 12 temas → próxima UF. Ao fim dos 27 → pausa até ok TNU.
+- **SJUR TRE (P1a rodízio):** 1 TRE/noite (`FILA_TRE_P1A`). Host `jurisprudencia.tre-{uf}.jus.br`. Diário 02h: **2 TSE + 2 temas do TRE da vez**. Tema por UF; cicla as 27 UFs.
 - `npm run seed:juris-portal-diario` · tarefa `FACTO-seed-portal-02h`.
 - **Jefferson:** PC ligado 01h–04h na tomada; SEED free + Juris.ai; sem paygo.
 - Embeddings: **somente** `GEMINI_API_KEY_SEED` (free). Paygo bloqueado.
@@ -33,7 +33,7 @@ Não muda a minuta sozinho. Alimenta a base que a Pesquisa usa.
 
 - `proximoLote` **1030**, `ate` **1500**, vencimento **2026-09-13** (só referência).
 - Catch-up 09/09: **967–1030** · **+2.732** juris.ai; cota no **1030**.
-- Portal TSE: em curso (`temaIndice` **10**/20). **TRE-SP P1a:** `treSpTemaIndice` **1**/12 · smoke +12 (`fonte=tre-sp-portal`).
+- Portal: TSE `temaIndice` **10** · rodízio TRE (`treUfIndice` 0=SP, `treTemaPorUf.sp` 1) · 78 temas/UF.
 - Regra −7d **desligada**: diário 01h segue normalmente.
 - Lacunas estruturais: TRE/TNU/TRF1/2/5/6/STM + **17 TJs** fora da API; **P0 TSE** no ar; P1a/P1b não iniciados.
 - **P2 seed (fixado 09/09):** P2a = TRF1/2/5/6 · P2b = 17 TJs → **27 UFs de TJ**; abastecimento contínuo pós-venda.
