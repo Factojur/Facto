@@ -1,14 +1,22 @@
 /**
  * Smoke: 1 consulta de lastro curado por área aberta (+ scaffold sem Gemini).
  * Uso: npx tsx scripts/testar-smoke-areas-lastro.ts
+ *      npx tsx scripts/testar-smoke-areas-lastro.ts --paygo  ← embeddings paygo (só conferência A3)
  *
- * Não consome cota de peça. Usa embedding (GEMINI_API_KEY_SEED) + Supabase.
+ * Não consome cota de peça. Default: GEMINI_API_KEY_SEED. `--paygo` = GEMINI_API_KEY.
  * Falhas de lastro fraco = aviso (exit 0 se só avisos); exit 1 se erro duro.
  */
-import { exigirGeminiApenasSeed } from "./lib/gemini-env-seed";
+import {
+  exigirGeminiApenasSeed,
+  exigirGeminiPaygoCatchupReindex,
+} from "./lib/gemini-env-seed";
 
-exigirGeminiApenasSeed("smoke-lastro");
-
+const usarPaygo = process.argv.includes("--paygo");
+if (usarPaygo) {
+  exigirGeminiPaygoCatchupReindex("smoke-lastro-paygo-conferencia");
+} else {
+  exigirGeminiApenasSeed("smoke-lastro");
+}
 async function main() {
   const { AREAS_ATUACAO } = await import("../src/lib/areas-atuacao");
   const { buscarConhecimentoRelacionado } = await import(
