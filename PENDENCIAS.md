@@ -71,7 +71,29 @@ Não implementar sem alinhamento. Ordem sugerida = impacto × honestidade juríd
 
 **Critério de pronto do relatório:** cada fase A0–A6 com ✅/⚠️/❌ + lista de ajustes P0/P1/P2. A7 só com autorização.
 
-**Status:** plano aprovado em conceito (11/09) · execução sob pedido (“rodar conferência fase A…”).
+**Status:** plano aprovado em conceito (11/09) · **A0–A3 executados 11/09** · A4+ pausados (Jefferson fará compra real teste e retoma).
+
+#### Relatório conferência A0–A3 (11/09)
+
+| Fase | Resultado | Detalhe |
+|------|-----------|---------|
+| **A0** | ✅ | `tsc --noEmit` exit 0 |
+| **A1** | ⚠️ | Maioria OK · ver falhas abaixo |
+| **A2** | ⚠️ | Chat/fluidez/plano/briefing/alerta ✅ · `caso-0006509` 7 ok / **3 fail** |
+| **A3** | ✅ | Smoke **20/20** ok · 0 fraco · **paygo** · portal **109 / 0 ruins** · UF + expansão ✅ |
+
+**A1 — passou:** qualificacao (506) · peca-cabivel · auditor-peca · skins · lastro-polo · transcrever · rate-limit · casos-ouro (830) · formatacao · prazo-intimacao.
+
+**A1 — falhou (registrar ajustes):**
+1. `testar-polo-especies` — `previdenciario/peticao-inicial-previdenciaria` id matriz≠seletor · `JEC recurso sem polo → bloqueio` (746 ok / 2 fail)
+2. `testar-auditoria-pecas` — `internacional/apelacao` e `cumprimento-sentenca` → vara cível (1318 ok / 2 fail)
+3. `testar-entrada-conferencia` — 5 falhas de **teses canônicas** (trabalhista/família/imobiliário/prev) (8 ok / 5 fail)
+
+**A2 — falhou:** `testar-caso-0006509` — espécie vazia / polo×espécie (3 fail) — regressão possível no pipeline do caso.
+
+**A3:** flag `scripts/testar-smoke-areas-lastro.ts --paygo` (somente conferência; default continua SEED).
+
+**Próximo:** Jefferson compra real (teste) → retomar **A4** (auth/planos/extras/webhook).
 
 ### Feito nesta rodada (11/09 — scorecard + consolidado)
 
