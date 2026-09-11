@@ -34,7 +34,7 @@ Ordem fechada — **não inverter**:
 ### Feito nesta rodada (11/09 — pacotes extras +20/+40 no main)
 
 - [x] Commit + push `PACOTES_EXTRA` +20/+40 · legado +50/+100 só webhook · painel/checkout atualizados
-
+- [x] Fix build: `auditar-tjba-base` chave duplicada + tipagem TJRN/`filtrarJulgadosScrape` (deploy Error → Ready)
 ### Feito nesta rodada (11/09 — qualidade fundamentação)
 
 - [x] Portal TJ: filtro `ementaJurisPortalValida` (rejeita `Rel.`/colagem multi-TJ/`ler mais`)
