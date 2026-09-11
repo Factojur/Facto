@@ -42,17 +42,17 @@ export function ContadorJurisLanding({ total }: { total: number }) {
   if (total <= 0) return null;
 
   return (
-    <div className="mt-8 flex flex-col items-center gap-1.5">
+    <div className="mt-8 flex flex-col items-center gap-2">
       <p
-        className="font-[family-name:var(--font-facto)] text-3xl font-semibold tracking-tight text-facto-gold tabular-nums sm:text-4xl"
+        className="font-[family-name:var(--font-facto)] text-3xl font-bold tracking-tight text-[#c4b896] tabular-nums sm:text-4xl"
         aria-live="polite"
       >
         +{formatarPt(valor)}
       </p>
-      <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-500">
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-300">
         Julgados e súmulas na base
       </p>
-      <p className="max-w-sm text-center text-xs leading-relaxed text-stone-500">
+      <p className="max-w-sm text-center text-[0.7rem] leading-relaxed text-stone-600">
         Base em expansão · atualização diária com julgados recentes
       </p>
     </div>
