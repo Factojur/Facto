@@ -17,15 +17,67 @@ Ordem fechada — **não inverter**:
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
 
+### Feito nesta rodada (11/09 — contador juris landing)
+
+- [x] Contador vivo no hero (entre subcopy e CTAs): `+N` julgados + súmulas · cache 1h
+- [x] Copy: “Base em expansão · atualização diária com julgados recentes”
+- [x] Benefício lastro: “base FACTO em expansão”
+
+### Feito nesta rodada (11/09 — qualidade fundamentação)
+
+- [x] Portal TJ: filtro `ementaJurisPortalValida` (rejeita `Rel.`/colagem multi-TJ/`ler mais`)
+- [x] Itens da tela TJAC colagem (`0700346…`, `0701603…`) **já removidos** da base
+- [x] Auditoria portal atual: **109** · **0 ruins** (BA/AM/ES/RN/MS/AC com ementa útil)
+- [!] **Erro ops:** script amplo removeu **546** `jurisprudencias.ai` (falso positivo). Restore seguro (clone + cópia seletiva) **não disponível daqui** (sem token Management/PITR). **Decisão 11/09:** não arriscar restore in-place · **repor nos próximos seeds** Juris.ai (01h / fila).
+- [x] Limpeza futura: só `limpar-so-portal-tj-inaptas.ts` (fonte `tj%-portal`)
+
+### Feito nesta rodada (11/09 — qualidade portal TJ)
+
+- [x] Contrato único `ementaJurisPortalValida` (+ `normalizarEmentaPortal`) em `validar-ementa.ts`
+- [x] Seed P2b e scrapers BA/RN/PE/ES/e-SAJ passam pelo mesmo filtro
+- [x] Extração e-SAJ: preferir `mensagemSemFormatacao`; não salvar cadeia `Rel.`
+- [x] Limpeza base: fragments MS/AC/ES/AM ruins removidos · **MS +14** e **AC +22** bons reinseridos
+- [x] Regra Cursor `juris-ementa-qualidade.mdc` · auditoria `auditar-tj-portal-qualidade.ts`
+- [ ] TJPE ainda 0 (scraper raso) · densificar depois
+- [ ] 15:30 TJPA segue na fila
+
+### Feito nesta rodada (11/09 — seed retry + recovery 12:30)
+
+- [x] **Regra:** seed falhou/+0 → corrigir e re-rodar até insert (`.cursor/rules/seed-retry-ate-insert.mdc`)
+- [x] **12:30** tinha +0 (RN/AM/PE/ES) — recovery:
+  - **TJAM:** host `consultasaj.tjam.jus.br` + `fundocinza1` + filtro ano por data (não CNJ) · **+22**
+  - **TJES:** portal `sistemas.tjes.jus.br` · **+24**
+  - **TJRN:** API `/api/pesquisar` (Chrome headed) · **+19**
+  - **TJPE:** portal JSF (clique Acórdãos) · **+1** (layout ainda raso; melhorar depois)
+- [x] Fila **15:30 = TJPA** preservada
+- [x] Paygo embeddings dos inserts acima
+
+### Feito nesta rodada (11/09 — TJBA ementas truncadas)
+
+- [x] **Problema:** cards TJBA com cabeçalho + `....ler mais` (ementa não expandida no scrape)
+- [x] Limpeza: **8** `tjba-portal` ruins removidos · restaram **9** bons
+- [x] Scraper: expandir “ler mais” (várias passadas) · rejeitar truncados · desmarcar monocrática · extrair ementa real
+- [x] Scripts: `limpar-tjba-portal-ruins.ts` · `auditar-tjba-base.ts` · `repor-tjba-temas.ts`
+- [x] Repor temas BA 0–1: **+11** insert · **+11** paygo · 0 rejeitado · fila TJRN intacta
+
 ### Feito nesta rodada (11/09 — ícone martelo juris)
 
 - [x] **Ícone jurisprudência:** martelo no estilo da referência (**só martelo**, sem bloco de baixo)
 - [x] Commit + push `main` · deploy Ready
 
-### Feito nesta rodada (11/09 — seed TJ 09:30)
+### Feito nesta rodada (11/09 — pacotes extras +20/+40)
 
-- [x] **09:30** `FACTO-seed-tj-portal-3h`: **TJBA** · +0 insert · 2 falha (form e-SAJ timeout; HTTP abre mas layout/campo diferente) · retry BA · próxima agenda **12:30**
-- [x] Manhã: smoke **TJMS +11** + paygo ok · BA HTTPS reset → HTTP (ainda frágil)
+- [x] Extras: **+20 / R$ 49,90** (~R$ 2,50) · **+40 / R$ 89,90** (~R$ 2,25) · ids `extra-20`/`extra-40`
+- [x] Checkout MP = **Checkout Pro via API** (preferência dinâmica) — não precisa link estático no painel
+- [x] Legado +50/+100 só webhook · copy painel atualizada
+
+- [x] **TJBA:** scraper `jurisprudencia.tjba.jus.br` (`src/lib/scrapers/tjba.ts`) · seed usa portal próprio
+- [x] Smoke: **+17** insert · paygo · próximo **TJRN**
+- [x] **TJRN:** ainda **não** baixado (0 na base) — agenda **12:30**
+
+- [x] **09:30:** TJBA **+0** (não substituiu — bug de lógica) · e-SAJ BA só abre portal sem CJSG
+- [x] **Regra nova:** se TJ falhar, **tenta até 4 UFs** na mesma rodada · registra `falhasPorUf` · BA fica pendente (coletor `jurisprudencia.tjba.jus.br`)
+- [x] Fila prioriza MS/AC · **manual agora:** **TJAC +11** insert · paygo +11 · próximo **TJRN** (12:30 segue normal)
 
 ### Feito nesta rodada (11/09 — P2b prioridade + backlog Juris.ai)
 
@@ -2197,7 +2249,7 @@ API **não tem:** TSE, TRE-*, TRF1/2/5/6, TNU, STM; TJs ausentes (**P2b, meta 09
 | Área / gap | Evidência 06/09 | Status |
 |------------|-----------------|--------|
 | **Eleitoral** | TRE/TSE **fora da API**. **P0 TSE** no ar · **P1a TRE-SP** no ar (`tre-sp-portal`, smoke +12). Demais TREs na fila. | **Melhorou (TSE+TRE-SP)**; outros TREs ainda fracos. |
-| **TJs / TRFs ausentes** | Cliente de BA/PE/DF/etc. não tem ementa daquele TJ na base. | **P2a** TRF1/2/5/6 + **P2b** 17 TJs (meta **27 UFs**, fixada 09/09). |
+| **TJs / TRFs ausentes** | Cliente de BA/PE/DF/etc. não tem ementa daquele TJ na base. | **P2a** TRF1/2/5/6 + **P2b** 17 TJs. **11/09 recovery 12:30:** AM+22 · ES+24 · RN+19 · PE+1 · BA ok (ementas). Próximo agendado **TJPA 15:30**. |
 | **Constitucional / STF** | Reforço 789–791 (+inserts bons). Volume 825+ ainda na fila. | **Melhorou**; profundidade ≠ MinutaIA 100k. |
 | **Previdenciário** | Histórico STJ fraco; reforço 789–824 + TRF3/4 na fila volume. | **Melhorando**; JEF/TRF1/2/5/6 ainda raso. |
 | **Trabalhista** | TST reforçado na FASE4; volume segue. | Aceitável → bom; continuar 846+. |

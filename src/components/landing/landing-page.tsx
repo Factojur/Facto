@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FactoLogo } from "@/components/brand/facto-logo";
+import { ContadorJurisLanding } from "@/components/landing/contador-juris-landing";
 import { LandingHeroAtmosphere } from "@/components/landing/landing-hero-atmosphere";
 import { LandingHeroWatermark } from "@/components/landing/landing-hero-watermark";
 import { LandingPrecos } from "@/components/landing/landing-precos";
@@ -64,7 +65,7 @@ const BENEFICIOS = [
     icone: IconeBalanca,
     titulo: "Lastro que dá segurança",
     texto:
-      "Súmulas e julgados da base FACTO (ou os que você anexa). O que não tem lastro não é inventado para “parecer jurídico”.",
+      "Súmulas e julgados da base FACTO em expansão (ou os que você anexa). O que não tem lastro não é inventado para “parecer jurídico”.",
   },
   {
     icone: IconeTom,
@@ -102,7 +103,11 @@ const PASSOS = [
   },
 ] as const;
 
-export function LandingPage() {
+export function LandingPage({
+  totalLastro = 0,
+}: {
+  totalLastro?: number;
+}) {
   return (
     <div className="relative bg-facto-dark">
       <LandingScrollHome />
@@ -170,6 +175,8 @@ export function LandingPage() {
               lastro da base curada e peça em Word ou PDF para revisar e
               protocolar.
             </p>
+
+            <ContadorJurisLanding total={totalLastro} />
 
             <div className="mt-10 flex flex-col items-center gap-3">
               <div className="flex w-full flex-col gap-4 sm:w-auto sm:flex-row sm:justify-center">

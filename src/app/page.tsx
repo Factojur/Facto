@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LandingPage } from "@/components/landing/landing-page";
+import { contarLastroLanding } from "@/lib/stats-juris-landing";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -12,5 +13,7 @@ export default async function Home() {
     redirect("/dashboard");
   }
 
-  return <LandingPage />;
+  const totalLastro = await contarLastroLanding();
+
+  return <LandingPage totalLastro={totalLastro} />;
 }
