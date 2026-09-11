@@ -43,7 +43,9 @@ Canvas: `facto-vs-minutaia-scorecard.canvas.tsx` (atualizado 11/09).
 
 ### Inovações candidatas (fila estratégica — 11/09)
 
-Não implementar sem alinhamento. Ordem sugerida = impacto × honestidade jurídica × custo.
+**Decisão Jefferson (11/09):** **adiar** cadeia de custódia, cenário adversário e demais inovações desta lista até o lastro **cobrir os 27 TJs** (meta P2b + Juris.ai), **mesmo com déficit** (volume fino) em algumas UFs. Até lá: prioridade = **abastecer / densificar** · seeds · qualidade ementa · hosts falhos.
+
+Não implementar sem alinhamento. Ordem sugerida = impacto × honestidade jurídica × custo (quando liberar):
 
 1. **Cadeia de custódia do lastro** — cada `[[JURIS]]` com CNJ, tribunal, URL, data e “origem base FACTO / anexo”; exportável no Word/PDF. Diferencial ético vs IAs que inventam ementa.
 2. **Cenário adversário** — painel opcional: precedentes *contrários* ao polo (já filtramos no retrieve) para antecipar a outra parte.
