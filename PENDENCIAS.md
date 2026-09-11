@@ -17,6 +17,11 @@ Ordem fechada — **não inverter**:
 
 **Bug 0006509 / faculdade (03/09):** menção histórica a “contestação” nos autos forçava espécie contestação no preview — corrigido: remédio do **último ato** (agravo) prevalece; contestação só com pedido explícito de redigir defesa.
 
+### Feito nesta rodada (10/09 — temas TRE densos)
+
+- [x] **Temas TRE:** piloto 12 → **~75 temas** (mesma ordem inicial; estado SP válido) · 2/noite seguro · ≈38 noites/UF
+- [x] Objetivo = inflar lastro (julgados/teses), não “fechar 12 e pronto”; após 27 UFs dá para 2º ciclo ou mais temas
+
 ### Feito nesta rodada (10/09 — fila TRE um-a-um)
 
 - [x] **Modo seguro:** um TRE por vez (`FILA_TRE_P1A` 27 UFs) · fecha 12 temas ≈6 noites · só então avança UF
@@ -44,7 +49,7 @@ Para os seeds rodarem corretos **sem sua intervenção noite a noite**:
 ### Fila portal TRE P1a (um por vez)
 
 Ordem: SP → MG → RJ → RS → PR → BA → PE → DF → CE → GO → SC → ES → MT → MS → PA → AM → MA → PB → RN → AL → PI → SE → TO → RO → AC → AP → RR (27).  
-Por UF: 12 temas × 2/noite ≈ **6 noites**. Total ≈ **~5,5 meses** se 1 UF por vez + TSE paralelo.  
+Por UF: **~75 temas** × 2/noite ≈ **~38 noites** (modo seguro). Pode acrescentar mais temas a qualquer momento sem quebrar a fila.  
 Estado: `scripts/seed-juris-portal-estado.json` (`treUfIndice` · `treTemaIndice`).
 
 ### Feito nesta rodada (10/09 — ícones fontes flutuantes)
