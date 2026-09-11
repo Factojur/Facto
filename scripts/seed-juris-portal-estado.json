@@ -1,6 +1,8 @@
 {
   "temaIndice": 10,
-  "treSpTemaIndice": 1,
+  "treUfIndice": 0,
+  "treTemaIndice": 1,
+  "treFilaConcluida": false,
   "ultimaRodada": "2026-09-10",
   "ultimoResultado": {
     "temas": 3,
@@ -8,6 +10,7 @@
     "skips": 12,
     "falhas": 0,
     "tseInserts": 12,
-    "treSpInserts": 12
+    "treInserts": 12,
+    "treUf": "TRE-SP"
   }
 }

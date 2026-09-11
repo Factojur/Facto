@@ -24,9 +24,9 @@ Não muda a minuta sozinho. Alimenta a base que a Pesquisa usa.
 - Parou no 429: retomar **do lote que falhou**.
 - Depois de cada dia: o diário já chama `reindex:embeddings`.
 - API Juris.ai: `stf stj tst trf3 trf4 tjce tjgo tjma tjmg tjmt tjpr tjrj tjrs tjsc tjsp carf`. Sem TSE, TRE, TRF1/2/5/6, TNU.
-- **SJUR TSE (P0):** UI `https://jurisprudencia.tse.jus.br/#/jurisprudencia/pesquisa` · Playwright + intercept API (`fonte=tse-portal`).
-- **SJUR TRE-SP (P1a):** UI `https://jurisprudencia.tre-sp.jus.br/#/jurisprudencia/pesquisa` · mesmo Playwright (`fonte=tre-sp-portal`). Diário 02h: **2 temas TSE + 2 TRE-SP**.
+- **SJUR TRE (P1a seguro):** um TRE por vez (`FILA_TRE_P1A`). Host `jurisprudencia.tre-{uf}.jus.br`. Diário 02h: **2 TSE + 2 temas do TRE atual**. Fecha 12 temas → próxima UF. Ao fim dos 27 → pausa até ok TNU.
 - `npm run seed:juris-portal-diario` · tarefa `FACTO-seed-portal-02h`.
+- **Jefferson:** PC ligado 01h–04h na tomada; SEED free + Juris.ai; sem paygo.
 - Embeddings: **somente** `GEMINI_API_KEY_SEED` (free). Paygo bloqueado.
 
 ## Estado (09/09 noite)
