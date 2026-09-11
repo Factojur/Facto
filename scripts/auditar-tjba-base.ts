@@ -64,7 +64,7 @@ async function main() {
           len: ((r.texto as string) || "").length,
           tip: ((r.texto as string) || "").slice(0, 140),
         })),
-        ruins,
+        amostraRuins: ruins.slice(0, 15),
       },
       null,
       2

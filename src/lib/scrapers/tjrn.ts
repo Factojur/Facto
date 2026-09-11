@@ -220,7 +220,7 @@ export async function buscarTjrnJuris(
     }
 
     const brutos = (api.hits as HitRn[])
-      .map((h) => {
+      .map((h): JulgadoScrape | null => {
         const s = h._source || {};
         const cnj = formatarCnj(s.numero_processo || "");
         if (!cnj) return null;
@@ -231,20 +231,19 @@ export async function buscarTjrnJuris(
         return {
           titulo: `TJRN — ${cnj}`,
           ementa,
-          tribunal: "TJRN" as const,
-          data,
+          tribunal: "TJRN",
+          data: data || undefined,
           relator: s.magistrado,
           numeroProcesso: cnj,
           url: s.id_documento_teor
             ? `https://jurisprudencia.tjrn.jus.br/`
             : undefined,
-        } satisfies JulgadoScrape;
+        };
       })
-      .filter((j): j is JulgadoScrape => !!j);
+      .filter((j): j is JulgadoScrape => j != null);
 
     const pool = filtrarJulgadosScrape(
-      brutos
-        .filter((j) => dataOk(j.data, anos) && ementaTjrnValida(j.ementa))
+      brutos.filter((j) => dataOk(j.data, anos) && ementaTjrnValida(j.ementa))
     ).slice(0, limite);
 
     if (!pool.length) {

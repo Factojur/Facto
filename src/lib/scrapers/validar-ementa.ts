@@ -145,13 +145,11 @@ export function julgadoScrapeValido(
   return ementaJurisPortalValida(j.ementa || "");
 }
 
-export function filtrarJulgadosScrape<
-  T extends Pick<JulgadoScrape, "ementa" | "numeroProcesso" | "titulo">,
->(itens: T[]): T[] {
+export function filtrarJulgadosScrape<T extends JulgadoScrape>(itens: T[]): T[] {
   return itens
     .map((j) => ({
       ...j,
       ementa: normalizarEmentaPortal(j.ementa || ""),
     }))
-    .filter(julgadoScrapeValido);
+    .filter(julgadoScrapeValido) as T[];
 }
