@@ -397,29 +397,37 @@ export async function sincronizarPreapprovalsRecentesDoMp(
 ): Promise<SyncAssinaturaResultado[]> {
   const resultados: SyncAssinaturaResultado[] = [];
   const desde = Date.now() - 14 * DIA_EM_MS;
+  const vistos = new Set<string>();
 
-  for (const pre of await buscarPreapprovalsRecentes("authorized", 40)) {
-    const criado = pre.date_created
-      ? new Date(pre.date_created).getTime()
-      : Date.now();
-    if (criado < desde) continue;
-    try {
-      resultados.push(await upsertAssinaturaDePreapproval(admin, pre));
-    } catch (erro) {
-      console.warn("[sincronizar-assinatura] falha upsert", pre.id, erro);
+  async function upsertLista(lista: PreapprovalMp[]) {
+    for (const pre of lista) {
+      if (!pre.id || vistos.has(String(pre.id))) continue;
+      const criado = pre.date_created
+        ? new Date(pre.date_created).getTime()
+        : Date.now();
+      if (criado < desde) continue;
+      vistos.add(String(pre.id));
+      try {
+        resultados.push(await upsertAssinaturaDePreapproval(admin, pre));
+      } catch (erro) {
+        console.warn("[sincronizar-assinatura] falha upsert", pre.id, erro);
+      }
     }
   }
 
-  for (const pre of await buscarPreapprovalsRecentes("cancelled", 20)) {
-    const criado = pre.date_created
-      ? new Date(pre.date_created).getTime()
-      : Date.now();
-    if (criado < desde) continue;
-    try {
-      resultados.push(await upsertAssinaturaDePreapproval(admin, pre));
-    } catch (erro) {
-      console.warn("[sincronizar-assinatura] falha sync cancelada", pre.id, erro);
-    }
+  await upsertLista(await buscarPreapprovalsRecentes("authorized", 40));
+  await upsertLista(await buscarPreapprovalsRecentes("pending", 20));
+  await upsertLista(await buscarPreapprovalsRecentes("cancelled", 20));
+
+  // Fallback: search sem status (API às vezes omite authorized no filtro).
+  try {
+    const qs = new URLSearchParams({ limit: "30", offset: "0" });
+    const data = (await chamarMercadoPago(
+      `/preapproval/search?${qs.toString()}`
+    )) as { results?: PreapprovalMp[] };
+    await upsertLista(Array.isArray(data?.results) ? data.results : []);
+  } catch (erro) {
+    console.warn("[sincronizar-assinatura] fallback search geral", erro);
   }
 
   return resultados;

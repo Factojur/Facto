@@ -18,6 +18,7 @@ export type AssinaturaDb = {
   acesso_valido_ate: string | null;
   motivo_encerramento: string | null;
   data_cancelamento: string | null;
+  profile_id?: string | null;
 };
 
 export type AssinaturaResumoUI = {

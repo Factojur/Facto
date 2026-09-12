@@ -58,32 +58,60 @@ export const getPerfilServidor = cache(async (userId: string) => {
   return profile;
 });
 
-/** Plano ativo do e-mail — deduplicado por request. Inclui trial se sem assinatura. */
+/** Plano ativo — e-mail e/ou profile_id (trial→pago imediato). */
 export const getPlanoAtivoServidor = cache(
-  async (email: string | null | undefined): Promise<PlanoId | null> => {
+  async (
+    email: string | null | undefined,
+    userId?: string | null
+  ): Promise<PlanoId | null> => {
     const emailNorm = email?.trim().toLowerCase();
-    if (!emailNorm) return null;
+    const uid = userId?.trim() || null;
+    if (!emailNorm && !uid) return null;
     try {
       const admin = createAdminClient();
-      const { data: ass } = await admin
-        .from("assinaturas")
-        .select("plano, status, acesso_valido_ate")
-        .ilike("email", emailNorm)
-        .order("criado_em", { ascending: false })
-        .limit(5);
-      const pago = planoDeAssinaturas(ass ?? []);
-      if (pago) return pago;
+      if (uid) {
+        const { data: assPerfil } = await admin
+          .from("assinaturas")
+          .select("plano, status, acesso_valido_ate")
+          .eq("profile_id", uid)
+          .order("criado_em", { ascending: false })
+          .limit(5);
+        const pagoPerfil = planoDeAssinaturas(assPerfil ?? []);
+        if (pagoPerfil) return pagoPerfil;
+      }
+      if (emailNorm) {
+        const { data: ass } = await admin
+          .from("assinaturas")
+          .select("plano, status, acesso_valido_ate")
+          .ilike("email", emailNorm)
+          .order("criado_em", { ascending: false })
+          .limit(5);
+        const pago = planoDeAssinaturas(ass ?? []);
+        if (pago) return pago;
 
-      const { data: perfil } = await admin
-        .from("profiles")
-        .select("trial_ate")
-        .ilike("email", emailNorm)
-        .maybeSingle();
-      if (
-        perfil?.trial_ate &&
-        new Date(perfil.trial_ate).getTime() > Date.now()
-      ) {
-        return "trial";
+        const { data: perfil } = await admin
+          .from("profiles")
+          .select("trial_ate")
+          .ilike("email", emailNorm)
+          .maybeSingle();
+        if (
+          perfil?.trial_ate &&
+          new Date(perfil.trial_ate).getTime() > Date.now()
+        ) {
+          return "trial";
+        }
+      } else if (uid) {
+        const { data: perfil } = await admin
+          .from("profiles")
+          .select("trial_ate")
+          .eq("id", uid)
+          .maybeSingle();
+        if (
+          perfil?.trial_ate &&
+          new Date(perfil.trial_ate).getTime() > Date.now()
+        ) {
+          return "trial";
+        }
       }
       return null;
     } catch {

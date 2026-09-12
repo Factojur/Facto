@@ -38,7 +38,7 @@ export default async function DashboardPage() {
     }
   }
 
-  const planoDb = user ? await getPlanoAtivoServidor(user.email) : null;
+  const planoDb = user ? await getPlanoAtivoServidor(user.email, user.id) : null;
   const acesso = resolverAcessoConta(user?.email, planoDb, tipoUsuario);
 
   return (

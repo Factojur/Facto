@@ -36,6 +36,10 @@ export async function criarPreapprovalAssinatura(opcoes: {
     reason: `FACTO — ${rotuloPlano(opcoes.planoId)}`,
     external_reference: externalReference,
     payer_email: opcoes.email.trim().toLowerCase(),
+    metadata: {
+      facto_user_id: opcoes.userId,
+      facto_plano: opcoes.planoId,
+    },
     auto_recurring: {
       frequency: freq.frequency,
       frequency_type: freq.frequency_type,

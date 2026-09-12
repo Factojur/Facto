@@ -20,9 +20,20 @@ async function abrirCheckout(planoId: PlanoCheckoutId): Promise<string | null> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ planoId }),
   });
-  const data = (await res.json()) as { initPoint?: string; error?: string };
+  const data = (await res.json()) as {
+    initPoint?: string;
+    preapprovalId?: string;
+    error?: string;
+  };
   if (!res.ok || !data.initPoint) {
     throw new Error(data.error ?? "Não foi possível abrir o checkout.");
+  }
+  if (data.preapprovalId) {
+    try {
+      sessionStorage.setItem("facto_mp_preapproval_id", data.preapprovalId);
+    } catch {
+      /* private mode */
+    }
   }
   return data.initPoint;
 }

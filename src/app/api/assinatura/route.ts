@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { mapearAssinaturaParaUI } from "@/lib/assinatura-format";
-import { buscarAssinaturaDoEmail } from "@/lib/mercadopago/buscar-assinatura-email";
+import { buscarAssinaturaDoUsuario } from "@/lib/mercadopago/buscar-assinatura-email";
 
 /**
  * GET /api/assinatura — assinatura ativa do usuário logado (senão a mais recente).
@@ -19,7 +19,10 @@ export async function GET() {
 
   try {
     const admin = createAdminClient();
-    const { data, error } = await buscarAssinaturaDoEmail(admin, user.email);
+    const { data, error } = await buscarAssinaturaDoUsuario(admin, {
+      email: user.email,
+      userId: user.id,
+    });
 
     if (error) {
       console.error("[api/assinatura]", error);

@@ -9,7 +9,7 @@ import { PlanosDashboardClient } from "@/components/dashboard/planos-dashboard-c
 export default async function PlanosPage() {
   const user = await getUsuarioServidor();
   const profile = user ? await getPerfilServidor(user.id) : null;
-  const planoDb = user ? await getPlanoAtivoServidor(user.email) : null;
+  const planoDb = user ? await getPlanoAtivoServidor(user.email, user.id) : null;
   const tipoUsuario =
     (profile?.tipo_usuario as string | undefined) ??
     (user?.user_metadata?.tipo_usuario as string | undefined) ??

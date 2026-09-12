@@ -99,16 +99,26 @@ async function lerLinhaCota(
   };
 }
 
-async function planoDoEmail(admin: Admin, email: string): Promise<PlanoCota> {
-  const { data } = await admin
-    .from("assinaturas")
-    .select("plano, status, acesso_valido_ate")
-    .ilike("email", email)
-    .order("criado_em", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (data) {
+async function planoDoUsuario(
+  admin: Admin,
+  email: string,
+  userId?: string
+): Promise<PlanoCota> {
+  const tentar = async (
+    filtro: "email" | "profile",
+    valor: string
+  ): Promise<PlanoCota | null> => {
+    let q = admin
+      .from("assinaturas")
+      .select("plano, status, acesso_valido_ate")
+      .order("criado_em", { ascending: false })
+      .limit(1);
+    q =
+      filtro === "profile"
+        ? q.eq("profile_id", valor)
+        : q.ilike("email", valor);
+    const { data } = await q.maybeSingle();
+    if (!data) return null;
     const agora = Date.now();
     const ate = data.acesso_valido_ate
       ? new Date(data.acesso_valido_ate).getTime()
@@ -130,20 +140,30 @@ async function planoDoEmail(admin: Admin, email: string): Promise<PlanoCota> {
     ) {
       return data.plano;
     }
+    return null;
+  };
+
+  if (userId) {
+    const porPerfil = await tentar("profile", userId);
+    if (porPerfil) return porPerfil;
   }
+  const porEmail = await tentar("email", email);
+  if (porEmail) return porEmail;
 
   const { data: perfil } = await admin
     .from("profiles")
     .select("trial_ate")
     .ilike("email", email)
     .maybeSingle();
-  if (
-    perfil?.trial_ate &&
-    new Date(perfil.trial_ate).getTime() > Date.now()
-  ) {
+  if (perfil?.trial_ate && new Date(perfil.trial_ate).getTime() > Date.now()) {
     return "trial";
   }
   return null;
+}
+
+/** @deprecated nome antigo — use planoDoUsuario */
+async function planoDoEmail(admin: Admin, email: string): Promise<PlanoCota> {
+  return planoDoUsuario(admin, email);
 }
 
 /**
@@ -172,7 +192,7 @@ export async function obterResumoCotaUsuario(opcoes: {
 
   try {
     const admin = createAdminClient();
-    const plano = await planoDoEmail(admin, opcoes.email);
+    const plano = await planoDoUsuario(admin, opcoes.email, opcoes.userId);
 
     const linha = await lerLinhaCota(admin, opcoes.userId, ciclo);
     if (!linha.ok) {

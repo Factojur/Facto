@@ -197,9 +197,10 @@ async function processarPreapproval(admin: AdminClient, id: string) {
   });
 
   let email = vinculo.accountEmail;
-  if (!email && payerEmail) {
+  // MP costuma mandar payer_email vazio na preapproval — resolver via payment/fatura.
+  if (!email) {
     try {
-      email = await buscarEmailPagadorPreapproval(id, emailHint);
+      email = await buscarEmailPagadorPreapproval(id, emailHint || payerEmail);
     } catch (erro) {
       console.warn(
         "[webhook mercadopago] falha ao resolver e-mail do pagador",
@@ -208,6 +209,7 @@ async function processarPreapproval(admin: AdminClient, id: string) {
       );
     }
   }
+  if (!email && payerEmail) email = payerEmail;
 
   const valorRaw = preapproval.auto_recurring?.transaction_amount ?? null;
   const valor =
@@ -398,38 +400,54 @@ async function processarAuthorizedPayment(admin: AdminClient, id: string) {
   let planoCliente: PlanoId | null = null;
 
   if (preapprovalId) {
-    const { data: assinatura } = await admin
+    let { data: assinatura } = await admin
       .from("assinaturas")
-      .select("id, plano, email")
+      .select("id, plano, email, profile_id")
       .eq("mp_preapproval_id", preapprovalId)
       .maybeSingle();
+
+    // Se o tópico authorized_payment chegou antes (ou sem) preapproval:
+    // materializa a linha + profile_id + trial + e-mails.
+    if (!assinatura?.id) {
+      await processarPreapproval(admin, preapprovalId);
+      const refetch = await admin
+        .from("assinaturas")
+        .select("id, plano, email, profile_id")
+        .eq("mp_preapproval_id", preapprovalId)
+        .maybeSingle();
+      assinatura = refetch.data;
+    }
+
     assinaturaId = assinatura?.id ?? null;
     emailCliente = (assinatura?.email as string | undefined) ?? null;
     planoCliente = (assinatura?.plano as PlanoId | null) ?? null;
 
     if (!emailCliente) {
       try {
-        const preapproval = await chamarApiMercadoPago(
-          `/preapproval/${preapprovalId}`
-        );
-        emailCliente =
-          (preapproval.payer_email as string | undefined) ?? null;
-        if (!planoCliente) {
-          const valorPa = preapproval.auto_recurring?.transaction_amount;
-          const valorNum =
-            typeof valorPa === "number"
-              ? valorPa
-              : typeof valorPa === "string"
-                ? parseFloat(valorPa)
-                : null;
-          planoCliente = inferirPlano(
-            typeof valorNum === "number" && !Number.isNaN(valorNum)
-              ? valorNum
-              : null,
-            preapproval.auto_recurring?.frequency_type,
-            preapproval.auto_recurring?.frequency,
-            typeof preapproval.reason === "string" ? preapproval.reason : null
+        emailCliente = await buscarEmailPagadorPreapproval(preapprovalId);
+        if (!emailCliente) {
+          const preapproval = await chamarApiMercadoPago(
+            `/preapproval/${preapprovalId}`
           );
+          const pe = (preapproval.payer_email as string | undefined)?.trim();
+          emailCliente = pe && pe.includes("@") ? pe.toLowerCase() : null;
+          if (!planoCliente) {
+            const valorPa = preapproval.auto_recurring?.transaction_amount;
+            const valorNum =
+              typeof valorPa === "number"
+                ? valorPa
+                : typeof valorPa === "string"
+                  ? parseFloat(valorPa)
+                  : null;
+            planoCliente = inferirPlano(
+              typeof valorNum === "number" && !Number.isNaN(valorNum)
+                ? valorNum
+                : null,
+              preapproval.auto_recurring?.frequency_type,
+              preapproval.auto_recurring?.frequency,
+              typeof preapproval.reason === "string" ? preapproval.reason : null
+            );
+          }
         }
       } catch (erro) {
         console.warn(

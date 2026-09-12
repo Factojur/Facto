@@ -12,7 +12,7 @@ import {
   type AssinaturaDb,
 } from "@/lib/assinatura-format";
 import type { PagamentoInicialAssinatura } from "@/lib/mercadopago/client";
-import { buscarAssinaturaDoEmail } from "@/lib/mercadopago/buscar-assinatura-email";
+import { buscarAssinaturaDoUsuario } from "@/lib/mercadopago/buscar-assinatura-email";
 
 /**
  * POST /api/assinatura/cancelar
@@ -33,10 +33,10 @@ export async function POST() {
 
   try {
     const admin = createAdminClient();
-    const { data: row, error } = await buscarAssinaturaDoEmail(
-      admin,
-      user.email
-    );
+    const { data: row, error } = await buscarAssinaturaDoUsuario(admin, {
+      email: user.email,
+      userId: user.id,
+    });
 
     if (error) {
       console.error("[api/assinatura/cancelar]", error);
@@ -151,7 +151,7 @@ export async function POST() {
 
     const mensagem = montarMensagemCancelamento(mp, ui.proximaCobrancaLabel);
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       ok: true,
       assinatura: ui,
       motivo: update.motivo_encerramento,
@@ -166,6 +166,18 @@ export async function POST() {
             : undefined,
       mensagem,
     });
+
+    // CDC: acesso cai na hora — não manter cookie de 5 min.
+    if (mp.dentroPrazoCdc) {
+      res.cookies.set("facto_acesso_ok", "", {
+        path: "/",
+        maxAge: 0,
+        httpOnly: true,
+        sameSite: "lax",
+      });
+    }
+
+    return res;
   } catch (erro) {
     console.error("[api/assinatura/cancelar]", erro);
     return NextResponse.json(

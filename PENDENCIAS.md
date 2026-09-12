@@ -28,7 +28,7 @@ Ordem fechada — **não inverter**:
 | Gestão + continuidade | 7,0 | 7,2 | **7,2** | +0,2 |
 
 **O que moveu (11/09):**
-- **Lastro +0,1** — gate `ementaJurisPortalValida` · P2b no ar (BA/AM/ES/RN/MS/AC com ementa útil) · scrapers no `main` · **não** +0,3 porque cobertura TJ ainda rasa, TJPE fraco, 15:30 PA–SE +0, e buraco ~**546** juris.ai a repor
+- **Lastro +0,1** — gate `ementaJurisPortalValida` · P2b densificando (BA/AM/ES/RN/MS/AC) · scrapers no `main` · **não** +0,3 porque PA–RR sem scraper, TJPE fraco, buraco ~**546** juris.ai a repor (retoma lote **1150**)
 - **Preço +0,1** — extras emergência **+20/+40** (legado +50/+100 só webhook)
 - Landing: contador vivo (júris+súmulas) · “em expansão” · atualização diária (copy)
 
@@ -71,7 +71,27 @@ Não implementar sem alinhamento. Ordem sugerida = impacto × honestidade juríd
 
 **Critério de pronto do relatório:** cada fase A0–A6 com ✅/⚠️/❌ + lista de ajustes P0/P1/P2. A7 só com autorização.
 
-**Status:** plano aprovado em conceito (11/09) · **A0–A3 executados 11/09** · **A4 pré-check + reteste pós-migration 11/09** · compra real (Jefferson) ainda pendente · A5+ depois.
+**Status:** plano aprovado em conceito (11/09) · **A0–A3 executados 11/09** · **A4 pré-check + reteste pós-migration 11/09** · compra teste Nathalia (12/09) recuperada manualmente · **liberação imediata pós-MP corrigida no código (12/09 — deploy pendente)** · A5+ depois.
+
+### Feito nesta rodada (12/09 — liberação imediata pós-compra, todos os clientes)
+
+Causa: webhook MP muitas vezes **não chega**; retorno `upgrade=ok` só lia DB local; trial→pago ignorava `profile_id`; `payer_email` vazio no preapproval; convite usado liberava acesso para sempre.
+
+- [x] Acesso/cota/plano por **e-mail ou `profile_id`** (`acesso-assinatura`, middleware, `getPlanoAtivoServidor`, cota)
+- [x] Checkout grava `metadata.facto_user_id` + `external_reference` com userId
+- [x] Webhook: resolve e-mail mesmo sem `payer_email`; `authorized_payment` materializa preapproval se faltar linha; encerra trial + pós-compra
+- [x] `POST /api/assinatura/sincronizar` no retorno MP (puxa API + preapprovalId do checkout + scan por userId + cookie `facto_acesso_ok`)
+- [x] Painel: retry curto (~0–18s) em `upgrade=ok` até liberar
+- [x] Rede local **15 min**: tarefa `FACTO-sincronizar-compras-15m` + cron Vercel 1×/dia
+- [x] Cancelar / GET assinatura usam `buscarAssinaturaDoUsuario` (email+userId); cookie limpo no CDC
+- [x] Convite só libera se **pendente** (≤14 dias) — usado/histórico não dá acesso eterno
+- [x] Cadastro vincula `assinaturas.profile_id` à conta nova
+- [x] Página `/obrigado` para retorno de planos estáticos (configurar back_url no MP)
+- [x] Google bootstrap / trial Google passam `userId` no gate de acesso
+- [ ] **Deploy produção** deste pacote
+- [ ] **Você (MP):** webhook URL + tópicos; **back_url** dos planos mpago.la → `https://factoia.com.br/obrigado`
+- [ ] Compra real pós-deploy (trial → Completo + visitante → convite) para fechar A4
+
 
 #### A4 pré-check comercial UX (11/09 — sem compra real)
 
@@ -131,6 +151,16 @@ Percorrido em [factoia.com.br](https://factoia.com.br) como visitante + trial/lo
 - [x] Auditoria internacional: 1ª instância sem inventar Cível; assert alinhado
 - [x] **Re-run A1+A2:** todos ✅ (qualificação, cabível, auditor, skins, polo, lastro-polo, ouro, formatação, auditoria 1320/0, entrada, prazo, chat, fluidez, plano, briefing, alerta, 0006509)
 
+### Feito nesta rodada (11/09 — login + admin UI)
+
+- [x] Login admin `admin@facto.com` · menu **Ferramentas do administrador** ok
+- [x] Páginas: `/admin` · `uso-pecas` · `convites` · `emails` · `conhecimento` (60.487) · `juris-verificacao` · `teste-ia` · `aceites` · `gestao` — todas carregam
+- [x] `Sincronizar MP agora` → “Sincronizado. MP→DB: 0 preapproval(s)”
+- [x] Extras (+20) com admin acesso-livre → alerta 403 (sem fallback silencioso) ✅
+- [ ] **Ops P0:** disco Supabase **crítico** no painel (634,7 MB / 500 MB)
+- [ ] P2: `/admin/gestao` no financeiro, mas fora do menu do avatar
+- [ ] Fila juris: item pendente = página reCAPTCHA (lixo scrape) — rejeitar/limpar
+
 ### Feito nesta rodada (11/09 — A4 fix + reteste)
 
 - [x] Fix checkout: sem fallback silencioso MP logado · extras só link em 401 · copy `acesso=expirado` · trial upsert com `pending-cpf`
@@ -184,7 +214,17 @@ Percorrido em [factoia.com.br](https://factoia.com.br) como visitante + trial/lo
 - [x] Limpeza base: fragments MS/AC/ES/AM ruins removidos · **MS +14** e **AC +22** bons reinseridos
 - [x] Regra Cursor `juris-ementa-qualidade.mdc` · auditoria `auditar-tj-portal-qualidade.ts`
 - [ ] TJPE ainda 0 (scraper raso) · densificar depois
-- [ ] 15:30 TJPA segue na fila
+- [x] Fila PA–RR (DNS e-SAJ morto) cortada → `FILA_TJ_P2B_PORTAL_PROPRIO` (scrapers pendentes)
+- [x] **TJPE scraper** endurecido (clique Acórdãos + `tableDocumento`/textarea) · smoke 3 ementas ok
+
+### Feito nesta rodada (11/09 — seed stall P2b + recovery 19h)
+
+- [x] **Diagnóstico:** Juris.ai 01h ok até lote **1150** (cota dia) · P2b **15:30/18:30 +0** (`ERR_NAME_NOT_RESOLVED` em PA/PB/AL/SE/PI/TO/RO/AP)
+- [x] Fila ativa só **MS AC BA RN AM PE ES** · portais próprios PA–RR adiados
+- [x] Re-rodada: **TJAC +8** · **TJBA +16** · **TJRN +14** · **TJAM +14** · paygo ok
+- [x] Diário: +0 (só skips) também substitui UF · estado limpa UFs fora da fila · exit 1 se 0 insert
+- [x] Próximo agendado P2b: **TJPE** (scraper novo) → depois TJES
+- [x] Juris.ai pronto: lote **1150→1500** · portal 02h próximo **TRE-MG** · súmulas offset **80**/TJSP
 
 ### Feito nesta rodada (11/09 — seed retry + recovery 12:30)
 
@@ -2058,19 +2098,21 @@ Prazos: o FACTO **não conta prazo processual sozinho** hoje. Abrir área implic
 2. **[P0] Embeddings / busca semântica** — _feito_
    - [x] Migration + reindex + retrieve híbrido + deploy
 
-3. **[P0] Pós-compra: webhook / e-mail / alerta** — _parcial (fluxo admin ok; falta compra real MP)_
-   - **Causa raiz (10/08):** zero webhooks reais em 36h — MP não entrega em `https://factoia.com.br/api/webhooks/mercadopago` (só simulações antigas). Sem webhook → sem e-mail/alerta automático.
-   - `payer_email` no preapproval costuma vir vazio após cancelar; e-mail está no `/v1/payments`.
+3. **[P0] Pós-compra: webhook / e-mail / alerta** — _código liberação imediata 12/09; falta deploy + webhook MP + compra real pós-deploy_
+   - **Causa raiz (10/08 + 12/09):** zero webhooks reais longos períodos; retorno pós-checkout não sincronizava MP; trial→pago só batia e-mail.
+   - `payer_email` no preapproval costuma vir vazio; e-mail está no `/v1/payments`.
    - [x] Resolver e-mail via payment/fatura/search; não apagar e-mail local com null do MP
    - [x] Aviso admin lista assinaturas; alerta se webhook silencioso 24h
    - [x] Convite noreply **imediato** com financeiro (sem schedule 10 min) + labels admin (interno / cliente / convite / ntfy)
-   - [x] Alerta push **ntfy** (`NTFY_TOPIC=facto-MP-compra-notificacao`) — fix header ASCII 12/08; **teste admin ok**
+   - [x] Alerta push **ntfy** (`NTFY_TOPIC=facto-MP-compra-notificacao`) — fix header ASCII 12/08; **teste admin ok**; `.env.local` alinhado 12/09
    - [x] Migration `alerta_sms_compra` no Supabase (você)
    - [x] Cancelamento no perfil: MP + estorno CDC 7 dias + **sync não reativa** `canceled` + confirma cancel preapproval via GET (12/08)
    - [x] **Teste admin (12/08):** compra falsa em `/admin/emails` — Resend **Delivered** (interno `financeiro@` + cliente + convite noreply); ntfy ok. Usar **e-mail válido** (bounce → supressão Resend ~14 dias).
+   - [x] **12/09:** sync no retorno `upgrade=ok` · acesso por `profile_id` · webhook materializa preapproval · retry UI · tarefa Windows 15 min
+   - [ ] **Deploy** do pacote de liberação imediata
    - [ ] **Você (MP):** URL + tópicos `subscription_preapproval`, `subscription_authorized_payment`, `payment` na mesma app dos mpago.la; **compra real** deve criar linha em `/admin/emails` → Webhooks **com ID real**
-   - [ ] Enquanto webhook falhar: `/admin/emails` → **Sincronizar MP agora**
-   - [ ] **Compra real MP** + validar webhook automático + **cancelar assinatura (CDC)** ponta a ponta
+   - [ ] Enquanto webhook falhar: `/admin/emails` → **Sincronizar MP agora** (ou PC c/ tarefa 15 min)
+   - [ ] **Compra real MP pós-deploy** + validar liberação na hora + **cancelar assinatura (CDC)** ponta a ponta
 
 4. **[P1] Cadastro — validação OAB real por UF** — _manter mock até o usuário terminar os testes_
    - Hoje: mock em `validate-oab.ts` (números de teste).
@@ -2396,7 +2438,7 @@ API **não tem:** TSE, TRE-*, TRF1/2/5/6, TNU, STM; TJs ausentes (**P2b, meta 09
 | Área / gap | Evidência 06/09 | Status |
 |------------|-----------------|--------|
 | **Eleitoral** | TRE/TSE **fora da API**. **P0 TSE** no ar · **P1a TRE** rodízio UF (SP piloto). Demais TREs na fila. | **Melhorou (TSE+TRE)**; cobertura TRE ainda incompleta. |
-| **TJs / TRFs ausentes** | Cliente de BA/PE/DF/etc. ainda com lastro fino daquele TJ. | **P2b no ar 11/09** (gate ementa) · BA/AM/ES/RN/MS/AC úteis · PE raso · **15:30** PA/PB/AL/SE **+0** (hosts) · próximo **TJPI**. **P2a** TRFs depois. |
+| **TJs / TRFs ausentes** | Cliente de BA/PE/DF/etc. ainda com lastro fino daquele TJ. | **P2b** densifica MS/AC/BA/RN/AM/PE/ES (19h: AC+8 BA+16 RN+14; TJPE scraper ok) · PA–RR **fora** da fila e-SAJ até portal próprio · **P2a** TRFs depois. |
 | **Constitucional / STF** | Reforço 789–791 (+inserts bons). Volume 825+ ainda na fila. | **Melhorou**; profundidade ≠ MinutaIA 100k. |
 | **Previdenciário** | Histórico STJ fraco; reforço 789–824 + TRF3/4 na fila volume. | **Melhorando**; JEF/TRF1/2/5/6 ainda raso. |
 | **Trabalhista** | TST reforçado na FASE4; volume segue. | Aceitável → bom; continuar 846+. |

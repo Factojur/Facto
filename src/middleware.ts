@@ -141,7 +141,7 @@ export async function middleware(request: NextRequest) {
       const acessoEmCache =
         request.cookies.get(COOKIE_ACESSO_OK)?.value === "1";
       if (!acessoEmCache) {
-        const liberado = await acessoAssinaturaLiberado(user.email);
+        const liberado = await acessoAssinaturaLiberado(user.email, user.id);
         if (!liberado) {
           await supabase.auth.signOut();
           const loginUrl = request.nextUrl.clone();

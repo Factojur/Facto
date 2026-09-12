@@ -81,17 +81,90 @@ export function AssinaturaPainel({
 
   useEffect(() => {
     void carregar();
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("extra") === "ok" || params.get("upgrade") === "ok") {
-        if (params.get("upgrade") === "ok") {
-          setMensagemOk(
-            "Pagamento recebido pelo Mercado Pago. Em instantes sua assinatura e cota são atualizadas — atualize a página se ainda aparecer o teste."
-          );
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("extra") === "ok") {
+      const t = window.setTimeout(() => void carregar(), 1500);
+      return () => window.clearTimeout(t);
+    }
+
+    if (params.get("upgrade") === "ok") {
+      setMensagemOk(
+        "Pagamento confirmado. Liberando sua assinatura agora…"
+      );
+      let cancelled = false;
+      (async () => {
+        // MP confirma no checkout, mas o status às vezes demora 1–few s na API.
+        // Retry curto = liberação imediata sem depender só do webhook.
+        const esperasMs = [0, 1500, 3000, 5000, 8000];
+        for (let i = 0; i < esperasMs.length; i++) {
+          if (cancelled) return;
+          if (esperasMs[i] > 0) {
+            await new Promise((r) => window.setTimeout(r, esperasMs[i]));
+          }
+          if (cancelled) return;
+          try {
+            let preapprovalId: string | undefined;
+            try {
+              preapprovalId =
+                sessionStorage.getItem("facto_mp_preapproval_id") ?? undefined;
+            } catch {
+              /* ignore */
+            }
+            const res = await fetch("/api/assinatura/sincronizar", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(
+                preapprovalId ? { preapprovalId } : {}
+              ),
+            });
+            const data = (await res.json().catch(() => ({}))) as {
+              assinatura?: AssinaturaResumoUI | null;
+              liberado?: boolean;
+              sync?: { status?: string } | null;
+            };
+            if (cancelled) return;
+            if (data.assinatura) setAssinatura(data.assinatura);
+            const ok =
+              res.ok &&
+              (data.liberado === true ||
+                data.assinatura?.status === "ativo" ||
+                data.sync?.status === "authorized");
+            if (ok) {
+              try {
+                sessionStorage.removeItem("facto_mp_preapproval_id");
+              } catch {
+                /* ignore */
+              }
+              setMensagemOk(
+                "Assinatura liberada. Seu plano e cota já estão ativos."
+              );
+              window.setTimeout(() => {
+                if (!cancelled) {
+                  window.location.replace("/dashboard/planos?upgrade=done");
+                }
+              }, 600);
+              return;
+            }
+            setMensagemOk(
+              i < esperasMs.length - 1
+                ? "Pagamento confirmado. Confirmando no Mercado Pago…"
+                : "Pagamento recebido. Se o plano ainda não atualizar, atualize a página em instantes."
+            );
+          } catch {
+            if (i === esperasMs.length - 1 && !cancelled) {
+              setMensagemOk(
+                "Pagamento recebido. Atualize a página em instantes se o plano não aparecer."
+              );
+            }
+          }
         }
-        const t = window.setTimeout(() => void carregar(), 2500);
-        return () => window.clearTimeout(t);
-      }
+        if (!cancelled) await carregar();
+      })();
+      return () => {
+        cancelled = true;
+      };
     }
   }, []);
 

@@ -73,7 +73,7 @@ export async function exigirAcessoAreaMinuta(
     /* metadata */
   }
 
-  const planoDb = await getPlanoAtivoServidor(user.email);
+  const planoDb = await getPlanoAtivoServidor(user.email, user.id);
   const acesso = resolverAcessoConta(user.email, planoDb, tipoUsuario);
   if (
     !areaAbertaParaCliente(areaId, {

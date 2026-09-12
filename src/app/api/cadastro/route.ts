@@ -72,7 +72,7 @@ export async function POST(request: Request) {
 
   const { data: convite, error: conviteErr } = await admin
     .from("convites_pagos")
-    .select("id, email, status")
+    .select("id, email, status, mp_payment_id")
     .eq("token", token)
     .maybeSingle();
 
@@ -149,6 +149,54 @@ export async function POST(request: Request) {
     );
     if (profileErr) {
       console.error("[cadastro] profile", profileErr.message);
+    }
+
+    // Vincula assinatura paga à conta (visitante → cadastro).
+    const agoraIso = new Date().toISOString();
+    const { error: linkErr } = await admin
+      .from("assinaturas")
+      .update({
+        profile_id: userId,
+        email,
+        atualizado_em: agoraIso,
+      })
+      .ilike("email", email);
+    if (linkErr) {
+      console.warn("[cadastro] link assinatura por e-mail", linkErr.message);
+    }
+
+    const mpPaymentId =
+      typeof convite.mp_payment_id === "string"
+        ? convite.mp_payment_id.trim()
+        : "";
+    if (mpPaymentId && !mpPaymentId.startsWith("preapproval:")) {
+      const { data: pag } = await admin
+        .from("pagamentos")
+        .select("assinatura_id")
+        .eq("mp_payment_id", mpPaymentId)
+        .maybeSingle();
+      if (pag?.assinatura_id) {
+        await admin
+          .from("assinaturas")
+          .update({
+            profile_id: userId,
+            email,
+            atualizado_em: agoraIso,
+          })
+          .eq("id", pag.assinatura_id);
+      }
+    } else if (mpPaymentId.startsWith("preapproval:")) {
+      const preId = mpPaymentId.slice("preapproval:".length);
+      if (preId) {
+        await admin
+          .from("assinaturas")
+          .update({
+            profile_id: userId,
+            email,
+            atualizado_em: agoraIso,
+          })
+          .eq("mp_preapproval_id", preId);
+      }
     }
   }
 

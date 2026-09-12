@@ -74,7 +74,7 @@ export async function POST(request: Request) {
     );
   }
 
-  if (await acessoAssinaturaLiberado(email)) {
+  if (await acessoAssinaturaLiberado(email, user.id)) {
     return NextResponse.json({ ok: true, redirect: "/dashboard" });
   }
 

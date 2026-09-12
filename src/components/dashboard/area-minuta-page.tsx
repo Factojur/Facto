@@ -27,7 +27,7 @@ export async function redirecionarAreaParaChat(
     if (profile?.tipo_usuario) tipoUsuario = profile.tipo_usuario;
   }
 
-  const planoDb = user ? await getPlanoAtivoServidor(user.email) : null;
+  const planoDb = user ? await getPlanoAtivoServidor(user.email, user.id) : null;
   const acesso = resolverAcessoConta(user?.email, planoDb, tipoUsuario);
 
   if (

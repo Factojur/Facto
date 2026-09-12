@@ -41,7 +41,7 @@ export default async function DashboardLayout({
     user.user_metadata as Record<string, unknown> | undefined
   );
 
-  const planoDb = await getPlanoAtivoServidor(user.email);
+  const planoDb = await getPlanoAtivoServidor(user.email, user.id);
   const tipoUsuario =
     (profile?.tipo_usuario as string | undefined) ??
     (user.user_metadata?.tipo_usuario as string | undefined) ??

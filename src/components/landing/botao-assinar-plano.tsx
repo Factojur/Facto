@@ -50,9 +50,20 @@ export function BotaoAssinarPlano({
       }
       const data = (await res.json().catch(() => null)) as {
         initPoint?: string;
+        preapprovalId?: string;
         error?: string;
       } | null;
       if (res.ok && data?.initPoint) {
+        if (data.preapprovalId) {
+          try {
+            sessionStorage.setItem(
+              "facto_mp_preapproval_id",
+              data.preapprovalId
+            );
+          } catch {
+            /* private mode */
+          }
+        }
         window.location.href = data.initPoint;
         return;
       }

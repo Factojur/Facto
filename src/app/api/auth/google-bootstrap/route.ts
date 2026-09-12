@@ -111,7 +111,7 @@ export async function POST(request: Request) {
     .eq("id", user.id)
     .maybeSingle();
 
-  const liberado = await acessoAssinaturaLiberado(email);
+  const liberado = await acessoAssinaturaLiberado(email, user.id);
   const loginGestao = destinoGestao && gestaoHabilitada();
 
   if (loginGestao && !temAceiteTermos(user.user_metadata as Record<string, unknown>)) {
