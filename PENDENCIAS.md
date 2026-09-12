@@ -88,7 +88,7 @@ Causa: webhook MP muitas vezes **não chega**; retorno `upgrade=ok` só lia DB l
 - [x] Cadastro vincula `assinaturas.profile_id` à conta nova
 - [x] Página `/obrigado` para retorno de planos estáticos (configurar back_url no MP)
 - [x] Google bootstrap / trial Google passam `userId` no gate de acesso
-- [ ] **Deploy produção** deste pacote
+- [x] **Deploy produção** deste pacote (`3a21acd` · Ready · `/obrigado` 200)
 - [ ] **Você (MP):** webhook URL + tópicos; **back_url** dos planos mpago.la → `https://factoia.com.br/obrigado`
 - [ ] Compra real pós-deploy (trial → Completo + visitante → convite) para fechar A4
 
